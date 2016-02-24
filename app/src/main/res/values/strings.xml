@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Notes</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="no_data">无数据</string>
+    
+    <string name="default_archive">所有</string>
+
+    <string name="action_settings">设置</string>
+    <string name="action_folder">文件夹</string>
+    <string name="action_trash">回收站</string>
+</resources>

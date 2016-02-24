@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+    <include
+        layout="@layout/app_bar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <android.support.v4.widget.DrawerLayout
+        android:id="@+id/drawer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:openDrawer="start">
+
+        <include
+            layout="@layout/content_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+        
+        <RelativeLayout
+            android:layout_width="250dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:background="@android:color/white">
+
+            <LinearLayout
+                android:id="@+id/nav_bottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_alignParentBottom="true">
+                <View
+                    android:id="@id/divider"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/divider_color"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/nav_archive"
+                        style="@style/NavMenuStyle"
+                        android:layout_weight="1"
+                        android:text="@string/action_folder"
+                        android:drawableTop="@drawable/ic_menu_archive"/>
+                    <TextView
+                        android:id="@+id/nav_trash"
+                        style="@style/NavMenuStyle"
+                        android:layout_weight="1"
+                        android:text="@string/action_trash"
+                        android:drawableTop="@drawable/ic_menu_delete"/>
+                    <TextView
+                        android:id="@+id/nav_settings"
+                        style="@style/NavMenuStyle"
+                        android:layout_weight="1"
+                        android:text="@string/action_settings"
+                        android:drawableTop="@drawable/ic_settings"/>
+                </LinearLayout>
+                
+            </LinearLayout>
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/nav_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@id/nav_bottom"/>
+            
+        </RelativeLayout>
+        
+    </android.support.v4.widget.DrawerLayout>
+    
+</LinearLayout>
+

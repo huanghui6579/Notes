@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+        android:color="@color/control_color">
+    <!--<item android:id="@android:id/mask"
+          android:drawable="?attr/colorAccent" />-->
+    <!--<item>
+        
+    </item>-->
+</ripple>
+<!--
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/control_color" android:state_pressed="true"/>
+    <item android:drawable="@color/control_color" android:state_selected="true"/>
+    <item android:drawable="@color/control_color" android:state_focused="true"/>
+    <item android:drawable="@android:color/transparent"/>
+</selector>-->

@@ -1,0 +1,101 @@
+package ibaixin.net.notes.util;
+
+import android.graphics.Color;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import ibaixin.net.notes.NoteApplication;
+import ibaixin.net.notes.R;
+
+/**
+ * @author huanghui1
+ * @update 2016/2/24 18:04
+ * @version: 0.0.1
+ */
+public class SystemUtil {
+
+    private static ExecutorService cachedThreadPool = null;//可缓存的线程池
+    
+    private SystemUtil() {}
+
+    /**
+     * 获得可缓存的线程池
+     * @return
+     */
+    public static ExecutorService getThreadPool(){
+        if(cachedThreadPool == null) {
+            synchronized (SystemUtil.class) {
+                if(cachedThreadPool == null) {
+                    cachedThreadPool = Executors.newCachedThreadPool();
+                }
+            }
+        }
+        return cachedThreadPool;
+    }
+
+    /**
+     * 显示短时间的toast
+     * @author Administrator
+     * @update 2014年10月7日 上午9:49:18
+     * @param text
+     */
+    public static void makeShortToast(CharSequence text) {
+        Toast toast = Toast.makeText(NoteApplication.getInstance(), text, Toast.LENGTH_SHORT);
+        toast = setToastStyle(toast);
+        toast.show();
+    }
+
+    /**
+     * 显示短时间的toast
+     * @author Administrator
+     * @update 2014年10月7日 上午9:49:18
+     * @param resId
+     */
+    public static void makeShortToast(int resId) {
+        Toast toast = Toast.makeText(NoteApplication.getInstance(), resId, Toast.LENGTH_SHORT);
+        toast = setToastStyle(toast);
+        toast.show();
+    }
+
+    /**
+     * 显示长时间的toast
+     * @author Administrator
+     * @update 2014年10月7日 上午9:50:02
+     * @param text
+     */
+    public static void makeLongToast(CharSequence text) {
+        Toast toast = Toast.makeText(NoteApplication.getInstance(), text, Toast.LENGTH_LONG);
+        toast = setToastStyle(toast);
+        toast.show();
+    }
+
+    /**
+     * 显示长时间的toast
+     * @author Administrator
+     * @update 2014年10月7日 上午9:50:02
+     * @param resId
+     */
+    public static void makeLongToast(int resId) {
+        Toast toast = Toast.makeText(NoteApplication.getInstance(), resId, Toast.LENGTH_LONG);
+        toast = setToastStyle(toast);
+        toast.show();
+    }
+
+    /**
+     * 设置Toast的样式
+     * @update 2014年11月12日 下午4:22:41
+     * @param toast
+     * @return
+     */
+    private static Toast setToastStyle(Toast toast) {
+        View view = toast.getView();
+        view.setBackgroundResource(R.drawable.toast_frame);
+        TextView textView = (TextView) view.findViewById(android.R.id.message);
+        textView.setTextColor(Color.WHITE);
+        return toast;
+    }
+}
