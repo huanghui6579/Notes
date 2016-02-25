@@ -5,9 +5,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -37,6 +37,10 @@ public class MainActivity extends BaseActivity {
 
     private NavViewAdapter mNavAdapter;
     
+    private SwipeRefreshLayout mRefresher;
+    
+    private RecyclerView mRecyclerView;
+    
     List<Archive> mArchives;
     
     private Handler mHandler = new Handler() {
@@ -62,15 +66,17 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initView() {
+        //初始化主界面右下角编辑按钮
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
             }
         });
 
+        //初始化顶部栏
         if (mToolBar != null) {
             DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
             ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -78,6 +84,11 @@ public class MainActivity extends BaseActivity {
             drawer.setDrawerListener(toggle);
             toggle.syncState();
         }
+
+        //初始化下拉刷新界面
+        mRefresher = (SwipeRefreshLayout) findViewById(R.id.refresher);
+        mRecyclerView = (RecyclerView) findViewById(R.id.lv_data);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         RecyclerView navigationView = (RecyclerView) findViewById(R.id.nav_view);
 
@@ -91,11 +102,17 @@ public class MainActivity extends BaseActivity {
         mNavAdapter.setItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
-                SystemUtil.makeShortToast("点击了item的" + position);
                 view.setSelected(true);
             }
         });
         navigationView.setAdapter(mNavAdapter);
+
+        mRefresher.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                
+            }
+        });
     }
 
     @Override
@@ -161,6 +178,8 @@ public class MainActivity extends BaseActivity {
         private final Context mContext;
         private List<Archive> mList;
         private OnItemClickListener mItemClickListener;
+        
+        private int mSelectedItem = 0;
 
         public NavViewAdapter(Context context, List<Archive> items) {
             mList = items;
@@ -180,10 +199,13 @@ public class MainActivity extends BaseActivity {
 
         @Override
         public void onBindViewHolder(NavTextViewHolder holder, final int position) {
+            holder.itemView.setSelected(mSelectedItem == position);
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mItemClickListener != null) {
+                        notifyItemChanged(mSelectedItem);
+                        mSelectedItem = position;
                         mItemClickListener.onItemClick(v, position);
                     }
                 }
