@@ -9,6 +9,7 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -24,6 +25,7 @@ import java.util.List;
 import ibaixin.net.notes.R;
 import ibaixin.net.notes.listener.OnItemClickListener;
 import ibaixin.net.notes.model.Archive;
+import ibaixin.net.notes.model.NoteInfo;
 import ibaixin.net.notes.util.Constants;
 import ibaixin.net.notes.util.SystemUtil;
 
@@ -41,7 +43,13 @@ public class MainActivity extends BaseActivity {
     
     private RecyclerView mRecyclerView;
     
+    private NoteListAdapter mNoteListAdapter;
+    
     List<Archive> mArchives;
+    
+    private List<NoteInfo> mNotes;
+    
+    private SwipeRefreshLayout.OnRefreshListener mOnRefreshListener;
     
     private Handler mHandler = new Handler() {
         @Override
@@ -49,6 +57,10 @@ public class MainActivity extends BaseActivity {
             switch (msg.what) {
                 case Constants.MSG_SUCCESS:
                     mNavAdapter.notifyDataSetChanged();
+                    break;
+                case Constants.MSG_SUCCESS2:    //笔记内容加载成功
+                    mRefresher.setRefreshing(false);
+                    mNoteListAdapter.notifyDataSetChanged();
                     break;
             }
         }
@@ -88,8 +100,12 @@ public class MainActivity extends BaseActivity {
         //初始化下拉刷新界面
         mRefresher = (SwipeRefreshLayout) findViewById(R.id.refresher);
         mRecyclerView = (RecyclerView) findViewById(R.id.lv_data);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        mNotes = new ArrayList<>();
+        mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
+        mRecyclerView.setAdapter(mNoteListAdapter);
 
+        //初始化左侧导航菜单
         RecyclerView navigationView = (RecyclerView) findViewById(R.id.nav_view);
 
         mArchives = new ArrayList<>();
@@ -107,16 +123,42 @@ public class MainActivity extends BaseActivity {
         });
         navigationView.setAdapter(mNavAdapter);
 
-        mRefresher.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+        mOnRefreshListener = new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                
+                SystemUtil.getThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!mNotes.isEmpty()) {
+                            mNotes.clear();
+                        }
+                        for (int i = 0; i < 26; i++) {
+                            NoteInfo note = new NoteInfo();
+                            note.setContent("测试文本内容" + i);
+                            mNotes.add(note);
+                        }
+
+                        mHandler.sendEmptyMessage(Constants.MSG_SUCCESS2);
+                    }
+                });
+            }
+        };
+
+        mRefresher.setColorSchemeResources(R.color.colorPrimary);
+        mRefresher.setOnRefreshListener(mOnRefreshListener);
+        mRefresher.post(new Runnable() {
+            @Override
+            public void run() {
+                mRefresher.setRefreshing(true);
+                mOnRefreshListener.onRefresh();
             }
         });
+        
     }
 
     @Override
     protected void initData() {
+        
         SystemUtil.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
@@ -211,6 +253,42 @@ public class MainActivity extends BaseActivity {
                 }
             });
             holder.mTextView.setText(mList.get(position).getName());
+        }
+
+        @Override
+        public int getItemCount() {
+            return mList == null ? 0 : mList.size();
+        }
+    }
+    
+    class NoteListViewHolder extends RecyclerView.ViewHolder {
+
+        public NoteListViewHolder(View itemView) {
+            super(itemView);
+        }
+    }
+    
+    class NoteListAdapter extends RecyclerView.Adapter<NavTextViewHolder> {
+
+        private final LayoutInflater mLayoutInflater;
+        private final Context mContext;
+        private List<NoteInfo> mList;
+
+        public NoteListAdapter(Context context, List<NoteInfo> list) {
+            this.mContext = context;
+            this.mList = list;
+            mLayoutInflater = LayoutInflater.from(context);
+        }
+        
+        @Override
+        public NavTextViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = mLayoutInflater.inflate(R.layout.nav_list_item, parent, false);
+            return new NavTextViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(NavTextViewHolder holder, int position) {
+            holder.mTextView.setText(mList.get(position).getContent());
         }
 
         @Override
