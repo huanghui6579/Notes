@@ -11,4 +11,10 @@
     <string name="action_settings">设置</string>
     <string name="action_folder">文件夹</string>
     <string name="action_trash">回收站</string>
+    <string name="action_search">搜索</string>
+    <string name="action_more">更多</string>
+    <string name="action_show_grid">表格</string>
+    <string name="action_show_list">列表</string>
+    <string name="action_upload">同步</string>
+    <string name="action_sort">排序</string>
 </resources>

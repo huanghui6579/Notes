@@ -3,4 +3,8 @@
     <item type="id" name="lv_data" />
     <item type="id" name="divider" />
     <item type="id" name="empty_view" />
+    <item type="id" name="tv_title" />
+    <item type="id" name="tv_summary" />
+    <item type="id" name="tv_content" />
+    <item type="id" name="tv_time" />
 </resources>

@@ -1,36 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!--<group android:checkableBehavior="single">
-        <item
-            android:id="@+id/nav_camera"
-            android:icon="@drawable/ic_action_camera"
-            android:title="Import"/>
-        <item
-            android:id="@+id/nav_gallery"
-            android:icon="@drawable/ic_action_gallery"
-            android:title="Gallery"/>
-        <item
-            android:id="@+id/nav_slideshow"
-            android:icon="@drawable/ic_action_slideshow"
-            android:title="Slideshow"/>
-        <item
-            android:id="@+id/nav_manage"
-            android:icon="@drawable/ic_action_manage"
-            android:title="Tools"/>
-    </group>--> 
-
-    <item android:title="Communicate">
-        <menu>
-            <item
-                android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="Share"/>
-            <item
-                android:id="@+id/nav_send"
-                android:icon="@drawable/ic_menu_send"
-                android:title="Send"/>
-        </menu>
-    </item>
-
+    <item
+        android:id="@+id/nav_show_style"
+        android:icon="@drawable/ic_action_view_list"
+        android:title="@string/action_show_list"/>
+    <item
+        android:id="@+id/nav_upload"
+        android:icon="@drawable/ic_action_upload"
+        android:title="@string/action_upload"/>
+    <item
+        android:id="@+id/nav_sort"
+        android:icon="@drawable/ic_action_sort"
+        android:title="@string/action_sort"/>
 </menu>

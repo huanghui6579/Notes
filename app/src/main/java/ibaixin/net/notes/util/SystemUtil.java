@@ -1,6 +1,10 @@
 package ibaixin.net.notes.util;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.os.Build;
+import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -97,5 +101,36 @@ public class SystemUtil {
         TextView textView = (TextView) view.findViewById(android.R.id.message);
         textView.setTextColor(Color.WHITE);
         return toast;
+    }
+
+    /**
+     * 当前Android系统版本是否在Android5.0或者之上
+     * @author tiger
+     * @update 2016/2/27 9:21
+     * @version 1.0.0
+     */
+    public static boolean hasSdkV21() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
+    }
+    
+    /**
+     * 当前Android系统版本是否在Android6.0或者之上
+     * @author tiger
+     * @update 2016/2/27 15:59
+     * @version 1.0.0
+     */
+    public static boolean hasSdkV23() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
+    }
+
+
+    /**
+     * 获取默认名称的SharedPreferences
+     * @author tiger
+     * @update 2016/2/28 12:16
+     * @version 1.0.0
+     */
+    public static  SharedPreferences getDefaultPreferences(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context);
     }
 }

@@ -9,4 +9,7 @@
     <color name="control_color">#20000000</color>
     
     <color name="text_color">#de000000</color>
+
+    <color name="colorButtonControl">#ffffff</color>
+
 </resources>
