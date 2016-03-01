@@ -74,11 +74,16 @@ public class MainActivity extends BaseActivity {
     /**
      * 显示的是否是网格风格
      */
-    private boolean mIsGridStyle;
+    private boolean mIsGridStyle = true;
 
     private LayoutManagerFactory mLayoutManagerFactory;
 
     private RecyclerView.ItemDecoration mItemDecoration;
+    
+    /*
+    主界面更多菜单
+     */
+    private MenuItem mActionOverflow;
     
     private final Handler mHandler = new MyHandler(this);
 
@@ -99,7 +104,8 @@ public class MainActivity extends BaseActivity {
                         break;
                     case Constants.MSG_SUCCESS2:    //笔记内容加载成功
                         target.mRefresher.setRefreshing(false);
-                        target.mNoteListAdapter.notifyDataSetChanged();
+                        target.setShowContentStyle(target.mIsGridStyle, false);
+                        
                         break;
                 }
             }
@@ -140,15 +146,20 @@ public class MainActivity extends BaseActivity {
         //初始化下拉刷新界面
         mRefresher = (SwipeRefreshLayout) findViewById(R.id.refresher);
 
+        mNotes = new ArrayList<>();
         mLayoutManagerFactory = new LayoutManagerFactory();
         mRecyclerView = (RecyclerView) findViewById(R.id.lv_data);
-        mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, false));
-        mItemDecoration = getItemDecoration(this);
-        mRecyclerView.addItemDecoration(mItemDecoration);
-//        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        mNotes = new ArrayList<>();
-        mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
-        mRecyclerView.setAdapter(mNoteListAdapter);
+        mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, mIsGridStyle));
+        if (!mIsGridStyle) {    //开始显示列表样式
+            mItemDecoration = getItemDecoration(this);
+            mRecyclerView.addItemDecoration(mItemDecoration);
+
+            mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
+            mRecyclerView.setAdapter(mNoteListAdapter);
+        } else {
+            mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
+            mRecyclerView.setAdapter(mNoteGridAdapter);
+        }
 
         //初始化左侧导航菜单
         RecyclerView navigationView = (RecyclerView) findViewById(R.id.nav_view);
@@ -329,6 +340,14 @@ public class MainActivity extends BaseActivity {
             if (mMainPopuMenu == null) {
                 mMainPopuMenu = new PopupMenu(mContext, auchor);
                 mMainPopuMenu.inflate(R.menu.activity_main_drawer);
+                if (!mIsGridStyle) {    //开始就显示列表，则菜单为网格
+                    Menu menu = mMainPopuMenu.getMenu();
+                    MenuItem menuItem = menu.getItem(R.id.nav_show_style);
+                    if (menuItem != null) {
+                        menuItem.setTitle(R.string.action_show_grid);
+                        menuItem.setIcon(R.drawable.ic_action_grid);
+                    }
+                }
 
                 try {
                     Field field = mMainPopuMenu.getClass().getDeclaredField("mPopup");
@@ -365,16 +384,16 @@ public class MainActivity extends BaseActivity {
                                                 mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
                                             }
                                             mRecyclerView.setAdapter(mNoteGridAdapter);
-                                            item.setTitle(R.string.action_show_grid);
-                                            item.setIcon(R.drawable.ic_action_grid);
+                                            item.setTitle(R.string.action_show_list);
+                                            item.setIcon(R.drawable.ic_action_view_list);
                                         } else {    //列表样式
                                             mRecyclerView.addItemDecoration(getItemDecoration(mContext));
                                             if (mNoteListAdapter == null) {
                                                 mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
                                             }
                                             mRecyclerView.setAdapter(mNoteListAdapter);
-                                            item.setTitle(R.string.action_show_list);
-                                            item.setIcon(R.drawable.ic_action_view_list);
+                                            item.setTitle(R.string.action_show_grid);
+                                            item.setIcon(R.drawable.ic_action_grid);
                                         }
 
                                     }
@@ -394,6 +413,42 @@ public class MainActivity extends BaseActivity {
             return mMainPopuMenu;
         } else {
             return null;
+        }
+    }
+    
+    /**
+     * 根据不同的显示方式来显示不同的样式
+     * @param isGridStyle 是否是网格显示样式
+     * @param resetAdapter 是否重新设置adapter，如果不重新设置，则只是adapter的更新                   
+     * @author huanghui1
+     * @update 2016/3/1 11:45
+     * @version: 1.0.0
+     */
+    private void setShowContentStyle(boolean isGridStyle, boolean resetAdapter) {
+        if (isGridStyle) { //显示成网格样式
+            if (mItemDecoration != null) {
+                mRecyclerView.removeItemDecoration(mItemDecoration);
+            }
+            if (mNoteGridAdapter == null) {
+                mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
+                resetAdapter = true;
+            }
+            if (resetAdapter) {
+                mRecyclerView.setAdapter(mNoteGridAdapter);
+            } else {
+                mNoteGridAdapter.notifyDataSetChanged();
+            }
+        } else {    //列表样式
+            mRecyclerView.addItemDecoration(getItemDecoration(mContext));
+            if (mNoteListAdapter == null) {
+                mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
+                resetAdapter = true;
+            }
+            if (resetAdapter) {
+                mRecyclerView.setAdapter(mNoteListAdapter);
+            } else {
+                mNoteListAdapter.notifyDataSetChanged();
+            }
         }
     }
 

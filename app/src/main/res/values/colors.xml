@@ -11,5 +11,11 @@
     <color name="text_color">#de000000</color>
 
     <color name="colorButtonControl">#ffffff</color>
+    
+    <color name="text_title_color">#323232</color>
+    
+    <color name="text_content_color">#999999</color>
+    
+    <color name="text_time_color">#CCCCCC</color>
 
 </resources>

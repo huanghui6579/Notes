@@ -11,9 +11,9 @@ import android.support.v7.widget.RecyclerView;
  * @update 2016/2/28 13:48
  */
 public class LayoutManagerFactory {
-    private LinearLayoutManager mLinearLayoutManager;
+    private RecyclerView.LayoutManager mLinearLayoutManager;
 
-    private GridLayoutManager mGridLayoutManager;
+    private RecyclerView.LayoutManager mGridLayoutManager;
 
     /**
      * 默认表格每列显示的项数，默认是2
