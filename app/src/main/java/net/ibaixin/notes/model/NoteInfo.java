@@ -1,4 +1,4 @@
-package ibaixin.net.notes.model;
+package net.ibaixin.notes.model;
 
 /**
  * 记事本的基本信息实体

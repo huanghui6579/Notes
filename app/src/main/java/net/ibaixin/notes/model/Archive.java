@@ -1,4 +1,4 @@
-package ibaixin.net.notes.model;
+package net.ibaixin.notes.model;
 
 /**
  * 笔记的分类文件夹

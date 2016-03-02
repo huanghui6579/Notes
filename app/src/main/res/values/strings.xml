@@ -3,6 +3,8 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+    
+    <string name="note_edit_hint">输入文本内容</string>
 
     <string name="no_data">无数据</string>
 
@@ -17,4 +19,15 @@
     <string name="action_show_list">列表</string>
     <string name="action_upload">同步</string>
     <string name="action_sort">排序</string>
+    <string name="action_attach">附件</string>
+    <string name="action_camera">相机</string>
+    <string name="action_photo">图片</string>
+    <string name="action_voice">录音</string>
+    <string name="action_write">手写</string>
+    <string name="action_brush">涂鸦</string>
+    <string name="action_remind">提醒</string>
+    <string name="action_detailed_list">清单</string>
+    <string name="action_share">分享</string>
+    <string name="action_info">详情</string>
+    <string name="action_delete">删除</string>
 </resources>

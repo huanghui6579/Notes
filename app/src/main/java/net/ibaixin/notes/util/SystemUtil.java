@@ -1,4 +1,4 @@
-package ibaixin.net.notes.util;
+package net.ibaixin.notes.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -9,11 +9,11 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import net.ibaixin.notes.NoteApplication;
+import net.ibaixin.notes.R;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import ibaixin.net.notes.NoteApplication;
-import ibaixin.net.notes.R;
 
 /**
  * @author huanghui1
@@ -132,5 +132,19 @@ public class SystemUtil {
      */
     public static  SharedPreferences getDefaultPreferences(Context context) {
         return PreferenceManager.getDefaultSharedPreferences(context);
+    }
+    
+    /**
+     * 获取资源中的颜色
+     * @author huanghui1
+     * @update 2016/3/2 16:11
+     * @version: 1.0.0
+     */
+    public static int getColor(Context context, int colorResId) {
+        if (hasSdkV23()) {
+            return context.getColor(colorResId);
+        } else {
+            return context.getResources().getColor(colorResId);
+        }
     }
 }

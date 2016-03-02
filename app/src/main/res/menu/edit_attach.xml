@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_photo"
+        android:icon="@drawable/ic_action_photo"
+        android:title="@string/action_photo"/>
+    <item
+        android:id="@+id/action_voice"
+        android:icon="@drawable/ic_action_voice"
+        android:title="@string/action_voice"/>
+    <item
+        android:id="@+id/action_write"
+        android:icon="@drawable/ic_action_border"
+        android:title="@string/action_write"/>
+    <item
+        android:id="@+id/action_brush"
+        android:icon="@drawable/ic_action_brush"
+        android:title="@string/action_brush"/>
+    <item
+        android:id="@+id/action_file"
+        android:icon="@drawable/ic_action_insert_file"
+        android:title="@string/action_attach"/>
+</menu>

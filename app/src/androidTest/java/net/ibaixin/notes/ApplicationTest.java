@@ -1,4 +1,4 @@
-package ibaixin.net.notes;
+package net.net.notes;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

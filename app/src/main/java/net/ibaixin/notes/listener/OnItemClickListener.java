@@ -1,4 +1,4 @@
-package ibaixin.net.notes.listener;
+package net.ibaixin.notes.listener;
 
 import android.view.View;
 
