@@ -1,4 +1,4 @@
-package ibaixin.net.notes.util;
+package net.ibaixin.notes.util;
 
 /**
  * @author huanghui1

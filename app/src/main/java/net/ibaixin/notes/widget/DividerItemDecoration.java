@@ -1,4 +1,4 @@
-package ibaixin.net.notes.widget;
+package net.ibaixin.notes.widget;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -9,7 +9,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
-import ibaixin.net.notes.util.SystemUtil;
+import net.ibaixin.notes.util.SystemUtil;
 
 /*
  * Copyright (C) 2014 The Android Open Source Project

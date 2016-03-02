@@ -1,4 +1,4 @@
-package ibaixin.net.notes;
+package net.ibaixin.notes;
 
 import android.app.Application;
 

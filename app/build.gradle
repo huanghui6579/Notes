@@ -3,31 +3,43 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         debug {
-            storeFile file('F:/AndroidStudioProjects/Notes/app/doc/debug.keystore-platform')
+            storeFile file('E:/AndroidStudioProject/Notes/app/doc/debug.keystore-platform')
         }
     }
     compileSdkVersion 23
     buildToolsVersion "23.0.2"
     defaultConfig {
-        applicationId "ibaixin.net.notes"
+        applicationId 'net.ibaixin.notes'
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
+        
     }
     buildTypes {
+        def BOOLEAN = "boolean"
+        def INT = "int"
+        def TRUE = "true"
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField(BOOLEAN, "LOG_ENABLE", TRUE)
+            buildConfigField(INT, "LOG_TO_FILE_LEVEL", "5")
+            buildConfigField(INT, "LOG_TO_CONSOLE_LEVEL", "6")
         }
         debug {
             signingConfig signingConfigs.debug
+            buildConfigField(BOOLEAN, "LOG_ENABLE", TRUE)
+            buildConfigField(INT, "LOG_TO_FILE_LEVEL", "5")
+            buildConfigField(INT, "LOG_TO_CONSOLE_LEVEL", "2")
         }
+    }
+    productFlavors {
     }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'

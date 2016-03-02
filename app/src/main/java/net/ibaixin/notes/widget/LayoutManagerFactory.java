@@ -1,4 +1,4 @@
-package ibaixin.net.notes.widget;
+package net.ibaixin.notes.widget;
 
 import android.content.Context;
 import android.support.v7.widget.GridLayoutManager;

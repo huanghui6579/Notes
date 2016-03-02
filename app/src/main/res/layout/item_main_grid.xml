@@ -7,7 +7,7 @@
     android:foreground="@drawable/common_background_selector"
     android:clickable="true"
     app:cardElevation="@dimen/design_appbar_elevation">
-    <ibaixin.net.notes.widget.SquareRelativeLayout
+    <net.ibaixin.notes.widget.SquareRelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <ImageView
@@ -71,6 +71,6 @@
             android:text="测试内容的摘要一个强大的滑动组件，与经典的ListView相比，同样拥有item回收复用测试内容的摘要一个强大的滑动组件，与经典的ListView相比，同样拥有item回收复用测试内容的摘要一个强大的滑动组件，与经典的ListView相比，同样拥有item回收复用"/>
         
 
-    </ibaixin.net.notes.widget.SquareRelativeLayout>
+    </net.ibaixin.notes.widget.SquareRelativeLayout>
 
 </android.support.v7.widget.CardView>

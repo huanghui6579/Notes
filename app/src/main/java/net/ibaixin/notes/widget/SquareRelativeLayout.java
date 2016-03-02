@@ -1,4 +1,4 @@
-package ibaixin.net.notes.widget;
+package net.ibaixin.notes.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;

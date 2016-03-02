@@ -1,4 +1,4 @@
-package ibaixin.net.notes.widget;
+package net.ibaixin.notes.widget;
 
 /**
  * 菜单
