@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 
+def LOG_TO_FILE_LEVEL = "ERROR"
+
 android {
     signingConfigs {
         debug {
@@ -14,24 +16,27 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
-        
+        buildConfigField("boolean", "LOG_TO_FILE_ENABLE", "true")
+        buildConfigField("boolean", "LOG_ENABLE", "true")
+        buildConfigField("String", "LOG_TO_FILE_LEVEL", "\"${LOG_TO_FILE_LEVEL}\"")
+        //VERBOSE(2, "V"),
+        //DEBUG(3, "D"),
+        //INFO(4, "I"),
+        //WARN(5, "W"),
+        //ERROR(6, "E"),
+        //ASSERT(7, "A");
     }
     buildTypes {
         def BOOLEAN = "boolean"
-        def INT = "int"
-        def TRUE = "true"
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            buildConfigField(BOOLEAN, "LOG_ENABLE", TRUE)
-            buildConfigField(INT, "LOG_TO_FILE_LEVEL", "5")
-            buildConfigField(INT, "LOG_TO_CONSOLE_LEVEL", "6")
+            buildConfigField(BOOLEAN, "LOG_TO_CONSOLE_ENABLE", "false")
+            
         }
         debug {
             signingConfig signingConfigs.debug
-            buildConfigField(BOOLEAN, "LOG_ENABLE", TRUE)
-            buildConfigField(INT, "LOG_TO_FILE_LEVEL", "5")
-            buildConfigField(INT, "LOG_TO_CONSOLE_LEVEL", "2")
+            buildConfigField(BOOLEAN, "LOG_TO_CONSOLE_ENABLE", "true")
         }
     }
     productFlavors {

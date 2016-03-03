@@ -1,7 +1,10 @@
 package net.ibaixin.notes.util.log;
 
 import android.text.TextUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 /**
  * Decide the format of log will be written to the file.
@@ -23,17 +26,18 @@ public abstract class LogFormatter {
      * Eclipse Style
      */
     public static class EclipseFormatter extends LogFormatter{
-        private final FastDateFormat formatter;
+        private final DateFormat formatter;
 
         public EclipseFormatter(){
-            formatter = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSSZ");
+            DateFormat.getInstance();
+            formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ", Locale.getDefault());
         }
 
         public EclipseFormatter(String formatOfTime){
             if (TextUtils.isEmpty(formatOfTime)){
-                formatter = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSSZ");
+                formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ", Locale.getDefault());
             }else{
-                formatter = FastDateFormat.getInstance(formatOfTime);
+                formatter = new SimpleDateFormat(formatOfTime, Locale.getDefault());
             }
         }
 
@@ -68,17 +72,17 @@ public abstract class LogFormatter {
      * IDEA Style
      */
     public static class IDEAFormatter extends LogFormatter{
-        private final FastDateFormat formatter;
+        private final DateFormat formatter;
 
         public IDEAFormatter(){
-            formatter = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSSZ");
+            formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ", Locale.getDefault());
         }
 
         public IDEAFormatter(String formatOfTime){
             if (TextUtils.isEmpty(formatOfTime)){
-                formatter = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss.SSSZ");
+                formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ", Locale.getDefault());
             }else{
-                formatter = FastDateFormat.getInstance(formatOfTime);
+                formatter = new SimpleDateFormat(formatOfTime, Locale.getDefault());
             }
         }
 

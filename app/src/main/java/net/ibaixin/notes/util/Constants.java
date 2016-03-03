@@ -6,6 +6,11 @@ package net.ibaixin.notes.util;
  * @version: 0.0.1
  */
 public class Constants {
+    public static final String APP_ROOT_NAME = "IbaiXinNotes";
+    public static final String LOG_SUBFFIX = ".log";
+    public static final String LOG_DIR = "log";
+    
     public static final int MSG_SUCCESS = 1;
     public static final int MSG_SUCCESS2 = 2;
+    
 }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.TextView;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
 
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -145,6 +147,82 @@ public class SystemUtil {
             return context.getColor(colorResId);
         } else {
             return context.getResources().getColor(colorResId);
+        }
+    }
+    
+    /**
+     * 判断sd卡是否可用
+     * @author huanghui1
+     * @update 2016/3/3 10:38
+     * @version: 1.0.0
+     */
+    public static boolean isSDCardAvailable() {
+        return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
+    }
+    
+    /**
+     * 判断sd卡是否可写
+     * @author huanghui1
+     * @update 2016/3/3 10:47
+     * @version: 1.0.0
+     */
+    public static boolean isSDCardWriteable() {
+        boolean isWriteable = false;
+        if (isSDCardAvailable()) {
+            if (!Environment.MEDIA_MOUNTED_READ_ONLY.equals(Environment.getExternalStorageState())) {    //可写
+                isWriteable = true;
+            }
+        }
+        return isWriteable;
+    }
+    
+    /**
+     * 获取应用程序的根目录
+     * @author huanghui1
+     * @update 2016/3/3 10:33
+     * @version: 1.0.0
+     */
+    public static File getAppRootDir() {
+        File root = null;
+        if (isSDCardAvailable()) {  //内存卡可用
+            File dir = Environment.getExternalStorageDirectory();
+            if (isSDCardWriteable()) {
+                root = new File(dir, Constants.APP_ROOT_NAME);
+                if (!root.exists()) {
+                    root.mkdirs();
+                }
+            }
+        }
+        return root;
+    }
+    
+    /**
+     * 获取应用程序的根目录
+     * @author huanghui1
+     * @update 2016/3/3 10:54
+     * @version: 1.0.0
+     */
+    public static String getAppRootPath() {
+        File file = getAppRootDir();
+        if (file != null) {
+            return file.getAbsolutePath();
+        } else {
+            return null;
+        }
+    }
+    
+    /**
+     * 获取日志的路径,默认为/sdcard/IbaixinNotes/log/
+     * @author huanghui1
+     * @update 2016/3/3 10:58
+     * @version: 1.0.0
+     */
+    public static String getLogPath() {
+        String rootPath = getAppRootPath();
+        if (rootPath != null) {
+            return rootPath + File.separator + Constants.LOG_DIR;
+        } else {
+            return null;
         }
     }
 }
