@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <!-- 读SDCard数据权限 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
         android:name="net.ibaixin.notes.NoteApplication"
@@ -25,7 +27,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name="net.ibaixin.notes.ui.NoteEditActivity">
+        <activity android:name="net.ibaixin.notes.ui.NoteEditActivity"
+            android:windowSoftInputMode="adjustResize">
         </activity>
     </application>
 

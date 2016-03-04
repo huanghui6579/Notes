@@ -3,9 +3,14 @@ package net.ibaixin.notes.ui;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.widget.PopupMenu;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewStub;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import net.ibaixin.notes.R;
 
@@ -18,10 +23,16 @@ import java.lang.ref.WeakReference;
  * @version: 1.0.0
  */
 public class NoteEditActivity extends BaseActivity {
+    
+    private static final int MSG_INIT_BOOTOM_TOOL_BAR = 1;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mCameraPopu;
     private PopupMenu mOverflowPopu;
+    
+    private EditText mEtContent;
+    
+    private TextView mToolbarTitleView;
     
     private Handler mHandler = new MyHandler(this);
     
@@ -35,10 +46,42 @@ public class NoteEditActivity extends BaseActivity {
         @Override
         public void handleMessage(Message msg) {
             NoteEditActivity activity = mTarget.get();
+            switch (msg.what) {
+                case MSG_INIT_BOOTOM_TOOL_BAR:
+                    ViewStub viewStub = (ViewStub) activity.findViewById(R.id.bottom_tool_bar);
+                    viewStub.inflate();
+                    break;
+            }
             super.handleMessage(msg);
         }
     }
+
+    private void setCustomTitle(CharSequence title, int iconResId) {
+        if (!TextUtils.isEmpty(title)) {
+            if (mToolbarTitleView == null) {
+                LayoutInflater inflater = LayoutInflater.from(this);
+                mToolbarTitleView = (TextView) inflater.inflate(R.layout.edit_custom_title, null);
+            }
+            if (mToolBar != mToolbarTitleView.getParent()) {
+                mToolBar.addView(mToolbarTitleView);
+            }
+            mToolbarTitleView.setText(title);
+
+        } else {
+            if (mToolbarTitleView != null) {
+                mToolBar.removeView(mToolbarTitleView);
+            }
+        }
+    }
     
+    @Override
+    protected void initToolBar() {
+        super.initToolBar();
+        CharSequence title = getTitle();
+        setTitle(null);
+        setCustomTitle(title, 0);
+    }
+
     @Override
     protected int getContentView() {
         return R.layout.activity_note_edit;
@@ -51,7 +94,8 @@ public class NoteEditActivity extends BaseActivity {
 
     @Override
     protected void initView() {
-
+        mEtContent = (EditText) findViewById(R.id.et_content);
+        mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
     }
 
     @Override

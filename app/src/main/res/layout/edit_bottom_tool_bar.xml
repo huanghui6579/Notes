@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent">
+
+    <ImageView
+        android:id="@+id/iv_undo"
+        style="@style/EditBottomToolBarStyle"
+        android:src="@drawable/ic_content_undo"/>
+
+    <ImageView
+        android:id="@+id/iv_redo"
+        style="@style/EditBottomToolBarStyle"
+        android:src="@drawable/ic_content_redo"/>
+
+    <ImageView
+        android:id="@+id/iv_list"
+        style="@style/EditBottomToolBarStyle"
+        android:src="@drawable/ic_content_format_list"/>
+
+    <ImageView
+        android:id="@+id/iv_time"
+        style="@style/EditBottomToolBarStyle"
+        android:src="@drawable/ic_content_time"/>
+
+    <ImageView
+        android:id="@+id/iv_contact"
+        style="@style/EditBottomToolBarStyle"
+        android:src="@drawable/ic_content_person_add"/>
+
+    <ImageView
+        android:id="@+id/iv_down"
+        style="@style/EditBottomToolBarStyle"
+        android:src="@drawable/ic_content_arrow_down"/>
+
+</LinearLayout>

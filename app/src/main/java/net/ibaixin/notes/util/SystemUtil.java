@@ -23,6 +23,8 @@ import java.util.concurrent.Executors;
  * @version: 0.0.1
  */
 public class SystemUtil {
+    
+    private static final String TAG = SystemUtil.class.getSimpleName();
 
     private static ExecutorService cachedThreadPool = null;//可缓存的线程池
     
@@ -225,4 +227,5 @@ public class SystemUtil {
             return null;
         }
     }
+    
 }
