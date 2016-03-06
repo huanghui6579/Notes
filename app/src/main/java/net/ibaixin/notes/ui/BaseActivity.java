@@ -61,6 +61,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
+                beforeBack();
                 onBack();
                 break;
         }
@@ -75,6 +76,16 @@ public abstract class BaseActivity extends AppCompatActivity {
      */
     protected void onBack() {
         finish();
+    }
+    
+    /**
+     * 界面返回前的操作
+     * @author tiger
+     * @update 2016/3/5 15:09
+     * @version 1.0.0
+     */
+    protected void beforeBack() {
+        
     }
     
     /**

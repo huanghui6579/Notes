@@ -5,7 +5,7 @@ def LOG_TO_FILE_LEVEL = "ERROR"
 android {
     signingConfigs {
         debug {
-            storeFile file('E:/AndroidStudioProject/Notes/app/doc/debug.keystore-platform')
+            storeFile file('F:/AndroidStudioProjects/Notes/app/doc/debug.keystore-platform')
         }
     }
     compileSdkVersion 23

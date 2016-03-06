@@ -3,6 +3,7 @@ package net.ibaixin.notes.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -127,6 +128,16 @@ public class SystemUtil {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
     }
 
+    /**
+     * 当前Android系统版本是否在Android4.1或者之上
+     * @author tiger
+     * @update 2016/3/5 8:06
+     * @version 1.0.0
+     */
+    public static boolean hasSdkV16() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
+    }
+
 
     /**
      * 获取默认名称的SharedPreferences
@@ -151,7 +162,21 @@ public class SystemUtil {
             return context.getResources().getColor(colorResId);
         }
     }
-    
+
+    /**
+     * 设置背景图片
+     * @author tiger
+     * @update 2016/3/5 8:05
+     * @version 1.0.0
+     */
+    public static void setBrackground(View view, Drawable drawable) {
+        if (hasSdkV16()) {
+            view.setBackground(drawable);
+        } else {
+            view.setBackgroundDrawable(drawable);
+        }
+    }
+
     /**
      * 判断sd卡是否可用
      * @author huanghui1
