@@ -90,6 +90,11 @@ public final class Provider {
          * 之前的笔记内容
          */
         public static final String OLD_CONTENT = "old_content";
+
+        /**
+         * 默认时间降序排列
+         */
+        public static final String DEFAULT_SORT = MODIFY_TIME + " desc";
     }
 
     /**
@@ -330,6 +335,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class UserColumns implements BaseColumns {
+
+        /**
+         * 用户名索引
+         */
+        public static final String USERNAME_IDX = "username_idx";
+
         public static final String TABLE_NAME = "user";
 
         /**

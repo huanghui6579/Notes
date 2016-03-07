@@ -10,9 +10,40 @@ public class NoteInfo {
     private int id;
 
     /**
+     * 实际唯一标识
+     */
+    private String sId;
+
+    /**
+     * 对应的用户id
+     */
+    private int userId;
+
+    /**
      * 文本内容
      */
     private String content;
+
+    /**
+     * 提醒的id
+     */
+    private int remindId;
+
+    /**
+     * 提醒的时间
+     */
+    private long remindTime;
+
+    /**
+     * 文件夹的id
+     */
+    private String folderId;
+
+    /**
+     * 笔记的类型，主要分为{@link net.ibaixin.notes.model.NoteInfo.NoteKind#TEXT}和{@link net.ibaixin.notes.model.NoteInfo.NoteKind#DETAILED_LIST}
+     */
+    private NoteKind mKind;
+
 
     /**
      * 摘要
@@ -28,6 +59,23 @@ public class NoteInfo {
      * 修改时间
      */
     private long modifyTime;
+    
+    /**
+     * 笔记的类型，主要分为文本笔记和清单笔记
+     * @author tiger
+     * @update 2016/3/7 21:44
+     * @version 1.0.0
+     */
+    enum NoteKind {
+        /**
+         * 文本笔记
+         */
+        TEXT,
+        /**
+         * 清单笔记
+         */
+        DETAILED_LIST;
+    }
 
     public int getId() {
         return id;

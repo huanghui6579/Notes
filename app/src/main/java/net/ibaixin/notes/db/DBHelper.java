@@ -151,6 +151,13 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(" on ").append(Provider.DetailedListColumns.TABLE_NAME)
                 .append("(").append(Provider.DetailedListColumns.SID).append(");");
         db.execSQL(builder.toString());
+
+        //创建用户名的索引
+        builder = new StringBuilder();
+        builder.append("CREATE UNIQUE INDEX IF NOT EXISTS ").append(Provider.UserColumns.USERNAME_IDX)
+                .append(" on ").append(Provider.UserColumns.TABLE_NAME)
+                .append("(").append(Provider.UserColumns.USERNAME).append(");");
+        db.execSQL(builder.toString());
     }
 
     @Override
@@ -163,6 +170,8 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL("DROP INDEX IF EXISTS " + Provider.AttachmentColumns.ATTACH_ID_IDX);
         //删除清单的sid索引
         db.execSQL("DROP INDEX IF EXISTS " + Provider.DetailedListColumns.DETAILEDLIST_ID_IDX);
+        //删除用户名的索引
+        db.execSQL("DROP INDEX IF EXISTS " + Provider.UserColumns.USERNAME_IDX);
 
         db.execSQL("DROP TABLE IF EXISTS " + Provider.NoteColumns.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + Provider.FolderColumns.TABLE_NAME);
