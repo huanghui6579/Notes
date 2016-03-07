@@ -25,7 +25,7 @@ public class DBHelper extends SQLiteOpenHelper {
         builder.append("CREATE TABLE ").append(Provider.NoteColumns.TABLE_NAME).append(" (")
                 .append(Provider.NoteColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
                 .append(Provider.NoteColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
-                .append(Provider.NoteColumns.USER_ID).append(" INTEGER, ")
+                .append(Provider.NoteColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
                 .append(Provider.NoteColumns.CONTENT).append(" TEXT, ")
                 .append(Provider.NoteColumns.REMIND_ID).append(" INTEGER, ")
                 .append(Provider.NoteColumns.REMIND_TIME).append(" INTEGER, ")
@@ -39,12 +39,139 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.NoteColumns.OLD_CONTENT).append(" TEXT);");
         db.execSQL(builder.toString());
 
+        //创建文件夹表
         builder = new StringBuilder();
+        builder.append("CREATE TABLE ").append(Provider.FolderColumns.TABLE_NAME).append(" (")
+                .append(Provider.FolderColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
+                .append(Provider.FolderColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.FolderColumns.DEFAULT_FOLDER).append(" INTEGER, ")
+                .append(Provider.FolderColumns.IS_HIDDEN).append(" INTEGER, ")
+                .append(Provider.FolderColumns.IS_LOCK).append(" INTEGER, ")
+                .append(Provider.FolderColumns.NAME).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.FolderColumns.SORT).append(" INTEGER AUTOINCREMENT, ")
+                .append(Provider.FolderColumns.SYNC_STATE).append(" INTEGER, ")
+                .append(Provider.FolderColumns.DELETE_STATE).append(" INTEGER, ")
+                .append(Provider.FolderColumns.CREATE_TIME).append(" INTEGER, ")
+                .append(Provider.FolderColumns.MODIFY_TIME).append(" INTEGER, ")
+                .append(Provider.FolderColumns._COUNT).append(" INTEGER);");
+        db.execSQL(builder.toString());
 
+        //创建附件表
+        builder = new StringBuilder();
+        builder.append("CREATE TABLE ").append(Provider.AttachmentColumns.TABLE_NAME).append(" (")
+                .append(Provider.AttachmentColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
+                .append(Provider.AttachmentColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.AttachmentColumns.NOTE_ID).append(" INTEGER NOT NULL, ")
+                .append(Provider.AttachmentColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
+                .append(Provider.AttachmentColumns.FILE_NAME).append(" TEXT, ")
+                .append(Provider.AttachmentColumns.LOCAL_PATH).append(" TEXT, ")
+                .append(Provider.AttachmentColumns.DECRIPTION).append(" TEXT, ")
+                .append(Provider.AttachmentColumns.SERVER_PATH).append(" TEXT, ")
+                .append(Provider.AttachmentColumns.SYNC_STATE).append(" INTEGER, ")
+                .append(Provider.AttachmentColumns.DELETE_STATE).append(" INTEGER, ")
+                .append(Provider.AttachmentColumns.CREATE_TIME).append(" INTEGER, ")
+                .append(Provider.AttachmentColumns.MODIFY_TIME).append(" INTEGER, ")
+                .append(Provider.AttachmentColumns.SIZE).append(" INTEGER); ");
+        db.execSQL(builder.toString());
+
+        //创建手写、涂鸦表
+        builder = new StringBuilder();
+        builder.append("CREATE TABLE ").append(Provider.HandWriteColumns.TABLE_NAME).append(" (")
+                .append(Provider.HandWriteColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
+                .append(Provider.HandWriteColumns.ATTACH_ID).append(" INTEGER UNIQUE, ")
+                .append(Provider.HandWriteColumns.LOCAL_PATH).append(" TEXT, ")
+                .append(Provider.HandWriteColumns.SIZE).append(" INTEGER, ")
+                .append(Provider.HandWriteColumns.CREATE_TIME).append(" INTEGER, ")
+                .append(Provider.HandWriteColumns.MODIFY_TIME).append(" INTEGER); ");
+        db.execSQL(builder.toString());
+
+        //创建清单表
+        builder = new StringBuilder();
+        builder.append("CREATE TABLE ").append(Provider.DetailedListColumns.TABLE_NAME).append(" (")
+                .append(Provider.DetailedListColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
+                .append(Provider.DetailedListColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.DetailedListColumns.NOTE_ID).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.DetailedListColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
+                .append(Provider.DetailedListColumns.TITLE).append(" TEXT, ")
+                .append(Provider.DetailedListColumns.CHECKED).append(" INTEGER, ")
+                .append(Provider.DetailedListColumns.SORT).append(" INTEGER, ")
+                .append(Provider.DetailedListColumns.SYNC_STATE).append(" INTEGER, ")
+                .append(Provider.DetailedListColumns.DELETE_STATE).append(" INTEGER, ")
+                .append(Provider.DetailedListColumns.TITLE_OLD).append(" TEXT, ")
+                .append(Provider.DetailedListColumns.CREATE_TIME).append(" INTEGER, ")
+                .append(Provider.DetailedListColumns.MODIFY_TIME).append(" INTEGER); ");
+        db.execSQL(builder.toString());
+
+        //创建提醒表
+        builder = new StringBuilder();
+        builder.append("CREATE TABLE ").append(Provider.RemindersColumns.TABLE_NAME).append(" (")
+                .append(Provider.RemindersColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
+                .append(Provider.RemindersColumns.REMIND_TIME).append(" INTEGER, ")
+                .append(Provider.RemindersColumns.IS_REMINDED).append(" INTEGER, ")
+                .append(Provider.RemindersColumns.CREATE_TIME).append(" INTEGER, ")
+                .append(Provider.RemindersColumns.MODIFY_TIME).append(" INTEGER); ");
+        db.execSQL(builder.toString());
+
+        //创建用户表
+        builder = new StringBuilder();
+        builder.append("CREATE TABLE ").append(Provider.UserColumns.TABLE_NAME).append(" (")
+                .append(Provider.UserColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
+                .append(Provider.UserColumns.USERNAME).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.UserColumns.PASSWORD).append(" TEXT NOT NULL, ")
+                .append(Provider.UserColumns.ACCESS_TOKEN).append(" TEXT, ")
+                .append(Provider.UserColumns.CREATE_TIME).append(" INTEGER, ")
+                .append(Provider.UserColumns.MODIFY_TIME).append(" INTEGER), ")
+                .append(Provider.UserColumns.LAST_SYNC_TIME).append(" INTEGER); ");
+        db.execSQL(builder.toString());
+
+        //创建笔记的sid索引
+        builder = new StringBuilder();
+        builder.append("CREATE UNIQUE INDEX IF NOT EXISTS ").append(Provider.NoteColumns.NOTE_ID_IDX)
+                .append(" on ").append(Provider.NoteColumns.TABLE_NAME)
+                .append("(").append(Provider.NoteColumns.SID).append(");");
+        db.execSQL(builder.toString());
+
+        //创建文件夹的sid索引
+        builder = new StringBuilder();
+        builder.append("CREATE UNIQUE INDEX IF NOT EXISTS ").append(Provider.FolderColumns.FOLDER_ID_IDX)
+                .append(" on ").append(Provider.FolderColumns.TABLE_NAME)
+                .append("(").append(Provider.FolderColumns.SID).append(");");
+        db.execSQL(builder.toString());
+
+        //创建附件的sid索引
+        builder = new StringBuilder();
+        builder.append("CREATE UNIQUE INDEX IF NOT EXISTS ").append(Provider.AttachmentColumns.ATTACH_ID_IDX)
+                .append(" on ").append(Provider.AttachmentColumns.TABLE_NAME)
+                .append("(").append(Provider.AttachmentColumns.SID).append(");");
+        db.execSQL(builder.toString());
+
+        //创建清单的sid索引
+        builder = new StringBuilder();
+        builder.append("CREATE UNIQUE INDEX IF NOT EXISTS ").append(Provider.DetailedListColumns.DETAILEDLIST_ID_IDX)
+                .append(" on ").append(Provider.DetailedListColumns.TABLE_NAME)
+                .append("(").append(Provider.DetailedListColumns.SID).append(");");
+        db.execSQL(builder.toString());
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        //删除note的sid索引
+        db.execSQL("DROP INDEX IF EXISTS " + Provider.NoteColumns.NOTE_ID_IDX);
+        //删除文件夹的sid索引
+        db.execSQL("DROP INDEX IF EXISTS " + Provider.FolderColumns.FOLDER_ID_IDX);
+        //删除附件的sid索引
+        db.execSQL("DROP INDEX IF EXISTS " + Provider.AttachmentColumns.ATTACH_ID_IDX);
+        //删除清单的sid索引
+        db.execSQL("DROP INDEX IF EXISTS " + Provider.DetailedListColumns.DETAILEDLIST_ID_IDX);
 
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.NoteColumns.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.FolderColumns.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.AttachmentColumns.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.DetailedListColumns.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.HandWriteColumns.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.RemindersColumns.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.UserColumns.TABLE_NAME);
+        
+        onCreate(db);
     }
 }

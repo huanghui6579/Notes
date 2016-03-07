@@ -33,6 +33,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class NoteColumns implements BaseColumns, SyncColumns {
+
+        /**
+         * sid的索引
+         */
+        public static final String NOTE_ID_IDX = "note_id_idx";
+        
         public static final String TABLE_NAME = "notes";
 
         /**
@@ -93,6 +99,11 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class FolderColumns implements BaseColumns, SyncColumns {
+        /**
+         * sid的索引
+         */
+        public static final String FOLDER_ID_IDX = "folder_id_idx";
+        
         public static final String TABLE_NAME = "folder";
 
         /**
@@ -139,6 +150,11 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class AttachmentColumns implements BaseColumns, SyncColumns {
+        /**
+         * sid的索引
+         */
+        public static final String ATTACH_ID_IDX = "attach_id_idx";
+        
         public static final String TABLE_NAME = "attachment";
 
         /**
@@ -175,6 +191,16 @@ public final class Provider {
          * 服务器的路径
          */
         public static final String SERVER_PATH = "server_path";
+
+        /**
+         * 创建时间
+         */
+        public static final String CREATE_TIME = "create_time";
+
+        /**
+         * 修改时间
+         */
+        public static final String MODIFY_TIME = "modify_time";
     }
 
     /**
@@ -184,12 +210,22 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class DetailedListColumns implements BaseColumns, SyncColumns {
+        /**
+         * sid的索引
+         */
+        public static final String DETAILEDLIST_ID_IDX = "detailedList_id_idx";
+        
         public static final String TABLE_NAME = "detailed_list_item";
 
         /**
          * 用户的id
          */
-        public static final String user_id = "user_id";
+        public static final String USER_ID = "user_id";
+
+        /**
+         * 笔记的id
+         */
+        public static final String NOTE_ID = "note_id";
 
         /**
          * 清单的标题
@@ -239,7 +275,7 @@ public final class Provider {
         /**
          * 手写文件的本地存储路径
          */
-        public static final String local_path = "local_path";
+        public static final String LOCAL_PATH = "local_path";
 
         /**
          * 涂鸦文件的大小，并非涂鸦后生成的图片

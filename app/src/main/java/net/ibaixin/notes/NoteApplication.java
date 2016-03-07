@@ -2,6 +2,7 @@ package net.ibaixin.notes;
 
 import android.app.Application;
 
+import net.ibaixin.notes.model.User;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.FilePathGenerator;
@@ -15,6 +16,11 @@ import net.ibaixin.notes.util.log.LogFilter;
  */
 public class NoteApplication extends Application {
     private static NoteApplication mInstance;
+
+    /**
+     * 当前登录的账号，如果没有登录，则为空
+     */
+    private User mCurrentUser;
 
     @Override
     public void onCreate() {
