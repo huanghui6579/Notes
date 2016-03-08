@@ -35,6 +35,15 @@ public final class Provider {
     public static final class NoteColumns implements BaseColumns, SyncColumns {
 
         /**
+         * note表改变后更新文件夹的触发器
+         */
+        public static final String EVENT_UPDATE_FOLDER = "event_update_folder";
+        /**
+         * note表添加笔记后更新文件夹的触发器
+         */
+        public static final String EVENT_INSERT_NOTE = "event_insert_note";
+
+        /**
          * sid的索引
          */
         public static final String NOTE_ID_IDX = "note_id_idx";
@@ -62,7 +71,7 @@ public final class Provider {
         public static final String KIND = "kind";
 
         /**
-         * 笔记是否有附件
+         * 笔记是否有附件,0表示没有，1表示有
          */
         public static final String HAS_ATTACH = "has_attach";
 
@@ -92,9 +101,15 @@ public final class Provider {
         public static final String OLD_CONTENT = "old_content";
 
         /**
+         * 文本的hash值
+         */
+        public static final String HASH = "hash";
+        
+        /**
          * 默认时间降序排列
          */
         public static final String DEFAULT_SORT = MODIFY_TIME + " desc";
+
     }
 
     /**
@@ -108,8 +123,13 @@ public final class Provider {
          * sid的索引
          */
         public static final String FOLDER_ID_IDX = "folder_id_idx";
-        
+
         public static final String TABLE_NAME = "folder";
+
+        /**
+         * 用户的id
+         */
+        public static final String USER_ID = "user_id";
 
         /**
          * 文件夹的名称
@@ -117,17 +137,17 @@ public final class Provider {
         public static final String NAME = "name";
 
         /**
-         * 默认选中显示的文件夹
+         * 默认选中显示的文件夹,1为默认选中的，0为没有选中的
          */
         public static final String DEFAULT_FOLDER = "default_folder";
 
         /**
-         * 是否被锁定
+         * 是否被锁定,1表示锁定，0表示没有锁定
          */
         public static final String IS_LOCK = "is_lock";
 
         /**
-         * 是否隐藏的
+         * 是否隐藏的，1表示隐藏，0表示没有隐藏
          */
         public static final String IS_HIDDEN = "is_hidden";
 
@@ -145,6 +165,11 @@ public final class Provider {
          * 修改时间
          */
         public static final String MODIFY_TIME = "modify_time";
+
+        /**
+         * 默认的排序，升序
+         */
+        public static final String DEFAULT_SORT = SORT + " asc";
 
     }
     

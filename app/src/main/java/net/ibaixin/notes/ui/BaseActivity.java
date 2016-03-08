@@ -15,7 +15,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.model.User;
 import net.ibaixin.notes.util.SystemUtil;
 
 import java.lang.reflect.Field;
@@ -31,7 +33,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected Context mContext;
     
     protected Toolbar mToolBar;
-
+    
     /**
      * 是否显示返回箭头
      */
@@ -55,6 +57,16 @@ public abstract class BaseActivity extends AppCompatActivity {
         initView();
 
         initData();
+    }
+    
+    /**
+     * 判断当前用户是否登录
+     * @author huanghui1
+     * @update 2016/3/8 17:27
+     * @version: 1.0.0
+     */
+    protected boolean isLogin() {
+        return ((NoteApplication) getApplication()).getCurrentUser() != null;
     }
 
     @Override
@@ -238,6 +250,17 @@ public abstract class BaseActivity extends AppCompatActivity {
                 actionBar.setDisplayHomeAsUpEnabled(mShowHomeUp);
             }
         }
+    }
+    
+    /**
+     * 获取当前登录的用户
+     * @author huanghui1
+     * @update 2016/3/8 18:14
+     * @version: 1.0.0
+     */
+    protected User getCurrentUser() {
+        NoteApplication app = (NoteApplication) getApplication();
+        return app.getCurrentUser();
     }
     
     /**

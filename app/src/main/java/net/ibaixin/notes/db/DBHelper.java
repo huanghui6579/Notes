@@ -36,6 +36,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.NoteColumns.HAS_ATTACH).append(" INTEGER, ")
                 .append(Provider.NoteColumns.CREATE_TIME).append(" INTEGER, ")
                 .append(Provider.NoteColumns.MODIFY_TIME).append(" INTEGER, ")
+                .append(Provider.NoteColumns.HASH).append(" TEXT, ")
                 .append(Provider.NoteColumns.OLD_CONTENT).append(" TEXT);");
         db.execSQL(builder.toString());
 
@@ -158,6 +159,31 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(" on ").append(Provider.UserColumns.TABLE_NAME)
                 .append("(").append(Provider.UserColumns.USERNAME).append(");");
         db.execSQL(builder.toString());
+        
+        //创建更新文件夹的触发器,当笔记更新时
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER IF NOT EXISTS ").append(Provider.NoteColumns.EVENT_UPDATE_FOLDER)
+                .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
+                .append(" BEGIN UPDATE ").append(Provider.FolderColumns.TABLE_NAME)
+                .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
+                .append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(Provider.FolderColumns._ID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
+                .append("; END;");
+        db.execSQL(builder.toString());
+        
+        //创建添加笔记时的触发器
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER IF NOT EXISTS ").append(Provider.NoteColumns.EVENT_INSERT_NOTE)
+                .append(" AFTER INSERT ON ").append(Provider.NoteColumns.TABLE_NAME)
+                .append(" BEGIN UPDATE ").append(Provider.FolderColumns.TABLE_NAME)
+                .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
+                .append(" = NEW.").append(Provider.FolderColumns.CREATE_TIME)
+                .append(", ").append(Provider.FolderColumns._COUNT).append(" = ").append(Provider.FolderColumns._COUNT + 1)
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(Provider.FolderColumns._ID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
+                .append("; END;");
+        db.execSQL(builder.toString());
     }
 
     @Override
@@ -172,6 +198,12 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL("DROP INDEX IF EXISTS " + Provider.DetailedListColumns.DETAILEDLIST_ID_IDX);
         //删除用户名的索引
         db.execSQL("DROP INDEX IF EXISTS " + Provider.UserColumns.USERNAME_IDX);
+
+        //删除修改笔记后更新文件夹的触发器
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.EVENT_UPDATE_FOLDER);
+        
+        //删除更新笔记后更新文件夹的触发器
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.EVENT_INSERT_NOTE);
 
         db.execSQL("DROP TABLE IF EXISTS " + Provider.NoteColumns.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + Provider.FolderColumns.TABLE_NAME);

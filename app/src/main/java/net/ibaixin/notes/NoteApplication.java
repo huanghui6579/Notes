@@ -52,4 +52,12 @@ public class NoteApplication extends Application {
         Log.setGlobalTag(Constants.APP_ROOT_NAME);
         Log.setFilePathGenerator(new FilePathGenerator.DateFilePathGenerator(SystemUtil.getLogPath(), Constants.LOG_DIR, Constants.LOG_SUBFFIX));
     }
+
+    public User getCurrentUser() {
+        return mCurrentUser;
+    }
+
+    public void setCurrentUser(User currentUser) {
+        this.mCurrentUser = currentUser;
+    }
 }

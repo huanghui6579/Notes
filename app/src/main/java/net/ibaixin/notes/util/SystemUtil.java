@@ -253,4 +253,15 @@ public class SystemUtil {
         }
     }
     
+    /**
+     * 获取默认选中的文件夹
+     * @author huanghui1
+     * @update 2016/3/8 18:05
+     * @version: 1.0.0
+     */
+    public static int getSelectedFolder(Context context) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getInt(Constants.SELECTED_FOLDER_ID, 0);
+    }
+    
 }

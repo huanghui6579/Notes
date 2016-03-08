@@ -26,8 +26,9 @@ import android.widget.TextView;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.listener.OnItemClickListener;
-import net.ibaixin.notes.model.Archive;
+import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
+import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.widget.DividerItemDecoration;
@@ -55,7 +56,7 @@ public class MainActivity extends BaseActivity {
     private NoteListAdapter mNoteListAdapter;
     private NoteGridAdapter mNoteGridAdapter;
 
-    List<Archive> mArchives;
+    List<Folder> mArchives;
     
     private List<NoteInfo> mNotes;
     
@@ -81,6 +82,11 @@ public class MainActivity extends BaseActivity {
     主界面更多菜单
      */
     private MenuItem mActionOverflow;
+
+    /**
+     * 默认选中的文件夹id
+     */
+    private int mSelectedFolderId;
     
     private final Handler mHandler = new MyHandler(this);
 
@@ -164,9 +170,8 @@ public class MainActivity extends BaseActivity {
         RecyclerView navigationView = (RecyclerView) findViewById(R.id.nav_view);
 
         mArchives = new ArrayList<>();
-        Archive archive = new Archive();
-        archive.setName(getString(R.string.default_archive));
-        mArchives.add(archive);
+
+        initFolder();
 
         navigationView.setLayoutManager(new LinearLayoutManager(this));//这里用线性显示 类似于listview
         mNavAdapter = new NavViewAdapter(this, mArchives);
@@ -211,7 +216,7 @@ public class MainActivity extends BaseActivity {
             @Override
             public void run() {
                 for (int i = 0; i < 10; i++) {
-                    Archive archive = new Archive();
+                    Folder archive = new Folder();
                     archive.setName("测试分类" + i);
                     mArchives.add(archive);
                     
@@ -225,6 +230,27 @@ public class MainActivity extends BaseActivity {
             public void run() {
                 mRefresher.setRefreshing(true);
                 mOnRefreshListener.onRefresh();
+            }
+        });
+    }
+    
+    /**
+     * 初始化文件夹
+     * @author huanghui1
+     * @update 2016/3/8 17:38
+     * @version: 1.0.0
+     */
+    private void initFolder() {
+        mSelectedFolderId = SystemUtil.getSelectedFolder(mContext);
+        Folder archive = new Folder();
+        archive.setName(getString(R.string.default_archive));
+        mArchives.add(archive);
+        
+        SystemUtil.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                NoteManager noteManager = NoteManager.getInstance();
+//                noteManager.getAllFolders(getCurrentUser());
             }
         });
     }
@@ -469,12 +495,12 @@ public class MainActivity extends BaseActivity {
     class NavViewAdapter extends RecyclerView.Adapter<NavTextViewHolder> {
         private final LayoutInflater mLayoutInflater;
         private final Context mContext;
-        private List<Archive> mList;
+        private List<Folder> mList;
         private OnItemClickListener mItemClickListener;
         
         private int mSelectedItem = 0;
 
-        public NavViewAdapter(Context context, List<Archive> items) {
+        public NavViewAdapter(Context context, List<Folder> items) {
             mList = items;
             mContext = context;
             mLayoutInflater = LayoutInflater.from(context);
