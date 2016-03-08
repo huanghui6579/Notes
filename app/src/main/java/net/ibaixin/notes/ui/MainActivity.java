@@ -250,7 +250,9 @@ public class MainActivity extends BaseActivity {
             @Override
             public void run() {
                 NoteManager noteManager = NoteManager.getInstance();
-//                noteManager.getAllFolders(getCurrentUser());
+                Bundle args = new Bundle();
+                args.putInt("folderId", mSelectedFolderId);
+                noteManager.getAllFolders(getCurrentUser(), args);
             }
         });
     }

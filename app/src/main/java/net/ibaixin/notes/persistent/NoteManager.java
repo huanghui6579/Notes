@@ -58,12 +58,31 @@ public class NoteManager {
      */
     public List<NoteInfo> getAllNotes(User user, Bundle args) {
         SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String selection = null;
+        String[] selectionArgs = null;
+        int folder = 0;
+        if (args != null) {
+            folder = args.getInt("folderId", 0);
+        }
         int userId = 0;
         if (user != null) { //当前用户有登录
             userId = user.getId();
+            selection = Provider.NoteColumns.USER_ID + " = ?";
+            
+            if (folder != 0) {
+                selection += " AND " + Provider.NoteColumns.FOLDER_ID + " = ?";
+                selectionArgs = new String[] {String.valueOf(userId), String.valueOf(folder)};
+            } else {
+                selectionArgs = new String[] {String.valueOf(userId)};
+            }
+        } else {    //当前用户没有登录
+            if (folder != 0) {
+                selection = Provider.NoteColumns.FOLDER_ID + " = ?";
+                selectionArgs = new String[] {String.valueOf(folder)};
+            }
         }
         List<NoteInfo> list = null;
-        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, Provider.NoteColumns.USER_ID + " = ?", new String[]{String.valueOf(userId)}, null, null, Provider.NoteColumns.DEFAULT_SORT);
+        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.NoteColumns.DEFAULT_SORT);
         if (cursor != null) {
             list = new ArrayList<>();
             while (cursor.moveToNext()) {
@@ -99,12 +118,16 @@ public class NoteManager {
      */
     public List<Folder> getAllFolders(User user, Bundle args) {
         SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String selection = null;
+        String[] selectionArgs = null;
         int userId = 0;
         if (user != null) { //当前用户有登录
             userId = user.getId();
+            selection = Provider.FolderColumns.USER_ID + " = ?";
+            selectionArgs = new String[] {String.valueOf(userId)};
         }
         List<Folder> list = null;
-        Cursor cursor = db.query(Provider.FolderColumns.TABLE_NAME, null, Provider.FolderColumns.USER_ID + " = ?", new String[]{String.valueOf(userId)}, null, null, Provider.FolderColumns.DEFAULT_SORT);
+        Cursor cursor = db.query(Provider.FolderColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.FolderColumns.DEFAULT_SORT);
         if (cursor != null) {
             list = new ArrayList<>();
             while (cursor.moveToNext()) {
