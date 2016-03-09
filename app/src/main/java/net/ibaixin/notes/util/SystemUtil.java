@@ -15,6 +15,7 @@ import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -262,6 +263,17 @@ public class SystemUtil {
     public static int getSelectedFolder(Context context) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         return sharedPreferences.getInt(Constants.SELECTED_FOLDER_ID, 0);
+    }
+    
+    /**
+     * 判断该集合是否为空
+     * @param collection 集合
+     * @author huanghui1
+     * @update 2016/3/9 9:17
+     * @version: 1.0.0
+     */
+    public static boolean isEmpty(Collection<?> collection) {
+        return collection == null || collection.size() == 0;
     }
     
 }

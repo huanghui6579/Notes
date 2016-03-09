@@ -65,7 +65,7 @@ public class Folder {
     private long modifyTime;
 
     /**
-     * 改文件夹下笔记的数量
+     * 该文件夹下笔记的数量
      */
     private int count;
     

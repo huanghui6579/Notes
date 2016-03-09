@@ -1,12 +1,14 @@
 package net.ibaixin.notes.model;
 
+import java.util.Comparator;
+
 /**
  * 记事本的基本信息实体
  * @author huanghui1
  * @update 2016/2/26 14:49
  * @version: 0.0.1
  */
-public class NoteInfo {
+public class NoteInfo implements Comparator<NoteInfo> {
     private int id;
 
     /**
@@ -78,7 +80,36 @@ public class NoteInfo {
      * 前一版本的文本内容
      */
     private String oldContent;
-    
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NoteInfo noteInfo = (NoteInfo) o;
+
+        return id == noteInfo.id;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return id;
+    }
+
+    @Override
+    public int compare(NoteInfo lhs, NoteInfo rhs) {
+        int lId = lhs.getId();
+        int rId = rhs.getId();
+        if (lId > rId) {
+            return 1;
+        } else if (lId < rId) {
+            return -1;
+        } else {
+            return 0;
+        }
+    }
+
     /**
      * 笔记的类型，主要分为文本笔记和清单笔记
      * @author tiger
@@ -192,7 +223,7 @@ public class NoteInfo {
         this.deleteState = deleteState;
     }
 
-    public boolean isHasAttach() {
+    public boolean hasAttach() {
         return hasAttach;
     }
 

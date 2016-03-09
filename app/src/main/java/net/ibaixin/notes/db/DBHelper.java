@@ -49,7 +49,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.FolderColumns.IS_HIDDEN).append(" INTEGER, ")
                 .append(Provider.FolderColumns.IS_LOCK).append(" INTEGER, ")
                 .append(Provider.FolderColumns.NAME).append(" TEXT UNIQUE NOT NULL, ")
-                .append(Provider.FolderColumns.SORT).append(" INTEGER AUTOINCREMENT, ")
+                .append(Provider.FolderColumns.SORT).append(" INTEGER, ")
                 .append(Provider.FolderColumns.SYNC_STATE).append(" INTEGER, ")
                 .append(Provider.FolderColumns.DELETE_STATE).append(" INTEGER, ")
                 .append(Provider.FolderColumns.CREATE_TIME).append(" INTEGER, ")
@@ -121,7 +121,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.UserColumns.PASSWORD).append(" TEXT NOT NULL, ")
                 .append(Provider.UserColumns.ACCESS_TOKEN).append(" TEXT, ")
                 .append(Provider.UserColumns.CREATE_TIME).append(" INTEGER, ")
-                .append(Provider.UserColumns.MODIFY_TIME).append(" INTEGER), ")
+                .append(Provider.UserColumns.MODIFY_TIME).append(" INTEGER, ")
                 .append(Provider.UserColumns.LAST_SYNC_TIME).append(" INTEGER); ");
         db.execSQL(builder.toString());
 

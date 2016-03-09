@@ -7,6 +7,8 @@ import android.os.Bundle;
 import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.db.DBHelper;
 import net.ibaixin.notes.db.Provider;
+import net.ibaixin.notes.db.observer.Observable;
+import net.ibaixin.notes.db.observer.Observer;
 import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
@@ -22,7 +24,7 @@ import java.util.List;
  * @update 2016/3/7 17:22
  * @version: 0.0.1
  */
-public class NoteManager {
+public class NoteManager extends Observable<Observer> {
     private static NoteManager mInstance = null;
     
     private DBHelper mDBHelper;

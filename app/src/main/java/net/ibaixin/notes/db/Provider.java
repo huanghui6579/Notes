@@ -35,6 +35,11 @@ public final class Provider {
     public static final class NoteColumns implements BaseColumns, SyncColumns {
 
         /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 1;
+
+        /**
          * note表改变后更新文件夹的触发器
          */
         public static final String EVENT_UPDATE_FOLDER = "event_update_folder";
@@ -119,6 +124,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class FolderColumns implements BaseColumns, SyncColumns {
+
+        /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 2;
+        
         /**
          * sid的索引
          */
@@ -180,6 +191,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class AttachmentColumns implements BaseColumns, SyncColumns {
+
+        /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 3;
+        
         /**
          * sid的索引
          */
@@ -240,6 +257,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class DetailedListColumns implements BaseColumns, SyncColumns {
+
+        /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 4;
+        
         /**
          * sid的索引
          */
@@ -295,6 +318,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class HandWriteColumns implements BaseColumns {
+
+        /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 5;
+        
         public static final String TABLE_NAME = "hand_write";
 
         /**
@@ -330,6 +359,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class RemindersColumns implements BaseColumns {
+
+        /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 6;
+        
         public static final String TABLE_NAME = "reminders";
 
         /**
@@ -360,6 +395,11 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class UserColumns implements BaseColumns {
+
+        /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 7;
 
         /**
          * 用户名索引
@@ -406,6 +446,12 @@ public final class Provider {
      * @version 1.0.0
      */
     public static final class UserSettingsColumns implements BaseColumns {
+
+        /**
+         * 通知标识，主要是区分别的通知内容
+         */
+        public static final int NOTIFY_FLAG = 8;
+        
         public static final String TABLE_NAME = "user_settings";
     }
 }

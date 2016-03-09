@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -15,6 +16,7 @@ import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,6 +27,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.db.Provider;
+import net.ibaixin.notes.db.observer.ContentObserver;
+import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.listener.OnItemClickListener;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
@@ -56,7 +61,7 @@ public class MainActivity extends BaseActivity {
     private NoteListAdapter mNoteListAdapter;
     private NoteGridAdapter mNoteGridAdapter;
 
-    List<Folder> mArchives;
+    List<Folder> mFolders;
     
     private List<NoteInfo> mNotes;
     
@@ -87,6 +92,13 @@ public class MainActivity extends BaseActivity {
      * 默认选中的文件夹id
      */
     private int mSelectedFolderId;
+
+    /**
+     * 主界面的空的控件
+     */
+    private View mMainEmptyView;
+    
+    private NoteContentObserver mNoteObserver;
     
     private final Handler mHandler = new MyHandler(this);
 
@@ -103,11 +115,34 @@ public class MainActivity extends BaseActivity {
             if (target != null) {
                 switch (msg.what) {
                     case Constants.MSG_SUCCESS:
+                        int currentItem = target.mNavAdapter.getSelectedItem();
+                        if (currentItem != target.mSelectedFolderId) {  //更新默认选中的项
+                            target.mNavAdapter.setSelectedItem(target.mSelectedFolderId);
+                        }
                         target.mNavAdapter.notifyDataSetChanged();
                         break;
                     case Constants.MSG_SUCCESS2:    //笔记内容加载成功
                         target.mRefresher.setRefreshing(false);
-                        target.setShowContentStyle(target.mIsGridStyle, false);
+                        List<NoteInfo> list = (List<NoteInfo>) msg.obj;
+                        if (!SystemUtil.isEmpty(list)) {  //有数据
+                            if (!target.mNotes.isEmpty()) {
+                                target.mNotes.clear();
+                            }
+                            target.mNotes.addAll(list);
+                            target.setShowContentStyle(target.mIsGridStyle, false);
+                            
+                            target.clearEmptyView();
+                        } else {    //没有数据
+                            if (!target.mNotes.isEmpty()) { //原来有数据
+                                target.mNotes.clear();
+                                target.setShowContentStyle(target.mIsGridStyle, false);
+                            }
+                            //隐藏recycleView
+                            if (target.mRefresher.getVisibility() == View.VISIBLE) {
+                                target.mRefresher.setVisibility(View.GONE);
+                            }
+                            target.loadEmptyView();
+                        }
                         
                         break;
                 }
@@ -169,12 +204,12 @@ public class MainActivity extends BaseActivity {
         //初始化左侧导航菜单
         RecyclerView navigationView = (RecyclerView) findViewById(R.id.nav_view);
 
-        mArchives = new ArrayList<>();
+        mFolders = new ArrayList<>();
 
         initFolder();
 
         navigationView.setLayoutManager(new LinearLayoutManager(this));//这里用线性显示 类似于listview
-        mNavAdapter = new NavViewAdapter(this, mArchives);
+        mNavAdapter = new NavViewAdapter(this, mFolders);
         mNavAdapter.setItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
@@ -189,16 +224,16 @@ public class MainActivity extends BaseActivity {
                 SystemUtil.getThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
-                        if (!mNotes.isEmpty()) {
-                            mNotes.clear();
-                        }
-                        for (int i = 0; i < 26; i++) {
-                            NoteInfo note = new NoteInfo();
-                            note.setContent("测试文本内容" + i);
-                            mNotes.add(note);
-                        }
+                        
+                        NoteManager noteManager = NoteManager.getInstance();
 
-                        mHandler.sendEmptyMessage(Constants.MSG_SUCCESS2);
+                        Bundle args = new Bundle();
+                        args.putInt("folderId", mSelectedFolderId);
+                        List<NoteInfo> list = noteManager.getAllNotes(getCurrentUser(), args);
+                        Message msg = mHandler.obtainMessage();
+                        msg.what = Constants.MSG_SUCCESS2;
+                        msg.obj = list;
+                        mHandler.sendMessage(msg);
                     }
                 });
             }
@@ -207,23 +242,12 @@ public class MainActivity extends BaseActivity {
         mRefresher.setColorSchemeResources(R.color.colorPrimary);
         mRefresher.setOnRefreshListener(mOnRefreshListener);
 
+        //注册观察者
+        registContentObserver();
     }
 
     @Override
     protected void initData() {
-        
-        SystemUtil.getThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < 10; i++) {
-                    Folder archive = new Folder();
-                    archive.setName("测试分类" + i);
-                    mArchives.add(archive);
-                    
-                    mHandler.sendEmptyMessage(Constants.MSG_SUCCESS);
-                }
-            }
-        });
 
         mRefresher.post(new Runnable() {
             @Override
@@ -244,17 +268,86 @@ public class MainActivity extends BaseActivity {
         mSelectedFolderId = SystemUtil.getSelectedFolder(mContext);
         Folder archive = new Folder();
         archive.setName(getString(R.string.default_archive));
-        mArchives.add(archive);
+        mFolders.add(archive);
         
         SystemUtil.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
                 NoteManager noteManager = NoteManager.getInstance();
-                Bundle args = new Bundle();
-                args.putInt("folderId", mSelectedFolderId);
-                noteManager.getAllFolders(getCurrentUser(), args);
+                List<Folder> list = noteManager.getAllFolders(getCurrentUser(), null);
+
+                if (!SystemUtil.isEmpty(list)) {
+                    Message msg = mHandler.obtainMessage();
+                    msg.obj = list;
+                    mHandler.sendMessage(msg);
+                }
             }
         });
+    }
+    
+    /**
+     * 加载空的提示view
+     * @author huanghui1
+     * @update 2016/3/9 14:44
+     * @version: 1.0.0
+     */
+    private View loadEmptyView() {
+        if (mMainEmptyView == null) {
+            LayoutInflater inflater = LayoutInflater.from(mContext);
+            mMainEmptyView = inflater.inflate(R.layout.main_empty_view, null);
+
+            CoordinatorLayout viewGroup = (CoordinatorLayout) findViewById(R.id.content_main);
+            CoordinatorLayout.LayoutParams layoutParams = new CoordinatorLayout.LayoutParams(CoordinatorLayout.LayoutParams.MATCH_PARENT, CoordinatorLayout.LayoutParams.WRAP_CONTENT);
+            layoutParams.gravity = Gravity.CENTER;
+            mMainEmptyView.setLayoutParams(layoutParams);
+
+            viewGroup.addView(mMainEmptyView);
+        } else {
+            if (mMainEmptyView.getVisibility() != View.VISIBLE) {
+                mMainEmptyView.setVisibility(View.VISIBLE);
+            }
+        }
+        return mMainEmptyView;
+    }
+    
+    /**
+     * 清除空的提示控件
+     * @author huanghui1
+     * @update 2016/3/9 15:07
+     * @version: 1.0.0
+     */
+    private void clearEmptyView() {
+        if (mMainEmptyView != null) {
+            if (mMainEmptyView.getVisibility() == View.VISIBLE) {
+                mMainEmptyView.setVisibility(View.GONE);
+            }
+            CoordinatorLayout viewGroup = (CoordinatorLayout) findViewById(R.id.content_main);
+            viewGroup.removeView(mMainEmptyView);
+            mMainEmptyView = null;
+        }
+    }
+    
+    /**
+     * 注册观察者的监听
+     * @author huanghui1
+     * @update 2016/3/9 18:10
+     * @version: 1.0.0
+     */
+    private void registContentObserver() {
+        mNoteObserver = new NoteContentObserver(mHandler);
+        NoteManager.getInstance().addObserver(mNoteObserver);
+    }
+    
+    /**
+     * 注销观察者
+     * @author huanghui1
+     * @update 2016/3/9 18:11
+     * @version: 1.0.0
+     */
+    private void unRegistContentObserver() {
+        if (mNoteObserver != null) {
+            NoteManager.getInstance().removeObserver(mNoteObserver);
+        }
     }
 
     @Override
@@ -313,6 +406,13 @@ public class MainActivity extends BaseActivity {
                 return true;
         }
         return super.onKeyUp(keyCode, event);
+    }
+
+    @Override
+    protected void onDestroy() {
+        //注销观察者
+        unRegistContentObserver();
+        super.onDestroy();
     }
 
     /**
@@ -432,6 +532,63 @@ public class MainActivity extends BaseActivity {
         }
         return isShowing;
     }
+    
+    /**
+     * 添加笔记
+     * @author huanghui1
+     * @update 2016/3/9 17:29
+     * @version: 1.0.0
+     */
+    private void addNote(NoteInfo note) {
+        mNotes.add(0, note);
+        setShowContentStyle(mIsGridStyle, false);
+    }
+    
+    /**
+     * 修改笔记
+     * @author huanghui1
+     * @update 2016/3/9 17:33
+     * @version: 1.0.0
+     */
+    private void updateNote(NoteInfo note) {
+        int index = mNotes.indexOf(note);
+        if (index != -1) {  //列表中存在
+            NoteInfo info = mNotes.get(index);
+            
+            info.setHash(note.getHash());
+            info.setOldContent(info.getContent());
+            info.setModifyTime(note.getModifyTime());
+            info.setContent(note.getContent());
+            info.setFolderId(note.getFolderId());
+            info.setHasAttach(note.hasAttach());
+            info.setKind(note.getKind());
+            info.setRemindId(note.getRemindId());
+            info.setSyncState(note.getSyncState());
+
+            updateUI(mNotes);
+        }
+    }
+    
+    /**
+     * 刷新ui界面
+     * @author huanghui1
+     * @update 2016/3/9 18:26
+     * @version: 1.0.0
+     */
+    private void updateUI(List<NoteInfo> list) {
+        if (!SystemUtil.isEmpty(list)) {  //有数据
+            setShowContentStyle(mIsGridStyle, false);
+
+            clearEmptyView();
+        } else {    //没有数据
+            setShowContentStyle(mIsGridStyle, false);
+            //隐藏recycleView
+            if (mRefresher.getVisibility() == View.VISIBLE) {
+                mRefresher.setVisibility(View.GONE);
+            }
+            loadEmptyView();
+        }
+    }
 
     /**
      * popuMenu每一项点击的事件
@@ -507,6 +664,14 @@ public class MainActivity extends BaseActivity {
             mContext = context;
             mLayoutInflater = LayoutInflater.from(context);
         }
+        
+        public int getSelectedItem() {
+            return mSelectedItem;
+        }
+
+        public void setSelectedItem(int selectedItem) {
+            this.mSelectedItem = selectedItem;
+        }
 
         public void setItemClickListener(OnItemClickListener itemClickListener) {
             this.mItemClickListener = itemClickListener;
@@ -520,18 +685,20 @@ public class MainActivity extends BaseActivity {
 
         @Override
         public void onBindViewHolder(NavTextViewHolder holder, final int position) {
-            holder.itemView.setSelected(mSelectedItem == position);
+            Folder folder = mList.get(position);
+            final int folderId = folder.getId();
+            holder.itemView.setSelected(mSelectedItem == folderId);
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mItemClickListener != null) {
                         notifyItemChanged(mSelectedItem);
-                        mSelectedItem = position;
+                        mSelectedItem = folderId;
                         mItemClickListener.onItemClick(v, position);
                     }
                 }
             });
-            holder.mTextView.setText(mList.get(position).getName());
+            holder.mTextView.setText(folder.getName());
         }
 
         @Override
@@ -617,6 +784,43 @@ public class MainActivity extends BaseActivity {
         @Override
         public int getItemCount() {
             return mList == null ? 0 : mList.size();
+        }
+    }
+    
+    /**
+     * 笔记的观察者
+     * @author huanghui1
+     * @update 2016/3/9 17:04
+     * @version: 1.0.0
+     */
+    class NoteContentObserver extends ContentObserver {
+
+        public NoteContentObserver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data) {
+            NoteInfo noteInfo = null;
+            switch (notifyFlag) {
+                case Provider.NoteColumns.NOTIFY_FLAG:  //笔记的通知
+                    if (data != null) {
+                        noteInfo = (NoteInfo) data;
+                    }
+                    switch (notifyType) {
+                        case ADD:   //添加
+                            if (noteInfo != null) {
+                                addNote(noteInfo);
+                            }
+                            break;
+                        case UPDATE:    //修改笔记
+                            if (noteInfo != null) {
+                                updateNote(noteInfo);
+                            }
+                            break;
+                    }
+                    break;
+            }
         }
     }
 }

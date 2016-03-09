@@ -5,6 +5,9 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
     
     <string name="note_edit_hint">输入文本内容</string>
+    
+    <string name="main_empty_tip">设置同步账号，笔记备份到云端可永不丢失</string>
+    <string name="main_empty_tip_login">立即登录</string>
 
     <string name="no_data">无数据</string>
 
