@@ -6,6 +6,7 @@ import android.support.v7.widget.PopupMenu;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -48,7 +49,20 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     private View mIvRedo;
     private View mIvUndo;
+    /**
+     * 是否将编辑步骤添加到容器里
+     */
     private boolean mIsDo;
+
+    /**
+     * 是否是编辑列表，每按依次回车，则在前面添加一个“-”
+     */
+    private boolean mIsFormatList;
+
+    /**
+     * 是否是手动回车换行
+     */
+    private boolean mIsNextLine;
 
     private Handler mHandler = new MyHandler(this);
 
@@ -94,6 +108,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
 
         mEtContent.addTextChangedListener(this);
+
+        mEtContent.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
+                    mIsNextLine = true;
+                }
+                return false;
+            }
+        });
     }
 
     @Override
@@ -193,11 +217,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.iv_undo:
+            case R.id.iv_undo:  //后退
                 undo();
                 break;
-            case R.id.iv_redo:
+            case R.id.iv_redo:  //前进
                 redo();
+                break;
+            case R.id.iv_list:  //格式化列表
+                toggleFormatList();
                 break;
         }
     }
@@ -344,6 +371,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mIvRedo.setEnabled(false);
         }
         setdo(false);
+    }
+    
+    /**
+     * 在格式化列表直接切换
+     * @author huanghui1
+     * @update 2016/3/10 14:36
+     * @version: 1.0.0
+     */
+    private void toggleFormatList() {
+        mIsFormatList = !mIsFormatList;
+        String text = mEtContent.getText().toString();
+        Editable editable = mEtContent.getEditableText();
+        //光标的开始位置
+        int start = mEtContent.getSelectionStart();
+        String subS = text.substring(0, start);
+        //光标所在行的第一位
+        int startIndex = subS.lastIndexOf("\n") + 1;
+        editable.insert(startIndex, "-");
     }
 
     /**

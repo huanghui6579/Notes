@@ -38,6 +38,11 @@ public class EditStep {
      */
     private boolean isAppend;
 
+    /**
+     * 是否是格式化列表
+     */
+    private boolean isFormatList;
+
     public CharSequence getContent() {
         return content;
     }
@@ -94,6 +99,14 @@ public class EditStep {
         this.isAppend = isAppend;
     }
 
+    public boolean isFormatList() {
+        return isFormatList;
+    }
+
+    public void setFormatList(boolean isFormatList) {
+        this.isFormatList = isFormatList;
+    }
+
     @Override
     public String toString() {
         return "EditStep{" +
@@ -104,6 +117,7 @@ public class EditStep {
                 ", length=" + length +
                 ", filePath='" + filePath + '\'' +
                 ", isAppend=" + isAppend +
+                ", isFormatList=" + isFormatList +
                 '}';
     }
 

@@ -572,7 +572,7 @@ public class MainActivity extends BaseActivity {
     /**
      * 刷新ui界面
      * @author huanghui1
-     * @update 2016/3/9 18:26
+     * @update 2016/3/10 9:10
      * @version: 1.0.0
      */
     private void updateUI(List<NoteInfo> list) {
