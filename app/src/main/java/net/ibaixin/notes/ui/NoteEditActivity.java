@@ -404,7 +404,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         if (lineS.startsWith(Constants.TAG_FORMAT_LIST)) {  //之前有“- ”,则删除
             mIsFormatList = false;
-            int end = Constants.TAG_FORMAT_LIST.length();
+            int end = startIndex + Constants.TAG_FORMAT_LIST.length();
             editable.delete(startIndex, end);
         } else {
             editable.insert(startIndex, Constants.TAG_FORMAT_LIST);
