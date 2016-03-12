@@ -20,6 +20,11 @@ public class Constants {
     public static final String TAG_FORMAT_LIST = "- ";
 
     /**
+     * 列表的标签的长度
+     */
+    public static final int FORMAT_LIST_TAG_LENGTH = TAG_FORMAT_LIST.length();
+
+    /**
      * 默认选中的文件夹id，为0时选中所有文件夹
      */
     public static final String SELECTED_FOLDER_ID = "selected_folder_id";

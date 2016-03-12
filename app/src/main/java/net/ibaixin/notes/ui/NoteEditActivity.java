@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.EditText;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import net.ibaixin.notes.R;
@@ -115,26 +116,26 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
+                    mIsEnterLine = true;
                     //光标所在行
                     int selectionStart = v.getSelectionStart();
                     String text = v.getText().toString();
                     //光标所在行的开头到光标处的文本
                     String selectionLineBeforeText = getSelectionLineBeforeText(text, selectionStart);
-                    int tagLength = Constants.TAG_FORMAT_LIST.length();
-                    if (tagLength < selectionLineBeforeText.length() && selectionLineBeforeText.startsWith(Constants.TAG_FORMAT_LIST)) {    //清除格式列表
-                        mIsEnterLine = false;
-                        Editable editable = v.getEditableText();
-                        int start = selectionStart - tagLength;
-                        try {
-                            editable.delete(start, selectionStart);
-                            return true;
-                        } catch (Exception e) {
-                            Log.e(e.getMessage());
+                    int tagLength = Constants.FORMAT_LIST_TAG_LENGTH;
+                    if (Constants.TAG_FORMAT_LIST.equals(selectionLineBeforeText)) {    //清除格式列表
+                        String endText = getSelectionLineEndText(text, selectionStart);
+                        if (endText.length() == 0) {   //该行只有“- ”，则删除
+                            Editable editable = v.getEditableText();
+                            int start = selectionStart - tagLength;
+                            try {
+                                mIsEnterLine = false;
+                                editable.delete(start, selectionStart);
+                                return true;
+                            } catch (Exception e) {
+                                Log.e(e.getMessage());
+                            }
                         }
-                        return false;
-                    } else {
-                        mIsEnterLine = true;
-                        return false;
                     }
                 }
                 return false;
@@ -218,6 +219,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         ViewStub viewStub = (ViewStub) findViewById(R.id.bottom_tool_bar);
         View bottomBar = viewStub.inflate();
         ViewGroup toolContainer = (ViewGroup) bottomBar.findViewById(R.id.tool_container);
+
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) mEtContent.getLayoutParams();
+        layoutParams.addRule(RelativeLayout.ABOVE, toolContainer.getId());
+
         int childSize = toolContainer.getChildCount();
         for (int i = 0; i < childSize; i++) {
             View child = toolContainer.getChildAt(i);
@@ -436,7 +441,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         if (lineText.startsWith(Constants.TAG_FORMAT_LIST)) {  //之前有“- ”,则删除
             mIsFormatList = false;
-            int end = lineStart + Constants.TAG_FORMAT_LIST.length();
+            int end = lineStart + Constants.FORMAT_LIST_TAG_LENGTH;
             editable.delete(lineStart, end);
         } else {
             editable.insert(lineStart, Constants.TAG_FORMAT_LIST);
@@ -453,6 +458,21 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         String beforeText = text.substring(0, selectionStart);
         int lineStart = beforeText.lastIndexOf(Constants.TAG_ENTER) + 1;
         return beforeText.substring(lineStart);
+    }
+
+    /**
+     * 获取光标所在行的光标处到该行结尾的文本
+     * @author Administrator
+     * @update 2016/3/12 22:29
+     * @version: 1.0.0
+    */
+    private String getSelectionLineEndText(String text, int selectionStart) {
+        String endText = text.substring(selectionStart);
+        int lineEnd = endText.indexOf(Constants.TAG_ENTER);
+        if (lineEnd != -1) {    //有回车换行，则截取
+            endText = endText.substring(0, lineEnd);
+        }
+        return endText;
     }
 
     /**

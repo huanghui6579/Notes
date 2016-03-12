@@ -25,14 +25,14 @@
             android:layout_alignParentTop="true"
             android:hint="@string/note_edit_hint"
             android:autoLink="all"/>
-        
+
         <ViewStub
             android:id="@+id/bottom_tool_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout="@layout/edit_bottom_tool_bar"
             android:layout_alignParentBottom="true"/>
-        
+
     </RelativeLayout>
     
 </LinearLayout>
