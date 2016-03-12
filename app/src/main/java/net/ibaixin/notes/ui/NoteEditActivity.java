@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.widget.PopupMenu;
 import android.text.Editable;
+import android.text.Selection;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -63,7 +64,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     /**
      * 是否是手动回车换行
      */
-    private boolean mIsNextLine;
+    private boolean mIsEnterLine;
 
     private Handler mHandler = new MyHandler(this);
 
@@ -114,7 +115,27 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
-                    mIsNextLine = true;
+                    //光标所在行
+                    int selectionStart = v.getSelectionStart();
+                    String text = v.getText().toString();
+                    //光标所在行的开头到光标处的文本
+                    String selectionLineBeforeText = getSelectionLineBeforeText(text, selectionStart);
+                    int tagLength = Constants.TAG_FORMAT_LIST.length();
+                    if (tagLength < selectionLineBeforeText.length() && selectionLineBeforeText.startsWith(Constants.TAG_FORMAT_LIST)) {    //清除格式列表
+                        mIsEnterLine = false;
+                        Editable editable = v.getEditableText();
+                        int start = selectionStart - tagLength;
+                        try {
+                            editable.delete(start, selectionStart);
+                            return true;
+                        } catch (Exception e) {
+                            Log.e(e.getMessage());
+                        }
+                        return false;
+                    } else {
+                        mIsEnterLine = true;
+                        return false;
+                    }
                 }
                 return false;
             }
@@ -266,7 +287,17 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     public void afterTextChanged(Editable s) {
+        if (mIsEnterLine) {  //手动按的回车键
+            mIsEnterLine = false;
+            int selectionStart = mEtContent.getSelectionStart();
 
+            //回车前的光标索引
+            int previousIndex = selectionStart - 1;
+            String lineBeforeText = getSelectionLineBeforeText(s.toString(), previousIndex);
+            if (lineBeforeText.startsWith(Constants.TAG_FORMAT_LIST)) {   //上一行有“- ”，则本行继续添加
+                s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
+            }
+        }
     }
 
     @Override
@@ -386,29 +417,42 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         Editable editable = mEtContent.getEditableText();
         //光标的开始位置
         int selectionStart = mEtContent.getSelectionStart();
-        Log.d("******selectionStart*******" + selectionStart + "**************");
         //光标所在位置前面的文字
-        String subS = text.substring(0, selectionStart);
-        Log.d("******subS*******" + subS + "**************");
+        String beforeText = text.substring(0, selectionStart);
         //光标所在行的第一位
-        int startIndex = subS.lastIndexOf(Constants.TAG_ENTER) + 1;
-        Log.d("******startIndex*******" + startIndex + "**************");
-        //光标所在行的开头到光标所在位置的文字
-        String lineS = subS.substring(startIndex);
-        Log.d("******lineS*******" + lineS + "**************");
-        if (lineS.length() < Constants.TAG_FORMAT_LIST.length()) {  //光标就在该行“- ”的前面
-            //获取该行光标后面的文字
-            int selectionEnd = mEtContent.getSelectionEnd();
-            String selectedText = text.substring(selectionStart, selectionEnd);
-            Log.d("*******selectedText******" + selectedText + "**************");
-        }
-        if (lineS.startsWith(Constants.TAG_FORMAT_LIST)) {  //之前有“- ”,则删除
-            mIsFormatList = false;
-            int end = startIndex + Constants.TAG_FORMAT_LIST.length();
-            editable.delete(startIndex, end);
+        int lineStart = beforeText.lastIndexOf(Constants.TAG_ENTER) + 1;
+        //光标后面的文字
+        String endText = text.substring(selectionStart);
+        //光标后面文字的第一个回车的索引
+        int lineEnd = endText.indexOf(Constants.TAG_ENTER);
+        //光标所在行的文字
+        String lineText = null;
+        if (lineEnd != -1) {    //光标后面的文字有回车换行
+            String linEndText = endText.substring(0, lineEnd);
+            String lineBeforeText = beforeText.substring(lineStart);
+            lineText = lineBeforeText + linEndText;
         } else {
-            editable.insert(startIndex, Constants.TAG_FORMAT_LIST);
+            lineText = text.substring(lineStart);
         }
+        if (lineText.startsWith(Constants.TAG_FORMAT_LIST)) {  //之前有“- ”,则删除
+            mIsFormatList = false;
+            int end = lineStart + Constants.TAG_FORMAT_LIST.length();
+            editable.delete(lineStart, end);
+        } else {
+            editable.insert(lineStart, Constants.TAG_FORMAT_LIST);
+        }
+    }
+    
+    /**
+     * 获取光标所在行的开头到光标处的文本
+     * @author Administrator
+     * @update 2016/3/12 14:30
+     * @version: 1.0.0
+    */
+    private String getSelectionLineBeforeText(String text, int selectionStart) {
+        String beforeText = text.substring(0, selectionStart);
+        int lineStart = beforeText.lastIndexOf(Constants.TAG_ENTER) + 1;
+        return beforeText.substring(lineStart);
     }
 
     /**
