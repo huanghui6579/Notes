@@ -11,6 +11,15 @@ public class Constants {
     public static final String LOG_DIR = "log";
 
     /**
+     * 回车的标签
+     */
+    public static final String TAG_ENTER = "\n";
+    /**
+     * 列表的标签
+     */
+    public static final String TAG_FORMAT_LIST = "- ";
+
+    /**
      * 默认选中的文件夹id，为0时选中所有文件夹
      */
     public static final String SELECTED_FOLDER_ID = "selected_folder_id";

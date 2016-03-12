@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.EditStep;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.log.Log;
 
 import java.lang.ref.WeakReference;
@@ -143,18 +144,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        Menu menu = attachPopu.getMenu();
-
-                        MenuItem shareItem = menu.findItem(R.id.action_share);
-                        setMenuTint(shareItem, 0);
-
-                        MenuItem searchItem = menu.findItem(R.id.action_search);
-                        setMenuTint(searchItem, 0);
-
-                        MenuItem deleteItem = menu.findItem(R.id.action_delete);
-                        setMenuTint(deleteItem, 0);
-
                         if (attachPopu != null) {
+                            Menu menu = attachPopu.getMenu();
+
+                            MenuItem shareItem = menu.findItem(R.id.action_share);
+                            setMenuTint(shareItem, 0);
+
+                            MenuItem searchItem = menu.findItem(R.id.action_search);
+                            setMenuTint(searchItem, 0);
+
+                            MenuItem deleteItem = menu.findItem(R.id.action_delete);
+                            setMenuTint(deleteItem, 0);
+
                             attachPopu.show();
                         }
                     }
@@ -372,7 +373,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         setdo(false);
     }
-    
+
     /**
      * 在格式化列表直接切换
      * @author huanghui1
@@ -384,11 +385,30 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         String text = mEtContent.getText().toString();
         Editable editable = mEtContent.getEditableText();
         //光标的开始位置
-        int start = mEtContent.getSelectionStart();
-        String subS = text.substring(0, start);
+        int selectionStart = mEtContent.getSelectionStart();
+        Log.d("******selectionStart*******" + selectionStart + "**************");
+        //光标所在位置前面的文字
+        String subS = text.substring(0, selectionStart);
+        Log.d("******subS*******" + subS + "**************");
         //光标所在行的第一位
-        int startIndex = subS.lastIndexOf("\n") + 1;
-        editable.insert(startIndex, "-");
+        int startIndex = subS.lastIndexOf(Constants.TAG_ENTER) + 1;
+        Log.d("******startIndex*******" + startIndex + "**************");
+        //光标所在行的开头到光标所在位置的文字
+        String lineS = subS.substring(startIndex);
+        Log.d("******lineS*******" + lineS + "**************");
+        if (lineS.length() < Constants.TAG_FORMAT_LIST.length()) {  //光标就在该行“- ”的前面
+            //获取该行光标后面的文字
+            int selectionEnd = mEtContent.getSelectionEnd();
+            String selectedText = text.substring(selectionStart, selectionEnd);
+            Log.d("*******selectedText******" + selectedText + "**************");
+        }
+        if (lineS.startsWith(Constants.TAG_FORMAT_LIST)) {  //之前有“- ”,则删除
+            mIsFormatList = false;
+            int end = Constants.TAG_FORMAT_LIST.length();
+            editable.delete(startIndex, end);
+        } else {
+            editable.insert(startIndex, Constants.TAG_FORMAT_LIST);
+        }
     }
 
     /**
