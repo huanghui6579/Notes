@@ -4,9 +4,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.widget.PopupMenu;
 import android.text.Editable;
-import android.text.Selection;
+import android.text.Spannable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.ClickableSpan;
+import android.text.util.Linkify;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -14,14 +16,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
-import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.EditStep;
 import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
+import net.ibaixin.notes.widget.NoteEditText;
 
 import java.lang.ref.WeakReference;
 import java.util.Stack;
@@ -35,12 +38,13 @@ import java.util.Stack;
 public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher {
     
     private static final int MSG_INIT_BOOTOM_TOOL_BAR = 1;
+    private static final int MSG_AUTO_LINK = 2;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mCameraPopu;
     private PopupMenu mOverflowPopu;
     
-    private EditText mEtContent;
+    private NoteEditText mEtContent;
     
     private TextView mToolbarTitleView;
 
@@ -58,14 +62,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private boolean mIsDo;
 
     /**
-     * 是否是编辑列表，每按依次回车，则在前面添加一个“-”
-     */
-    private boolean mIsFormatList;
-
-    /**
      * 是否是手动回车换行
      */
     private boolean mIsEnterLine;
+
+    private AutoLnkTask mAutoLnkTask;
 
     private Handler mHandler = new MyHandler(this);
 
@@ -107,7 +108,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     protected void initView() {
-        mEtContent = (EditText) findViewById(R.id.et_content);
+        mEtContent = (NoteEditText) findViewById(R.id.et_content);
         mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
 
         mEtContent.addTextChangedListener(this);
@@ -139,6 +140,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                 }
                 return false;
+            }
+        });
+        mEtContent.setOnSelectionChangedListener(new NoteEditText.SelectionChangedListener() {
+            @Override
+            public void onSelectionChanged(int selStart, int selEnd) {
+                CharSequence text = mEtContent.getText();
+                ClickableSpan[] links = ((Spannable) text).getSpans(selStart,
+                        selEnd, ClickableSpan.class);
+                if (links != null && links.length > 0) {
+                    ClickableSpan clickableSpan = links[0];
+                    Log.d(clickableSpan.toString());
+                }
             }
         });
     }
@@ -253,6 +266,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             case R.id.iv_list:  //格式化列表
                 toggleFormatList();
                 break;
+            case R.id.iv_time:  //当前的时间
+                insertTime();
+                break;
         }
     }
 
@@ -303,6 +319,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
             }
         }
+
+        autoLink();
     }
 
     @Override
@@ -350,7 +368,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void pushRedo(EditStep editStep) {
         mRedoStack.push(editStep);
-
         if (!mIvRedo.isEnabled()) {
             mIvRedo.setEnabled(true);
         }
@@ -417,7 +434,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version: 1.0.0
      */
     private void toggleFormatList() {
-        mIsFormatList = !mIsFormatList;
         String text = mEtContent.getText().toString();
         Editable editable = mEtContent.getEditableText();
         //光标的开始位置
@@ -440,12 +456,35 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             lineText = text.substring(lineStart);
         }
         if (lineText.startsWith(Constants.TAG_FORMAT_LIST)) {  //之前有“- ”,则删除
-            mIsFormatList = false;
             int end = lineStart + Constants.FORMAT_LIST_TAG_LENGTH;
             editable.delete(lineStart, end);
         } else {
             editable.insert(lineStart, Constants.TAG_FORMAT_LIST);
         }
+    }
+
+    /**
+     * 在光标处插入当前时间
+     * @author tiger
+     * @update 2016/3/13 10:27
+     * @version 1.0.0
+     */
+    private void insertTime() {
+        String time = SystemUtil.getFormatTime();
+        int selectionStart = mEtContent.getSelectionStart();
+        Editable editable = mEtContent.getEditableText();
+        editable.insert(selectionStart, time);
+    }
+
+    /**
+     * 自动链接文本
+     * @author tiger
+     * @update 2016/3/13 10:46
+     * @version 1.0.0
+     */
+    private void autoLink() {
+        mHandler.removeMessages(MSG_AUTO_LINK);
+        mHandler.sendEmptyMessage(MSG_AUTO_LINK);
     }
     
     /**
@@ -492,6 +531,20 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             return false;
         }
     }
+    
+    /**
+     * 自动识别链接的任务
+     * @author tiger
+     * @update 2016/3/13 10:41
+     * @version 1.0.0
+     */
+    class AutoLnkTask implements Runnable {
+
+        @Override
+        public void run() {
+            Linkify.addLinks(mEtContent, mEtContent.getAutoLinkMask());
+        }
+    }
 
     private static class MyHandler extends Handler {
         private final WeakReference<NoteEditActivity> mTarget;
@@ -506,6 +559,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             switch (msg.what) {
                 case MSG_INIT_BOOTOM_TOOL_BAR:
                     activity.initBottomToolBar();
+                    break;
+                case MSG_AUTO_LINK: //自动链接
+                    if (activity.mAutoLnkTask == null) {
+                        activity.mAutoLnkTask = activity.new AutoLnkTask();
+                    }
+                    post(activity.mAutoLnkTask);
                     break;
             }
             super.handleMessage(msg);

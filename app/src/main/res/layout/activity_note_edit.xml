@@ -15,7 +15,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <EditText
+        <net.ibaixin.notes.widget.NoteEditText
             android:id="@id/et_content"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -24,6 +24,7 @@
             android:background="@null"
             android:layout_alignParentTop="true"
             android:hint="@string/note_edit_hint"
+            android:linksClickable="false"
             android:autoLink="all"/>
 
         <ViewStub
