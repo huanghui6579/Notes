@@ -15,8 +15,10 @@ import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
 
 import java.io.File;
+import java.text.DateFormat;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -315,6 +317,17 @@ public class SystemUtil {
      */
     public static boolean isEmpty(Collection<?> collection) {
         return collection == null || collection.size() == 0;
+    }
+
+    /**
+     * 获取当前的格式化日期
+     * @author tiger
+     * @update 2016/3/13 10:20
+     * @version 1.0.0
+     */
+    public static final String getFormatTime() {
+        DateFormat dateFormat = DateFormat.getDateTimeInstance();
+        return dateFormat.format(new Date());
     }
     
 }
