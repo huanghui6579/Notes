@@ -174,6 +174,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             intent = new Intent();
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
         } else if (!TextUtils.isEmpty(content)) {    //添加笔记
+            mNote = new NoteInfo();
             intent = new Intent();
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_ADD_NOTE);
             long time = System.currentTimeMillis();
