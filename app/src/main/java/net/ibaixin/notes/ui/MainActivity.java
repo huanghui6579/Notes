@@ -177,10 +177,12 @@ public class MainActivity extends BaseActivity {
         //初始化顶部栏
         if (mToolBar != null) {
             DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-            ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                    this, drawer, mToolBar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-            drawer.setDrawerListener(toggle);
-            toggle.syncState();
+            if (drawer != null) {
+                ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                        this, drawer, mToolBar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                drawer.addDrawerListener(toggle);
+                toggle.syncState();
+            }
         }
 
         //初始化下拉刷新界面
@@ -208,15 +210,17 @@ public class MainActivity extends BaseActivity {
 
         initFolder();
 
-        navigationView.setLayoutManager(new LinearLayoutManager(this));//这里用线性显示 类似于listview
-        mNavAdapter = new NavViewAdapter(this, mFolders);
-        mNavAdapter.setItemClickListener(new OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                view.setSelected(true);
-            }
-        });
-        navigationView.setAdapter(mNavAdapter);
+        if (navigationView != null) {
+            navigationView.setLayoutManager(new LinearLayoutManager(this));//这里用线性显示 类似于listview
+            mNavAdapter = new NavViewAdapter(this, mFolders);
+            mNavAdapter.setItemClickListener(new OnItemClickListener() {
+                @Override
+                public void onItemClick(View view, int position) {
+                    view.setSelected(true);
+                }
+            });
+            navigationView.setAdapter(mNavAdapter);
+        }
 
         mOnRefreshListener = new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -301,7 +305,9 @@ public class MainActivity extends BaseActivity {
             layoutParams.gravity = Gravity.CENTER;
             mMainEmptyView.setLayoutParams(layoutParams);
 
-            viewGroup.addView(mMainEmptyView);
+            if (viewGroup != null) {
+                viewGroup.addView(mMainEmptyView);
+            }
         } else {
             if (mMainEmptyView.getVisibility() != View.VISIBLE) {
                 mMainEmptyView.setVisibility(View.VISIBLE);

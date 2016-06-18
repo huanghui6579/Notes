@@ -16,6 +16,7 @@ import net.ibaixin.notes.R;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,6 +28,9 @@ import java.util.concurrent.Executors;
 public class SystemUtil {
     
     private static final String TAG = SystemUtil.class.getSimpleName();
+    
+    private static final String PREFIX_NOTE = "N";
+    private static final String PREFIX_FOLDER = "F";
 
     private static ExecutorService cachedThreadPool = null;//可缓存的线程池
     
@@ -45,6 +49,43 @@ public class SystemUtil {
             }
         }
         return cachedThreadPool;
+    }
+    
+    /**
+     * 生成笔记的sid
+     * @author huanghui1
+     * @update 2016/6/18 15:49
+     * @version: 1.0.0
+     */
+    public static String generateNoteSid() {
+        return PREFIX_NOTE + generateNoteSid();
+    }
+    
+    /**
+     * 生成文件夹的sid
+     * @author huanghui1
+     * @update 2016/6/18 15:50
+     * @version: 1.0.0
+     */
+    public static String generateFolderSid() {
+        return PREFIX_FOLDER + generateNoteSid();
+    }
+    
+    /**
+     * 生成sid
+     * @author huanghui1
+     * @update 2016/6/18 15:49
+     * @version: 1.0.0
+     */
+    public static String generateSid() {
+        int hashCodeV = UUID.randomUUID().toString().hashCode();
+        if (hashCodeV < 0) {// 有可能是负数
+            hashCodeV = -hashCodeV;
+        }
+        // 0 代表前面补充0
+        // 15 代表长度为15
+        // d 代表参数为正数型
+        return /*machineId + */String.format("%018d", hashCodeV);
     }
 
     /**

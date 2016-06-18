@@ -1,5 +1,6 @@
 package net.ibaixin.notes.ui;
 
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.widget.PopupMenu;
@@ -18,6 +19,12 @@ import android.widget.TextView;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.EditStep;
+import net.ibaixin.notes.model.NoteInfo;
+import net.ibaixin.notes.model.SyncState;
+import net.ibaixin.notes.persistent.NoteManager;
+import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.DigestUtil;
+import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 
 import java.lang.ref.WeakReference;
@@ -30,8 +37,10 @@ import java.util.Stack;
  * @version: 1.0.0
  */
 public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher {
+    public static final String ARG_NOTE_ID = "noteId";
+    public static final String ARG_FOLDER_ID = "folderId";
     
-    private static final int MSG_INIT_BOOTOM_TOOL_BAR = 1;
+    private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mCameraPopu;
@@ -63,8 +72,15 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * 是否是手动回车换行
      */
     private boolean mIsNextLine;
+    
+    private NoteManager mNoteManager;
+    
+    private NoteInfo mNote;
 
     private Handler mHandler = new MyHandler(this);
+    
+    //文件夹id
+    private String folderId;
 
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -99,7 +115,77 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     protected void initData() {
+        mNoteManager = NoteManager.getInstance();
+        Intent intent = getIntent();
+        if (intent != null) {
+            int noteId = intent.getIntExtra(ARG_NOTE_ID, 0);
+            folderId = intent.getStringExtra(ARG_FOLDER_ID);
+            if (noteId > 0) {
+                loadNoteInfo(noteId);
+            }
+        }
+    }
 
+    /**
+     * 显示笔记到界面上
+     * @param note
+     */
+    private void showNote(NoteInfo note) {
+        mEtContent.setText(note.getContent());
+    }
+    
+    /**
+     * 根据noteid获取note内容
+     * @author huanghui1
+     * @update 2016/6/18 15:04
+     * @version: 1.0.0
+     */
+    private void loadNoteInfo(final int noteId) {
+        SystemUtil.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                mNote = mNoteManager.getNote(noteId);
+                if (mNote != null) {
+                    mHandler.sendEmptyMessage(Constants.MSG_SUCCESS);
+                }
+            }
+        });
+    }
+
+    /**
+     * 保存笔记
+     * @return
+     */
+    private void saveNote() {
+        String content = TextUtils.isEmpty(mEtContent.getText()) ? "" : mEtContent.getText().toString();
+        Intent intent = null;
+        if (mNote != null) {    //更新笔记
+            mNote.setContent(content);
+            mNote.setModifyTime(System.currentTimeMillis());
+            mNote.setSyncState(SyncState.SYNC_UP);
+            intent = new Intent();
+            intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
+        } else if (!TextUtils.isEmpty(content)) {    //添加笔记
+            intent = new Intent();
+            intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_ADD_NOTE);
+            long time = System.currentTimeMillis();
+            mNote.setContent(content);
+            mNote.setModifyTime(time);
+            mNote.setCreateTime(time);
+            mNote.setFolderId(folderId);
+            mNote.setHash(DigestUtil.md5Digest(content));
+            mNote.setKind(NoteInfo.NoteKind.TEXT);
+            mNote.setSId(SystemUtil.generateNoteSid());
+            int userId = getCurrentUserId();
+            if (userId > 0) {
+                mNote.setUserId(userId);
+            }
+            mNote.setSyncState(SyncState.SYNC_UP);
+        }
+        if (intent != null) {
+            intent.putExtra(Constants.ARG_CORE_OBJ, mNote);
+            startService(intent);
+        }
     }
 
     @Override
@@ -118,6 +204,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 return false;
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        saveNote();
+        super.onDestroy();
     }
 
     @Override
@@ -388,7 +480,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         String subS = text.substring(0, start);
         //光标所在行的第一位
         int startIndex = subS.lastIndexOf("\n") + 1;
-        editable.insert(startIndex, "-");
+        subS = subS.substring(startIndex);
+        if (subS.startsWith("- ")) {
+            int end = startIndex + "- ".length();
+            editable.delete(startIndex, end);
+            mIsFormatList = false;
+        } else {
+            editable.insert(startIndex, "- ");
+        }
     }
 
     /**
@@ -422,6 +521,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             switch (msg.what) {
                 case MSG_INIT_BOOTOM_TOOL_BAR:
                     activity.initBottomToolBar();
+                    break;
+                case Constants.MSG_SUCCESS:
+                    if (activity.mNote != null) {
+                        activity.showNote(activity.mNote);
+                    }
                     break;
             }
             super.handleMessage(msg);

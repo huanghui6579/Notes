@@ -264,6 +264,20 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
     
     /**
+     * 获取当前用户的本地数据库id
+     * @author huanghui1
+     * @update 2016/6/18 15:53
+     * @version: 1.0.0
+     */
+    protected int getCurrentUserId() {
+        User user = getCurrentUser();
+        if (user != null) {
+            return user.getId();
+        }
+        return 0;
+    }
+    
+    /**
      * 初始化数据
      * @author huanghui1
      * @update 2016/2/24 17:35

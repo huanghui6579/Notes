@@ -1,5 +1,8 @@
 package net.ibaixin.notes.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.Comparator;
 
 /**
@@ -8,7 +11,7 @@ import java.util.Comparator;
  * @update 2016/2/26 14:49
  * @version: 0.0.1
  */
-public class NoteInfo implements Comparator<NoteInfo> {
+public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     private int id;
 
     /**
@@ -44,7 +47,7 @@ public class NoteInfo implements Comparator<NoteInfo> {
     /**
      * 笔记的类型，主要分为{@link net.ibaixin.notes.model.NoteInfo.NoteKind#TEXT}和{@link net.ibaixin.notes.model.NoteInfo.NoteKind#DETAILED_LIST}
      */
-    private NoteKind kind;
+    private NoteKind kind = NoteKind.TEXT;
 
     /**
      * 同步的状态
@@ -54,7 +57,7 @@ public class NoteInfo implements Comparator<NoteInfo> {
     /**
      * 删除的状态
      */
-    private DeleteState deleteState;
+    private DeleteState deleteState = DeleteState.DELETE_DONE;
 
     /**
      * 是否有附件
@@ -80,6 +83,56 @@ public class NoteInfo implements Comparator<NoteInfo> {
      * 前一版本的文本内容
      */
     private String oldContent;
+    
+    public NoteInfo() {}
+
+    public NoteInfo(Parcel in) {
+        id = in.readInt();
+        sId = in.readString();
+        userId = in.readInt();
+        content = in.readString();
+        remindId = in.readInt();
+        remindTime = in.readLong();
+        folderId = in.readString();
+        hasAttach = in.readByte() != 0;
+        createTime = in.readLong();
+        modifyTime = in.readLong();
+        hash = in.readString();
+        oldContent = in.readString();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeString(sId);
+        dest.writeInt(userId);
+        dest.writeString(content);
+        dest.writeInt(remindId);
+        dest.writeLong(remindTime);
+        dest.writeString(folderId);
+        dest.writeByte((byte) (hasAttach ? 1 : 0));
+        dest.writeLong(createTime);
+        dest.writeLong(modifyTime);
+        dest.writeString(hash);
+        dest.writeString(oldContent);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<NoteInfo> CREATOR = new Creator<NoteInfo>() {
+        @Override
+        public NoteInfo createFromParcel(Parcel in) {
+            return new NoteInfo(in);
+        }
+
+        @Override
+        public NoteInfo[] newArray(int size) {
+            return new NoteInfo[size];
+        }
+    };
 
     @Override
     public boolean equals(Object o) {
@@ -99,8 +152,8 @@ public class NoteInfo implements Comparator<NoteInfo> {
 
     @Override
     public int compare(NoteInfo lhs, NoteInfo rhs) {
-        int lId = lhs.getId();
-        int rId = rhs.getId();
+        long lId = lhs.getId();
+        long rId = rhs.getId();
         if (lId > rId) {
             return 1;
         } else if (lId < rId) {
