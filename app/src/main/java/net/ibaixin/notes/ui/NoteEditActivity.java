@@ -27,7 +27,6 @@ import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.DigestUtil;
-import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.NoteEditText;
@@ -537,17 +536,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         int selectionStart = mEtContent.getSelectionStart();
         //光标所在位置前面的文字
         String beforeText = text.substring(0, selectionStart);
-        String subS = text.substring(0, selectionStart);
         //光标所在行的第一位
-        int startIndex = subS.lastIndexOf("\n") + 1;
-        subS = subS.substring(startIndex);
-        if (subS.startsWith("- ")) {
-            int end = startIndex + "- ".length();
-            editable.delete(startIndex, end);
-            mIsFormatList = false;
-        } else {
-            editable.insert(startIndex, "- ");
-        }
         int lineStart = beforeText.lastIndexOf(Constants.TAG_ENTER) + 1;
         //光标后面的文字
         String endText = text.substring(selectionStart);
@@ -671,6 +660,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     if (activity.mNote != null) {
                         activity.showNote(activity.mNote);
                     }
+                    break;
                 case MSG_AUTO_LINK: //自动链接
                     if (activity.mAutoLinkTask == null) {
                         activity.mAutoLinkTask = activity.new AutoLnkTask();
