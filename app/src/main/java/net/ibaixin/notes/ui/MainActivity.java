@@ -1,17 +1,20 @@
 package net.ibaixin.notes.ui;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -31,11 +34,15 @@ import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.ContentObserver;
 import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.listener.OnItemClickListener;
+import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
+import net.ibaixin.notes.persistent.FolderManager;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
+import net.ibaixin.notes.util.TimeUtil;
+import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.DividerItemDecoration;
 import net.ibaixin.notes.widget.LayoutManagerFactory;
 
@@ -61,8 +68,6 @@ public class MainActivity extends BaseActivity {
     private NoteListAdapter mNoteListAdapter;
     private NoteGridAdapter mNoteGridAdapter;
 
-    List<Folder> mFolders;
-    
     private List<NoteInfo> mNotes;
     
     private SwipeRefreshLayout.OnRefreshListener mOnRefreshListener;
@@ -99,6 +104,13 @@ public class MainActivity extends BaseActivity {
     private View mMainEmptyView;
     
     private NoteContentObserver mNoteObserver;
+    
+    private NoteManager mNoteManager;
+    
+    //是否有删除笔记的操作，第一次操作则有删除提示，后面则没有了
+    private boolean mHasDeleteOpt;
+    
+    private List<Folder> mFolders = new ArrayList<>();
     
     private final Handler mHandler = new MyHandler(this);
 
@@ -149,11 +161,6 @@ public class MainActivity extends BaseActivity {
             }
         }
     }
-    
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
 
     @Override
     protected int getContentView() {
@@ -164,15 +171,17 @@ public class MainActivity extends BaseActivity {
     protected void initView() {
         //初始化主界面右下角编辑按钮
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(mContext, NoteEditActivity.class);
-                startActivity(intent);
+        if (fab != null) {
+            fab.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(mContext, NoteEditActivity.class);
+                    startActivity(intent);
 //                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
 //                        .setAction("Action", null).show();
-            }
-        });
+                }
+            });
+        }
 
         //初始化顶部栏
         if (mToolBar != null) {
@@ -206,7 +215,7 @@ public class MainActivity extends BaseActivity {
         //初始化左侧导航菜单
         RecyclerView navigationView = (RecyclerView) findViewById(R.id.nav_view);
 
-        mFolders = new ArrayList<>();
+        mNoteManager = NoteManager.getInstance();
 
         initFolder();
 
@@ -227,8 +236,7 @@ public class MainActivity extends BaseActivity {
             public void onRefresh() {
                 SystemUtil.getThreadPool().execute(new Runnable() {
                     @Override
-                    public void run() {
-                        
+                    public void run() { 
                         NoteManager noteManager = NoteManager.getInstance();
 
                         Bundle args = new Bundle();
@@ -252,12 +260,48 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initData() {
+        //初始化配置文件
+        initProperties();
+
+        //加载文件夹
+        loadFolder();
 
         mRefresher.post(new Runnable() {
             @Override
             public void run() {
                 mRefresher.setRefreshing(true);
                 mOnRefreshListener.onRefresh();
+            }
+        });
+    }
+    
+    /**
+     * 初始化配置文件
+     * @author huanghui1
+     * @update 2016/6/22 17:32
+     * @version: 1.0.0
+     */
+    private void initProperties() {
+        SystemUtil.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                mHasDeleteOpt = sharedPreferences.getBoolean(Constants.PREF_HAS_DELETE_OPT, false);
+            }
+        });
+    }
+
+    /**
+     * 加载文件夹
+     */
+    private void loadFolder() {
+        SystemUtil.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                List<Folder> list = FolderManager.getInstance().getAllFolders(getCurrentUser(), null);
+                if (list != null) {
+                    mFolders.addAll(list);
+                }
             }
         });
     }
@@ -277,9 +321,7 @@ public class MainActivity extends BaseActivity {
         SystemUtil.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                NoteManager noteManager = NoteManager.getInstance();
-                List<Folder> list = noteManager.getAllFolders(getCurrentUser(), null);
-
+                List<Folder> list = FolderManager.getInstance().getAllFolders(getCurrentUser(), null);
                 if (!SystemUtil.isEmpty(list)) {
                     Message msg = mHandler.obtainMessage();
                     msg.obj = list;
@@ -328,8 +370,10 @@ public class MainActivity extends BaseActivity {
                 mMainEmptyView.setVisibility(View.GONE);
             }
             CoordinatorLayout viewGroup = (CoordinatorLayout) findViewById(R.id.content_main);
-            viewGroup.removeView(mMainEmptyView);
-            mMainEmptyView = null;
+            if (viewGroup != null) {
+                viewGroup.removeView(mMainEmptyView);
+                mMainEmptyView = null;
+            }
         }
     }
     
@@ -364,7 +408,7 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
+        if (drawer != null && drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
@@ -547,7 +591,7 @@ public class MainActivity extends BaseActivity {
      */
     private void addNote(NoteInfo note) {
         mNotes.add(0, note);
-        setShowContentStyle(mIsGridStyle, false);
+        updateUI(mNotes);
     }
     
     /**
@@ -584,7 +628,10 @@ public class MainActivity extends BaseActivity {
     private void updateUI(List<NoteInfo> list) {
         if (!SystemUtil.isEmpty(list)) {  //有数据
             setShowContentStyle(mIsGridStyle, false);
-
+            //显示recycleView
+            if (mRefresher.getVisibility() != View.VISIBLE) {
+                mRefresher.setVisibility(View.VISIBLE);
+            }
             clearEmptyView();
         } else {    //没有数据
             setShowContentStyle(mIsGridStyle, false);
@@ -784,13 +831,102 @@ public class MainActivity extends BaseActivity {
 
         @Override
         public void onBindViewHolder(NoteGridViewHolder holder, int position) {
-            holder.mTvTitle.setText(mList.get(position).getContent());
+            NoteInfo note = mList.get(position);
+            if (note != null) {
+                holder.mIvOverflow.setOnClickListener(new GridItemClickListener(note));
+                holder.mTvTitle.setText(note.getContent());
+                holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
+                holder.mTvSumary.setText(note.getContent());
+            }
         }
 
         @Override
         public int getItemCount() {
             return mList == null ? 0 : mList.size();
         }
+
+        /**
+         * 网格的每一项点击事件
+         * @author huanghui1
+         * @update 2016/6/21 11:40
+         * @version: 1.0.0
+         */
+        class GridItemClickListener implements View.OnClickListener {
+            private NoteInfo note;
+
+            public GridItemClickListener(NoteInfo note) {
+                this.note = note;
+            }
+
+            @Override
+            public void onClick(View v) {
+                switch (v.getId()) {
+                    case R.id.iv_overflow:
+                        PopupMenu itemMenu = createPopuMenu(v, R.menu.grid_item_opt, false, new ItemMenuClickListener(note));
+                        itemMenu.show();
+                        break;
+                }
+            }
+        }
+
+        /**
+         * 菜单的每一项点击监听器
+         * @author huanghui1
+         * @update 2016/6/21 14:45
+         * @version: 1.0.0
+         */
+        class ItemMenuClickListener implements PopupMenu.OnMenuItemClickListener {
+            private NoteInfo note;
+
+            public ItemMenuClickListener(NoteInfo note) {
+                this.note = note;
+            }
+
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.action_delete:    //删除
+                        if (!mHasDeleteOpt) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+                            builder.setTitle(R.string.prompt)
+                                    .setMessage(R.string.confirm_to_trash)
+                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            note.setDeleteState(DeleteState.DELETE_TRASH);
+                                            mNoteManager.deleteNote(note);
+                                            SystemUtil.getThreadPool().execute(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                                                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                                                    editor.putBoolean(Constants.PREF_HAS_DELETE_OPT, true);
+                                                    editor.apply();
+                                                    mHasDeleteOpt = true;
+                                                }
+                                            });
+                                        }
+                                    })
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .show();
+                        } else {
+                            note.setDeleteState(DeleteState.DELETE_TRASH);
+                            mNoteManager.deleteNote(note);
+                        }
+                        break;
+                    case R.id.action_info:  //详情
+                        String info = note.getNoteInfo(mContext);
+                        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+                        builder.setTitle(note.getContent())
+                                .setMessage(info)
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show();
+                        break;
+                }
+                return false;
+            }
+        }
+
     }
     
     /**
@@ -815,13 +951,22 @@ public class MainActivity extends BaseActivity {
                     }
                     switch (notifyType) {
                         case ADD:   //添加
+                            Log.d(TAG, "------addNote----" + noteInfo);
                             if (noteInfo != null) {
                                 addNote(noteInfo);
                             }
                             break;
                         case UPDATE:    //修改笔记
+                            Log.d(TAG, "------updateNote----" + noteInfo);
                             if (noteInfo != null) {
                                 updateNote(noteInfo);
+                            }
+                            break;
+                        case DELETE:    //删除、移到回收站
+                            Log.d(TAG, "------deleteNote----" + noteInfo);
+                            if (noteInfo != null) {
+                                mNotes.remove(noteInfo);
+                                updateUI(mNotes);
                             }
                             break;
                     }

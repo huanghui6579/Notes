@@ -17,7 +17,7 @@ public class Folder {
     /**
      * 用户的id
      */
-    private String userId;
+    private int userId;
 
     /**
      * 是否是默认的文件夹
@@ -165,11 +165,11 @@ public class Folder {
         this.count = count;
     }
 
-    public String getUserId() {
+    public int getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(int userId) {
         this.userId = userId;
     }
 }

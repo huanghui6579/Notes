@@ -10,6 +10,22 @@
     <string name="main_empty_tip_login">立即登录</string>
 
     <string name="no_data">无数据</string>
+    <string name="prompt">提示</string>
+    
+    <string name="colon">：</string>
+    
+    <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
+
+    <string name="note_type_text">文本</string>
+    <string name="note_type_list">清单</string>
+    <string name="note_sync_type_none">未同步</string>
+    <string name="note_sync_type_done">已同步</string>
+    
+    <string name="note_type">类型</string>
+    <string name="note_words">字数</string>
+    <string name="note_create_time">创建时间</string>
+    <string name="note_modify_time">修改时间</string>
+    <string name="note_sync_state">同步状态</string>
 
     <string name="default_archive">所有</string>
 
@@ -33,4 +49,5 @@
     <string name="action_share">分享</string>
     <string name="action_info">详情</string>
     <string name="action_delete">删除</string>
+    <string name="action_move">移动</string>
 </resources>

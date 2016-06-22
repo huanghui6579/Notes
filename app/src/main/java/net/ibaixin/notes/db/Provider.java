@@ -63,7 +63,7 @@ public final class Provider {
         /**
          * 文件夹的id
          */
-        public static final String FOLDER_ID = "folderId";
+        public static final String FOLDER_ID = "folder_id";
 
         /**
          * 笔记内容

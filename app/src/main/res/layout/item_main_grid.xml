@@ -34,8 +34,7 @@
             android:singleLine="true"
             android:layout_margin="@dimen/grid_item_padding"
             android:layout_toLeftOf="@id/iv_overflow"
-            android:layout_toStartOf="@id/iv_overflow"
-            android:text="测试标题"/>
+            android:layout_toStartOf="@id/iv_overflow"/>
 
         <TextView
             android:id="@id/tv_time"
@@ -49,8 +48,7 @@
             android:layout_marginStart="@dimen/grid_item_padding"
             android:layout_marginRight="@dimen/grid_item_padding"
             android:layout_marginEnd="@dimen/grid_item_padding"
-            android:layout_alignParentBottom="true"
-            android:text="2016年2月12日"/>
+            android:layout_alignParentBottom="true"/>
 
         <TextView
             android:id="@id/tv_summary"
@@ -58,7 +56,7 @@
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceListItemSmall"
             android:textColor="@color/text_content_color"
-            android:layout_below="@id/iv_overflow"
+            android:layout_below="@id/tv_title"
             android:layout_above="@id/tv_time"
             android:textSize="@dimen/content_text_size"
             android:layout_marginBottom="@dimen/grid_content_spacing"
@@ -67,8 +65,7 @@
             android:layout_marginRight="@dimen/grid_item_padding"
             android:layout_marginEnd="@dimen/grid_item_padding"
             android:maxLines="6"
-            android:ellipsize="end"
-            android:text="测试内容的摘要一个强大的滑动组件，与经典的ListView相比，同样拥有item回收复用测试内容的摘要一个强大的滑动组件，与经典的ListView相比，同样拥有item回收复用测试内容的摘要一个强大的滑动组件，与经典的ListView相比，同样拥有item回收复用"/>
+            android:ellipsize="end"/>
         
 
     </net.ibaixin.notes.widget.SquareRelativeLayout>

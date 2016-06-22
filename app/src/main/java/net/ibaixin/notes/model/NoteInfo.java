@@ -1,7 +1,13 @@
 package net.ibaixin.notes.model;
 
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.TextUtils;
+
+import net.ibaixin.notes.R;
+import net.ibaixin.notes.cache.FolderCache;
+import net.ibaixin.notes.util.TimeUtil;
 
 import java.util.Comparator;
 
@@ -57,7 +63,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     /**
      * 删除的状态
      */
-    private DeleteState deleteState = DeleteState.DELETE_DONE;
+    private DeleteState deleteState = DeleteState.DELETE_NONE;
 
     /**
      * 是否有附件
@@ -163,6 +169,27 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         }
     }
 
+    @Override
+    public String toString() {
+        return "NoteInfo{" +
+                "id=" + id +
+                ", sId='" + sId + '\'' +
+                ", userId=" + userId +
+                ", content='" + content + '\'' +
+                ", remindId=" + remindId +
+                ", remindTime=" + remindTime +
+                ", folderId='" + folderId + '\'' +
+                ", kind=" + kind +
+                ", syncState=" + syncState +
+                ", deleteState=" + deleteState +
+                ", hasAttach=" + hasAttach +
+                ", createTime=" + createTime +
+                ", modifyTime=" + modifyTime +
+                ", hash='" + hash + '\'' +
+                ", oldContent='" + oldContent + '\'' +
+                '}';
+    }
+
     /**
      * 笔记的类型，主要分为文本笔记和清单笔记
      * @author tiger
@@ -178,6 +205,45 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
          * 清单笔记
          */
         DETAILED_LIST;
+    }
+
+    /**
+     * 获取笔记的详细信息
+     * @return
+     */
+    public String getNoteInfo(Context context) {
+        StringBuilder builder = new StringBuilder();
+        String colon = context.getString(R.string.colon);
+        String typeStr = "";
+        switch (kind) {
+            case TEXT:
+                typeStr = context.getString(R.string.note_type_text);
+                break;
+            case DETAILED_LIST:
+                typeStr = context.getString(R.string.note_type_list);
+                break;
+        }
+        String syncStateStr = context.getString(R.string.note_sync_type_none);
+        if (syncState != null && syncState.ordinal() != SyncState.SYNC_NONE.ordinal()) {
+            syncStateStr = context.getString(R.string.note_sync_type_done);
+        }
+        String foldername = null;
+        if (!TextUtils.isEmpty(folderId)) {
+            Folder folder = FolderCache.getInstance().getFolderMap().get(folderId);
+            if (folder != null) {
+                foldername = folder.getName();
+            }
+        }
+        String nextLine = "\r\n";
+        builder.append(context.getString(R.string.note_type)).append(colon).append(typeStr).append(nextLine);
+        if (!TextUtils.isEmpty(foldername)) {
+            builder.append(context.getString(R.string.action_folder)).append(colon).append(foldername).append(nextLine);
+        }
+        builder.append(context.getString(R.string.note_words)).append(colon).append(content.length()).append(nextLine)
+                .append(context.getString(R.string.note_create_time)).append(colon).append(TimeUtil.formatNoteTime(createTime)).append(nextLine)
+                .append(context.getString(R.string.note_modify_time)).append(colon).append(TimeUtil.formatNoteTime(modifyTime)).append(nextLine)
+                .append(context.getString(R.string.note_sync_state)).append(colon).append(syncStateStr);
+        return builder.toString();
     }
 
     public int getId() {

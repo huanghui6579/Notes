@@ -9,6 +9,9 @@ public class Constants {
     public static final String APP_ROOT_NAME = "IbaiXinNotes";
     public static final String LOG_SUBFFIX = ".log";
     public static final String LOG_DIR = "log";
+    
+    public static final String PREF_HAS_DELETE_OPT = "has_delete_opt";
+    
 
     /**
      * 回车的标签

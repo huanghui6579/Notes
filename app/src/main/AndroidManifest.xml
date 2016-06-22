@@ -30,6 +30,8 @@
         <activity android:name="net.ibaixin.notes.ui.NoteEditActivity"
             android:windowSoftInputMode="adjustResize">
         </activity>
+        
+        <service android:name=".service.CoreService" />
     </application>
 
 </manifest>

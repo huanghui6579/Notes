@@ -12,10 +12,10 @@ import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.db.observer.Observer;
 import net.ibaixin.notes.model.DeleteState;
-import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.model.User;
+import net.ibaixin.notes.util.log.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +28,8 @@ import java.util.List;
  */
 public class NoteManager extends Observable<Observer> {
     private static NoteManager mInstance = null;
+    
+    private static final String TAG = "NoteManager";
     
     private DBHelper mDBHelper;
     
@@ -65,13 +67,17 @@ public class NoteManager extends Observable<Observer> {
         String selection = null;
         String[] selectionArgs = null;
         int folder = 0;
+        boolean isRecycle = false;
         if (args != null) {
             folder = args.getInt("folderId", 0);
+            isRecycle = args.getBoolean("isRecycle", false);
         }
+        int deleteState = isRecycle ? 1 : 0;
+        //是否加载回收站里的笔记
         int userId = 0;
         if (user != null) { //当前用户有登录
             userId = user.getId();
-            selection = Provider.NoteColumns.USER_ID + " = ?";
+            selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
             
             if (folder != 0) {
                 selection += " AND " + Provider.NoteColumns.FOLDER_ID + " = ?";
@@ -81,8 +87,11 @@ public class NoteManager extends Observable<Observer> {
             }
         } else {    //当前用户没有登录
             if (folder != 0) {
-                selection = Provider.NoteColumns.FOLDER_ID + " = ?";
+                selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
                 selectionArgs = new String[] {String.valueOf(folder)};
+            } else {
+                selection = Provider.NoteColumns.DELETE_STATE + " = ?";
+                selectionArgs = new String[] {String.valueOf(deleteState)};
             }
         }
         List<NoteInfo> list = null;
@@ -100,44 +109,32 @@ public class NoteManager extends Observable<Observer> {
     }
     
     /**
-     * 加载当前用户所有的文件夹
+     * 删除笔记
      * @author huanghui1
-     * @update 2016/3/8 15:14
+     * @update 2016/6/21 15:16
      * @version: 1.0.0
      */
-    public List<Folder> getAllFolders(User user, Bundle args) {
-        SQLiteDatabase db = mDBHelper.getReadableDatabase();
-        String selection = null;
-        String[] selectionArgs = null;
-        int userId = 0;
-        if (user != null) { //当前用户有登录
-            userId = user.getId();
-            selection = Provider.FolderColumns.USER_ID + " = ?";
-            selectionArgs = new String[] {String.valueOf(userId)};
+    public boolean deleteNote(NoteInfo note) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(Provider.NoteColumns.DELETE_STATE, note.getDeleteState().ordinal());
+        int row = 0;
+        try {
+            db.beginTransaction();
+            row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "--deleteNote---error---" + e.getMessage());
+        } finally {
+            db.endTransaction();
         }
-        List<Folder> list = null;
-        Cursor cursor = db.query(Provider.FolderColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.FolderColumns.DEFAULT_SORT);
-        if (cursor != null) {
-            list = new ArrayList<>();
-            while (cursor.moveToNext()) {
-                Folder folder = new Folder();
-                folder.setId(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns._ID)));
-                folder.setSId(cursor.getString(cursor.getColumnIndex(Provider.FolderColumns.SID)));
-                folder.setIsDefault(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.DEFAULT_FOLDER)) == 1);
-                folder.setIsHidden(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.IS_HIDDEN)) == 1);
-                folder.setIsLock(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.IS_LOCK)) == 1);
-                folder.setName(cursor.getString(cursor.getColumnIndex(Provider.FolderColumns.NAME)));
-                folder.setSyncState(SyncState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.SYNC_STATE))));
-                folder.setDeleteState(DeleteState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.DELETE_STATE))));
-                folder.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.CREATE_TIME)));
-                folder.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.MODIFY_TIME)));
-                folder.setCount(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns._COUNT)));
-
-                list.add(folder);
-            }
-            cursor.close();
+        if (row > 0) {
+            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, note);
+            return true;
+        } else {
+            Log.w(TAG, "-------deleteNote---failed----");
+            return false;
         }
-        return list;
     }
     
     /**
@@ -158,8 +155,14 @@ public class NoteManager extends Observable<Observer> {
         values.put(Provider.NoteColumns.OLD_CONTENT, note.getOldContent());
         values.put(Provider.NoteColumns.REMIND_ID, note.getRemindId());
         values.put(Provider.NoteColumns.REMIND_TIME, note.getRemindTime());
-        values.put(Provider.NoteColumns.DELETE_STATE, note.getDeleteState().ordinal());
-        values.put(Provider.NoteColumns.SYNC_STATE, note.getSyncState().ordinal());
+        DeleteState deleteState = note.getDeleteState();
+        if (deleteState != null) {
+            values.put(Provider.NoteColumns.DELETE_STATE, deleteState.ordinal());
+        }
+        SyncState syncState = note.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.NoteColumns.SYNC_STATE, syncState.ordinal());
+        }
         values.put(Provider.NoteColumns.SID, note.getSId());
         return values;
     }
@@ -193,7 +196,16 @@ public class NoteManager extends Observable<Observer> {
     public NoteInfo addNote(NoteInfo note) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         ContentValues values = initNoteValues(note);
-        long rowId = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
+        db.beginTransaction();
+        long rowId = 0;
+        try {
+            rowId = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "--addNote--error--" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
         if (rowId > 0) {
             note.setId((int) rowId);
             notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, note);

@@ -60,7 +60,7 @@ public class SystemUtil {
      * @version: 1.0.0
      */
     public static String generateNoteSid() {
-        return PREFIX_NOTE + generateNoteSid();
+        return PREFIX_NOTE + generateSid();
     }
     
     /**
@@ -70,7 +70,7 @@ public class SystemUtil {
      * @version: 1.0.0
      */
     public static String generateFolderSid() {
-        return PREFIX_FOLDER + generateNoteSid();
+        return PREFIX_FOLDER + generateSid();
     }
     
     /**

@@ -25,6 +25,7 @@ import net.ibaixin.notes.model.EditStep;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.persistent.NoteManager;
+import net.ibaixin.notes.service.CoreService;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.DigestUtil;
 import net.ibaixin.notes.util.SystemUtil;
@@ -171,11 +172,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mNote.setContent(content);
             mNote.setModifyTime(System.currentTimeMillis());
             mNote.setSyncState(SyncState.SYNC_UP);
-            intent = new Intent();
+            intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
         } else if (!TextUtils.isEmpty(content)) {    //添加笔记
             mNote = new NoteInfo();
-            intent = new Intent();
+            intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_ADD_NOTE);
             long time = System.currentTimeMillis();
             mNote.setContent(content);
