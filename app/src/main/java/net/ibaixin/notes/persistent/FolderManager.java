@@ -1,5 +1,6 @@
 package net.ibaixin.notes.persistent;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -8,10 +9,14 @@ import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.cache.FolderCache;
 import net.ibaixin.notes.db.DBHelper;
 import net.ibaixin.notes.db.Provider;
+import net.ibaixin.notes.db.observer.Observable;
+import net.ibaixin.notes.db.observer.Observer;
 import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.model.User;
+import net.ibaixin.notes.util.SystemUtil;
+import net.ibaixin.notes.util.log.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +29,7 @@ import java.util.Map;
  * @update 2016/6/22 20:47
  * @version: 0.0.1
  */
-public class FolderManager {
+public class FolderManager extends Observable<Observer> {
     private static FolderManager mInstance;
 
     private static final String TAG = "NoteManager";
@@ -109,4 +114,108 @@ public class FolderManager {
         }
         return list;
     }
+    
+    /**
+     * 获取对应文件夹的笔记数量
+     * @author huanghui1
+     * @update 2016/6/23 20:04
+     * @version: 1.0.0
+     */
+    public int getNoteCount(Folder folder) {
+        int count = 0;
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String selection = null;
+        String[] selectionArgs = null;
+        if (folder != null) {
+            int userId = folder.getUserId();
+            if (userId == 0) {  //没有登录账号
+                String folderId = folder.getSId();
+                if (folderId == null) { //没有id，则查询所有
+                    selection = Provider.NoteColumns.USER_ID + " = 0 AND " + Provider.NoteColumns.DELETE_STATE + " = ?";
+                    selectionArgs = new String[] {String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+                } else {
+                    selection = Provider.NoteColumns.USER_ID + " = 0 AND " + Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = ?";
+                    selectionArgs = new String[] {folderId, String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+                }
+            } else {    //有登录账号
+                String folderId = folder.getSId();
+                if (folderId == null) { //没有id，则查询所有
+                    selection = Provider.NoteColumns.USER_ID + " = ?" + Provider.NoteColumns.DELETE_STATE + " = ?";
+                    selectionArgs = new String[] {String.valueOf(userId), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+                } else {
+                    selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = ?";
+                    selectionArgs = new String[] {String.valueOf(userId), folderId, String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+                }
+            }
+        } else {    //查询所有没有用户id的且没有被删除的
+            selection = Provider.NoteColumns.USER_ID + " = 0 AND " + Provider.NoteColumns.DELETE_STATE + " = ?";
+            selectionArgs = new String[] {String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+        }
+        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, new String[] {"count(*)"}, selection, selectionArgs, null, null, null);
+        if (cursor != null && cursor.moveToNext()) {
+            count = (int) cursor.getLong(0);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return count;
+    }
+
+    /**
+     * 设置参数
+     * @param folder
+     * @return
+     */
+    private ContentValues initFolderValues(Folder folder) {
+        ContentValues values = new ContentValues();
+        values.put(Provider.FolderColumns.SID, SystemUtil.generateFolderSid());
+        DeleteState deleteState = folder.getDeleteState();
+        if (deleteState != null) {
+            values.put(Provider.FolderColumns.DELETE_STATE, deleteState.ordinal());
+        }
+        SyncState syncState = folder.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.FolderColumns.SYNC_STATE, syncState.ordinal());
+        }
+        values.put(Provider.FolderColumns.CREATE_TIME, folder.getCreateTime());
+        values.put(Provider.FolderColumns.MODIFY_TIME, folder.getModifyTime());
+        values.put(Provider.FolderColumns.DEFAULT_FOLDER, folder.isDefault());
+        values.put(Provider.FolderColumns.IS_HIDDEN, folder.isHidden());
+        values.put(Provider.FolderColumns.IS_LOCK, folder.isLock());
+        values.put(Provider.FolderColumns.NAME, folder.getName());
+        values.put(Provider.FolderColumns.SORT, folder.getSort());
+        values.put(Provider.FolderColumns.USER_ID, folder.getUserId());
+        values.put(Provider.FolderColumns._COUNT, folder.getCount());
+        return values;
+    }
+    
+    /**
+     * 添加笔记本文件夹
+     * @param folder 文件夹
+     * @author huanghui1
+     * @update 2016/6/23 21:11
+     * @version: 1.0.0
+     */
+    public Folder addFolder(Folder folder) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = initFolderValues(folder);
+        db.beginTransaction();
+        long rowId = 0;
+        try {
+            rowId = db.insert(Provider.FolderColumns.TABLE_NAME, null, values);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "----addFolder---error----" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        if (rowId > 0) {
+            folder.setId((int) rowId);
+            notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, folder);
+            return folder;
+        } else {
+            return null;
+        }
+    }
+    
 }

@@ -246,6 +246,25 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         return builder.toString();
     }
 
+    /**
+     * 根据内容获取标题，只取内容的第一行
+     * @return
+     */
+    public CharSequence getTitle() {
+        if (content == null) {
+            return null;
+        }
+        //去掉开头和结尾的空格
+        String tContent = content.trim();
+        String nextLine = "\n";
+        int index = tContent.indexOf(nextLine);
+        if (index != -1) {  //有换行
+            return tContent.substring(0, index);
+        } else {
+            return tContent;
+        }
+    }
+    
     public int getId() {
         return id;
     }

@@ -12,7 +12,6 @@ public class Constants {
     
     public static final String PREF_HAS_DELETE_OPT = "has_delete_opt";
     
-
     /**
      * 回车的标签
      */

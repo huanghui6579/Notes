@@ -42,8 +42,8 @@ public class SystemUtil {
      * 获得可缓存的线程池
      * @return
      */
-    public static ExecutorService getThreadPool(){
-        if(cachedThreadPool == null) {
+    public static ExecutorService getThreadPool() {
+        if (cachedThreadPool == null) {
             synchronized (SystemUtil.class) {
                 if(cachedThreadPool == null) {
                     cachedThreadPool = Executors.newCachedThreadPool();

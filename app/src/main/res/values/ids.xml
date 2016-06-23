@@ -9,4 +9,6 @@
     <item type="id" name="tv_content" />
     <item type="id" name="tv_time" />
     <item type="id" name="et_content" />
+    <item type="id" name="refresher" />
+    <item type="id" name="action_add" />
 </resources>

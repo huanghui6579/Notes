@@ -33,6 +33,7 @@ import net.ibaixin.notes.R;
 import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.ContentObserver;
 import net.ibaixin.notes.db.observer.Observable;
+import net.ibaixin.notes.helper.AdapterRefreshHelper;
 import net.ibaixin.notes.listener.OnItemClickListener;
 import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
@@ -57,7 +58,7 @@ import java.util.List;
  * @update 2016/2/24 19:25
  * @version: 1.0.0
  */
-public class MainActivity extends BaseActivity {
+public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     private NavViewAdapter mNavAdapter;
     
@@ -110,57 +111,13 @@ public class MainActivity extends BaseActivity {
     //是否有删除笔记的操作，第一次操作则有删除提示，后面则没有了
     private boolean mHasDeleteOpt;
     
+    private View mNavArchiveView;
+    private View mNavTrashView;
+    private View mNavSettingsView;
+    
     private List<Folder> mFolders = new ArrayList<>();
     
     private final Handler mHandler = new MyHandler(this);
-
-    private static class MyHandler extends Handler {
-        private final WeakReference<MainActivity> mTarget;
-
-        public MyHandler(MainActivity target) {
-            mTarget = new WeakReference<>(target);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            MainActivity target = mTarget.get();
-            if (target != null) {
-                switch (msg.what) {
-                    case Constants.MSG_SUCCESS:
-                        int currentItem = target.mNavAdapter.getSelectedItem();
-                        if (currentItem != target.mSelectedFolderId) {  //更新默认选中的项
-                            target.mNavAdapter.setSelectedItem(target.mSelectedFolderId);
-                        }
-                        target.mNavAdapter.notifyDataSetChanged();
-                        break;
-                    case Constants.MSG_SUCCESS2:    //笔记内容加载成功
-                        target.mRefresher.setRefreshing(false);
-                        List<NoteInfo> list = (List<NoteInfo>) msg.obj;
-                        if (!SystemUtil.isEmpty(list)) {  //有数据
-                            if (!target.mNotes.isEmpty()) {
-                                target.mNotes.clear();
-                            }
-                            target.mNotes.addAll(list);
-                            target.setShowContentStyle(target.mIsGridStyle, false);
-                            
-                            target.clearEmptyView();
-                        } else {    //没有数据
-                            if (!target.mNotes.isEmpty()) { //原来有数据
-                                target.mNotes.clear();
-                                target.setShowContentStyle(target.mIsGridStyle, false);
-                            }
-                            //隐藏recycleView
-                            if (target.mRefresher.getVisibility() == View.VISIBLE) {
-                                target.mRefresher.setVisibility(View.GONE);
-                            }
-                            target.loadEmptyView();
-                        }
-                        
-                        break;
-                }
-            }
-        }
-    }
 
     @Override
     protected int getContentView() {
@@ -194,6 +151,14 @@ public class MainActivity extends BaseActivity {
             }
         }
 
+        mNavArchiveView = findViewById(R.id.nav_archive);
+        mNavTrashView = findViewById(R.id.nav_trash);
+        mNavSettingsView = findViewById(R.id.nav_settings);
+
+        mNavArchiveView.setOnClickListener(this);
+        mNavTrashView.setOnClickListener(this);
+        mNavSettingsView.setOnClickListener(this);
+
         //初始化下拉刷新界面
         mRefresher = (SwipeRefreshLayout) findViewById(R.id.refresher);
 
@@ -217,6 +182,7 @@ public class MainActivity extends BaseActivity {
 
         mNoteManager = NoteManager.getInstance();
 
+        //初始化文件夹
         initFolder();
 
         if (navigationView != null) {
@@ -234,20 +200,7 @@ public class MainActivity extends BaseActivity {
         mOnRefreshListener = new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                SystemUtil.getThreadPool().execute(new Runnable() {
-                    @Override
-                    public void run() { 
-                        NoteManager noteManager = NoteManager.getInstance();
-
-                        Bundle args = new Bundle();
-                        args.putInt("folderId", mSelectedFolderId);
-                        List<NoteInfo> list = noteManager.getAllNotes(getCurrentUser(), args);
-                        Message msg = mHandler.obtainMessage();
-                        msg.what = Constants.MSG_SUCCESS2;
-                        msg.obj = list;
-                        mHandler.sendMessage(msg);
-                    }
-                });
+                loadNotes();
             }
         };
 
@@ -292,16 +245,20 @@ public class MainActivity extends BaseActivity {
     }
 
     /**
-     * 加载文件夹
+     * 加载笔记
      */
-    private void loadFolder() {
+    private void loadNotes() {
         SystemUtil.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                List<Folder> list = FolderManager.getInstance().getAllFolders(getCurrentUser(), null);
-                if (list != null) {
-                    mFolders.addAll(list);
-                }
+                NoteManager noteManager = NoteManager.getInstance();
+                Bundle args = new Bundle();
+                args.putInt("folderId", mSelectedFolderId);
+                List<NoteInfo> list = noteManager.getAllNotes(getCurrentUser(), args);
+                Message msg = mHandler.obtainMessage();
+                msg.what = Constants.MSG_SUCCESS2;
+                msg.obj = list;
+                mHandler.sendMessage(msg);
             }
         });
     }
@@ -314,22 +271,38 @@ public class MainActivity extends BaseActivity {
      */
     private void initFolder() {
         mSelectedFolderId = SystemUtil.getSelectedFolder(mContext);
-        Folder archive = new Folder();
+
+        final Folder archive = new Folder();
         archive.setName(getString(R.string.default_archive));
+        
         mFolders.add(archive);
         
+    }
+    
+    /**
+     * 从数据库加载文件夹
+     * @author huanghui1
+     * @update 2016/6/23 16:25
+     * @version: 1.0.0
+     */
+    private void loadFolder() {
         SystemUtil.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
                 List<Folder> list = FolderManager.getInstance().getAllFolders(getCurrentUser(), null);
+                Folder archive = new Folder();
+                archive.setName(getString(R.string.default_archive));
                 if (!SystemUtil.isEmpty(list)) {
+                    list.add(0, archive);
                     Message msg = mHandler.obtainMessage();
                     msg.obj = list;
+                    msg.what = Constants.MSG_SUCCESS;
                     mHandler.sendMessage(msg);
                 }
             }
         });
     }
+    
     
     /**
      * 加载空的提示view
@@ -386,6 +359,7 @@ public class MainActivity extends BaseActivity {
     private void registContentObserver() {
         mNoteObserver = new NoteContentObserver(mHandler);
         NoteManager.getInstance().addObserver(mNoteObserver);
+        FolderManager.getInstance().addObserver(mNoteObserver);
     }
     
     /**
@@ -397,6 +371,7 @@ public class MainActivity extends BaseActivity {
     private void unRegistContentObserver() {
         if (mNoteObserver != null) {
             NoteManager.getInstance().removeObserver(mNoteObserver);
+            FolderManager.getInstance().removeObserver(mNoteObserver);
         }
     }
 
@@ -524,12 +499,13 @@ public class MainActivity extends BaseActivity {
     /**
      * 根据不同的显示方式来显示不同的样式
      * @param isGridStyle 是否是网格显示样式
-     * @param resetAdapter 是否重新设置adapter，如果不重新设置，则只是adapter的更新                   
+     * @param resetAdapter 是否重新设置adapter，如果不重新设置，则只是adapter的更新
+     * @param refreshHelper 更新的类型，0：全部刷新，1：添加，2：更新单个，3：删除                    
      * @author huanghui1
      * @update 2016/3/1 11:45
      * @version: 1.0.0
      */
-    private void setShowContentStyle(boolean isGridStyle, boolean resetAdapter) {
+    private void setShowContentStyle(boolean isGridStyle, boolean resetAdapter, AdapterRefreshHelper refreshHelper) {
         if (isGridStyle) { //显示成网格样式
             if (mItemDecoration != null) {
                 mRecyclerView.removeItemDecoration(mItemDecoration);
@@ -541,8 +517,14 @@ public class MainActivity extends BaseActivity {
             if (resetAdapter) {
                 mRecyclerView.setAdapter(mNoteGridAdapter);
             } else {
-                mNoteGridAdapter.notifyDataSetChanged();
+                if (refreshHelper == null || refreshHelper.type == AdapterRefreshHelper.TYPE_NONE) {
+                    mNoteGridAdapter.notifyDataSetChanged();
+                } else {
+                    refreshHelper.refresh(mNoteGridAdapter);
+                }
             }
+            int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
+            mRecyclerView.setPadding(padding, 0, padding, 0);
         } else {    //列表样式
             mRecyclerView.addItemDecoration(getItemDecoration(mContext));
             if (mNoteListAdapter == null) {
@@ -552,8 +534,13 @@ public class MainActivity extends BaseActivity {
             if (resetAdapter) {
                 mRecyclerView.setAdapter(mNoteListAdapter);
             } else {
-                mNoteListAdapter.notifyDataSetChanged();
+                if (refreshHelper == null || refreshHelper.type == AdapterRefreshHelper.TYPE_NONE) {
+                    mNoteListAdapter.notifyDataSetChanged();
+                } else {
+                    refreshHelper.refresh(mNoteListAdapter);
+                }
             }
+            mRecyclerView.setPadding(0, 0, 0, 0);
         }
     }
 
@@ -591,7 +578,25 @@ public class MainActivity extends BaseActivity {
      */
     private void addNote(NoteInfo note) {
         mNotes.add(0, note);
-        updateUI(mNotes);
+        AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+        refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
+        refreshHelper.position = 0;
+        refreshUI(mNotes, refreshHelper);
+    }
+
+    /**
+     * 删除笔记
+     * @param note
+     */
+    private void deleteNote(NoteInfo note) {
+        int index = mNotes.indexOf(note);
+        if (index != -1) {  //列表中存在
+            mNotes.remove(index);
+            AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+            refreshHelper.type = AdapterRefreshHelper.TYPE_DELETE;
+            refreshHelper.position = index;
+            refreshUI(mNotes, refreshHelper);
+        }
     }
     
     /**
@@ -615,7 +620,10 @@ public class MainActivity extends BaseActivity {
             info.setRemindId(note.getRemindId());
             info.setSyncState(note.getSyncState());
 
-            updateUI(mNotes);
+            AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+            refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
+            refreshHelper.position = index;
+            refreshUI(mNotes, refreshHelper);
         }
     }
     
@@ -625,21 +633,32 @@ public class MainActivity extends BaseActivity {
      * @update 2016/3/10 9:10
      * @version: 1.0.0
      */
-    private void updateUI(List<NoteInfo> list) {
+    private void refreshUI(List<NoteInfo> list, AdapterRefreshHelper refreshHelper) {
         if (!SystemUtil.isEmpty(list)) {  //有数据
-            setShowContentStyle(mIsGridStyle, false);
+            setShowContentStyle(mIsGridStyle, false, refreshHelper);
             //显示recycleView
             if (mRefresher.getVisibility() != View.VISIBLE) {
                 mRefresher.setVisibility(View.VISIBLE);
             }
             clearEmptyView();
         } else {    //没有数据
-            setShowContentStyle(mIsGridStyle, false);
+            setShowContentStyle(mIsGridStyle, false, null);
             //隐藏recycleView
             if (mRefresher.getVisibility() == View.VISIBLE) {
                 mRefresher.setVisibility(View.GONE);
             }
             loadEmptyView();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        Intent intent = null;
+        switch (v.getId()) {
+            case R.id.nav_archive:  //文件夹
+                intent = new Intent(mContext, FolderListActivity.class);
+                startActivity(intent);
+                break;
         }
     }
 
@@ -668,10 +687,13 @@ public class MainActivity extends BaseActivity {
                                 if (mNoteGridAdapter == null) {
                                     mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
                                 }
+                                int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
+                                mRecyclerView.setPadding(padding, 0, padding, 0);
                                 mRecyclerView.setAdapter(mNoteGridAdapter);
                                 item.setTitle(R.string.action_show_list);
                                 item.setIcon(R.drawable.ic_action_view_list);
                             } else {    //列表样式
+                                mRecyclerView.setPadding(0, 0, 0, 0);
                                 mRecyclerView.addItemDecoration(getItemDecoration(mContext));
                                 if (mNoteListAdapter == null) {
                                     mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
@@ -834,7 +856,7 @@ public class MainActivity extends BaseActivity {
             NoteInfo note = mList.get(position);
             if (note != null) {
                 holder.mIvOverflow.setOnClickListener(new GridItemClickListener(note));
-                holder.mTvTitle.setText(note.getContent());
+                holder.mTvTitle.setText(note.getTitle());
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
                 holder.mTvSumary.setText(note.getContent());
             }
@@ -917,7 +939,7 @@ public class MainActivity extends BaseActivity {
                     case R.id.action_info:  //详情
                         String info = note.getNoteInfo(mContext);
                         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-                        builder.setTitle(note.getContent())
+                        builder.setTitle(note.getTitle())
                                 .setMessage(info)
                                 .setPositiveButton(android.R.string.ok, null)
                                 .show();
@@ -927,6 +949,47 @@ public class MainActivity extends BaseActivity {
             }
         }
 
+    }
+
+    private static class MyHandler extends Handler {
+        private final WeakReference<MainActivity> mTarget;
+
+        public MyHandler(MainActivity target) {
+            mTarget = new WeakReference<>(target);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            MainActivity target = mTarget.get();
+            if (target != null) {
+                switch (msg.what) {
+                    case Constants.MSG_SUCCESS: //文件夹记载完毕
+                        int currentItem = target.mNavAdapter.getSelectedItem();
+                        if (currentItem != target.mSelectedFolderId) {  //更新默认选中的项
+                            target.mNavAdapter.setSelectedItem(target.mSelectedFolderId);
+                        }
+                        target.mNavAdapter.notifyDataSetChanged();
+                        break;
+                    case Constants.MSG_SUCCESS2:    //笔记内容加载成功
+                        target.mRefresher.setRefreshing(false);
+                        List<NoteInfo> list = (List<NoteInfo>) msg.obj;
+                        if (!SystemUtil.isEmpty(list)) {  //有数据
+                            if (!target.mNotes.isEmpty()) {
+                                target.mNotes.clear();
+                            }
+                            target.mNotes.addAll(list);
+                            target.refreshUI(target.mNotes, null);
+                        } else {    //没有数据
+                            if (!target.mNotes.isEmpty()) { //原来有数据
+                                target.mNotes.clear();
+                            }
+                            target.refreshUI(target.mNotes, null);
+                        }
+
+                        break;
+                }
+            }
+        }
     }
     
     /**
@@ -965,8 +1028,7 @@ public class MainActivity extends BaseActivity {
                         case DELETE:    //删除、移到回收站
                             Log.d(TAG, "------deleteNote----" + noteInfo);
                             if (noteInfo != null) {
-                                mNotes.remove(noteInfo);
-                                updateUI(mNotes);
+                                deleteNote(noteInfo);
                             }
                             break;
                     }
