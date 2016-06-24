@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.cache.FolderCache;
@@ -64,8 +65,6 @@ public class FolderManager extends Observable<Observer> {
         folder.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.CREATE_TIME)));
         folder.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.MODIFY_TIME)));
         folder.setDeleteState(DeleteState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.DELETE_STATE))));
-        folder.setIsDefault(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.DEFAULT_FOLDER)) == 1);
-        folder.setIsHidden(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.IS_HIDDEN)) == 1);
         folder.setIsLock(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.IS_LOCK)) == 1);
         folder.setName(cursor.getString(cursor.getColumnIndex(Provider.FolderColumns.NAME)));
         folder.setSort(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.SORT)));
@@ -94,10 +93,18 @@ public class FolderManager extends Observable<Observer> {
         int deleteState = isRecycle ? 1 : 0;
         if (user != null) { //当前用户有登录
             userId = user.getId();
-            selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+            if (deleteState == 0) {
+                selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " is null or " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+            } else {
+                selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+            }
             selectionArgs = new String[] {String.valueOf(userId)};
         } else {
-            selection = Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+            if (deleteState == 0) {
+                selection = Provider.FolderColumns.DELETE_STATE + " is null or " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+            } else {
+                selection = Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+            }
         }
         List<Folder> list = null;
         Cursor cursor = db.query(Provider.FolderColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.FolderColumns.DEFAULT_SORT);
@@ -179,8 +186,6 @@ public class FolderManager extends Observable<Observer> {
         }
         values.put(Provider.FolderColumns.CREATE_TIME, folder.getCreateTime());
         values.put(Provider.FolderColumns.MODIFY_TIME, folder.getModifyTime());
-        values.put(Provider.FolderColumns.DEFAULT_FOLDER, folder.isDefault());
-        values.put(Provider.FolderColumns.IS_HIDDEN, folder.isHidden());
         values.put(Provider.FolderColumns.IS_LOCK, folder.isLock());
         values.put(Provider.FolderColumns.NAME, folder.getName());
         values.put(Provider.FolderColumns.SORT, folder.getSort());
@@ -211,10 +216,57 @@ public class FolderManager extends Observable<Observer> {
         }
         if (rowId > 0) {
             folder.setId((int) rowId);
+            FolderCache.getInstance().getFolderMap().put(folder.getSId(), folder);
             notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, folder);
             return folder;
         } else {
             return null;
+        }
+    }
+    
+    /**
+     * 更新笔记
+     * @author huanghui1
+     * @update 2016/6/24 14:32
+     * @version: 1.0.0
+     */
+    public boolean updateFolder(Folder folder) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        if (folder.getUserId() > 0) {
+            values.put(Provider.FolderColumns.USER_ID, folder.getUserId());
+        }
+        DeleteState deleteState = folder.getDeleteState();
+        if (deleteState != null) {
+            values.put(Provider.FolderColumns.DELETE_STATE, deleteState.ordinal());
+        }
+        SyncState syncState = folder.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.FolderColumns.SYNC_STATE, syncState.ordinal());
+        }
+        values.put(Provider.FolderColumns._COUNT, folder.getCount());
+        values.put(Provider.FolderColumns.SORT, folder.getSort());
+        if (!TextUtils.isEmpty(folder.getName())) {
+            values.put(Provider.FolderColumns.NAME, folder.getName());
+        }
+        values.put(Provider.FolderColumns.IS_LOCK, folder.isLock() ? 1 : 0);
+        values.put(Provider.FolderColumns.MODIFY_TIME, folder.getModifyTime());
+        db.beginTransaction();
+        long rowId = 0;
+        try {
+            rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns._ID + " = ?", new String[] {String.valueOf(folder.getId())});
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "----updateFolder---error----" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        if (rowId > 0) {
+            FolderCache.getInstance().getFolderMap().put(folder.getSId(), folder);
+            notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, folder);
+            return true;
+        } else {
+            return false;
         }
     }
     

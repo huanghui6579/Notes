@@ -29,12 +29,15 @@
         <activity
             android:name=".ui.NoteEditActivity"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.FolderListActivity"
+            android:label="@string/lable_folder_list" />
 
-        <activity android:name=".ui.FolderListActivity"
-            android:label="@string/lable_folder_list"/>
-        
         <service android:name=".service.CoreService" />
 
+        <activity android:name=".ui.FolderEditActivity"
+            android:label="@string/lable_folder_edit"
+            android:windowSoftInputMode="adjustResize"/>
     </application>
 
 </manifest>

@@ -7,6 +7,7 @@ import android.text.TextUtils;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.TimeUtil;
 
 import java.util.Comparator;
@@ -256,8 +257,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         }
         //去掉开头和结尾的空格
         String tContent = content.trim();
-        String nextLine = "\n";
-        int index = tContent.indexOf(nextLine);
+        int index = tContent.indexOf(Constants.TAG_ENTER);
         if (index != -1) {  //有换行
             return tContent.substring(0, index);
         } else {

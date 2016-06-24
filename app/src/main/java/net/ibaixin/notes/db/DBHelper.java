@@ -52,8 +52,6 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.FolderColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
                 .append(Provider.FolderColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
                 .append(Provider.FolderColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
-                .append(Provider.FolderColumns.DEFAULT_FOLDER).append(" INTEGER, ")
-                .append(Provider.FolderColumns.IS_HIDDEN).append(" INTEGER, ")
                 .append(Provider.FolderColumns.IS_LOCK).append(" INTEGER, ")
                 .append(Provider.FolderColumns.NAME).append(" TEXT UNIQUE NOT NULL, ")
                 .append(Provider.FolderColumns.SORT).append(" INTEGER, ")

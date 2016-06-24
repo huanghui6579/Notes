@@ -147,20 +147,20 @@ public final class Provider {
          */
         public static final String NAME = "name";
 
-        /**
-         * 默认选中显示的文件夹,1为默认选中的，0为没有选中的
-         */
-        public static final String DEFAULT_FOLDER = "default_folder";
+//        /**
+//         * 默认选中显示的文件夹,1为默认选中的，0为没有选中的
+//         */
+//        public static final String DEFAULT_FOLDER = "default_folder";
 
         /**
          * 是否被锁定,1表示锁定，0表示没有锁定
          */
         public static final String IS_LOCK = "is_lock";
 
-        /**
-         * 是否隐藏的，1表示隐藏，0表示没有隐藏
-         */
-        public static final String IS_HIDDEN = "is_hidden";
+//        /**
+//         * 是否隐藏的，1表示隐藏，0表示没有隐藏
+//         */
+//        public static final String IS_HIDDEN = "is_hidden";
 
         /**
          * 排序

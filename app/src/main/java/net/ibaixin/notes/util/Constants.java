@@ -11,6 +11,18 @@ public class Constants {
     public static final String LOG_DIR = "log";
     
     public static final String PREF_HAS_DELETE_OPT = "has_delete_opt";
+    /**
+     * 桌面小工具默认的保存的文件夹
+     */
+    public static final String PREF_DEFAULT_FOLDER = "default_folder";
+    /**
+     * 是否显示“所有文件夹”这一项
+     */
+    public static final String PREF_SHOW_FOLDER_ALL = "show_folder_all";
+    /**
+     * 默认选中的文件夹id，为0时选中所有文件夹
+     */
+    public static final String SELECTED_FOLDER_ID = "selected_folder_id";
     
     /**
      * 回车的标签
@@ -26,11 +38,6 @@ public class Constants {
      */
     public static final int FORMAT_LIST_TAG_LENGTH = TAG_FORMAT_LIST.length();
 
-    /**
-     * 默认选中的文件夹id，为0时选中所有文件夹
-     */
-    public static final String SELECTED_FOLDER_ID = "selected_folder_id";
-    
     public static final int OPT_ADD_NOTE = 1;
     public static final int OPT_UPDATE_NOTE = 2;
     

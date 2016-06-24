@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Notes</string>
+    <string name="app_name">云信笔记</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -13,10 +13,14 @@
     <string name="prompt">提示</string>
 
     <string name="colon">：</string>
-    
+
     <string name="lable_folder_list">笔记本列表</string>
+    <string name="lable_folder_edit">编辑笔记本</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
+    
+    <string name="add_result_error">添加失败</string>
+    <string name="update_result_error">保存失败</string>
 
     <string name="note_type_text">文本</string>
     <string name="note_type_list">清单</string>
@@ -28,6 +32,13 @@
     <string name="note_create_time">创建时间</string>
     <string name="note_modify_time">修改时间</string>
     <string name="note_sync_state">同步状态</string>
+    
+    <string name="hint_folder_edit">输入文件夹名称</string>
+    
+    <string name="folder_title_lock">加锁</string>
+    <string name="folder_summary_lock">给文件夹加锁</string>
+    <string name="folder_title_hide">设为默认</string>
+    <string name="folder_summary_hide">桌面小工具笔记默认的保存文件夹</string>
 
     <string name="default_archive">所有</string>
 

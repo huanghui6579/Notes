@@ -1,12 +1,15 @@
 package net.ibaixin.notes.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * 笔记的分类文件夹
  * @author huanghui1
  * @update 2016/2/24 18:23
  * @version: 0.0.1
  */
-public class Folder {
+public class Folder implements Parcelable {
     private int id;
 
     /**
@@ -20,19 +23,9 @@ public class Folder {
     private int userId;
 
     /**
-     * 是否是默认的文件夹
-     */
-    private boolean isDefault;
-
-    /**
      * 文件夹的名称
      */
     private String name;
-
-    /**
-     * 是否被隐藏
-     */
-    private boolean isHidden;
 
     /**
      * 是否被锁定
@@ -68,7 +61,67 @@ public class Folder {
      * 该文件夹下笔记的数量
      */
     private int count;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Folder folder = (Folder) o;
+
+        return id == folder.id;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return id;
+    }
     
+    public Folder() {}
+
+    public Folder(Parcel in) {
+        id = in.readInt();
+        sId = in.readString();
+        userId = in.readInt();
+        name = in.readString();
+        isLock = in.readByte() != 0;
+        sort = in.readInt();
+        createTime = in.readLong();
+        modifyTime = in.readLong();
+        count = in.readInt();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeString(sId);
+        dest.writeInt(userId);
+        dest.writeString(name);
+        dest.writeByte((byte) (isLock ? 1 : 0));
+        dest.writeInt(sort);
+        dest.writeLong(createTime);
+        dest.writeLong(modifyTime);
+        dest.writeInt(count);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<Folder> CREATOR = new Creator<Folder>() {
+        @Override
+        public Folder createFromParcel(Parcel in) {
+            return new Folder(in);
+        }
+
+        @Override
+        public Folder[] newArray(int size) {
+            return new Folder[size];
+        }
+    };
+
     public int getId() {
         return id;
     }
@@ -91,22 +144,6 @@ public class Folder {
 
     public void setSId(String sId) {
         this.sId = sId;
-    }
-
-    public boolean isDefault() {
-        return isDefault;
-    }
-
-    public void setIsDefault(boolean isDefault) {
-        this.isDefault = isDefault;
-    }
-
-    public boolean isHidden() {
-        return isHidden;
-    }
-
-    public void setIsHidden(boolean isHidden) {
-        this.isHidden = isHidden;
     }
 
     public boolean isLock() {

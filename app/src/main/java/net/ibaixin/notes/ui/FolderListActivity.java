@@ -1,17 +1,20 @@
 package net.ibaixin.notes.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.ContentObserver;
@@ -107,6 +110,17 @@ public class FolderListActivity extends BaseActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.folder_main, menu);
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_add:   //添加笔记文件夹
+                Intent intent = new Intent(mContext, FolderEditActivity.class);
+                startActivity(intent);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -248,7 +262,6 @@ public class FolderListActivity extends BaseActivity {
             tFolder.setDeleteState(folder.getDeleteState());
             tFolder.setSort(folder.getSort());
             tFolder.setName(folder.getName());
-            tFolder.setIsDefault(folder.isDefault());
             tFolder.setIsHidden(folder.isHidden());
             tFolder.setIsLock(folder.isLock());
             tFolder.setModifyTime(folder.getModifyTime());
@@ -289,10 +302,14 @@ public class FolderListActivity extends BaseActivity {
         private final Context mContext;
         private List<Folder> mList;
         
+        private NoteApplication mNoteApp;
+        
         public FolderAdapter(Context context, List<Folder> list) {
             this.mContext = context;
             mLayoutInflater = LayoutInflater.from(context);
             this.mList = list;
+
+            mNoteApp = (NoteApplication) getApplication();
         }
 
         @Override
@@ -307,6 +324,11 @@ public class FolderListActivity extends BaseActivity {
             if (folder != null) {
                 holder.mTvName.setText(folder.getName());
                 holder.mTvCount.setText(String.valueOf(folder.getCount()));
+                //textColorPrimary
+//                mContext.getResources().getColor(, mContext.getTheme());
+                if (mNoteApp.getDefaultFolderSid().equals(folder.getSId())) {   //默认的文件夹
+                    holder.mTvName.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+                }
             }
         }
 

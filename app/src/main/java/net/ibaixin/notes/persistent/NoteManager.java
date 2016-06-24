@@ -77,7 +77,11 @@ public class NoteManager extends Observable<Observer> {
         int userId = 0;
         if (user != null) { //当前用户有登录
             userId = user.getId();
-            selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+            if (deleteState == 0) {
+                selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+            } else {
+                selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+            }
             
             if (folder != 0) {
                 selection += " AND " + Provider.NoteColumns.FOLDER_ID + " = ?";
@@ -87,10 +91,18 @@ public class NoteManager extends Observable<Observer> {
             }
         } else {    //当前用户没有登录
             if (folder != 0) {
-                selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+                if (deleteState == 0) {
+                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+                } else {
+                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+                }
                 selectionArgs = new String[] {String.valueOf(folder)};
             } else {
-                selection = Provider.NoteColumns.DELETE_STATE + " = ?";
+                if (deleteState == 0) {
+                    selection = Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = ?";
+                } else {
+                    selection = Provider.NoteColumns.DELETE_STATE + " = ?";
+                }
                 selectionArgs = new String[] {String.valueOf(deleteState)};
             }
         }
