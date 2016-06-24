@@ -262,7 +262,6 @@ public class FolderListActivity extends BaseActivity {
             tFolder.setDeleteState(folder.getDeleteState());
             tFolder.setSort(folder.getSort());
             tFolder.setName(folder.getName());
-            tFolder.setIsHidden(folder.isHidden());
             tFolder.setIsLock(folder.isLock());
             tFolder.setModifyTime(folder.getModifyTime());
             
