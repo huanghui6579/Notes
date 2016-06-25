@@ -278,6 +278,28 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
     
     /**
+     * 获取默认的笔记保存文件夹的sid
+     * @author huanghui1
+     * @update 2016/6/25 10:51
+     * @version: 1.0.0
+     */
+    protected String getDefaultFolderSid() {
+        NoteApplication noteApp = (NoteApplication) getApplication();
+        return noteApp.getDefaultFolderSid();
+    }
+    
+    /**
+     * 是否显示“所有文件夹”
+     * @author huanghui1
+     * @update 2016/6/25 16:02
+     * @version: 1.0.0
+     */
+    protected boolean isShowFolderAll() {
+        NoteApplication noteApp = (NoteApplication) getApplication();
+        return noteApp.isShowFolderAll();
+    }
+    
+    /**
      * 初始化数据
      * @author huanghui1
      * @update 2016/2/24 17:35

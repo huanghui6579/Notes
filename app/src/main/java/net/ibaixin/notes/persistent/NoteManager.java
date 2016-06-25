@@ -313,6 +313,8 @@ public class NoteManager extends Observable<Observer> {
         }
     }
     
+//    public boolean 
+    
     /**
      * 获取笔记的信息
      * @author huanghui1

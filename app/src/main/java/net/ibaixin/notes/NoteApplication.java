@@ -18,6 +18,8 @@ import net.ibaixin.notes.util.log.LogFilter;
  * @version: 0.0.1
  */
 public class NoteApplication extends Application {
+    private static final String TAG = "NoteApplication";
+    
     private static NoteApplication mInstance;
 
     /**
@@ -29,6 +31,7 @@ public class NoteApplication extends Application {
      * 默认的文件夹sid
      */
     private String mDefaultFolderSid;
+    
     /**
      * 是否显示“所有文件夹”这一项
      */
@@ -40,6 +43,8 @@ public class NoteApplication extends Application {
         mInstance = this;
 
         initLog();
+
+        init(this);
     }
 
     /**
@@ -91,6 +96,7 @@ public class NoteApplication extends Application {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                Log.d(TAG, "--app----init---");
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
                 mDefaultFolderSid = sharedPreferences.getString(Constants.PREF_DEFAULT_FOLDER, "");
                 mShowFolderAll = sharedPreferences.getBoolean(Constants.PREF_SHOW_FOLDER_ALL, true);

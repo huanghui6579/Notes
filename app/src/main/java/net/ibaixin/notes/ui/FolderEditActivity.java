@@ -48,6 +48,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
             mIsAdd = true;
         } else {    //编辑，则显示已有的数据
             mEtName.setText(mFolder.getName());
+            mEtName.requestFocus();
             mCbLock.setChecked(mFolder.isLock());
 //            mCbDefault.setChecked(mFolder.isDefault());
         }
@@ -89,6 +90,14 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                 break;
         }
     }
+
+    /**
+     * 是否需要保存，如果没有修改则
+     * @return
+     */
+    private boolean isNeedSave() {
+        return true;
+    }
     
     /**
      * 保存文件夹
@@ -112,6 +121,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                         mFolder.setCreateTime(time);
                         mFolder.setModifyTime(time);
                         mFolder.setIsLock(isLock);
+                        mFolder.setDefault(isDefault);
                         mFolder.setUserId(getCurrentUserId());
                         mFolder = FolderManager.getInstance().addFolder(mFolder);
                         if (mFolder == null) {
@@ -121,6 +131,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                         mFolder.setName(name);
                         mFolder.setModifyTime(time);
                         mFolder.setIsLock(isLock);
+                        mFolder.setDefault(isDefault);
                         boolean result = FolderManager.getInstance().updateFolder(mFolder);
                         if (result) {
                             Log.w(TAG, "---saveFolder----updateFolder----error--");

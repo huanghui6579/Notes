@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="menu_folder_list">
+        <item>@string/action_delete</item>
+        <item>@string/action_info</item>
+    </string-array>
+
+    <string-array name="mav_menu_items">
+        <item>@string/action_folder</item>
+        <item>@string/action_trash</item>
+        <item>@string/action_settings</item>
+    </string-array>
+</resources>

@@ -18,9 +18,11 @@
     <string name="lable_folder_edit">编辑笔记本</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
+    <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
     
     <string name="add_result_error">添加失败</string>
     <string name="update_result_error">保存失败</string>
+    <string name="delete_result_error">删除失败</string>
 
     <string name="note_type_text">文本</string>
     <string name="note_type_list">清单</string>

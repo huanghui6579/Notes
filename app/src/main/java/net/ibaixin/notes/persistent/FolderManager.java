@@ -1,9 +1,12 @@
 package net.ibaixin.notes.persistent;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 import net.ibaixin.notes.NoteApplication;
@@ -16,7 +19,7 @@ import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.model.User;
-import net.ibaixin.notes.util.SystemUtil;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.log.Log;
 
 import java.util.ArrayList;
@@ -175,7 +178,7 @@ public class FolderManager extends Observable<Observer> {
      */
     private ContentValues initFolderValues(Folder folder) {
         ContentValues values = new ContentValues();
-        values.put(Provider.FolderColumns.SID, SystemUtil.generateFolderSid());
+        values.put(Provider.FolderColumns.SID, folder.getSId());
         DeleteState deleteState = folder.getDeleteState();
         if (deleteState != null) {
             values.put(Provider.FolderColumns.DELETE_STATE, deleteState.ordinal());
@@ -192,6 +195,22 @@ public class FolderManager extends Observable<Observer> {
         values.put(Provider.FolderColumns.USER_ID, folder.getUserId());
         values.put(Provider.FolderColumns._COUNT, folder.getCount());
         return values;
+    }
+
+    /**
+     * 更新文件夹的缓存
+     * @param folder
+     */
+    private void updateFolderCache(Folder folder) {
+        FolderCache.getInstance().getFolderMap().put(folder.getSId(), folder);
+    }
+
+    /**
+     * 从缓存中移除
+     * @param folder
+     */
+    private void removeFolderCache(Folder folder) {
+        FolderCache.getInstance().getFolderMap().remove(folder.getSId());
     }
     
     /**
@@ -215,8 +234,14 @@ public class FolderManager extends Observable<Observer> {
             db.endTransaction();
         }
         if (rowId > 0) {
-            folder.setId((int) rowId);
-            FolderCache.getInstance().getFolderMap().put(folder.getSId(), folder);
+            int id = (int) rowId;
+            folder.setId(id);
+            //添加文件夹时由触发器将sort字段更新为id的值
+            folder.setSort(id);
+            if (folder.isDefault()) {
+                saveDefaultFolder(folder.getSId());
+            }
+            updateFolderCache(folder);
             notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, folder);
             return folder;
         } else {
@@ -262,11 +287,131 @@ public class FolderManager extends Observable<Observer> {
             db.endTransaction();
         }
         if (rowId > 0) {
-            FolderCache.getInstance().getFolderMap().put(folder.getSId(), folder);
+            if (folder.isDefault()) {
+                saveDefaultFolder(folder.getSId());
+            }
+            updateFolderCache(folder);
             notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, folder);
             return true;
         } else {
             return false;
+        }
+    }
+    
+    /**
+     * 删除文件夹
+     * @author huanghui1
+     * @update 2016/6/25 11:46
+     * @version: 1.0.0
+     */
+    public boolean deleteFolder(Folder folder) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(Provider.FolderColumns.DELETE_STATE, DeleteState.DELETE_TRASH.ordinal());
+        db.beginTransaction();
+        int row = 0;
+        try {
+            row = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns._ID + " = ?", new String[] {String.valueOf(folder.getId())});
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "-----deleteFolder----error-----" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        if (row > 0) {
+            removeDefaultFolderSid(folder.getSId());
+            removeFolderCache(folder);
+            notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, folder);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 将两个文件夹的顺序调换
+     * @param fromFolder 主动调换的文件夹
+     * @param toFolder 被调换的文件                  
+     * @author huanghui1
+     * @update 2016/6/25 16:09
+     * @version: 1.0.0
+     */
+    public void sortFolder(Folder fromFolder, Folder toFolder) {
+        /*UPDATE folder SET sort = (
+                CASE
+        WHEN _id = 1 THEN
+        3
+        WHEN _id = 3 THEN
+        1
+        ELSE
+                sort
+        END
+        )*/
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        StringBuilder sb = new StringBuilder();
+        sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns.SORT)
+            .append(" = (CASE WHEN ").append(Provider.FolderColumns._ID).append(" = ? THEN ? WHEN ")
+        .append(Provider.FolderColumns._ID).append(" = ? THEN ? ELSE ").append(Provider.FolderColumns.SORT)
+        .append(" END)");
+        Object[] seletionArgs = {fromFolder.getId(), fromFolder.getSort(), toFolder.getId(), toFolder.getSort()};
+        db.execSQL(sb.toString(), seletionArgs);
+        updateFolderCache(fromFolder);
+        updateFolderCache(toFolder);
+        notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, null);
+    }
+    
+    /**
+     * 修改文件夹的显示状态
+     * @author huanghui1
+     * @update 2016/6/25 16:42
+     * @version: 1.0.0
+     */
+    public void updateShowState(Context context, boolean isShow) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(Constants.PREF_SHOW_FOLDER_ALL, isShow);
+        editor.apply();
+        
+        NoteApplication noteApp = NoteApplication.getInstance();
+        noteApp.setShowFolderAll(isShow);
+
+        notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, new Folder());
+    }
+    
+    /**
+     * 保存默认的文件夹
+     * @author huanghui1
+     * @update 2016/6/25 10:57
+     * @version: 1.0.0
+     */
+    public void saveDefaultFolder(String sid) {
+        NoteApplication noteApp = NoteApplication.getInstance();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(noteApp);
+        String oldSid = sharedPreferences.getString(Constants.PREF_DEFAULT_FOLDER, "");
+        if (!oldSid.equals(sid)) {  //不同，就保存
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString(Constants.PREF_DEFAULT_FOLDER, sid);
+            editor.apply();
+            
+            noteApp.setDefaultFolderSid(sid);
+        }
+    }
+    
+    /**
+     * 移除默认的sid
+     * @author huanghui1
+     * @update 2016/6/25 11:50
+     * @version: 1.0.0
+     */
+    public void removeDefaultFolderSid(String sid) {
+        NoteApplication noteApp = NoteApplication.getInstance();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(noteApp);
+        String oldSid = sharedPreferences.getString(Constants.PREF_DEFAULT_FOLDER, "");
+        if (oldSid.equals(sid)) {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.remove(sid);
+            editor.apply();
+
+            noteApp.setDefaultFolderSid(null);
         }
     }
     

@@ -193,6 +193,17 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.FolderColumns._ID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
+        
+        //创建添加文件夹后设置排序的触发器
+        /*CREATE TRIGGER tri_set_folder_sort AFTER INSERT ON folder FOR EACH ROW
+                BEGIN
+        UPDATE folder SET sort = NEW._id WHERE _id = NEW._id;
+        END;*/
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER ").append(Provider.FolderColumns.TRI_SET_FOLDER_SORT)
+                .append(" AFTER INSERT ON ").append(Provider.FolderColumns.TABLE_NAME)
+                .append(" BEGIN UPDATE folder SET sort = NEW._id WHERE _id = NEW._id;END;");
+        db.execSQL(builder.toString());
 
         long endTime = System.currentTimeMillis();
         Log.d(TAG, "---DBHelper---onCreate---end--" + (endTime - startTime));
@@ -216,6 +227,9 @@ public class DBHelper extends SQLiteOpenHelper {
         
         //删除更新笔记后更新文件夹的触发器
         db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.EVENT_INSERT_NOTE);
+        
+        //删除添加文件夹后设置排序的触发器
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.FolderColumns.TRI_SET_FOLDER_SORT);
 
         db.execSQL("DROP TABLE IF EXISTS " + Provider.NoteColumns.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + Provider.FolderColumns.TABLE_NAME);

@@ -2,6 +2,7 @@ package net.ibaixin.notes.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.TextUtils;
 
 /**
  * 笔记的分类文件夹
@@ -62,6 +63,11 @@ public class Folder implements Parcelable {
      */
     private int count;
 
+    /**
+     * 是否是默认的文件夹，在数据库中无对应的字段
+     */
+    private boolean isDefault;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -86,10 +92,19 @@ public class Folder implements Parcelable {
         userId = in.readInt();
         name = in.readString();
         isLock = in.readByte() != 0;
+        isDefault = in.readByte() != 0;
         sort = in.readInt();
         createTime = in.readLong();
         modifyTime = in.readLong();
         count = in.readInt();
+    }
+
+    /**
+     * 是否没有id
+     * @return
+     */
+    public boolean isEmpty() {
+        return id == 0 || TextUtils.isEmpty(sId);
     }
 
     @Override
@@ -99,6 +114,7 @@ public class Folder implements Parcelable {
         dest.writeInt(userId);
         dest.writeString(name);
         dest.writeByte((byte) (isLock ? 1 : 0));
+        dest.writeByte((byte) (isDefault ? 1 : 0));
         dest.writeInt(sort);
         dest.writeLong(createTime);
         dest.writeLong(modifyTime);
@@ -208,5 +224,13 @@ public class Folder implements Parcelable {
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    public boolean isDefault() {
+        return isDefault;
+    }
+
+    public void setDefault(boolean aDefault) {
+        isDefault = aDefault;
     }
 }

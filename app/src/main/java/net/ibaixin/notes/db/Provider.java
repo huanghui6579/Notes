@@ -135,6 +135,11 @@ public final class Provider {
          */
         public static final String FOLDER_ID_IDX = "folder_id_idx";
 
+        /**
+         * 插入数据后设置排序的触发器
+         */
+        public static final String TRI_SET_FOLDER_SORT = "tri_set_folder_sort";
+
         public static final String TABLE_NAME = "folder";
 
         /**
