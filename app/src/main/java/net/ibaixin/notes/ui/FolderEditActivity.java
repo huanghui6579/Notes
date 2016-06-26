@@ -50,7 +50,17 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
             mEtName.setText(mFolder.getName());
             mEtName.requestFocus();
             mCbLock.setChecked(mFolder.isLock());
-//            mCbDefault.setChecked(mFolder.isDefault());
+            mCbDefault.setChecked(isDefaultFolder(mFolder));
+        }
+    }
+
+    private boolean isDefaultFolder(Folder folder) {
+        String defaultSid = getDefaultFolderSid();
+        if (TextUtils.isEmpty(defaultSid)) {
+            return false;
+        } else {
+            String sid = folder.getSId();
+            return defaultSid.equals(sid);
         }
     }
 
@@ -96,7 +106,33 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
      * @return
      */
     private boolean isNeedSave() {
-        return true;
+        if (!mIsAdd) {  //更新的
+            String oldName = mFolder.getName();
+            boolean isOldLock = mFolder.isLock();
+            String oldDefaultSid = getDefaultFolderSid();
+            String name = mEtName.getText().toString();
+            boolean modifyName = !oldName.equals(name);
+            boolean modifyLock;
+            if (isOldLock) {
+                modifyLock = !mCbLock.isChecked();
+            } else {
+                modifyLock = mCbLock.isChecked();
+            }
+            boolean modifyDefault;
+            if (TextUtils.isEmpty(oldDefaultSid)) {
+                modifyDefault = mCbDefault.isChecked();
+            } else {
+                String sid = mFolder.getSId();
+                if (mCbDefault.isChecked()) {
+                    modifyDefault = !oldDefaultSid.equals(sid);
+                } else {
+                    modifyDefault = oldDefaultSid.equals(sid);
+                }
+            }
+            return modifyName || modifyLock || modifyDefault;
+        } else {
+            return true;
+        }
     }
     
     /**
@@ -106,7 +142,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
      * @version: 1.0.0
      */
     private void saveFolder() {
-        if (!TextUtils.isEmpty(mEtName.getText())) {
+        if (!TextUtils.isEmpty(mEtName.getText()) && isNeedSave()) {
             SystemUtil.getThreadPool().execute(new Runnable() {
                 @Override
                 public void run() {
