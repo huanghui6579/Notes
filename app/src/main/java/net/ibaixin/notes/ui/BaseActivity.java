@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
@@ -22,12 +21,15 @@ import net.ibaixin.notes.util.SystemUtil;
 
 import java.lang.reflect.Field;
 
+import me.imid.swipebacklayout.app.SwipeBackActivity;
+import me.imid.swipebacklayout.app.SwipeBackActivityHelper;
+
 /**
  * @author huanghui1
  * @update 2016/2/24 17:30
  * @version: 0.0.1
  */
-public abstract class BaseActivity extends AppCompatActivity {
+public abstract class BaseActivity extends SwipeBackActivity {
     protected static String TAG = null;
     
     protected Context mContext;
@@ -38,19 +40,22 @@ public abstract class BaseActivity extends AppCompatActivity {
      * 是否显示返回箭头
      */
     private boolean mShowHomeUp;
-    
+
+    private SwipeBackActivityHelper mSwipeBackHelper;
+
     public BaseActivity() {
         TAG = this.getClass().getSimpleName();
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         mContext = this;
-        
-        setContentView(getContentView());
-        
+
+        super.onCreate(savedInstanceState);
+
         mShowHomeUp = showHomeUp();
+
+        setContentView(getContentView());
 
         initToolBar();
 
@@ -297,6 +302,16 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected boolean isShowFolderAll() {
         NoteApplication noteApp = (NoteApplication) getApplication();
         return noteApp.isShowFolderAll();
+    }
+    
+    /**
+     * 在后台执行任务
+     * @author huanghui1
+     * @update 2016/6/27 21:02
+     * @version: 1.0.0
+     */
+    protected void doInbackground(Runnable runnable) {
+        SystemUtil.getThreadPool().execute(runnable);
     }
     
     /**

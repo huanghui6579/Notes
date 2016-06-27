@@ -309,6 +309,19 @@ public class SystemUtil {
     }
     
     /**
+     * 默认选中的文件夹
+     * @author huanghui1
+     * @update 2016/6/27 21:00
+     * @version: 1.0.0
+     */
+    public static void setSelectedFolder(Context context, int folderId) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(Constants.SELECTED_FOLDER_ID, folderId);
+        editor.apply();
+    }
+    
+    /**
      * 判断该集合是否为空
      * @param collection 集合
      * @author huanghui1
