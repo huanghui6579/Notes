@@ -289,7 +289,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             @Override
             public void onItemClick(View view, int position) {
                 final Folder folder = mFolders.get(position);
-                if (folder == null) {
+                if (folder == null || (mFolders.size() == 1 && folder.isEmpty())) {
                     return;
                 }
                 if (folder.isEmpty()) { //所有的文件，则更新改文件夹的显示状态
@@ -602,27 +602,24 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             Folder folder = null;
             switch (notifyFlag) {
                 case Provider.FolderColumns.NOTIFY_FLAG:    //笔记文件夹的添加
-                    if (data != null) {
-                        folder = (Folder) data;
+                    if (data == null || !(data instanceof Folder)) {
+                        return;
                     }
+                    folder = (Folder) data;
                     switch (notifyType) {
                         case ADD:   //笔记添加
-                            if (folder != null) {
-                                Log.d(TAG, "---addFolder--" + folder);
-                                addFolder(folder);
-                            }
+                            Log.d(TAG, "---addFolder--" + folder);
+                            addFolder(folder);
                             break;
                         case UPDATE:    //更新
-                            if (folder != null && !folder.isEmpty()) {
+                            if (!folder.isEmpty()) {
                                 Log.d(TAG, "---updateFolder--" + folder);
                                 updateFolder(folder);
                             }
                             break;
                         case DELETE:    //删除
-                            if (folder != null) {
-                                Log.d(TAG, "---deleteFolder--" + folder);
-                                deleteFolder(folder);
-                            }
+                            Log.d(TAG, "---deleteFolder--" + folder);
+                            deleteFolder(folder);
                             break;
                     }
                     break;

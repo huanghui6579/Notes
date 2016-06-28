@@ -356,7 +356,10 @@ public class FolderManager extends Observable<Observer> {
         db.execSQL(sb.toString(), seletionArgs);
         updateFolderCache(fromFolder);
         updateFolderCache(toFolder);
-        notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, null);
+        Map<String, Object> map = new HashMap<>();
+        map.put(Constants.ARG_CORE_OBJ, fromFolder);
+        map.put(Constants.ARG_SUB_OBJ, toFolder);
+        notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, map);
     }
     
     /**
@@ -373,8 +376,11 @@ public class FolderManager extends Observable<Observer> {
         
         NoteApplication noteApp = NoteApplication.getInstance();
         noteApp.setShowFolderAll(isShow);
+        
+        Folder folder = new Folder();
+        folder.setShow(isShow);
 
-        notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, new Folder());
+        notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, folder);
     }
     
     /**

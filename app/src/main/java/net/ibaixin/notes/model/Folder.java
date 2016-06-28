@@ -10,7 +10,7 @@ import android.text.TextUtils;
  * @update 2016/2/24 18:23
  * @version: 0.0.1
  */
-public class Folder implements Parcelable {
+public class Folder implements Parcelable, Cloneable {
     private int id;
 
     /**
@@ -67,6 +67,11 @@ public class Folder implements Parcelable {
      * 是否是默认的文件夹，在数据库中无对应的字段
      */
     private boolean isDefault;
+
+    /**
+     * 是否显示，改字段不存到数据库中
+     */
+    private boolean isShow;
 
     @Override
     public boolean equals(Object o) {
@@ -232,5 +237,18 @@ public class Folder implements Parcelable {
 
     public void setDefault(boolean aDefault) {
         isDefault = aDefault;
+    }
+
+    public boolean isShow() {
+        return isShow;
+    }
+
+    public void setShow(boolean show) {
+        isShow = show;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

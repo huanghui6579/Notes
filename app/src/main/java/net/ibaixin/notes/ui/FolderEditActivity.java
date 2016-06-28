@@ -143,7 +143,8 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
      */
     private void saveFolder() {
         if (!TextUtils.isEmpty(mEtName.getText()) && isNeedSave()) {
-            SystemUtil.getThreadPool().execute(new Runnable() {
+            
+            doInbackground(new Runnable() {
                 @Override
                 public void run() {
                     String name = mEtName.getText().toString();

@@ -89,7 +89,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private Handler mHandler = new MyHandler(this);
     
     //文件夹id
-    private String folderId;
+    private String mFolderId;
 
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -128,7 +128,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         Intent intent = getIntent();
         if (intent != null) {
             int noteId = intent.getIntExtra(ARG_NOTE_ID, 0);
-            folderId = intent.getStringExtra(ARG_FOLDER_ID);
+            mFolderId = intent.getStringExtra(ARG_FOLDER_ID);
             if (noteId > 0) {
                 loadNoteInfo(noteId);
             }
@@ -150,7 +150,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version: 1.0.0
      */
     private void loadNoteInfo(final int noteId) {
-        SystemUtil.getThreadPool().execute(new Runnable() {
+        doInbackground(new Runnable() {
             @Override
             public void run() {
                 mNote = mNoteManager.getNote(noteId);
@@ -182,7 +182,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mNote.setContent(content);
             mNote.setModifyTime(time);
             mNote.setCreateTime(time);
-            mNote.setFolderId(folderId);
+            mNote.setFolderId(mFolderId);
             mNote.setHash(DigestUtil.md5Digest(content));
             mNote.setKind(NoteInfo.NoteKind.TEXT);
             mNote.setSId(SystemUtil.generateNoteSid());

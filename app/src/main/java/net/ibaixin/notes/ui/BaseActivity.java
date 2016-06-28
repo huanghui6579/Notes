@@ -16,6 +16,7 @@ import android.view.ViewParent;
 
 import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.User;
 import net.ibaixin.notes.util.SystemUtil;
 
@@ -312,6 +313,16 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     protected void doInbackground(Runnable runnable) {
         SystemUtil.getThreadPool().execute(runnable);
+    }
+
+    /**
+     * 获取“所有文件夹”这一项
+     * @return
+     */
+    protected Folder getFolderAll() {
+        final Folder archive = new Folder();
+        archive.setName(getString(R.string.default_archive));
+        return archive;
     }
     
     /**

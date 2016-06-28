@@ -50,7 +50,9 @@ import net.ibaixin.notes.widget.LayoutManagerFactory;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 主界面
@@ -102,6 +104,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private int mSelectedFolderId;
 
     /**
+     * 默认选中的文件夹
+     */
+    private Folder mSelectedFolder;
+
+    /**
      * 主界面的空的控件
      */
     private View mMainEmptyView;
@@ -137,6 +144,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 @Override
                 public void onClick(View view) {
                     Intent intent = new Intent(mContext, NoteEditActivity.class);
+                    intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                     startActivity(intent);
 //                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
 //                        .setAction("Action", null).show();
@@ -186,9 +194,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
         mNoteManager = NoteManager.getInstance();
 
-        //初始化文件夹
-        initFolder();
-
         if (navigationView != null) {
             navigationView.setLayoutManager(new LinearLayoutManager(this));//这里用线性显示 类似于listview
             mNavAdapter = new NavViewAdapter(this, mFolders);
@@ -197,11 +202,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 public void onItemClick(View view, int position) {
                     view.setSelected(true);
                     
-                    Integer tagPos = view.getTag() == null ? -1 : (Integer) view.getTag();
-                    if (position == tagPos) {
-                        Folder folder = mFolders.get(position);
-                        selectFolder(folder);
-                    }
+                    Folder folder = mFolders.get(position);
+                    selectFolder(folder);
                     
                 }
             });
@@ -211,21 +213,30 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mOnRefreshListener = new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-
-                doInbackground(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        //加载笔记
-                        loadNotes(mSelectedFolderId);
-                    }
-                });
                 
                 doInbackground(new Runnable() {
                     @Override
                     public void run() {
-                        //加载文件夹
-                        loadFolder();
+                        //初始化文件夹
+                        initFolder();
+
+                        if (isFolderAllDisable()) { //不能加载所有文件夹里的笔记，则加载第一个文件夹
+                            //加载文件夹
+                            loadFolder(false);
+
+                            reLoadFisrtFolder(mFolders.get(0));
+                        } else {
+                            //加载笔记
+                            loadNotes(mSelectedFolderId);
+
+                            doInbackground(new Runnable() {
+                                @Override
+                                public void run() {
+                                    //加载文件夹
+                                    loadFolder(isShowFolderAll());
+                                }
+                            });
+                        }
                     }
                 });
                 
@@ -266,14 +277,50 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         doInbackground(new Runnable() {
             @Override
             public void run() {
-                int folderId = folder.getId();
-                loadNotes(folderId);
 
-                SystemUtil.setSelectedFolder(mContext, folderId);
+                reLoadFisrtFolder(folder);
                 
                 mHandler.sendEmptyMessage(MSG_SELECT_NAV);
             }
         });
+    }
+    
+    /**
+     * 拷贝文件夹
+     * @author huanghui1
+     * @update 2016/6/28 21:37
+     * @version: 1.0.0
+     */
+    private Folder cloneFolder(Folder folder) {
+        Folder newFolder = null;
+        try {
+            newFolder = (Folder) folder.clone();
+        } catch (CloneNotSupportedException e) {
+            Log.e(TAG, "--cloneFolder--error---" + e.getMessage());
+        }
+        if (newFolder == null) {
+            newFolder = new Folder();
+            newFolder.setId(folder.getId());
+            newFolder.setSId(folder.getSId());
+            newFolder.setName(folder.getName());
+        }
+        return newFolder;
+    }
+
+    /**
+     * 重新加载第一个文件夹的文件
+     */
+    private void reLoadFisrtFolder(Folder folder) {
+        if (folder == null) {
+            folder = new Folder();
+        }
+        mSelectedFolderId = folder.getId();
+        SystemUtil.setSelectedFolder(mContext, mSelectedFolderId);
+
+        mSelectedFolder = cloneFolder(folder);
+        
+        //加载笔记
+        loadNotes(mSelectedFolderId);
     }
     
     /**
@@ -314,12 +361,32 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      */
     private void initFolder() {
         mSelectedFolderId = SystemUtil.getSelectedFolder(mContext);
+        
+        Folder folder = new Folder();
+        folder.setId(mSelectedFolderId);
+        mSelectedFolder = cloneFolder(folder);
+        
+        Log.d(TAG, "------initFolder----SelectedFolderId-----" + mSelectedFolderId);
+        
+        if (!isShowFolderAll()) {  //“所有文件夹”没有显示
+            Log.d(TAG, "---initFolder-----folder all is hide---");
+            return;
+        }
 
-        final Folder archive = new Folder();
-        archive.setName(getString(R.string.default_archive));
+        final Folder archive = getFolderAll();
         
         mFolders.add(archive);
         
+    }
+    
+    /**
+     * 所有文件夹里的笔记是否不能被加载
+     * @author huanghui1
+     * @update 2016/6/28 9:57
+     * @version: 1.0.0
+     */
+    private boolean isFolderAllDisable() {
+        return mSelectedFolderId == 0 && !isShowFolderAll();
     }
     
     /**
@@ -328,12 +395,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * @update 2016/6/23 16:25
      * @version: 1.0.0
      */
-    private void loadFolder() {
+    private void loadFolder(boolean hasFolderAll) {
         List<Folder> list = FolderManager.getInstance().getAllFolders(getCurrentUser(), null);
-        Folder archive = new Folder();
-        archive.setName(getString(R.string.default_archive));
         if (!SystemUtil.isEmpty(list)) {
-            list.add(0, archive);
+            if (hasFolderAll) {    //显示所有文件夹
+                Folder archive = getFolderAll();
+                list.add(0, archive);
+            }
             Message msg = mHandler.obtainMessage();
             msg.obj = list;
             msg.what = Constants.MSG_SUCCESS;
@@ -607,6 +675,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
         return isShowing;
     }
+
+    /**
+     * 获取第一个文件夹
+     * @param list
+     * @return
+     */
+    private Folder getFirstFolder(List<Folder> list) {
+        Folder folder = null;
+        if (list == null || list.size() == 0) {
+            folder = new Folder();
+            folder.setId(0);
+        } else {
+            folder = list.get(0);
+        }
+        return folder;
+    }
     
     /**
      * 添加笔记
@@ -673,26 +757,113 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      */
     private void updateFolder(Folder folder) {
         
-        int index = mFolders.indexOf(folder);
-        
-        if (index != -1) {
-            Folder tFolder = mFolders.get(index);
-            tFolder.setCount(folder.getCount());
-            tFolder.setSyncState(folder.getSyncState());
-            tFolder.setDeleteState(folder.getDeleteState());
-            tFolder.setSort(folder.getSort());
-            tFolder.setName(folder.getName());
-            tFolder.setIsLock(folder.isLock());
-            tFolder.setModifyTime(folder.getModifyTime());
-
+        if (folder.isEmpty()) { //更新的是所有文件夹，则查看其隐藏和显示的状态
             AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
-            refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
-            refreshHelper.position = index;
-
+            
+            boolean reloadNotes = false;
+            boolean updateFirst = false;
+            
+            if (folder.isShow()) {  //改为显示
+                Folder folderAll = getFolderAll();
+                mFolders.add(0, folderAll);
+                refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
+                //没有其他文件夹，则重新加载所有笔记
+                reloadNotes = mFolders.size() == 1 || mSelectedFolderId == 0;
+                
+            } else {    //改为隐藏
+                mFolders.remove(0);
+                refreshHelper.type = AdapterRefreshHelper.TYPE_DELETE;
+                //没有其他文件夹，则重新加载所有笔记
+                reloadNotes = mFolders.size() == 1 || mSelectedFolderId == 0;
+                updateFirst = reloadNotes;
+            }
+            
+            refreshHelper.position = 0;
+            if (reloadNotes && mSelectedFolderId == 0) {
+                mNavAdapter.setSelectedItem(0);
+            }
             refreshNavUI(refreshHelper);
+            
+            if (updateFirst) {
+                refreshHelper = new AdapterRefreshHelper();
+                refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
+                refreshHelper.position = 0;
+                Folder firstFolder = getFirstFolder(mFolders);
+                mNavAdapter.setSelectedItem(firstFolder.getId());
+                refreshNavUI(refreshHelper);
+            }
+            
+            if (reloadNotes) {  //重新加载笔记
+                doInbackground(new Runnable() {
+                    @Override
+                    public void run() {
+                        //选中第一个文件夹
+                        reLoadFisrtFolder(mFolders.get(0));
+                    }
+                });
+            }
+        } else {
+            int index = mFolders.indexOf(folder);
+
+            if (index != -1) {
+                Folder tFolder = mFolders.get(index);
+                setUpNewFolder(tFolder, folder);
+
+                AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+                refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
+                refreshHelper.position = index;
+                
+                refreshNavUI(refreshHelper);
+            }
         }
     }
     
+    /**
+     * 更新文件夹的数据
+     * @author huanghui1
+     * @update 2016/6/28 21:04
+     * @version: 1.0.0
+     */
+    private void setUpNewFolder(Folder oldFolder, Folder newFolder) {
+        oldFolder.setCount(newFolder.getCount());
+        oldFolder.setSyncState(newFolder.getSyncState());
+        oldFolder.setDeleteState(newFolder.getDeleteState());
+        oldFolder.setSort(newFolder.getSort());
+        oldFolder.setName(newFolder.getName());
+        oldFolder.setIsLock(newFolder.isLock());
+        oldFolder.setModifyTime(newFolder.getModifyTime());
+    }
+    
+    /**
+     * 文件夹排序
+     * @author huanghui1
+     * @update 2016/6/28 21:01
+     * @version: 1.0.0
+     */
+    private void swapFolder(Folder fromFolder, Folder toFolder) {
+        int fromIndex = mFolders.indexOf(fromFolder);
+        int toIndex = mFolders.indexOf(toFolder);
+        if (fromIndex != -1 && toIndex != -1) {
+            Folder fromOldFolder = mFolders.get(fromIndex);
+            setUpNewFolder(fromOldFolder, fromFolder);
+            Folder toOldFolder = mFolders.get(toIndex);
+            setUpNewFolder(toOldFolder, toFolder);
+
+            Collections.swap(mFolders, fromIndex, toIndex);
+            
+            AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+            refreshHelper.type = AdapterRefreshHelper.TYPE_SWAP;
+            refreshHelper.fromPosition = fromIndex;
+            refreshHelper.toPosition = toIndex;
+            
+            refreshNavUI(refreshHelper);
+        }
+    }
+
+    /**
+     * 添加文件夹
+     * @param folder
+     */
     private void addFolder(Folder folder) {
         mFolders.add(folder);
 
@@ -700,6 +871,52 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
         refreshHelper.position = mFolders.size() - 1;
         refreshNavUI(refreshHelper);
+    }
+
+    /**
+     * 删除文件夹
+     * @param folder
+     */
+    private void deleteFolder(Folder folder) {
+        int index = mFolders.indexOf(folder);
+        if (index != -1) {  //列表中存在
+            
+            int deleteId = folder.getId();
+
+            mFolders.remove(index);
+            
+            if (mFolders.size() == 0) { //没有文件夹了，则显示“所有文件夹”
+                doInbackground(new Runnable() {
+                    @Override
+                    public void run() {
+                        FolderManager.getInstance().updateShowState(mContext, true);
+                    }
+                });
+                
+            } else {
+                if (deleteId == mSelectedFolderId) {    //删除的是当前选中的项，则删除后，选择第一项
+                    doInbackground(new Runnable() {
+                        @Override
+                        public void run() {
+                            reLoadFisrtFolder(null);
+                        }
+                    });
+
+                    //选择第一项
+                    mNavAdapter.setSelectedItem(0);
+
+                    AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+                    refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
+                    refreshHelper.position = 0;
+                    refreshNavUI(refreshHelper);
+                }
+            }
+            
+            AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+            refreshHelper.type = AdapterRefreshHelper.TYPE_DELETE;
+            refreshHelper.position = index;
+            refreshNavUI(refreshHelper);
+        }
     }
     
     /**
@@ -846,18 +1063,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
 
         @Override
-        public void onBindViewHolder(final NavTextViewHolder holder, int position) {
+        public void onBindViewHolder(final NavTextViewHolder holder, final int position) {
             Folder folder = mList.get(position);
             final int folderId = folder.getId();
             holder.itemView.setSelected(mSelectedItem == folderId);
-            holder.itemView.setTag(position);
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mItemClickListener != null) {
-                        notifyItemChanged(mSelectedItem);
+                        int tPos = holder.getAdapterPosition();
+                        Folder pForder = new Folder();
+                        pForder.setId(mSelectedItem);
+                        int preSelectIndex = mFolders.indexOf(pForder);
                         mSelectedItem = folderId;
-                        mItemClickListener.onItemClick(v, holder.getAdapterPosition());
+                        if (preSelectIndex != -1) {
+                            notifyItemChanged(preSelectIndex);
+                        }
+                        mItemClickListener.onItemClick(v, tPos);
                     }
                 }
             });
@@ -1051,7 +1273,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             MainActivity target = mTarget.get();
             if (target != null) {
                 switch (msg.what) {
-                    case Constants.MSG_SUCCESS: //文件夹记载完毕
+                    case Constants.MSG_SUCCESS: //文件夹加载完毕
                         List<Folder> folderList = (List<Folder>) msg.obj;
                         target.mFolders.clear();
                         if (folderList != null && folderList.size() > 0) {
@@ -1133,16 +1355,32 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     break;
                 case Provider.FolderColumns.NOTIFY_FLAG:    //文件夹的通知
                     Folder folder = null;
-                    if (data != null) {
-                        folder = (Folder) data;
+                    if (data == null) {
+                        return;
                     }
+                    
                     switch (notifyType) {
                         case ADD:   //添加文件夹
+                            folder = (Folder) data;
                             Log.d(TAG, "------addFolder----" + folder);
+                            addFolder(folder);
                             break;
                         case UPDATE:   //更新文件夹
+                            if (data instanceof Folder) {
+                                folder = (Folder) data;
+                                Log.d(TAG, "------updateFolder----" + folder);
+                                updateFolder(folder);
+                            } else if (data instanceof Map) {   //文件夹排序
+                                Map<String, Object> map = (Map) data;
+                                Folder fromFolder = (Folder) map.get(Constants.ARG_CORE_OBJ);
+                                Folder toFolder = (Folder) map.get(Constants.ARG_SUB_OBJ);
+                                swapFolder(fromFolder, toFolder);
+                            }
                             break;
                         case DELETE:   //删除文件夹
+                            folder = (Folder) data;
+                            Log.d(TAG, "------deleteFolder----" + folder);
+                            deleteFolder(folder);
                             break;
                     }
                     break;
