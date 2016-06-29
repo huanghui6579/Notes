@@ -42,12 +42,22 @@ public final class Provider {
         /**
          * note表改变后更新文件夹的触发器
          */
-        public static final String EVENT_UPDATE_FOLDER = "event_update_folder";
+        public static final String TRI_UPDATE_FOLDER = "tri_update_folder";
         /**
          * note表添加笔记后更新文件夹的触发器
          */
-        public static final String EVENT_INSERT_NOTE = "event_insert_note";
+        public static final String TRI_INSERT_NOTE = "tri_insert_note";
 
+        /**
+         * note更新删除状态的文件夹中笔记的数量
+         */
+        public static final String TRI_NOTE_COUNT_ADD = "tri_note_count_add";
+
+        /**
+         * 文件夹中笔记减少的触发器
+         */
+        public static final String TRI_NOTE_COUNT_MINUS = "tri_note_count_minus";
+        
         /**
          * sid的索引
          */

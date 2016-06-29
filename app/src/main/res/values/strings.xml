@@ -26,14 +26,16 @@
 
     <string name="note_type_text">文本</string>
     <string name="note_type_list">清单</string>
-    <string name="note_sync_type_none">未同步</string>
-    <string name="note_sync_type_done">已同步</string>
+    <string name="sync_type_none">未同步</string>
+    <string name="sync_type_done">已同步</string>
 
     <string name="note_type">类型</string>
     <string name="note_words">字数</string>
-    <string name="note_create_time">创建时间</string>
-    <string name="note_modify_time">修改时间</string>
-    <string name="note_sync_state">同步状态</string>
+    <string name="create_time">创建时间</string>
+    <string name="modify_time">修改时间</string>
+    <string name="sync_state">同步状态</string>
+    <string name="default_state">默认状态</string>
+    <string name="default_folder">默认文件夹</string>
     
     <string name="hint_folder_edit">输入文件夹名称</string>
     
@@ -41,6 +43,7 @@
     <string name="folder_summary_lock">给文件夹加锁</string>
     <string name="folder_title_hide">设为默认</string>
     <string name="folder_summary_hide">桌面小工具笔记默认的保存文件夹</string>
+    <string name="folder_note_count">笔记数量</string>
 
     <string name="default_archive">所有</string>
 

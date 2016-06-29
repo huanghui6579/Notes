@@ -53,7 +53,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.FolderColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
                 .append(Provider.FolderColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
                 .append(Provider.FolderColumns.IS_LOCK).append(" INTEGER, ")
-                .append(Provider.FolderColumns.NAME).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.FolderColumns.NAME).append(" TEXT NOT NULL, ")
                 .append(Provider.FolderColumns.SORT).append(" INTEGER, ")
                 .append(Provider.FolderColumns.SYNC_STATE).append(" INTEGER, ")
                 .append(Provider.FolderColumns.DELETE_STATE).append(" INTEGER, ")
@@ -167,30 +167,72 @@ public class DBHelper extends SQLiteOpenHelper {
         
         //创建更新文件夹的触发器,当笔记更新时
         builder = new StringBuilder();
-        builder.append("CREATE TRIGGER IF NOT EXISTS ").append(Provider.NoteColumns.EVENT_UPDATE_FOLDER)
+        builder.append("CREATE TRIGGER IF NOT EXISTS ").append(Provider.NoteColumns.TRI_UPDATE_FOLDER)
                 .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
                 .append(" BEGIN UPDATE ").append(Provider.FolderColumns.TABLE_NAME)
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
-                .append(Provider.FolderColumns._ID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
+                .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
         
         //创建添加笔记时的触发器
-        /*CREATE TRIGGER event_insert_note AFTER INSERT ON notes  
-        WHEN NEW.folder_id IS NOT NULL AND NEW.folder_id > 0 BEGIN  
+        /*CREATE TRIGGER tri_insert_note AFTER INSERT ON notes  
+        WHEN NEW.folder_id IS NOT NULL BEGIN  
         UPDATE folder SET modify_time = NEW.create_time, _count = _count + 1, 
-        sync_state = 1 WHERE _id = NEW.folder_id;  END;*/
+        sync_state = 1 WHERE sId = NEW.folder_id;  END;*/
         builder = new StringBuilder();
-        builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.EVENT_INSERT_NOTE)
+        builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_INSERT_NOTE)
                 .append(" AFTER INSERT ON ").append(Provider.NoteColumns.TABLE_NAME)
-                .append(" WHEN NEW.folder_id IS NOT NULL AND NEW.folder_id > 0 BEGIN UPDATE ").append(Provider.FolderColumns.TABLE_NAME)
+                .append(" WHEN NEW.").append(Provider.NoteColumns.FOLDER_ID).append(" IS NOT NULL BEGIN UPDATE ").append(Provider.FolderColumns.TABLE_NAME)
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(" = NEW.").append(Provider.FolderColumns.CREATE_TIME)
                 .append(", ").append(Provider.FolderColumns._COUNT).append(" = ").append(Provider.FolderColumns._COUNT).append(" + 1")
                 .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
-                .append(Provider.FolderColumns._ID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
+                .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
+                .append("; END;");
+        db.execSQL(builder.toString());
+        
+        //创建更新文件夹中笔记数量增加的触发器
+
+        /*CREATE TRIGGER tri_note_count_add AFTER UPDATE ON notes
+        WHEN NEW.folder_id IS NOT NULL AND OLD.delete_state != 0 AND NEW.delete_state = 0 BEGIN
+        UPDATE folder SET modify_time = NEW.create_time, _count = _count + 1,
+                sync_state = 1 WHERE sId = NEW.folder_id;  END;*/
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_ADD)
+                .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
+                .append(" WHEN NEW.").append(Provider.NoteColumns.FOLDER_ID).append(" IS NOT NULL AND OLD.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" != 0 AND NEW.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" = 0 BEGIN UPDATE ")
+                .append(Provider.FolderColumns.TABLE_NAME)
+                .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
+                .append(" = NEW.").append(Provider.FolderColumns.CREATE_TIME)
+                .append(", ").append(Provider.FolderColumns._COUNT).append(" = ")
+                .append(Provider.FolderColumns._COUNT).append(" + 1")
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
+                .append("; END;");
+        db.execSQL(builder.toString());
+        /*CREATE TRIGGER tri_note_count_minus AFTER UPDATE ON notes
+        WHEN NEW.folder_id IS NOT NULL AND OLD.delete_state = 0 AND NEW.delete_state != 0 BEGIN
+        UPDATE folder SET modify_time = NEW.create_time, _count =  _count - 1,
+                sync_state = 1 WHERE sId = NEW.folder_id;  END;*/
+
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_MINUS)
+                .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
+                .append(" WHEN NEW.").append(Provider.NoteColumns.FOLDER_ID).append(" IS NOT NULL AND OLD.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" = 0 AND NEW.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" != 0 BEGIN UPDATE ")
+                .append(Provider.FolderColumns.TABLE_NAME)
+                .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
+                .append(" = NEW.").append(Provider.FolderColumns.CREATE_TIME)
+                .append(", ").append(Provider.FolderColumns._COUNT).append(" = ")
+                .append(Provider.FolderColumns._COUNT).append(" - 1")
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
         
@@ -202,7 +244,10 @@ public class DBHelper extends SQLiteOpenHelper {
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.FolderColumns.TRI_SET_FOLDER_SORT)
                 .append(" AFTER INSERT ON ").append(Provider.FolderColumns.TABLE_NAME)
-                .append(" BEGIN UPDATE folder SET sort = NEW._id WHERE _id = NEW._id;END;");
+                .append(" BEGIN UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" SET ")
+                .append(Provider.FolderColumns.SORT).append(" = NEW.").append(Provider.FolderColumns._ID)
+                .append(" WHERE ").append(Provider.FolderColumns._ID).append(" = NEW.")
+                .append(Provider.FolderColumns._ID).append( ";END;");
         db.execSQL(builder.toString());
 
         long endTime = System.currentTimeMillis();
@@ -223,13 +268,19 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL("DROP INDEX IF EXISTS " + Provider.UserColumns.USERNAME_IDX);
 
         //删除修改笔记后更新文件夹的触发器
-        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.EVENT_UPDATE_FOLDER);
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.TRI_UPDATE_FOLDER);
         
         //删除更新笔记后更新文件夹的触发器
-        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.EVENT_INSERT_NOTE);
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.TRI_INSERT_NOTE);
         
         //删除添加文件夹后设置排序的触发器
         db.execSQL("DROP TRIGGER IF EXISTS " + Provider.FolderColumns.TRI_SET_FOLDER_SORT);
+        
+        //删除笔记数量添加的触发器
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.TRI_NOTE_COUNT_ADD);
+        
+        //删除笔记数量减少的触发器
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.TRI_NOTE_COUNT_MINUS);
 
         db.execSQL("DROP TABLE IF EXISTS " + Provider.NoteColumns.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + Provider.FolderColumns.TABLE_NAME);

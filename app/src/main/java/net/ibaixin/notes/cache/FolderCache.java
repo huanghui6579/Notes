@@ -38,4 +38,15 @@ public class FolderCache {
     public void setFolderMap(Map<String, Folder> folderMap) {
         this.mFolderMap = folderMap;
     }
+    
+    /**
+     * 获取缓存中的文件夹
+     * @param sid 文件夹的sid
+     * @author huanghui1
+     * @update 2016/6/29 19:56
+     * @version: 1.0.0
+     */
+    public Folder getCacheFolder(String sid) {
+        return mFolderMap.get(sid);
+    }
 }

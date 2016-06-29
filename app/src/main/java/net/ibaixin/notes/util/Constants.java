@@ -20,7 +20,7 @@ public class Constants {
      */
     public static final String PREF_SHOW_FOLDER_ALL = "show_folder_all";
     /**
-     * 默认选中的文件夹id，为0时选中所有文件夹
+     * 默认选中的文件夹id，为null时选中所有文件夹
      */
     public static final String SELECTED_FOLDER_ID = "selected_folder_id";
     

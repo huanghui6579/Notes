@@ -224,9 +224,9 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                 typeStr = context.getString(R.string.note_type_list);
                 break;
         }
-        String syncStateStr = context.getString(R.string.note_sync_type_none);
-        if (syncState != null && syncState.ordinal() != SyncState.SYNC_NONE.ordinal()) {
-            syncStateStr = context.getString(R.string.note_sync_type_done);
+        String syncStateStr = context.getString(R.string.sync_type_none);
+        if (syncState != null && syncState.ordinal() == SyncState.SYNC_DONE.ordinal()) {
+            syncStateStr = context.getString(R.string.sync_type_done);
         }
         String foldername = null;
         if (!TextUtils.isEmpty(folderId)) {
@@ -241,9 +241,9 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
             builder.append(context.getString(R.string.action_folder)).append(colon).append(foldername).append(nextLine);
         }
         builder.append(context.getString(R.string.note_words)).append(colon).append(content.length()).append(nextLine)
-                .append(context.getString(R.string.note_create_time)).append(colon).append(TimeUtil.formatNoteTime(createTime)).append(nextLine)
-                .append(context.getString(R.string.note_modify_time)).append(colon).append(TimeUtil.formatNoteTime(modifyTime)).append(nextLine)
-                .append(context.getString(R.string.note_sync_state)).append(colon).append(syncStateStr);
+                .append(context.getString(R.string.create_time)).append(colon).append(TimeUtil.formatNoteTime(createTime)).append(nextLine)
+                .append(context.getString(R.string.modify_time)).append(colon).append(TimeUtil.formatNoteTime(modifyTime)).append(nextLine)
+                .append(context.getString(R.string.sync_state)).append(colon).append(syncStateStr);
         return builder.toString();
     }
 

@@ -303,9 +303,9 @@ public class SystemUtil {
      * @update 2016/3/8 18:05
      * @version: 1.0.0
      */
-    public static int getSelectedFolder(Context context) {
+    public static String getSelectedFolder(Context context) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getInt(Constants.SELECTED_FOLDER_ID, 0);
+        return sharedPreferences.getString(Constants.SELECTED_FOLDER_ID, null);
     }
     
     /**
@@ -314,10 +314,10 @@ public class SystemUtil {
      * @update 2016/6/27 21:00
      * @version: 1.0.0
      */
-    public static void setSelectedFolder(Context context, int folderId) {
+    public static void setSelectedFolder(Context context, String folderId) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt(Constants.SELECTED_FOLDER_ID, folderId);
+        editor.putString(Constants.SELECTED_FOLDER_ID, folderId);
         editor.apply();
     }
     

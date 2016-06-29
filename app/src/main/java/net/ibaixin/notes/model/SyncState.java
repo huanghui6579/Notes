@@ -7,20 +7,21 @@ package net.ibaixin.notes.model;
  * @update 2016/3/7 21:49
  */
 public enum SyncState {
-    /**
-     * 不需要同步
-     */
-    SYNC_NONE,
 
     /**
-     * 向上同步
+     * 需要向上同步
      */
     SYNC_UP,
 
     /**
-     * 向下同步
+     * 需要向下同步
      */
-    SYNC_DOWN;
+    SYNC_DOWN,
+
+    /**
+     * 同步完毕
+     */
+    SYNC_DONE;
 
     /**
      * 将int转换成枚举
@@ -30,13 +31,13 @@ public enum SyncState {
     public static SyncState valueOf(int original) {
         switch (original) {
             case 0:
-                return SYNC_NONE;
-            case 1:
                 return SYNC_UP;
-            case 2:
+            case 1:
                 return SYNC_DOWN;
+            case 2:
+                return SYNC_DONE;
             default:
-                return SYNC_NONE;
+                return SYNC_UP;
         }
     }
 }

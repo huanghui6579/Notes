@@ -1,8 +1,13 @@
 package net.ibaixin.notes.model;
 
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
+
+import net.ibaixin.notes.NoteApplication;
+import net.ibaixin.notes.R;
+import net.ibaixin.notes.util.TimeUtil;
 
 /**
  * 笔记的分类文件夹
@@ -80,15 +85,15 @@ public class Folder implements Parcelable, Cloneable {
 
         Folder folder = (Folder) o;
 
-        return id == folder.id;
+        return sId != null ? sId.equals(folder.sId) : folder.sId == null;
 
     }
 
     @Override
     public int hashCode() {
-        return id;
+        return sId != null ? sId.hashCode() : 0;
     }
-    
+
     public Folder() {}
 
     public Folder(Parcel in) {
@@ -247,8 +252,56 @@ public class Folder implements Parcelable, Cloneable {
         isShow = show;
     }
 
+    /**
+     * 获取详细信息
+     * @return
+     */
+    public String getInfo(Context context) {
+        StringBuilder builder = new StringBuilder();
+        String syncStateStr = context.getString(R.string.sync_type_none);
+        if (syncState != null && syncState.ordinal() == SyncState.SYNC_DONE.ordinal()) {
+            syncStateStr = context.getString(R.string.sync_type_done);
+        }
+        String defaultStr = null;
+        String nextLine = "\r\n";
+        NoteApplication noteApp = NoteApplication.getInstance();
+        if (sId.equals(noteApp.getDefaultFolderSid())) {    //默认文件夹
+            defaultStr = context.getString(R.string.default_state);
+        }
+        String colon = context.getString(R.string.colon);
+        builder.append(context.getString(R.string.folder_note_count)).append(colon).append(count).append(nextLine);
+        
+        if (!TextUtils.isEmpty(defaultStr)) {
+            builder.append(defaultStr).append(colon).append(context.getString(R.string.default_folder)).append(nextLine);
+        }
+
+        builder.append(context.getString(R.string.create_time)).append(colon).append(TimeUtil.formatNoteTime(createTime)).append(nextLine)
+                .append(context.getString(R.string.modify_time)).append(colon).append(TimeUtil.formatNoteTime(modifyTime)).append(nextLine)
+                .append(context.getString(R.string.sync_state)).append(colon).append(syncStateStr);
+        return builder.toString();
+    }
+
     @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
+    }
+
+    @Override
+    public String toString() {
+        return "Folder{" +
+                "id=" + id +
+                ", sId='" + sId + '\'' +
+                ", userId=" + userId +
+                ", name='" + name + '\'' +
+                ", isLock=" + isLock +
+                ", sort=" + sort +
+                ", syncState=" + syncState +
+                ", deleteState=" + deleteState +
+                ", createTime=" + createTime +
+                ", modifyTime=" + modifyTime +
+                ", count=" + count +
+                ", isDefault=" + isDefault +
+                ", isShow=" + isShow +
+                '}';
     }
 }

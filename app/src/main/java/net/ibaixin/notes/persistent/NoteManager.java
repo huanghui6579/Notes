@@ -7,11 +7,13 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import net.ibaixin.notes.NoteApplication;
+import net.ibaixin.notes.cache.FolderCache;
 import net.ibaixin.notes.db.DBHelper;
 import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.db.observer.Observer;
 import net.ibaixin.notes.model.DeleteState;
+import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.model.User;
@@ -66,10 +68,10 @@ public class NoteManager extends Observable<Observer> {
         SQLiteDatabase db = mDBHelper.getReadableDatabase();
         String selection = null;
         String[] selectionArgs = null;
-        int folder = 0;
+        String folder = null;
         boolean isRecycle = false;
         if (args != null) {
-            folder = args.getInt("folderId", 0);
+            folder = args.getString("folderId", null);
             isRecycle = args.getBoolean("isRecycle", false);
         }
         int deleteState = isRecycle ? 1 : 0;
@@ -83,20 +85,20 @@ public class NoteManager extends Observable<Observer> {
                 selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
             }
             
-            if (folder != 0) {
+            if (!TextUtils.isEmpty(folder)) {
                 selection += " AND " + Provider.NoteColumns.FOLDER_ID + " = ?";
-                selectionArgs = new String[] {String.valueOf(userId), String.valueOf(folder)};
+                selectionArgs = new String[] {String.valueOf(userId), folder};
             } else {
                 selectionArgs = new String[] {String.valueOf(userId)};
             }
         } else {    //当前用户没有登录
-            if (folder != 0) {
+            if (!TextUtils.isEmpty(folder)) {
                 if (deleteState == 0) {
                     selection = Provider.NoteColumns.FOLDER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
                 } else {
                     selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
                 }
-                selectionArgs = new String[] {String.valueOf(folder)};
+                selectionArgs = new String[] {folder};
             } else {
                 if (deleteState == 0) {
                     selection = Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = ?";
@@ -130,10 +132,13 @@ public class NoteManager extends Observable<Observer> {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(Provider.NoteColumns.DELETE_STATE, note.getDeleteState().ordinal());
+        values.put(Provider.NoteColumns.SYNC_STATE, note.getSyncState().ordinal());
+        values.put(Provider.NoteColumns.MODIFY_TIME, note.getModifyTime());
         int row = 0;
         try {
             db.beginTransaction();
             row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
+            updateFolderCount(note, false);
             db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "--deleteNote---error---" + e.getMessage());
@@ -212,6 +217,7 @@ public class NoteManager extends Observable<Observer> {
         long rowId = 0;
         try {
             rowId = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
+            updateFolderCount(note, true);
             db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "--addNote--error--" + e.getMessage());
@@ -224,6 +230,48 @@ public class NoteManager extends Observable<Observer> {
             return note;
         } else {
             return null;
+        }
+    }
+
+    /**
+     * 从缓存里获取文件夹
+     * @param sid
+     * @return
+     */
+    private Folder getCacheFolder(String sid) {
+        return FolderCache.getInstance().getFolderMap().get(sid);
+    }
+    
+    /**
+     * 更新文件夹里笔记的数量
+     * @author huanghui1
+     * @update 2016/6/29 19:20
+     * @version: 1.0.0
+     */
+    private void updateFolderCount(NoteInfo note, boolean isAdd) {
+        Folder folder = getCacheFolder(note.getFolderId());
+        if (folder != null) {
+            if (isAdd) {
+                folder.setCount(folder.getCount() + 1);
+            } else {
+                folder.setCount(folder.getCount() - 1);
+            }
+            folder.setModifyTime(note.getModifyTime());
+            folder.setSyncState(SyncState.SYNC_UP);
+        }
+    }
+    
+    /**
+     * 更新文件夹的状态
+     * @author huanghui1
+     * @update 2016/6/29 19:21
+     * @version: 1.0.0
+     */
+    private void updateFolder(NoteInfo note) {
+        Folder folder = getCacheFolder(note.getFolderId());
+        if (folder != null) {
+            folder.setModifyTime(note.getModifyTime());
+            folder.setSyncState(SyncState.SYNC_UP);
         }
     }
     
@@ -303,6 +351,7 @@ public class NoteManager extends Observable<Observer> {
             SQLiteDatabase db = mDBHelper.getWritableDatabase();
             int row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
             if (row > 0) {
+                updateFolder(note);
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, note);
                 return true;
             } else {

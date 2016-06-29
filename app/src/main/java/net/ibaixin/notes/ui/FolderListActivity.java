@@ -236,6 +236,21 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
     }
     
     /**
+     * 显示文件夹的详情
+     * @author huanghui1
+     * @update 2016/6/29 20:57
+     * @version: 1.0.0
+     */
+    private void showFolderInfo(final Folder folder) {
+        String info = folder.getInfo(mContext);
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle(folder.getName())
+                .setMessage(info)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+    
+    /**
      * 刷新界面
      * @param list
      * @param refreshHelper
@@ -277,6 +292,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                                             sureDeleteFolder(folder);
                                             break;
                                         case 1: //详情
+                                            showFolderInfo(folder);
                                             break;
                                     }
                                 }
