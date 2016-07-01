@@ -4,6 +4,8 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import net.ibaixin.notes.model.DeleteState;
+import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.util.log.Log;
 
 /**
@@ -172,7 +174,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(" BEGIN UPDATE ").append(Provider.FolderColumns.TABLE_NAME)
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
-                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = ").append(SyncState.SYNC_UP.ordinal()).append(" WHERE ")
                 .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
@@ -181,7 +183,7 @@ public class DBHelper extends SQLiteOpenHelper {
         /*CREATE TRIGGER tri_insert_note AFTER INSERT ON notes  
         WHEN NEW.folder_id IS NOT NULL BEGIN  
         UPDATE folder SET modify_time = NEW.create_time, _count = _count + 1, 
-        sync_state = 1 WHERE sId = NEW.folder_id;  END;*/
+        sync_state = 0 WHERE sId = NEW.folder_id;  END;*/
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_INSERT_NOTE)
                 .append(" AFTER INSERT ON ").append(Provider.NoteColumns.TABLE_NAME)
@@ -189,7 +191,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(" = NEW.").append(Provider.FolderColumns.CREATE_TIME)
                 .append(", ").append(Provider.FolderColumns._COUNT).append(" = ").append(Provider.FolderColumns._COUNT).append(" + 1")
-                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = ").append(SyncState.SYNC_UP.ordinal()).append(" WHERE ")
                 .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
@@ -198,40 +200,40 @@ public class DBHelper extends SQLiteOpenHelper {
 
         /*CREATE TRIGGER tri_note_count_add AFTER UPDATE ON notes
         WHEN NEW.folder_id IS NOT NULL AND OLD.delete_state != 0 AND NEW.delete_state = 0 BEGIN
-        UPDATE folder SET modify_time = NEW.create_time, _count = _count + 1,
-                sync_state = 1 WHERE sId = NEW.folder_id;  END;*/
+        UPDATE folder SET modify_time = NEW.modify_time, _count = _count + 1,
+                sync_state = 0 WHERE sId = NEW.folder_id;  END;*/
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_ADD)
                 .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
                 .append(" WHEN NEW.").append(Provider.NoteColumns.FOLDER_ID).append(" IS NOT NULL AND OLD.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" != 0 AND NEW.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" = 0 BEGIN UPDATE ")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_TRASH.ordinal()).append(" AND NEW.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_TRASH.ordinal()).append(" BEGIN UPDATE ")
                 .append(Provider.FolderColumns.TABLE_NAME)
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
-                .append(" = NEW.").append(Provider.FolderColumns.CREATE_TIME)
+                .append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(", ").append(Provider.FolderColumns._COUNT).append(" = ")
                 .append(Provider.FolderColumns._COUNT).append(" + 1")
-                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = ").append(SyncState.SYNC_UP.ordinal()).append(" WHERE ")
                 .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
         /*CREATE TRIGGER tri_note_count_minus AFTER UPDATE ON notes
         WHEN NEW.folder_id IS NOT NULL AND OLD.delete_state = 0 AND NEW.delete_state != 0 BEGIN
-        UPDATE folder SET modify_time = NEW.create_time, _count =  _count - 1,
-                sync_state = 1 WHERE sId = NEW.folder_id;  END;*/
+        UPDATE folder SET modify_time = NEW.modify_time, _count =  _count - 1,
+                sync_state = 0 WHERE sId = NEW.folder_id;  END;*/
 
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_MINUS)
                 .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
                 .append(" WHEN NEW.").append(Provider.NoteColumns.FOLDER_ID).append(" IS NOT NULL AND OLD.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" = 0 AND NEW.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" != 0 BEGIN UPDATE ")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_TRASH.ordinal()).append(" AND NEW.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_TRASH.ordinal()).append(" BEGIN UPDATE ")
                 .append(Provider.FolderColumns.TABLE_NAME)
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
-                .append(" = NEW.").append(Provider.FolderColumns.CREATE_TIME)
+                .append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(", ").append(Provider.FolderColumns._COUNT).append(" = ")
                 .append(Provider.FolderColumns._COUNT).append(" - 1")
-                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = 1 WHERE ")
+                .append(", ").append(Provider.FolderColumns.SYNC_STATE).append(" = ").append(SyncState.SYNC_UP.ordinal()).append(" WHERE ")
                 .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
@@ -248,6 +250,46 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.FolderColumns.SORT).append(" = NEW.").append(Provider.FolderColumns._ID)
                 .append(" WHERE ").append(Provider.FolderColumns._ID).append(" = NEW.")
                 .append(Provider.FolderColumns._ID).append( ";END;");
+        db.execSQL(builder.toString());
+        
+        //创建移动文件夹到回收站的触发器
+        /*CREATE TRIGGER "tri_trash_folder" AFTER UPDATE ON "folder"
+        WHEN (OLD.delete_state IS NULL OR OLD.delete_state != 1) AND NEW.delete_state = 1
+        BEGIN
+        UPDATE notes SET delete_state = 1, sync_state = 0, modify_time = NEW.modify_time WHERE folder_id = NEW.sId;
+        END;*/
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER ").append(Provider.FolderColumns.TRI_TRASH_FOLDER)
+                .append(" AFTER UPDATE ON ").append(Provider.FolderColumns.TABLE_NAME)
+                .append(" WHEN (OLD.").append(Provider.FolderColumns.DELETE_STATE).append(" IS NULL OR OLD.").append(Provider.FolderColumns.DELETE_STATE).append(" != ")
+                .append(DeleteState.DELETE_TRASH.ordinal()).append(") AND NEW.")
+                .append(Provider.FolderColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_TRASH.ordinal())
+                .append(" BEGIN UPDATE ").append(Provider.NoteColumns.TABLE_NAME).append(" SET ")
+                .append(Provider.FolderColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_TRASH.ordinal()).append(", ")
+                .append(Provider.FolderColumns.SYNC_STATE).append(" = ").append(SyncState.SYNC_UP.ordinal()).append(", ")
+                .append(Provider.FolderColumns.MODIFY_TIME).append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
+                .append(" WHERE ").append(Provider.NoteColumns.FOLDER_ID).append(" = NEW.")
+                .append(Provider.FolderColumns.SID).append( ";END;");
+        db.execSQL(builder.toString());
+
+        //创建将文件移出回收站的触发器
+        /*CREATE TRIGGER "tri_untrash_folder" AFTER UPDATE ON "folder"
+        WHEN (OLD.delete_state IS NOT NULL OR OLD.delete_state != 0) AND NEW.delete_state = 0
+        BEGIN
+        UPDATE notes SET delete_state = 0, sync_state = 0, modify_time = NEW.modify_time WHERE folder_id = NEW.sId;
+        END;*/
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER ").append(Provider.FolderColumns.TRI_UNTRASH_FOLDER)
+                .append(" AFTER UPDATE ON ").append(Provider.FolderColumns.TABLE_NAME)
+                .append(" WHEN (OLD.").append(Provider.FolderColumns.DELETE_STATE).append(" IS NOT NULL OR OLD.")
+                .append(Provider.FolderColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_NONE.ordinal()).append(") AND NEW.")
+                .append(Provider.FolderColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_NONE.ordinal())
+                .append(" BEGIN UPDATE ").append(Provider.NoteColumns.TABLE_NAME).append(" SET ")
+                .append(Provider.FolderColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_NONE.ordinal()).append(", ")
+                .append(Provider.FolderColumns.SYNC_STATE).append(" = ").append(SyncState.SYNC_UP.ordinal()).append(", ")
+                .append(Provider.FolderColumns.MODIFY_TIME).append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
+                .append(" WHERE ").append(Provider.NoteColumns.FOLDER_ID).append(" = NEW.")
+                .append(Provider.FolderColumns.SID).append( ";END;");
         db.execSQL(builder.toString());
 
         long endTime = System.currentTimeMillis();

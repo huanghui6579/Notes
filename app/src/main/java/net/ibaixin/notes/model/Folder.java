@@ -9,13 +9,15 @@ import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.util.TimeUtil;
 
+import java.util.Comparator;
+
 /**
  * 笔记的分类文件夹
  * @author huanghui1
  * @update 2016/2/24 18:23
  * @version: 0.0.1
  */
-public class Folder implements Parcelable, Cloneable {
+public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
     private int id;
 
     /**
@@ -51,7 +53,7 @@ public class Folder implements Parcelable, Cloneable {
     /**
      * 删除的状态
      */
-    private DeleteState deleteState;
+    private DeleteState deleteState = DeleteState.DELETE_NONE;
 
     /**
      * 创建时间
@@ -77,6 +79,17 @@ public class Folder implements Parcelable, Cloneable {
      * 是否显示，改字段不存到数据库中
      */
     private boolean isShow;
+
+    @Override
+    public int compare(Folder lhs, Folder rhs) {
+        if (lhs.sort > rhs.sort) {
+            return 1;
+        } else if (lhs.sort < rhs.sort) {
+            return -1;
+        } else {
+            return 0;
+        }
+    }
 
     @Override
     public boolean equals(Object o) {

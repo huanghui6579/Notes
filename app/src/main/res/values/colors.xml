@@ -9,6 +9,8 @@
     <color name="control_color">#20000000</color>
     <color name="control_color_light">#60ffffff</color>
     
+    <color name="item_selected_color">#56000000</color>
+    
     <color name="text_color">#de000000</color>
 
     <color name="colorButtonControl">#ffffff</color>

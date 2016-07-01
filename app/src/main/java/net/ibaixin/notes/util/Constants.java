@@ -23,6 +23,11 @@ public class Constants {
      * 默认选中的文件夹id，为null时选中所有文件夹
      */
     public static final String SELECTED_FOLDER_ID = "selected_folder_id";
+
+    /**
+     * 主界面是否显示网格，默认true
+     */
+    public static final String PREF_IS_GRID_STYLE = "is_grid_style";
     
     /**
      * 回车的标签

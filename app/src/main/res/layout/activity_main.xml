@@ -55,7 +55,7 @@
                         style="@style/NavMenuStyle"
                         android:layout_weight="1"
                         android:text="@string/action_trash"
-                        android:drawableTop="@drawable/ic_action_delete"/>
+                        android:drawableTop="@drawable/ic_action_trash"/>
                     <TextView
                         android:id="@+id/nav_settings"
                         style="@style/NavMenuStyle"

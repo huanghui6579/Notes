@@ -150,6 +150,16 @@ public final class Provider {
          */
         public static final String TRI_SET_FOLDER_SORT = "tri_set_folder_sort";
 
+        /**
+         * 将文件夹移到回收站的触发器
+         */
+        public static final String TRI_TRASH_FOLDER = "tri_trash_folder";
+
+        /**
+         * 将文件夹移出回收站
+         */
+        public static final String TRI_UNTRASH_FOLDER = "tri_untrash_folder";
+
         public static final String TABLE_NAME = "folder";
 
         /**

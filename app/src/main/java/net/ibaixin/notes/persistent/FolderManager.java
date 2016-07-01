@@ -85,6 +85,29 @@ public class FolderManager extends Observable<Observer> {
      * @version: 1.0.0
      */
     public List<Folder> getAllFolders(User user, Bundle args) {
+        List<Folder> list = null;
+        Cursor cursor = getAllFolderCursor(user, args);
+        if (cursor != null) {
+            list = new ArrayList<>();
+            Map<String, Folder> map = new HashMap<>();
+            while (cursor.moveToNext()) {
+                Folder folder = cursor2Folder(cursor);
+                list.add(folder);
+                map.put(folder.getSId(), folder);
+            }
+            FolderCache.getInstance().setFolderMap(map);
+            cursor.close();
+        }
+        return list;
+    }
+    
+    /**
+     * 获取所有文件夹的cursor
+     * @author huanghui1
+     * @update 2016/6/30 10:29
+     * @version: 1.0.0
+     */
+    public Cursor getAllFolderCursor(User user, Bundle args) {
         SQLiteDatabase db = mDBHelper.getReadableDatabase();
         String selection = null;
         String[] selectionArgs = null;
@@ -109,20 +132,7 @@ public class FolderManager extends Observable<Observer> {
                 selection = Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
             }
         }
-        List<Folder> list = null;
-        Cursor cursor = db.query(Provider.FolderColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.FolderColumns.DEFAULT_SORT);
-        if (cursor != null) {
-            list = new ArrayList<>();
-            Map<String, Folder> map = new HashMap<>();
-            while (cursor.moveToNext()) {
-                Folder folder = cursor2Folder(cursor);
-                list.add(folder);
-                map.put(folder.getSId(), folder);
-            }
-            FolderCache.getInstance().setFolderMap(map);
-            cursor.close();
-        }
-        return list;
+        return db.query(Provider.FolderColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.FolderColumns.DEFAULT_SORT);
     }
     
     /**

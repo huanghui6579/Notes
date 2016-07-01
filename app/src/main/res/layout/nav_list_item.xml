@@ -28,5 +28,5 @@
     android:minHeight="?android:attr/listPreferredItemHeight"
     android:clickable="true"
     tools:targetApi="jelly_bean_mr1"
-    android:background="@drawable/common_background_selector"
+    android:background="@drawable/nav_item_background_selector"
     android:textColor="@color/nav_item_text_color"/>

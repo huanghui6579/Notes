@@ -5,7 +5,7 @@
           android:drawable="?attr/colorAccent" />
     <item>
         <selector>
-            <item android:drawable="@color/control_color" android:state_selected="true"/>
+            <item android:drawable="@color/item_selected_color" android:state_selected="true"/>
         </selector>
     </item>
 </ripple>

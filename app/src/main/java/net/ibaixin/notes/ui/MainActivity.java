@@ -15,6 +15,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.view.ActionMode;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -24,6 +25,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,6 +39,7 @@ import net.ibaixin.notes.db.observer.ContentObserver;
 import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.helper.AdapterRefreshHelper;
 import net.ibaixin.notes.listener.OnItemClickListener;
+import net.ibaixin.notes.listener.OnItemLongClickListener;
 import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
@@ -54,6 +57,7 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +70,8 @@ import java.util.Map;
 public class MainActivity extends BaseActivity implements View.OnClickListener {
     
     private static final int MSG_SELECT_NAV = 3;
+
+    private static final int MSG_MOVE_FAILED = 4;
 
     private NavViewAdapter mNavAdapter;
     
@@ -128,6 +134,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     
     private final Handler mHandler = new MyHandler(this);
 
+    /**
+     * 是否是多选模式
+     */
+    private boolean mIsChooseMode;
+    
+    private ActionMode mActionMode;
+    
+    //选择的笔记集合
+    private List<Integer> mSelectedList;
+
     @Override
     protected int getContentView() {
         return R.layout.activity_main;
@@ -136,7 +152,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     @Override
     protected void initView() {
         //初始化主界面右下角编辑按钮
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         if (fab != null) {
             fab.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -144,6 +160,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     Intent intent = new Intent(mContext, NoteEditActivity.class);
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                     startActivity(intent);
+                    
+                    //退出选择模式
+                    outActionMode(true);
+                    
 //                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
 //                        .setAction("Action", null).show();
                 }
@@ -175,17 +195,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mNotes = new ArrayList<>();
         mLayoutManagerFactory = new LayoutManagerFactory();
         mRecyclerView = (RecyclerView) findViewById(R.id.lv_data);
-        mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, mIsGridStyle));
-        if (!mIsGridStyle) {    //开始显示列表样式
-            mItemDecoration = getItemDecoration(this);
-            mRecyclerView.addItemDecoration(mItemDecoration);
-
-            mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
-            mRecyclerView.setAdapter(mNoteListAdapter);
-        } else {
-            mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
-            mRecyclerView.setAdapter(mNoteGridAdapter);
-        }
 
         //初始化左侧导航菜单
         RecyclerView navigationView = (RecyclerView) findViewById(R.id.nav_view);
@@ -203,6 +212,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     Folder folder = mFolders.get(position);
                     selectFolder(folder);
                     
+                    //退出选择模式
+                    outActionMode(false);
+                    
                 }
             });
             navigationView.setAdapter(mNavAdapter);
@@ -217,6 +229,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     public void run() {
                         //初始化文件夹
                         initFolder();
+
+                        //初始化主界面的显示方式
+                        initShowStyle();
 
                         if (isFolderAllDisable()) { //不能加载所有文件夹里的笔记，则加载第一个文件夹
                             //加载文件夹
@@ -252,6 +267,31 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
         //注册观察者
         registContentObserver();
+    }
+    
+    /**
+     * 初始化主界面的显示方式，默认网格
+     * @author huanghui1
+     * @update 2016/6/30 20:42
+     * @version: 1.0.0
+     */
+    private void initShowStyle() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        mIsGridStyle = sharedPreferences.getBoolean(Constants.PREF_IS_GRID_STYLE, true);
+    }
+    
+    /**
+     * 更新主界面的显示方式
+     * @param isGridStyle 是否是网格显示
+     * @author huanghui1
+     * @update 2016/6/30 20:45
+     * @version: 1.0.0
+     */
+    private void updateShowStyle(boolean isGridStyle) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(Constants.PREF_IS_GRID_STYLE, isGridStyle);
+        editor.apply();
     }
 
     @Override
@@ -339,7 +379,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * @version: 1.0.0
      */
     private void initProperties() {
-        SystemUtil.getThreadPool().execute(new Runnable() {
+        doInbackground(new Runnable() {
             @Override
             public void run() {
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
@@ -577,6 +617,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     protected void onDestroy() {
         //注销观察者
         unRegistContentObserver();
+        mIsChooseMode = false;
         super.onDestroy();
     }
 
@@ -622,7 +663,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 mMainPopuMenu = createPopuMenu(auchor, R.menu.main_overflow, true, new OnPopuMenuItemClickListener());
                 if (!mIsGridStyle) {    //开始就显示列表，则菜单为网格
                     Menu menu = mMainPopuMenu.getMenu();
-                    MenuItem menuItem = menu.getItem(R.id.nav_show_style);
+                    MenuItem menuItem = menu.findItem(R.id.nav_show_style);
                     if (menuItem != null) {
                         menuItem.setTitle(R.string.action_show_grid);
                         menuItem.setIcon(R.drawable.ic_action_grid);
@@ -647,11 +688,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      */
     private void setShowContentStyle(boolean isGridStyle, boolean resetAdapter, AdapterRefreshHelper refreshHelper) {
         if (isGridStyle) { //显示成网格样式
-            if (mItemDecoration != null) {
+            /*if (mItemDecoration != null) {
                 mRecyclerView.removeItemDecoration(mItemDecoration);
-            }
+            }*/
             if (mNoteGridAdapter == null) {
-                mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
+                initNoteAdapter(isGridStyle);
+                mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, isGridStyle));
                 resetAdapter = true;
             }
             if (resetAdapter) {
@@ -666,9 +708,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
             mRecyclerView.setPadding(padding, 0, padding, 0);
         } else {    //列表样式
-            mRecyclerView.addItemDecoration(getItemDecoration(mContext));
+//            mRecyclerView.addItemDecoration(getItemDecoration(mContext));
             if (mNoteListAdapter == null) {
-                mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
+                initNoteAdapter(isGridStyle);
+                mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, isGridStyle));
                 resetAdapter = true;
             }
             if (resetAdapter) {
@@ -788,16 +831,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         int index = mNotes.indexOf(note);
         if (index != -1) {  //列表中存在
             NoteInfo info = mNotes.get(index);
-            
             info.setHash(note.getHash());
             info.setOldContent(info.getContent());
             info.setModifyTime(note.getModifyTime());
             info.setContent(note.getContent());
-            info.setFolderId(note.getFolderId());
             info.setHasAttach(note.hasAttach());
             info.setKind(note.getKind());
             info.setRemindId(note.getRemindId());
             info.setSyncState(note.getSyncState());
+            info.setFolderId(note.getFolderId());
 
             AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
             refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
@@ -976,6 +1018,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
                     //更新子标题
                     updateSubTitle(getSubTitle(mSelectedFolderId));
+                } else if (TextUtils.isEmpty(mSelectedFolderId)) {  //之前选中的是第一项“所有文件夹”，移除所删除文件夹中的笔记
+                    List<NoteInfo> deleteList = new ArrayList<>();
+                    for (NoteInfo note : mNotes) {
+                        if (deleteId.equals(note.getFolderId())) {
+                            deleteList.add(note);
+                        }
+                    }
+                    if (deleteList.size() > 0) {
+                        mNotes.removeAll(deleteList);
+                        refreshUI(mNotes, null);
+                    }
                 }
             }
             
@@ -1022,6 +1075,324 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
     }
 
+    /**
+     * 显示笔记详情
+     * @param note
+     */
+    private void showInfo(final NoteInfo note) {
+        String info = note.getNoteInfo(mContext);
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle(note.getTitle())
+                .setMessage(info)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    /**
+     * 显示删除的对话框
+     * @param note
+     */
+    private void sureDeleteNote(final NoteInfo note) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle(R.string.prompt)
+                .setMessage(R.string.confirm_to_trash)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        doInbackground(new Runnable() {
+                            @Override
+                            public void run() {
+                                handleDeleteNote(note, false);
+                            }
+                        });
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /**
+     * 移动笔记到其他文件夹
+     * @param note
+     */
+    private void moveNote(final NoteInfo note) {
+        final List<Folder> list = FolderCache.getInstance().getSortFolders();
+        
+        if (list != null && list.size() > 0) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+            int checkedItem = -1;
+            int size = list.size();
+            Folder selectedFolder = null;
+            String[] items = new String[size];
+            for (int i = 0; i < size; i++) {
+                Folder folder = list.get(i);
+                items[i] = folder.getName();
+                if (folder.getSId().equals(note.getFolderId())) {
+                    checkedItem = i;
+                    selectedFolder = folder;
+                }
+            }
+            final int defaultItem = checkedItem;
+            final Folder oldFolder = selectedFolder;
+            final AlertDialog dialog = builder.setTitle(R.string.move_to)
+                    .setSingleChoiceItems(items, checkedItem, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, final int which) {
+                            if (defaultItem != which) { //有改变
+                                doInbackground(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        boolean success = mNoteManager.move2Folder(note, oldFolder, list.get(which));
+                                        if (!success) {
+                                            mHandler.sendEmptyMessage(MSG_MOVE_FAILED);
+                                        }
+                                    }
+                                });
+                                dialog.dismiss();
+                            }
+                        }
+                    }).create();
+            dialog.show();
+        } else {
+            SystemUtil.makeShortToast(R.string.folder_move_no_more);
+        }
+    }
+    
+    /**
+     * 初始化note的适配器
+     * @author huanghui1
+     * @update 2016/6/30 21:22
+     * @version: 1.0.0
+     */
+    private void initNoteAdapter(boolean isGridStyle) {
+        if (isGridStyle) {
+            mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
+            mNoteGridAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(View view, int position) {
+                    mIsChooseMode = true;
+                    return false;
+                }
+            });
+            mNoteGridAdapter.setOnItemClickListener(new OnItemClickListener() {
+                @Override
+                public void onItemClick(View view, int position) {
+                    
+                }
+            });
+        } else {
+            mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
+            mNoteListAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(View view, int position) {
+
+                    //初始化actionMode
+                    initActionMode();
+                    
+                    if (!view.isSelected()) {
+                        view.setSelected(true);
+                        addSelectedItem(position);
+                    }
+                    return true;
+                }
+            });
+            mNoteListAdapter.setOnItemClickListener(new OnItemClickListener() {
+                @Override
+                public void onItemClick(View view, int position) {
+                    if (mIsChooseMode) {    //选择模式
+                        view.setSelected(!view.isSelected());
+                        if (view.isSelected()) {
+                            addSelectedItem(position);
+                        } else {
+                            removeSelectedItem(position);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * 添加选择项
+     * @param position
+     */
+    private void addSelectedItem(int position) {
+        if (mActionMode != null) {
+            if (mSelectedList == null) {
+                mSelectedList = new LinkedList<>();
+            }
+            mSelectedList.add(mNotes.get(position).getId());
+            mActionMode.setTitle(getSelectedTitle(mSelectedList.size(), mNotes.size()));
+            
+            if (mSelectedList.size() == 1) {
+                updateActionModeMenuState(mActionMode, true, true);
+            } else {
+                updateActionModeMenuState(mActionMode, true, false);
+            }
+        }
+    }
+
+    /**
+     * 移除选择项
+     * @param position
+     */
+    private void removeSelectedItem(int position) {
+        if (mActionMode != null) {
+            if (mSelectedList == null) {
+                mSelectedList = new LinkedList<>();
+            }
+            mSelectedList.remove(Integer.valueOf(mNotes.get(position).getId()));
+            mActionMode.setTitle(getSelectedTitle(mSelectedList.size(), mNotes.size()));
+            
+            if (mSelectedList.isEmpty()) {  //没有选择项，则将菜单置为不可点
+                updateActionModeMenuState(mActionMode, false, false);
+            } else if (mSelectedList.size() == 1) {
+                updateActionModeMenuState(mActionMode, true, true);
+            } else {
+                updateActionModeMenuState(mActionMode, true, false);
+            }
+        }
+    }
+
+    /**
+     * 更新选择模式各菜单的状态
+     * @param actionMode
+     * @param enable
+     * @param isSingle 是否只选择了一项
+     */
+    private void updateActionModeMenuState(ActionMode actionMode, boolean enable, boolean isSingle) {
+        Menu menu = actionMode.getMenu();
+        if (menu != null) {
+            int size = menu.size();
+            for (int i = 0; i < size; i++) {
+                MenuItem menuItem = menu.getItem(i);
+                if (enable) {
+                    if (isSingle) { //只选择了单个
+                        if (!menuItem.isEnabled()) {
+                            menuItem.setEnabled(true);
+                        }
+                    } else {    //选择了多个
+                        int menuId = menuItem.getItemId();
+                        if (menuId == R.id.action_share || menuId == R.id.action_info) {
+                            menuItem.setEnabled(false);
+                        } else {
+                            if (!menuItem.isEnabled()) {
+                                menuItem.setEnabled(true);
+                            }
+                        }
+                    }
+                    
+                } else {
+                    if (menuItem.isEnabled()) {
+                        menuItem.setEnabled(false);
+                    }
+                }
+                
+            }
+        }
+    }
+
+    /**
+     * 组装选择的标题
+     * @param selectedSize
+     * @param totalSize
+     * @return
+     */
+    private String getSelectedTitle(int selectedSize, int totalSize) {
+        return selectedSize + "/" + totalSize;
+    }
+
+    /**
+     * 清除选择的项
+     */
+    private void clearSelectedItem() {
+        if (mSelectedList != null) {
+            mSelectedList.clear();
+        }
+    }
+
+    /**
+     * 初始化actionMode
+     */
+    private void initActionMode() {
+        if (!mIsChooseMode) {
+            mIsChooseMode = true;
+            mActionMode = startSupportActionMode(new ActionModeCallbackImpl());
+        }
+    }
+
+    /**
+     * 退出多选模式
+     */
+    private void outActionMode(boolean refresh) {
+        if (!mIsChooseMode) {
+            return;
+        }
+        mIsChooseMode = false;
+
+        //清除选择的项
+        clearSelectedItem();
+        
+        //销毁actionMode
+        finishActionMode(mActionMode);
+        
+        if (refresh) {
+            //刷新界面
+            refreshUI(mNotes, null);
+        }
+    }
+
+    /**
+     * 隐藏ActionMode
+     * @param actionMode
+     */
+    private void finishActionMode(ActionMode actionMode) {
+        if (actionMode != null) {
+            actionMode.finish();
+        }
+    }
+    
+    /**
+     * 菜单的显示回调
+     * @author huanghui1
+     * @update 2016/7/1 14:55
+     * @version: 1.0.0
+     */
+    class ActionModeCallbackImpl implements ActionMode.Callback {
+
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, final Menu menu) {
+            MenuInflater menuInflater = getMenuInflater();
+            menuInflater.inflate(R.menu.grid_item_opt, menu);
+            return true;
+        }
+
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return false;
+        }
+
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.action_move:  //移动
+                    break;
+                case R.id.action_delete:    //删除
+                    break;
+                case R.id.action_share:    //分享
+                    break;
+                case R.id.action_info:    //详情
+                    break;
+            }
+            return false;
+        }
+
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+            outActionMode(true);
+        }
+    }
+    
     @Override
     public void onClick(View v) {
         Intent intent = null;
@@ -1029,6 +1400,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             case R.id.nav_archive:  //文件夹
                 intent = new Intent(mContext, FolderListActivity.class);
                 startActivity(intent);
+                //退出选择模式
+                outActionMode(true);
                 break;
         }
     }
@@ -1049,14 +1422,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         @Override
                         public void run() {
                             mIsGridStyle = !mIsGridStyle;
+                            doInbackground(new Runnable() {
+                                @Override
+                                public void run() {
+                                    updateShowStyle(mIsGridStyle);
+                                }
+                            });
                             RecyclerView.LayoutManager layoutManager = mLayoutManagerFactory.getLayoutManager(mContext, mIsGridStyle);
                             mRecyclerView.setLayoutManager(layoutManager);
                             if (mIsGridStyle) { //显示成网格样式
-                                if (mItemDecoration != null) {
+                                /*if (mItemDecoration != null) {
                                     mRecyclerView.removeItemDecoration(mItemDecoration);
-                                }
+                                }*/
                                 if (mNoteGridAdapter == null) {
-                                    mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
+                                    initNoteAdapter(mIsGridStyle);
                                 }
                                 int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
                                 mRecyclerView.setPadding(padding, 0, padding, 0);
@@ -1065,9 +1444,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                                 item.setIcon(R.drawable.ic_action_view_list);
                             } else {    //列表样式
                                 mRecyclerView.setPadding(0, 0, 0, 0);
-                                mRecyclerView.addItemDecoration(getItemDecoration(mContext));
+//                                mRecyclerView.addItemDecoration(getItemDecoration(mContext));
                                 if (mNoteListAdapter == null) {
-                                    mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
+                                    initNoteAdapter(mIsGridStyle);
                                 }
                                 mRecyclerView.setAdapter(mNoteListAdapter);
                                 item.setTitle(R.string.action_show_grid);
@@ -1166,33 +1545,81 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
     
     class NoteListViewHolder extends RecyclerView.ViewHolder {
+        ImageView mIvIcon;
+        TextView mTvContent;
+        TextView mTvTime;
 
         public NoteListViewHolder(View itemView) {
             super(itemView);
+
+            mIvIcon = (ImageView) itemView.findViewById(R.id.iv_icon);
+            mTvContent = (TextView) itemView.findViewById(R.id.tv_content);
+            mTvTime = (TextView) itemView.findViewById(R.id.tv_time);
         }
     }
     
-    class NoteListAdapter extends RecyclerView.Adapter<NavTextViewHolder> {
+    class NoteListAdapter extends RecyclerView.Adapter<NoteListViewHolder> {
 
         private final LayoutInflater mLayoutInflater;
         private final Context mContext;
         private List<NoteInfo> mList;
+
+        private OnItemLongClickListener mOnItemLongClickListener;
+        
+        private OnItemClickListener mOnItemClickListener;
 
         public NoteListAdapter(Context context, List<NoteInfo> list) {
             this.mContext = context;
             this.mList = list;
             mLayoutInflater = LayoutInflater.from(context);
         }
-        
-        @Override
-        public NavTextViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = mLayoutInflater.inflate(R.layout.nav_list_item, parent, false);
-            return new NavTextViewHolder(view);
+
+        public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
+            this.mOnItemLongClickListener = onItemLongClickListener;
+        }
+
+        public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+            this.mOnItemClickListener = onItemClickListener;
         }
 
         @Override
-        public void onBindViewHolder(NavTextViewHolder holder, int position) {
-            holder.mTextView.setText(mList.get(position).getContent());
+        public NoteListViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = mLayoutInflater.inflate(R.layout.item_main_list, parent, false);
+            return new NoteListViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(final NoteListViewHolder holder, int position) {
+            NoteInfo note = mList.get(position);
+            if (note != null) {
+                
+                if (!mIsChooseMode) {
+                    holder.itemView.setSelected(false);
+                }
+                
+                holder.mTvContent.setText(note.getContent());
+                holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
+                
+                holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        if (mOnItemLongClickListener != null) {
+                            return mOnItemLongClickListener.onItemLongClick(v, holder.getAdapterPosition());
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+                
+                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (mOnItemClickListener != null) {
+                            mOnItemClickListener.onItemClick(v, holder.getAdapterPosition());
+                        }
+                    }
+                });
+            }
         }
 
         @Override
@@ -1222,10 +1649,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         private final Context mContext;
         private List<NoteInfo> mList;
 
+        private OnItemLongClickListener mOnItemLongClickListener;
+        
+        private OnItemClickListener mOnItemClickListener;
+
         public NoteGridAdapter(Context context, List<NoteInfo> list) {
             this.mContext = context;
             this.mList = list;
             mLayoutInflater = LayoutInflater.from(context);
+        }
+
+        public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
+            this.mOnItemLongClickListener = onItemLongClickListener;
+        }
+
+        public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+            this.mOnItemClickListener = onItemClickListener;
         }
 
         @Override
@@ -1235,13 +1674,33 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
 
         @Override
-        public void onBindViewHolder(NoteGridViewHolder holder, int position) {
+        public void onBindViewHolder(final NoteGridViewHolder holder, int position) {
             NoteInfo note = mList.get(position);
             if (note != null) {
                 holder.mIvOverflow.setOnClickListener(new GridItemClickListener(note));
                 holder.mTvTitle.setText(note.getTitle());
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
                 holder.mTvSumary.setText(note.getContent());
+                
+                holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        if (mOnItemLongClickListener != null) {
+                            mOnItemLongClickListener.onItemLongClick(v, holder.getAdapterPosition());
+                        }
+                        return false;
+                    }
+                });
+                
+                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (mOnItemClickListener != null) {
+                            mOnItemClickListener.onItemClick(v, holder.getAdapterPosition());
+                        }
+                    }
+                });
+                
             }
         }
 
@@ -1268,6 +1727,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 switch (v.getId()) {
                     case R.id.iv_overflow:
                         PopupMenu itemMenu = createPopuMenu(v, R.menu.grid_item_opt, false, new ItemMenuClickListener(note));
+                        boolean hasMoreFolder = FolderCache.getInstance().hasMoreFolder();
+                        if (!hasMoreFolder) {   //删除“移动”菜单项
+                            Menu menu = itemMenu.getMenu();
+                            if (menu != null) {
+                                menu.removeItem(R.id.action_move);
+                            }
+                        }
                         itemMenu.show();
                         break;
                 }
@@ -1292,33 +1758,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 switch (item.getItemId()) {
                     case R.id.action_delete:    //删除
                         if (!mHasDeleteOpt) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-                            builder.setTitle(R.string.prompt)
-                                    .setMessage(R.string.confirm_to_trash)
-                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            doInbackground(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    handleDeleteNote(note, false);
-                                                }
-                                            });
-                                        }
-                                    })
-                                    .setNegativeButton(android.R.string.cancel, null)
-                                    .show();
+                            sureDeleteNote(note);
                         } else {
                             handleDeleteNote(note, true);
                         }
                         break;
                     case R.id.action_info:  //详情
-                        String info = note.getNoteInfo(mContext);
-                        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-                        builder.setTitle(note.getTitle())
-                                .setMessage(info)
-                                .setPositiveButton(android.R.string.ok, null)
-                                .show();
+                        showInfo(note);
+                        break;
+                    case R.id.action_move:  //移动
+                        moveNote(note);
                         break;
                 }
                 return false;
@@ -1382,6 +1831,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             target.mNavDrawer.closeDrawers();
                         }
                         break;
+                    case MSG_MOVE_FAILED:   //移动文件夹失败
+                        SystemUtil.makeShortToast(R.string.move_result_error);
+                        break;
                 }
             }
         }
@@ -1422,6 +1874,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             break;
                         case DELETE:    //删除、移到回收站
                             Log.d(TAG, "------deleteNote----" + noteInfo);
+                            if (noteInfo != null) {
+                                deleteNote(noteInfo);
+                            }
+                            break;
+                        case MOVE:    //移动到其他文件夹
+                            Log.d(TAG, "------moveNote----" + noteInfo);
                             if (noteInfo != null) {
                                 deleteNote(noteInfo);
                             }

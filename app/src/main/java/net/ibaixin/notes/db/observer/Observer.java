@@ -21,6 +21,10 @@ public interface Observer {
          */
         UPDATE,
         /**
+         * 移动操作
+         */
+        MOVE,
+        /**
          * 批量更新
          */
         BATCH_UPDATE,

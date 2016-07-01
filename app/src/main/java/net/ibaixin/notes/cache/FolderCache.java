@@ -2,7 +2,10 @@ package net.ibaixin.notes.cache;
 
 import net.ibaixin.notes.model.Folder;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,6 +37,16 @@ public class FolderCache {
     public Map<String, Folder> getFolderMap() {
         return mFolderMap;
     }
+    
+    /**
+     * 是否有更多的文件夹
+     * @author huanghui1
+     * @update 2016/6/30 11:17
+     * @version: 1.0.0
+     */
+    public boolean hasMoreFolder() {
+        return mFolderMap.size() > 0;
+    }
 
     public void setFolderMap(Map<String, Folder> folderMap) {
         this.mFolderMap = folderMap;
@@ -48,5 +61,19 @@ public class FolderCache {
      */
     public Folder getCacheFolder(String sid) {
         return mFolderMap.get(sid);
+    }
+    
+    /**
+     * 获取排序后的文件夹列表
+     * @author huanghui1
+     * @update 2016/6/30 10:50
+     * @version: 1.0.0
+     */
+    public List<Folder> getSortFolders() {
+        List<Folder> list = new ArrayList<>();
+        list.addAll(mFolderMap.values());
+        
+        Collections.sort(list, new Folder());
+        return list;
     }
 }

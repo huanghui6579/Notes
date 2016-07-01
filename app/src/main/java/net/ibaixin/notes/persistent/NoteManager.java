@@ -2,6 +2,7 @@ package net.ibaixin.notes.persistent;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -362,13 +363,94 @@ public class NoteManager extends Observable<Observer> {
         }
     }
     
+    /**
+     * 更新笔记的文件夹，移动到指定的文件夹
+     * @param note 笔记
+     * @param oldFolder 原始的文件夹
+     * @param newFolder 新的文件夹                 
+     * @author huanghui1
+     * @update 2016/6/30 11:52
+     * @version: 1.0.0
+     */
+    public boolean move2Folder(NoteInfo note, Folder oldFolder, Folder newFolder) {
+        long time = System.currentTimeMillis();
+        
+        note.setFolderId(newFolder.getSId());
+        note.setSyncState(SyncState.SYNC_UP);
+        note.setModifyTime(time);
+        
+        ContentValues values = new ContentValues();
+        values.put(Provider.NoteColumns.FOLDER_ID, note.getFolderId());
+        values.put(Provider.NoteColumns.SYNC_STATE, note.getSyncState().ordinal());
+        values.put(Provider.NoteColumns.MODIFY_TIME, note.getModifyTime());
+        
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        db.beginTransaction();
+        
+        int row = 0;
+        try {
+            row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
+            if (row > 0) {
+                if (oldFolder != null && !oldFolder.isEmpty()) { //非“所有文件夹”
+                    
+                    SyncState syncState = SyncState.SYNC_UP;
+                    
+                    oldFolder.setCount(oldFolder.getCount() - 1);
+                    oldFolder.setModifyTime(time);
+                    oldFolder.setSyncState(syncState);
+    
+                    newFolder.setCount(newFolder.getCount() + 1);
+                    newFolder.setModifyTime(time);
+                    newFolder.setSyncState(syncState);
+    
+                    //更新文件夹的数量，文件夹的其他字段的更新有note表中的触发器来更新
+                    /*UPDATE folder SET _count = (
+                        CASE
+                    WHEN _id = ? THEN
+                    3
+                    WHEN _id = ? THEN
+                    1
+                    ELSE
+                            _count
+                    END
+                    ), modify_time = ?, sync_state = ? where _id in (?, ?)*/
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns._COUNT)
+                            .append(" = (CASE WHEN ").append(Provider.FolderColumns._ID).append(" = ? THEN ? WHEN ")
+                            .append(Provider.FolderColumns._ID).append(" = ? THEN ? ELSE ").append(Provider.FolderColumns._COUNT)
+                            .append(" END), ").append(Provider.FolderColumns.MODIFY_TIME).append(" = ?, ").append(Provider.FolderColumns.SYNC_STATE)
+                            .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" IN (?, ?)");
+                    Object[] seletionArgs = {oldFolder.getId(), oldFolder.getCount(), newFolder.getId(), newFolder.getCount(), 
+                            time, syncState.ordinal(), oldFolder.getId(), newFolder.getId()};
+                    db.execSQL(sb.toString(), seletionArgs);
+                } else {
+                    //原始文件夹是所有文件夹，则只更新目的文件夹
+                    /*UPDATE folder SET _count = ? where _id = ?*/
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns._COUNT)
+                            .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" = ?");
+                    Object[] seletionArgs = {newFolder.getCount(), newFolder.getId()};
+                    db.execSQL(sb.toString(), seletionArgs);
+                }
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.MOVE, note);
+                db.setTransactionSuccessful();
+                return true;
+            }
+        } catch (SQLException e) {
+            Log.e(TAG, "---move2Folder----error---" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        return false;
+    }
+    
 //    public boolean 
     
     /**
      * 获取笔记的信息
      * @author huanghui1
      * @update 2016/6/18 14:35
-     * @version: 1.0.0
+     * @version: 1.0.0  
      */
     public NoteInfo getNote(int noteId) {
         NoteInfo info = new NoteInfo();

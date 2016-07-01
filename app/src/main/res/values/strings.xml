@@ -23,6 +23,9 @@
     <string name="add_result_error">添加失败</string>
     <string name="update_result_error">保存失败</string>
     <string name="delete_result_error">删除失败</string>
+    <string name="move_result_error">移动失败</string>
+    
+    <string name="move_to">移动到</string>
 
     <string name="note_type_text">文本</string>
     <string name="note_type_list">清单</string>
@@ -44,6 +47,7 @@
     <string name="folder_title_hide">设为默认</string>
     <string name="folder_summary_hide">桌面小工具笔记默认的保存文件夹</string>
     <string name="folder_note_count">笔记数量</string>
+    <string name="folder_move_no_more">没有可移动的文件夹</string>
 
     <string name="default_archive">所有</string>
 
