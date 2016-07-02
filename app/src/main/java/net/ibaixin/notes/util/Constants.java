@@ -39,6 +39,11 @@ public class Constants {
     public static final String TAG_FORMAT_LIST = "- ";
 
     /**
+     * 英文的逗号“,”
+     */
+    public static final String TAG_COMMA = ",";
+
+    /**
      * 列表的标签的长度
      */
     public static final int FORMAT_LIST_TAG_LENGTH = TAG_FORMAT_LIST.length();

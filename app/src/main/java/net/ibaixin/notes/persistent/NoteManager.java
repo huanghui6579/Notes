@@ -18,6 +18,7 @@ import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.model.User;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.log.Log;
 
 import java.util.ArrayList;
@@ -122,6 +123,24 @@ public class NoteManager extends Observable<Observer> {
         }
         return list;
     }
+
+    /**
+     * 返回移动笔记到垃圾桶的数据
+     * @param note 笔记
+     * @return 返回数据
+     */
+    private ContentValues initTrashValues(NoteInfo note) {
+
+        note.setDeleteState(DeleteState.DELETE_TRASH);
+        note.setSyncState(SyncState.SYNC_UP);
+        note.setModifyTime(System.currentTimeMillis());
+        
+        ContentValues values = new ContentValues();
+        values.put(Provider.NoteColumns.DELETE_STATE, note.getDeleteState().ordinal());
+        values.put(Provider.NoteColumns.SYNC_STATE, note.getSyncState().ordinal());
+        values.put(Provider.NoteColumns.MODIFY_TIME, note.getModifyTime());
+        return values;
+    }
     
     /**
      * 删除笔记
@@ -131,10 +150,7 @@ public class NoteManager extends Observable<Observer> {
      */
     public boolean deleteNote(NoteInfo note) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(Provider.NoteColumns.DELETE_STATE, note.getDeleteState().ordinal());
-        values.put(Provider.NoteColumns.SYNC_STATE, note.getSyncState().ordinal());
-        values.put(Provider.NoteColumns.MODIFY_TIME, note.getModifyTime());
+        ContentValues values = initTrashValues(note);
         int row = 0;
         try {
             db.beginTransaction();
@@ -152,6 +168,54 @@ public class NoteManager extends Observable<Observer> {
         } else {
             Log.w(TAG, "-------deleteNote---failed----");
             return false;
+        }
+    }
+
+    /**
+     * 删除多条笔记，移动到回收站，并不是真正的删除
+     * @param noteList 要删除的笔记的集合
+     * @return 返回是否删除成功
+     */
+    public boolean deleteNote(List<NoteInfo> noteList) {
+        if (noteList == null || noteList.size() == 0) {
+            Log.d(TAG, "----deleteNote---list--size--0--success---");
+            return true;
+        }
+        if (noteList.size() == 1) { //只有一条
+            return deleteNote(noteList.get(0));
+        } else {
+            int row = 0;
+            SQLiteDatabase db = mDBHelper.getWritableDatabase();
+            try {
+                ContentValues values = initTrashValues(noteList.get(0));
+                //拼凑sql语句
+                StringBuilder builder = new StringBuilder(Provider.NoteColumns._ID);
+                builder.append(" in (");
+                int size = noteList.size();
+                String[] selectionArgs = new String[size];
+                for (int i = 0; i < size; i++) {
+                    NoteInfo note = noteList.get(i);
+                    builder.append("?").append(Constants.TAG_COMMA);
+                    selectionArgs[i] = String.valueOf(note.getId());
+                }
+                builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_COMMA));
+                builder.append(")");
+                
+                db.beginTransaction();
+                row = db.update(Provider.NoteColumns.TABLE_NAME, values, builder.toString(), selectionArgs);
+                db.setTransactionSuccessful();
+            } catch (Exception e) {
+                Log.e("TAG", "--deleteNote--list--error--" + e.getMessage());
+            } finally {
+                db.endTransaction();
+            }
+            if (row > 0) {
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, noteList);
+                return true;
+            } else {
+                Log.w(TAG, "-------deleteNote--list--failed----");
+                return false;
+            }
         }
     }
     
@@ -362,48 +426,47 @@ public class NoteManager extends Observable<Observer> {
             return true;
         }
     }
-    
+
     /**
-     * 更新笔记的文件夹，移动到指定的文件夹
-     * @param note 笔记
-     * @param oldFolder 原始的文件夹
-     * @param newFolder 新的文件夹                 
-     * @author huanghui1
-     * @update 2016/6/30 11:52
-     * @version: 1.0.0
+     * 初始化移动笔记的数据
+     * @param note
+     * @param time
+     * @param folderId
+     * @return
      */
-    public boolean move2Folder(NoteInfo note, Folder oldFolder, Folder newFolder) {
-        long time = System.currentTimeMillis();
-        
-        note.setFolderId(newFolder.getSId());
+    private ContentValues initNoteMoveValues(NoteInfo note, long time, String folderId) {
+        note.setFolderId(folderId);
         note.setSyncState(SyncState.SYNC_UP);
         note.setModifyTime(time);
-        
+
         ContentValues values = new ContentValues();
         values.put(Provider.NoteColumns.FOLDER_ID, note.getFolderId());
         values.put(Provider.NoteColumns.SYNC_STATE, note.getSyncState().ordinal());
         values.put(Provider.NoteColumns.MODIFY_TIME, note.getModifyTime());
-        
-        SQLiteDatabase db = mDBHelper.getWritableDatabase();
-        db.beginTransaction();
-        
-        int row = 0;
-        try {
-            row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
-            if (row > 0) {
-                if (oldFolder != null && !oldFolder.isEmpty()) { //非“所有文件夹”
-                    
-                    SyncState syncState = SyncState.SYNC_UP;
-                    
-                    oldFolder.setCount(oldFolder.getCount() - 1);
-                    oldFolder.setModifyTime(time);
-                    oldFolder.setSyncState(syncState);
-    
-                    newFolder.setCount(newFolder.getCount() + 1);
-                    newFolder.setModifyTime(time);
-                    newFolder.setSyncState(syncState);
-    
-                    //更新文件夹的数量，文件夹的其他字段的更新有note表中的触发器来更新
+        return values;
+    }
+
+    /**
+     * 保存移动笔记后的文件夹
+     * @param db
+     * @param oldFolder
+     * @param newFolder
+     * @param time
+     */
+    private void updateNoteMoteFolder(SQLiteDatabase db, Folder oldFolder, Folder newFolder, long time) {
+        if (oldFolder != null && !oldFolder.isEmpty()) { //非“所有文件夹”
+
+            SyncState syncState = SyncState.SYNC_UP;
+
+            oldFolder.setCount(oldFolder.getCount() - 1);
+            oldFolder.setModifyTime(time);
+            oldFolder.setSyncState(syncState);
+
+            newFolder.setCount(newFolder.getCount() + 1);
+            newFolder.setModifyTime(time);
+            newFolder.setSyncState(syncState);
+
+            //更新文件夹的数量，文件夹的其他字段的更新有note表中的触发器来更新
                     /*UPDATE folder SET _count = (
                         CASE
                     WHEN _id = ? THEN
@@ -414,37 +477,73 @@ public class NoteManager extends Observable<Observer> {
                             _count
                     END
                     ), modify_time = ?, sync_state = ? where _id in (?, ?)*/
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns._COUNT)
-                            .append(" = (CASE WHEN ").append(Provider.FolderColumns._ID).append(" = ? THEN ? WHEN ")
-                            .append(Provider.FolderColumns._ID).append(" = ? THEN ? ELSE ").append(Provider.FolderColumns._COUNT)
-                            .append(" END), ").append(Provider.FolderColumns.MODIFY_TIME).append(" = ?, ").append(Provider.FolderColumns.SYNC_STATE)
-                            .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" IN (?, ?)");
-                    Object[] seletionArgs = {oldFolder.getId(), oldFolder.getCount(), newFolder.getId(), newFolder.getCount(), 
-                            time, syncState.ordinal(), oldFolder.getId(), newFolder.getId()};
-                    db.execSQL(sb.toString(), seletionArgs);
-                } else {
-                    //原始文件夹是所有文件夹，则只更新目的文件夹
+            StringBuilder sb = new StringBuilder();
+            sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns._COUNT)
+                    .append(" = (CASE WHEN ").append(Provider.FolderColumns._ID).append(" = ? THEN ? WHEN ")
+                    .append(Provider.FolderColumns._ID).append(" = ? THEN ? ELSE ").append(Provider.FolderColumns._COUNT)
+                    .append(" END), ").append(Provider.FolderColumns.MODIFY_TIME).append(" = ?, ").append(Provider.FolderColumns.SYNC_STATE)
+                    .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" IN (?, ?)");
+            Object[] seletionArgs = {oldFolder.getId(), oldFolder.getCount(), newFolder.getId(), newFolder.getCount(),
+                    time, syncState.ordinal(), oldFolder.getId(), newFolder.getId()};
+            db.execSQL(sb.toString(), seletionArgs);
+        } else {
+            //原始文件夹是所有文件夹，则只更新目的文件夹
                     /*UPDATE folder SET _count = ? where _id = ?*/
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns._COUNT)
-                            .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" = ?");
-                    Object[] seletionArgs = {newFolder.getCount(), newFolder.getId()};
-                    db.execSQL(sb.toString(), seletionArgs);
+            StringBuilder sb = new StringBuilder();
+            sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns._COUNT)
+                    .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" = ?");
+            Object[] seletionArgs = {newFolder.getCount(), newFolder.getId()};
+            db.execSQL(sb.toString(), seletionArgs);
+        }
+    }
+
+    /**
+     * 更新笔记的文件夹，移动到指定的文件夹
+     * @param notes 笔记
+     * @param oldFolder 原始的文件夹
+     * @param newFolder 新的文件夹                 
+     * @author huanghui1
+     * @update 2016/6/30 11:52
+     * @version: 1.0.0
+     */
+    public boolean move2Folder(List<NoteInfo> notes, Folder oldFolder, Folder newFolder) {
+        long time = System.currentTimeMillis();
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        db.beginTransaction();
+        try {
+            List<NoteInfo> noteList = new ArrayList<>();
+            for (NoteInfo note : notes) {
+                if (newFolder.getSId().equals(note.getFolderId())) {
+                    continue;
                 }
-                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.MOVE, note);
-                db.setTransactionSuccessful();
-                return true;
+                ContentValues values = initNoteMoveValues(note, time, newFolder.getSId());
+    
+                int row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
+                
+                if (row > 0) {
+                    updateNoteMoteFolder(db, oldFolder, newFolder, time);
+                    noteList.add(note);
+                }
+                
             }
+            if (noteList.size() > 0) {
+                if (noteList.size() == 1) {
+                    notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.MOVE, noteList.get(0));
+                } else {
+                    notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.MOVE, noteList);
+                }
+            } else {
+                Log.d(TAG, "--move2Folder----result----list---0----not---notifyObservers---");
+            }
+            db.setTransactionSuccessful();
+            return true;
         } catch (SQLException e) {
-            Log.e(TAG, "---move2Folder----error---" + e.getMessage());
+            Log.e(TAG, "---move2Folder---list---error----" + e.getMessage());
         } finally {
             db.endTransaction();
         }
         return false;
     }
-    
-//    public boolean 
     
     /**
      * 获取笔记的信息

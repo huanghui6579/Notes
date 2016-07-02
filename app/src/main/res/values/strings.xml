@@ -25,6 +25,8 @@
     <string name="delete_result_error">删除失败</string>
     <string name="move_result_error">移动失败</string>
     
+    <string name="result_success">操作成功</string>
+    
     <string name="move_to">移动到</string>
 
     <string name="note_type_text">文本</string>

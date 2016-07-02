@@ -40,10 +40,8 @@ import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.helper.AdapterRefreshHelper;
 import net.ibaixin.notes.listener.OnItemClickListener;
 import net.ibaixin.notes.listener.OnItemLongClickListener;
-import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
-import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.persistent.FolderManager;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.util.Constants;
@@ -72,6 +70,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private static final int MSG_SELECT_NAV = 3;
 
     private static final int MSG_MOVE_FAILED = 4;
+    private static final int MSG_MOVE_SUCCESS = 5;
 
     private NavViewAdapter mNavAdapter;
     
@@ -142,7 +141,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private ActionMode mActionMode;
     
     //选择的笔记集合
-    private List<Integer> mSelectedList;
+    private List<NoteInfo> mSelectedList;
 
     @Override
     protected int getContentView() {
@@ -755,8 +754,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     /**
      * 获取第一个文件夹
-     * @param list
-     * @return
+     * @param list 文件夹列表
+     * @return 返回
      */
     private Folder getFirstFolder(List<Folder> list) {
         Folder folder = null;
@@ -785,40 +784,103 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     /**
      * 删除笔记
-     * @param note
+     * @param note 笔记
+     * @param isMove 是指只是移动笔记到其他文件文件，如果是指移动，那么在"所有文件夹"中就不需要删除了
      */
-    private void deleteNote(NoteInfo note) {
+    private void deleteNote(NoteInfo note, boolean isMove) {
         int index = mNotes.indexOf(note);
         if (index != -1) {  //列表中存在
-            mNotes.remove(index);
-            AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
-            refreshHelper.type = AdapterRefreshHelper.TYPE_DELETE;
-            refreshHelper.position = index;
-            refreshUI(mNotes, refreshHelper);
+            if (isMove) {
+                setupUpdateNote(mNotes.get(index), note);
+            } else {
+                mNotes.remove(index);
+                AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+                refreshHelper.type = AdapterRefreshHelper.TYPE_DELETE;
+                refreshHelper.position = index;
+                refreshUI(mNotes, refreshHelper);
+            }
+        }
+    }
+
+    /**
+     * 移除多个笔记，并刷新界面
+     * @param list 笔记列表
+     * @param isMove 是指只是移动笔记到其他文件文件，如果是指移动，那么在"所有文件夹"中就不需要删除了
+     */
+    private void deleteNotes(List<NoteInfo> list, boolean isMove) {
+        if (list != null && list.size() > 0) {
+            if (isMove) {   //移动到其他文件夹
+                for (NoteInfo note : list) {
+                    int index = mNotes.indexOf(note);
+                    if (index != -1) {
+                        setupUpdateNote(mNotes.get(index), note);
+                    }
+                }
+            } else {
+                mNotes.removeAll(list);
+                refreshUI(mNotes, null);
+            }
         }
     }
     
     /**
-     * 删除单条短信
+     * 删除单条笔记
      * @param note 笔记
-     * @param hasDeleteOpt 之前是否有删除操作，如果没有，则需保存             
      * @author huanghui1
      * @update 2016/6/29 19:37
      * @version: 1.0.0
      */
-    private void handleDeleteNote(NoteInfo note, boolean hasDeleteOpt) {
-        note.setDeleteState(DeleteState.DELETE_TRASH);
-        note.setSyncState(SyncState.SYNC_UP);
-        note.setModifyTime(System.currentTimeMillis());
-        mNoteManager.deleteNote(note);
-        
-        if (!hasDeleteOpt) {
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean(Constants.PREF_HAS_DELETE_OPT, true);
-            editor.apply();
-            mHasDeleteOpt = true;
+    private void handleDeleteNote(final NoteInfo note) {
+        List<NoteInfo> list = new ArrayList<>(1);
+        list.add(note);
+        handleDeleteNote(list);
+    }
+
+    /**
+     * 删除多条笔记
+     * @param noteList 要删除的笔记的集合
+     */
+    private void handleDeleteNote(List<NoteInfo> noteList) {
+        final List<NoteInfo> list = new ArrayList<>();
+        list.addAll(noteList);
+        if (!mHasDeleteOpt) {   //之前是否有删除操作，如果没有，则需弹窗           
+            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+            builder.setTitle(R.string.prompt)
+                    .setMessage(R.string.confirm_to_trash)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            doDeleteNote(list);
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+        } else {    //直接删除
+            doDeleteNote(list);
         }
+    }
+    
+    /**
+     * 删除多条笔记
+     * @param noteList 要删除的笔记的集合
+     */
+    private void doDeleteNote(final List<NoteInfo> noteList) {
+        
+        doInbackground(new Runnable() {
+            @Override
+            public void run() {
+                
+                mNoteManager.deleteNote(noteList);
+
+                if (!mHasDeleteOpt) {   //之前是否有删除操作，如果没有，则需保存  
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putBoolean(Constants.PREF_HAS_DELETE_OPT, true);
+                    editor.apply();
+                    mHasDeleteOpt = true;
+                }
+            }
+        });
     }
     
     /**
@@ -831,21 +893,30 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         int index = mNotes.indexOf(note);
         if (index != -1) {  //列表中存在
             NoteInfo info = mNotes.get(index);
-            info.setHash(note.getHash());
-            info.setOldContent(info.getContent());
-            info.setModifyTime(note.getModifyTime());
-            info.setContent(note.getContent());
-            info.setHasAttach(note.hasAttach());
-            info.setKind(note.getKind());
-            info.setRemindId(note.getRemindId());
-            info.setSyncState(note.getSyncState());
-            info.setFolderId(note.getFolderId());
+            setupUpdateNote(info, note);
 
             AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
             refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
             refreshHelper.position = index;
             refreshUI(mNotes, refreshHelper);
         }
+    }
+
+    /**
+     * 更新笔记的内容
+     * @param oldNote 原来的笔记
+     * @param newNote 新的笔记
+     */
+    private void setupUpdateNote(NoteInfo oldNote, NoteInfo newNote) {
+        oldNote.setHash(newNote.getHash());
+        oldNote.setOldContent(oldNote.getContent());
+        oldNote.setModifyTime(newNote.getModifyTime());
+        oldNote.setContent(newNote.getContent());
+        oldNote.setHasAttach(newNote.hasAttach());
+        oldNote.setKind(newNote.getKind());
+        oldNote.setRemindId(newNote.getRemindId());
+        oldNote.setSyncState(newNote.getSyncState());
+        oldNote.setFolderId(newNote.getFolderId());
     }
     
     /**
@@ -1089,35 +1160,31 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     /**
-     * 显示删除的对话框
-     * @param note
-     */
-    private void sureDeleteNote(final NoteInfo note) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        builder.setTitle(R.string.prompt)
-                .setMessage(R.string.confirm_to_trash)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        doInbackground(new Runnable() {
-                            @Override
-                            public void run() {
-                                handleDeleteNote(note, false);
-                            }
-                        });
-                    }
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    /**
      * 移动笔记到其他文件夹
      * @param note
      */
     private void moveNote(final NoteInfo note) {
+        List<NoteInfo> list = new ArrayList<>(1);
+        list.add(note);
+
+        moveNotes(list);
+    }
+
+    /**
+     * 移动笔记到其他文件夹
+     * @param noteList
+     */
+    private void moveNotes(List<NoteInfo> noteList) {
+        if (noteList == null || noteList.size() == 0) {
+            return;
+        }
         final List<Folder> list = FolderCache.getInstance().getSortFolders();
-        
+        String currentFolderId = null;
+        if (noteList.size() == 1) { //只有一个笔记
+            currentFolderId = noteList.get(0).getFolderId();
+        } else {    //多个笔记
+            currentFolderId = mSelectedFolderId;
+        }
         if (list != null && list.size() > 0) {
             AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
             int checkedItem = -1;
@@ -1127,11 +1194,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             for (int i = 0; i < size; i++) {
                 Folder folder = list.get(i);
                 items[i] = folder.getName();
-                if (folder.getSId().equals(note.getFolderId())) {
+                if (folder.getSId().equals(currentFolderId)) {
                     checkedItem = i;
                     selectedFolder = folder;
                 }
             }
+            final List<NoteInfo> selects = new ArrayList<>(noteList);
             final int defaultItem = checkedItem;
             final Folder oldFolder = selectedFolder;
             final AlertDialog dialog = builder.setTitle(R.string.move_to)
@@ -1142,7 +1210,25 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                                 doInbackground(new Runnable() {
                                     @Override
                                     public void run() {
-                                        boolean success = mNoteManager.move2Folder(note, oldFolder, list.get(which));
+                                        boolean success = false;
+                                        if (selects.size() == 1) { //只有一条记录
+                                            success = mNoteManager.move2Folder(selects, oldFolder, list.get(which));
+                                        } else {    //多条记录
+                                            Folder newFolder = list.get(which);
+                                            List<NoteInfo> actualList = new ArrayList<>();
+                                            for (NoteInfo note : selects) {
+                                                if (!newFolder.getSId().equals(note.getFolderId())) {
+                                                    actualList.add(note);
+                                                }
+                                            }
+                                            if (actualList.size() == 0) {
+                                                success = true;
+                                                mHandler.sendEmptyMessage(MSG_MOVE_SUCCESS);
+                                                Log.d(TAG, "--moveNotes--actualList---size---0---success--");
+                                            } else {
+                                                success = mNoteManager.move2Folder(actualList, oldFolder, newFolder);
+                                            }
+                                        }
                                         if (!success) {
                                             mHandler.sendEmptyMessage(MSG_MOVE_FAILED);
                                         }
@@ -1221,7 +1307,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             if (mSelectedList == null) {
                 mSelectedList = new LinkedList<>();
             }
-            mSelectedList.add(mNotes.get(position).getId());
+            mSelectedList.add(mNotes.get(position));
             mActionMode.setTitle(getSelectedTitle(mSelectedList.size(), mNotes.size()));
             
             if (mSelectedList.size() == 1) {
@@ -1241,7 +1327,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             if (mSelectedList == null) {
                 mSelectedList = new LinkedList<>();
             }
-            mSelectedList.remove(Integer.valueOf(mNotes.get(position).getId()));
+            mSelectedList.remove(mNotes.get(position));
             mActionMode.setTitle(getSelectedTitle(mSelectedList.size(), mNotes.size()));
             
             if (mSelectedList.isEmpty()) {  //没有选择项，则将菜单置为不可点
@@ -1364,6 +1450,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         public boolean onCreateActionMode(ActionMode mode, final Menu menu) {
             MenuInflater menuInflater = getMenuInflater();
             menuInflater.inflate(R.menu.grid_item_opt, menu);
+            
+            if (!FolderCache.getInstance().hasMoreFolder()) {   //没有更多的文件夹，除了“所有文件夹”
+                //移除“移动”菜单
+                menu.removeItem(R.id.action_move);
+            }
             return true;
         }
 
@@ -1376,14 +1467,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.action_move:  //移动
+                    moveNotes(mSelectedList);
                     break;
                 case R.id.action_delete:    //删除
+                    handleDeleteNote(mSelectedList);
                     break;
                 case R.id.action_share:    //分享
                     break;
                 case R.id.action_info:    //详情
                     break;
             }
+            outActionMode(true);
             return false;
         }
 
@@ -1757,11 +1851,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.action_delete:    //删除
-                        if (!mHasDeleteOpt) {
-                            sureDeleteNote(note);
-                        } else {
-                            handleDeleteNote(note, true);
-                        }
+                        handleDeleteNote(note);
                         break;
                     case R.id.action_info:  //详情
                         showInfo(note);
@@ -1834,6 +1924,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     case MSG_MOVE_FAILED:   //移动文件夹失败
                         SystemUtil.makeShortToast(R.string.move_result_error);
                         break;
+                    case MSG_MOVE_SUCCESS:   //移动文件夹成功
+                        SystemUtil.makeShortToast(R.string.result_success);
+                        break;
                 }
             }
         }
@@ -1856,7 +1949,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             switch (notifyFlag) {
                 case Provider.NoteColumns.NOTIFY_FLAG:  //笔记的通知
                     NoteInfo noteInfo = null;
-                    if (data != null) {
+                    if (data != null && data instanceof NoteInfo) {
                         noteInfo = (NoteInfo) data;
                     }
                     switch (notifyType) {
@@ -1875,13 +1968,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         case DELETE:    //删除、移到回收站
                             Log.d(TAG, "------deleteNote----" + noteInfo);
                             if (noteInfo != null) {
-                                deleteNote(noteInfo);
+                                deleteNote(noteInfo, false);
+                            } else if (data instanceof List) {  //删除了多个笔记
+                                List<NoteInfo> noteList = (List<NoteInfo>) data;
+                                deleteNotes(noteList, false);
                             }
                             break;
                         case MOVE:    //移动到其他文件夹
                             Log.d(TAG, "------moveNote----" + noteInfo);
+                            boolean isFolderAll = TextUtils.isEmpty(mSelectedFolderId);
                             if (noteInfo != null) {
-                                deleteNote(noteInfo);
+                                deleteNote(noteInfo, isFolderAll);
+                            } else if (data instanceof List) {  //移动了多个笔记
+                                List<NoteInfo> noteList = (List<NoteInfo>) data;
+                                deleteNotes(noteList, isFolderAll);
+                            }
+                            if (isFolderAll) {  //在所有文件中，则给个操作结果的提示
+                                mHandler.sendEmptyMessage(MSG_MOVE_SUCCESS);
                             }
                             break;
                     }
