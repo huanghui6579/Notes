@@ -882,6 +882,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             }
         });
     }
+
+    /**
+     * 显示编辑笔记
+     * @param note 笔记
+     */
+    private void showNoteInfo(NoteInfo note) {
+        Intent intent = new Intent(mContext, NoteEditActivity.class);
+        intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
+        intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
+        startActivity(intent);
+    }
     
     /**
      * 修改笔记
@@ -1263,7 +1274,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mNoteGridAdapter.setOnItemClickListener(new OnItemClickListener() {
                 @Override
                 public void onItemClick(View view, int position) {
-                    
+                    showNoteInfo(mNotes.get(position));
                 }
             });
         } else {
@@ -1292,6 +1303,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         } else {
                             removeSelectedItem(position);
                         }
+                    } else {
+                        showNoteInfo(mNotes.get(position));
                     }
                 }
             });
@@ -1475,6 +1488,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 case R.id.action_share:    //分享
                     break;
                 case R.id.action_info:    //详情
+                    showInfo(mSelectedList.get(0));
                     break;
             }
             outActionMode(true);

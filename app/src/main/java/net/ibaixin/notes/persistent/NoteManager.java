@@ -385,7 +385,7 @@ public class NoteManager extends Observable<Observer> {
         }
         NoteInfo.NoteKind noteKind = note.getKind();
         if (noteKind != null) {
-            values.put(Provider.NoteColumns.KIND, noteKind.ordinal());
+            values.put(Provider.NoteColumns.KIND, noteKind.name());
         }
         long time = note.getModifyTime();
         if (time == 0) {

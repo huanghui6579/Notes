@@ -17,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
+import android.view.WindowManager;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -129,11 +130,43 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (intent != null) {
             int noteId = intent.getIntExtra(ARG_NOTE_ID, 0);
             mFolderId = intent.getStringExtra(ARG_FOLDER_ID);
-            if (noteId > 0) {
+            if (noteId > 0) {   //查看模式
+                initNoteMode(mEtContent, true);
                 loadNoteInfo(noteId);
+            } else {    //编辑模式
+                initNoteMode(mEtContent, false);
+                mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
             }
         }
     }
+
+    /**
+     * 是否显示键盘，初始化时
+     * @param show
+     */
+    private void initSoftInputMode(boolean show) {
+        if (show) {
+            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
+
+    /**
+     * 初始化笔记的模式，是编辑模式还是查看模式
+     * @param showMode 是否是查看模式
+     */
+    private void initNoteMode(NoteEditText editText, boolean showMode) {
+        if (showMode) { //查看模式
+            initSoftInputMode(false);
+            editText.setCursorVisible(false);
+//            textView.setTag(textView.getKeyListener());
+//            textView.setKeyListener(null);
+        } else {    //编辑模式
+            editText.setCursorVisible(true);
+            initSoftInputMode(true);
+//            textView.setKeyListener((KeyListener) textView.getTag());
+        }
+    }
+
 
     /**
      * 显示笔记到界面上
@@ -169,6 +202,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         String content = TextUtils.isEmpty(mEtContent.getText()) ? "" : mEtContent.getText().toString();
         Intent intent = null;
         if (mNote != null) {    //更新笔记
+            if (content.equals(mNote.getContent())) {
+                return;
+            }
             mNote.setContent(content);
             mNote.setModifyTime(System.currentTimeMillis());
             mNote.setSyncState(SyncState.SYNC_UP);
@@ -201,7 +237,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     protected void initView() {
         mEtContent = (NoteEditText) findViewById(R.id.et_content);
-        mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
+
+        if (mEtContent == null) {
+            return;
+        }
 
         mEtContent.addTextChangedListener(this);
 
@@ -328,6 +367,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void initBottomToolBar() {
         ViewStub viewStub = (ViewStub) findViewById(R.id.bottom_tool_bar);
+        if (viewStub == null) {
+            return;
+        }
         View bottomBar = viewStub.inflate();
         ViewGroup toolContainer = (ViewGroup) bottomBar.findViewById(R.id.tool_container);
 
@@ -394,7 +436,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public void onTextChanged(CharSequence s, int start, int before, int count) {
         if (!mIsDo && s != null) {
             EditStep editStep = getUndo();
-            if (editStep.isAppend()) {  //添加文字
+            if (editStep != null && editStep.isAppend()) {  //添加文字
                 int end = start + count;
                 editStep.setEnd(end);
                 editStep.setContent(s.subSequence(start, end));
@@ -441,6 +483,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version 1.0.0
      */
     private void pushUndo(EditStep editStep) {
+        if (mIvUndo == null) {
+            return;
+        }
         mUndoStack.push(editStep);
 
         if (!mIvUndo.isEnabled()) {
@@ -455,6 +500,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version 1.0.0
      */
     private EditStep getUndo() {
+        if (mUndoStack.size() == 0) {
+            return null;
+        }
         return mUndoStack.peek();
     }
 
@@ -465,6 +513,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version 1.0.0
      */
     private void pushRedo(EditStep editStep) {
+        if (mIvRedo == null) {
+            return;
+        }
         mRedoStack.push(editStep);
         if (!mIvRedo.isEnabled()) {
             mIvRedo.setEnabled(true);

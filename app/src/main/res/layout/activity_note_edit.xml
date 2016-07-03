@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="net.net.notes.ui.NoteEditActivity">
+    tools:context=".ui.NoteEditActivity">
     <include
         layout="@layout/app_bar_layout"
         android:layout_width="match_parent"
