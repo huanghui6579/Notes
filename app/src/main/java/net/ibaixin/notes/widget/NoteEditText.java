@@ -14,8 +14,6 @@ public class NoteEditText extends EditText {
 
     protected SelectionChangedListener mSelectionChangedListener;
 
-    private int mOffset; //字符串的偏移值
-
     public void setOnSelectionChangedListener(SelectionChangedListener selectionChangedListener) {
         this.mSelectionChangedListener = selectionChangedListener;
     }
@@ -40,28 +38,6 @@ public class NoteEditText extends EditText {
             mSelectionChangedListener.onSelectionChanged(selStart, selEnd);
         }
     }
-
-/*
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        int action = event.getAction();
-        Layout layout = getLayout();
-        int line = 0;
-        switch(action) {
-            case MotionEvent.ACTION_DOWN:
-                line = layout.getLineForVertical(getScrollY()+ (int)event.getY());
-                mOffset = layout.getOffsetForHorizontal(line, (int)event.getX());
-                Selection.setSelection(getEditableText(), mOffset);
-                break;
-            case MotionEvent.ACTION_MOVE:
-            case MotionEvent.ACTION_UP:
-                line = layout.getLineForVertical(getScrollY()+(int)event.getY());
-                int curOff = layout.getOffsetForHorizontal(line, (int)event.getX());
-                Selection.setSelection(getEditableText(), mOffset, curOff);
-                break;
-        }
-        return true;
-    }*/
 
     /**
      * 光标位置变化的监听

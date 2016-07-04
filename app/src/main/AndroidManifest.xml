@@ -33,7 +33,7 @@
             android:name=".ui.FolderListActivity"
             android:label="@string/lable_folder_list" />
 
-        <service android:name=".service.CoreService" />
+        <service android:name=".service.CoreService" android:exported="false" />
 
         <activity android:name=".ui.FolderEditActivity"
             android:label="@string/lable_folder_edit"

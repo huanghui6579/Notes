@@ -1,6 +1,7 @@
 package net.ibaixin.notes.ui;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.widget.PopupMenu;
@@ -8,8 +9,8 @@ import android.text.Editable;
 import android.text.Spannable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.ArrowKeyMovementMethod;
 import android.text.style.ClickableSpan;
-import android.text.util.Linkify;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -18,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -29,9 +31,12 @@ import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.service.CoreService;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.DigestUtil;
+import net.ibaixin.notes.util.NoteLinkify;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
+import net.ibaixin.notes.widget.MessageBundleSpan;
 import net.ibaixin.notes.widget.NoteEditText;
+import net.ibaixin.notes.widget.NoteLinkMovementMethod;
 
 import java.lang.ref.WeakReference;
 import java.util.Stack;
@@ -131,11 +136,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             int noteId = intent.getIntExtra(ARG_NOTE_ID, 0);
             mFolderId = intent.getStringExtra(ARG_FOLDER_ID);
             if (noteId > 0) {   //查看模式
+                mNote = new NoteInfo();
+                mNote.setId(noteId);
                 initNoteMode(mEtContent, true);
                 loadNoteInfo(noteId);
             } else {    //编辑模式
                 initNoteMode(mEtContent, false);
-                mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
+                changeNoteMode(true);
             }
         }
     }
@@ -151,6 +158,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 切换笔记到编辑模式或者阅读模式
+     * @param editable 是否可编辑，如果进入编辑模式，则显示顶部菜单和底部菜单
+     */
+    private void changeNoteMode(boolean editable) {
+        if (editable) {
+            mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
+        }
+    }
+
+    /**
+     * 是否是阅读模式
+     * @return 是否是阅读模式
+     */
+    private boolean isViewMode() {
+        return mNote != null;
+    }
+
+    /**
      * 初始化笔记的模式，是编辑模式还是查看模式
      * @param showMode 是否是查看模式
      */
@@ -158,15 +183,31 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (showMode) { //查看模式
             initSoftInputMode(false);
             editText.setCursorVisible(false);
-//            textView.setTag(textView.getKeyListener());
-//            textView.setKeyListener(null);
         } else {    //编辑模式
             editText.setCursorVisible(true);
             initSoftInputMode(true);
-//            textView.setKeyListener((KeyListener) textView.getTag());
         }
     }
 
+    /**
+     * 设置菜单是否可见
+     * @param visible 是否可见
+     */
+    private void setMenuVisible(Menu menu, boolean visible) {
+        if (menu == null && mToolBar != null) {
+            menu = mToolBar.getMenu();
+        }
+        if (menu == null) {
+            return;
+        }
+        if (visible) {
+            if (!menu.hasVisibleItems()) {
+                menu.setGroupVisible(R.id.group_edit_type, true);
+            }
+        } else {
+            menu.setGroupVisible(R.id.group_edit_type, false);
+        }
+    }
 
     /**
      * 显示笔记到界面上
@@ -281,8 +322,28 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         selEnd, ClickableSpan.class);
                 if (links != null && links.length > 0) {
                     ClickableSpan clickableSpan = links[0];
-                    Log.d(clickableSpan.toString());
+                    Log.d(TAG, "----onSelectionChanged-----" + clickableSpan.toString());
                 }
+            }
+        });
+        mEtContent.setMovementMethod(NoteLinkMovementMethod.getInstance());
+        mEtContent.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "----setOnClickListener-----");
+                EditText editText = (EditText) v;
+                //显示光标
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    if (!editText.isCursorVisible()) {
+                        editText.setCursorVisible(true);
+                    }
+                } else {
+                    editText.setCursorVisible(true);
+                }
+                //显示菜单
+                setMenuVisible(null, true);
+                //移除链接的点击事件
+                editText.setMovementMethod(ArrowKeyMovementMethod.getInstance());
             }
         });
     }
@@ -298,9 +359,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         getMenuInflater().inflate(R.menu.note_edit, menu);
         MenuItem item = menu.findItem(R.id.action_more);
         setMenuOverFlowTint(item);
+        
+        if (isViewMode()) {
+            setMenuVisible(menu, false);
+        }
+        
         return super.onCreateOptionsMenu(menu);
     }
-
+    
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         View attachView = null;
@@ -459,7 +525,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
             }
         }
-
         autoLink();
     }
 
@@ -691,7 +756,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
         @Override
         public void run() {
-            Linkify.addLinks(mEtContent, mEtContent.getAutoLinkMask());
+            NoteLinkify.addLinks(mEtContent, mEtContent.getAutoLinkMask(), MessageBundleSpan.class);
         }
     }
 
