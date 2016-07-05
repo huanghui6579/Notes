@@ -1,5 +1,7 @@
 package net.ibaixin.notes.util;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -8,6 +10,9 @@ import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,8 +22,8 @@ import net.ibaixin.notes.R;
 import java.io.File;
 import java.text.DateFormat;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -189,7 +194,7 @@ public class SystemUtil {
      * @update 2016/2/28 12:16
      * @version 1.0.0
      */
-    public static  SharedPreferences getDefaultPreferences(Context context) {
+    public static SharedPreferences getDefaultPreferences(Context context) {
         return PreferenceManager.getDefaultSharedPreferences(context);
     }
     
@@ -342,5 +347,133 @@ public class SystemUtil {
         DateFormat dateFormat = DateFormat.getDateTimeInstance();
         return dateFormat.format(new Date());
     }
-    
+
+    /**
+     * 复制文字
+     * @param context 上下文
+     * @param text 要复制的文字
+     * @param showTip 是否显示复制成功后的提示语            
+     */
+    public static void copyText(Context context, CharSequence text, boolean showTip) {
+        if (text == null) {
+            makeShortToast(R.string.tip_no_text);
+            return;
+        }
+        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clipData = ClipData.newPlainText(Constants.CLIP_TEXT_LABLE, text);
+        clipboard.setPrimaryClip(clipData);
+        
+        if (showTip) {  //显示提示语
+            makeShortToast(R.string.copy_success);
+        }
+    }
+
+    /**
+     * 显示软键盘
+     * @param context 上下文
+     * @param view 键盘焦点的控件
+     */
+    public static void showSoftInput(Context context, View view) {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.showSoftInput(view, 0);
+    }
+
+    /**
+     * 隐藏软键盘
+     * @param context 上下文
+     * @param view 键盘焦点的控件
+     */
+    public static void hideSoftInput(Context context, View view) {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    /**
+     * 隐藏/显示软键盘
+     * @param context 上下文
+     */
+    public static void toggleSoftInput(Context context) {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.toggleSoftInput(0, 0);
+    }
+
+    /**
+     * 判断键盘是否显示
+     * @param window 窗口
+     * @return 是否显示
+     */
+    public static boolean isSoftInputShow(Context context, Window window, View view) {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        return imm.isActive(view) || window.getAttributes().softInputMode == WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
+    }
+
+    /**
+     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes
+     * @author tiger
+     * @update 2015年3月13日 上午12:00:33
+     * @return
+     */
+    public static File getDefaultAppFile() {
+        File root = new File(Environment.getExternalStorageDirectory(), Constants.DEAULT_APP_FOLDER_NAME);
+        if (!root.exists()) {
+            root.mkdirs();
+        }
+        return root;
+    }
+
+    /**
+     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes
+     * @return
+     */
+    public static String getDefaultAppPath() {
+        return getDefaultAppFile().getAbsolutePath();
+    }
+
+    /**
+     * 根据note id生成文件保存文件的路径，如:/mnt/sdcard/YunXinNotes/attach/N454212545
+     * @param noteId
+     * @return
+     */
+    public static String generateNoteAttachPath(String noteId) {
+        String root = getDefaultAppPath();
+        StringBuilder sb = new StringBuilder(root);
+        sb.append(File.separator)
+                .append(Constants.DATA_MSG_ATT_FOLDER_NAME)
+                .append(File.separator)
+                .append(noteId);
+        String path = sb.toString();
+        File dir = new File(path);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return path;
+    }
+
+    /**
+     * 根据note id生成文件保存文件缩略图的路径，如:/mnt/sdcard/YunXinNotes/attach/N454212545/thumb
+     * @param noteId
+     * @return
+     */
+    public static String generateNoteThumbAttachPath(String noteId) {
+        String path = generateNoteAttachPath(noteId) + File.separator + "thumb";
+        File dir = new File(path);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return path;
+    }
+
+    /**
+     * 获取笔记缩略图的文件全路径
+     * @param noteId 笔记id
+     * @param filename 文件名
+     * @return
+     */
+    public static String generateNoteThumbAttachFilePath(String noteId, String filename) {
+        String path = generateNoteThumbAttachPath(noteId);
+        StringBuilder sb = new StringBuilder(path);
+        sb.append(File.separator)
+                .append(filename);
+        return sb.toString();
+    }
 }

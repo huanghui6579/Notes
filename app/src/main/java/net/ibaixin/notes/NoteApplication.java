@@ -3,7 +3,14 @@ package net.ibaixin.notes;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.preference.PreferenceManager;
+
+import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
 import net.ibaixin.notes.model.User;
 import net.ibaixin.notes.util.Constants;
@@ -100,6 +107,9 @@ public class NoteApplication extends Application {
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
                 mDefaultFolderSid = sharedPreferences.getString(Constants.PREF_DEFAULT_FOLDER, "");
                 mShowFolderAll = sharedPreferences.getBoolean(Constants.PREF_SHOW_FOLDER_ALL, true);
+
+                //初始化图片加载器
+                initImageLoaderConfig();
             }
         }, "init").start();
     }
@@ -110,5 +120,42 @@ public class NoteApplication extends Application {
 
     public void setCurrentUser(User currentUser) {
         this.mCurrentUser = currentUser;
+    }
+
+    /**
+     * 初始化图片加载器
+     */
+    private void initImageLoaderConfig() {
+        int width = 480;
+        int height = 800;
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getApplicationContext())
+                .memoryCacheExtraOptions(width, height)
+                .diskCacheExtraOptions(width, height, null)
+                .denyCacheImageMultipleSizesInMemory()	//同一个imageUri只允许在内存中有一个缓存的bitmap
+                .memoryCache(new LruMemoryCache(2 * 1024 * 1024))
+                .memoryCacheSize(2 * 1024 * 1024)
+                .diskCacheSize(50 * 1024 * 1024)
+                .defaultDisplayImageOptions(getDefaultDisplayOptions())
+                .writeDebugLogs()
+                .build();
+        ImageLoader.getInstance().init(config);
+    }
+
+    /**
+     * 初始化默认的图片显示选项
+     * @return
+     */
+    private DisplayImageOptions getDefaultDisplayOptions() {
+        DisplayImageOptions options = new DisplayImageOptions.Builder()
+//                .showImageOnLoading(R.drawable.ic_stub)
+//                .showImageForEmptyUri(R.drawable.ic_empty)
+//                .showImageOnFail(R.drawable.ic_error)
+                .cacheInMemory(true)
+                .cacheOnDisk(false)
+                .imageScaleType(ImageScaleType.IN_SAMPLE_INT)
+                .bitmapConfig(Bitmap.Config.RGB_565)	//防止内存溢出
+                //.displayer(new FadeInBitmapDisplayer(200))
+                .build();
+        return options;
     }
 }

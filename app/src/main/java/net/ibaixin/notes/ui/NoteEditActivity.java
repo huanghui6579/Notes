@@ -1,16 +1,20 @@
 package net.ibaixin.notes.ui;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.widget.PopupMenu;
 import android.text.Editable;
 import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.ArrowKeyMovementMethod;
 import android.text.style.ClickableSpan;
+import android.text.style.ImageSpan;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -20,8 +24,11 @@ import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.EditStep;
@@ -31,6 +38,7 @@ import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.service.CoreService;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.DigestUtil;
+import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.NoteLinkify;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
@@ -51,8 +59,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public static final String ARG_NOTE_ID = "noteId";
     public static final String ARG_FOLDER_ID = "folderId";
     
-    private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
     private static final int MSG_AUTO_LINK = 2;
+    private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
+    
+    private static final int REQ_PICK_IMAGE = 10;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mCameraPopu;
@@ -70,6 +80,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     private View mIvRedo;
     private View mIvUndo;
+    private ImageButton mIvSoft;
     /**
      * 是否将编辑步骤添加到容器里
      */
@@ -96,6 +107,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     
     //文件夹id
     private String mFolderId;
+
+    /**
+     * 是否是阅读模式
+     */
+    private boolean mIsViewMode;
+    
+    private View mBottomBar;
 
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -138,11 +156,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             if (noteId > 0) {   //查看模式
                 mNote = new NoteInfo();
                 mNote.setId(noteId);
+                mIsViewMode = true;
                 initNoteMode(mEtContent, true);
                 loadNoteInfo(noteId);
             } else {    //编辑模式
                 initNoteMode(mEtContent, false);
-                changeNoteMode(true);
+                changeNoteMode(true); 
             }
         }
     }
@@ -172,7 +191,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @return 是否是阅读模式
      */
     private boolean isViewMode() {
-        return mNote != null;
+        return mIsViewMode;
     }
 
     /**
@@ -201,11 +220,25 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             return;
         }
         if (visible) {
-            if (!menu.hasVisibleItems()) {
-                menu.setGroupVisible(R.id.group_edit_type, true);
+            menu.setGroupVisible(R.id.group_edit_type, true);
+            menu.setGroupVisible(R.id.group_edit, false);
+            /*MenuItem menuItem = menu.findItem(R.id.group_edit_type);
+            if (menuItem != null && !menuItem.isVisible()) {
+                menuItem.setVisible(true);
             }
+            //隐藏编辑菜单
+            menuItem = menu.findItem(R.id.group_edit);
+            if (menuItem != null && menuItem.isVisible()) {
+                menuItem.setVisible(false);
+            }*/
         } else {
             menu.setGroupVisible(R.id.group_edit_type, false);
+            menu.setGroupVisible(R.id.group_edit, true);
+            //显示编辑菜单
+            /*MenuItem menuItem = menu.findItem(R.id.group_edit);
+            if (menuItem != null && !menuItem.isVisible()) {
+                menuItem.setVisible(true);  
+            }*/
         }
     }
 
@@ -329,23 +362,52 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mEtContent.setMovementMethod(NoteLinkMovementMethod.getInstance());
         mEtContent.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(final View v) {
                 Log.d(TAG, "----setOnClickListener-----");
-                EditText editText = (EditText) v;
-                //显示光标
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                    if (!editText.isCursorVisible()) {
-                        editText.setCursorVisible(true);
-                    }
-                } else {
-                    editText.setCursorVisible(true);
+                if (isViewMode()) { //之前是阅读模式
+                    setupEditMode((EditText) v, false);
+                } else {    //编辑模式
+                    changeNoteMode(true);
                 }
-                //显示菜单
-                setMenuVisible(null, true);
-                //移除链接的点击事件
-                editText.setMovementMethod(ArrowKeyMovementMethod.getInstance());
             }
         });
+    }
+
+    /**
+     * 进入编辑模式
+     * @param showSoftInput 是否显示软键盘
+     */
+    private void setupEditMode(EditText editText, boolean showSoftInput) {
+        initSoftInputMode(true);
+        if (showSoftInput) {    //显示软键盘
+            editText.requestFocus();
+            SystemUtil.showSoftInput(mContext, editText);
+            if (editText.getText() != null) {
+                editText.setSelection(editText.getText().length());
+            }
+        }
+        
+        //显示光标
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            if (!editText.isCursorVisible()) {
+                editText.setCursorVisible(true);
+            }
+        } else {
+            editText.setCursorVisible(true);
+        }
+        //显示菜单
+        setMenuVisible(null, true);
+        //移除链接的点击事件
+        editText.setMovementMethod(ArrowKeyMovementMethod.getInstance());
+        mIsViewMode = false;
+        
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                changeNoteMode(true);
+            }
+        }, 100);
+        
     }
 
     @Override
@@ -362,8 +424,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         
         if (isViewMode()) {
             setMenuVisible(menu, false);
+        } else {
+            setMenuVisible(menu, true);
         }
-        
         return super.onCreateOptionsMenu(menu);
     }
     
@@ -400,6 +463,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 });
 
                 break;
+            case R.id.action_edit:  //进入编辑模式
+                if (isViewMode()) { //之前是阅读模式
+                    setupEditMode(mEtContent, true);
+                }
+                break;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -432,12 +500,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version 1.0.0
      */
     private void initBottomToolBar() {
+        if (mBottomBar != null) {
+            if (mBottomBar.getVisibility() != View.VISIBLE) {
+                mBottomBar.setVisibility(View.VISIBLE);
+            }
+            return;
+        }
         ViewStub viewStub = (ViewStub) findViewById(R.id.bottom_tool_bar);
         if (viewStub == null) {
             return;
         }
-        View bottomBar = viewStub.inflate();
-        ViewGroup toolContainer = (ViewGroup) bottomBar.findViewById(R.id.tool_container);
+        mBottomBar = viewStub.inflate();
+        ViewGroup toolContainer = (ViewGroup) mBottomBar.findViewById(R.id.tool_container);
 
         RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) mEtContent.getLayoutParams();
         layoutParams.addRule(RelativeLayout.ABOVE, toolContainer.getId());
@@ -453,6 +527,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 case R.id.iv_redo:
                     mIvRedo = child;
                     child.setEnabled(false);
+                    break;
+                case R.id.iv_down:
+                    mIvSoft = (ImageButton) child;
                     break;
             }
             child.setOnClickListener(this);
@@ -474,6 +551,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 break;
             case R.id.iv_time:  //当前的时间
                 insertTime();
+                break;
+            case R.id.iv_down:  //隐藏/显示软键盘
+                if (mBottomBar.getVisibility() == View.VISIBLE) {   //隐藏软键盘
+                    SystemUtil.hideSoftInput(mContext, mEtContent);
+                }
                 break;
         }
     }
@@ -539,6 +621,46 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         super.beforeBack();
         mEtContent.beginBatchEdit();
         Log.d(TAG, "*****content***" + mEtContent.getText());
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case REQ_PICK_IMAGE:    //选择图片的结果
+                    if (data != null) {
+                        Uri uri = data.getData();
+                        ImageUtil.generateThumbImageAsync(uri, ImageUtil.getNoteImageSize(), new SimpleImageLoadingListener() {
+                            @Override
+                            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                                ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
+                                String imgId = "[img=1]";
+                                SpannableStringBuilder builder = new SpannableStringBuilder();
+                                builder.append(imgId);
+                                builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                int selStart = mEtContent.getSelectionStart();
+                                int selEnd = mEtContent.getSelectionEnd();
+                                Editable editable = mEtContent.getEditableText();
+                                editable.replace(selStart, selEnd, builder);
+                            }
+                        });
+                    }
+                    break;
+            }
+        }
+        
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    /**
+     * 选择图片
+     */
+    private void choseImage() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(intent, REQ_PICK_IMAGE);
     }
 
     /**
@@ -742,6 +864,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
         @Override
         public boolean onMenuItemClick(MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.action_photo: //选择图片
+                    choseImage();
+                    break;
+            }
             return false;
         }
     }

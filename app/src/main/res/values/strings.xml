@@ -25,6 +25,10 @@
     <string name="delete_result_error">删除失败</string>
     <string name="move_result_error">移动失败</string>
     
+    <string name="copy_success">已复制到剪贴板</string>
+    <string name="tip_no_app_handle">没有安装对应的应用程序</string>
+    <string name="tip_no_text">没有内容</string>
+    
     <string name="result_success">操作成功</string>
     
     <string name="move_to">移动到</string>
@@ -63,6 +67,7 @@
     <string name="action_upload">同步</string>
     <string name="action_sort">排序</string>
     <string name="action_attach">附件</string>
+    <string name="action_edit">编辑</string>
     <string name="action_camera">相机</string>
     <string name="action_photo">图片</string>
     <string name="action_voice">录音</string>
@@ -75,6 +80,13 @@
     <string name="action_delete">删除</string>
     <string name="action_move">移动</string>
     <string name="action_add">新建</string>
+    <string name="action_forward">转发</string>
     <string name="action_copy">复制</string>
-    <string name="action_call"></string>
+    <string name="action_call">呼出</string>
+    <string name="action_web_open">浏览器打开</string>
+    <string name="action_mailto">发送邮件</string>
+    <string name="action_contact_add">添加到联系人</string>
+    <string name="action_contact_add_new">创建新联系人</string>
+    <string name="action_contact_add_edit">保存到现有联系人</string>
+    <string name="action_map_open">地图显示</string>
 </resources>

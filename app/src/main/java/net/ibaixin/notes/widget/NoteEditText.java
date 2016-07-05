@@ -1,7 +1,11 @@
 package net.ibaixin.notes.widget;
 
 import android.content.Context;
+import android.text.Spannable;
+import android.text.method.LinkMovementMethod;
+import android.text.method.MovementMethod;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.widget.EditText;
 
 /**
@@ -37,6 +41,22 @@ public class NoteEditText extends EditText {
         if (mSelectionChangedListener != null) {
             mSelectionChangedListener.onSelectionChanged(selStart, selEnd);
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        final int action = event.getActionMasked();
+        final boolean touchIsFinished = (action == MotionEvent.ACTION_UP) && isFocused();
+        MovementMethod mMovement = getMovementMethod();
+        CharSequence text = getText();
+        if (touchIsFinished && text != null && (mMovement != null && mMovement instanceof LinkMovementMethod) && isEnabled()
+                && text instanceof Spannable && getLayout() != null) {
+            boolean handled = mMovement.onTouchEvent(this, (Spannable) text, event);
+            if (handled) {
+                return true;
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     /**

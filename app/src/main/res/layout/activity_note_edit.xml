@@ -25,6 +25,8 @@
             android:layout_alignParentTop="true"
             android:hint="@string/note_edit_hint"
             android:linksClickable="false"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
             android:autoLink="all"/>
 
         <ViewStub

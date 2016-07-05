@@ -438,6 +438,7 @@ public class NoteLinkify {
         if (span instanceof MessageBundleSpan) {
             MessageBundleSpan bundleSpan = (MessageBundleSpan) span;
             bundleSpan.setUrlType(spec.type);
+            bundleSpan.setText(spec.text);
         }
         text.setSpan(span, spec.start, spec.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
@@ -495,11 +496,13 @@ public class NoteLinkify {
 
             if (matchFilter == null || matchFilter.acceptMatch(s, start, end)) {
                 LinkSpec spec = new LinkSpec();
-                String url = makeUrl(m.group(0), schemes, m, transformFilter);
+                String urlText = m.group(0);
+                String url = makeUrl(urlText, schemes, m, transformFilter);
 
                 spec.url = url;
                 spec.start = start;
                 spec.end = end;
+                spec.text = urlText;
                 
                 if (matchFilter == null) {
                     spec.type = EMAIL_ADDRESSES;
@@ -518,10 +521,12 @@ public class NoteLinkify {
                 Locale.getDefault().getCountry(), PhoneNumberUtil.Leniency.POSSIBLE, Long.MAX_VALUE);
         for (PhoneNumberMatch match : matches) {
             LinkSpec spec = new LinkSpec();
-            spec.url = "tel:" + normalizeNumber(match.rawString());
+            String number = normalizeNumber(match.rawString());
+            spec.url = "tel:" + number;
             spec.start = match.start();
             spec.end = match.end();
             spec.type = PHONE_NUMBERS;
+            spec.text = number;
             links.add(spec);
         }
     }
@@ -588,6 +593,7 @@ public class NoteLinkify {
 
                 spec.url = "geo:0,0?q=" + encodedAddress;
                 spec.type = MAP_ADDRESSES;
+                spec.text = address;
                 links.add(spec);
             }
         } catch (UnsupportedOperationException e) {
@@ -655,6 +661,7 @@ public class NoteLinkify {
 
 class LinkSpec {
     String url;
+    CharSequence text;
     int start;
     int end;
     int type;

@@ -9,6 +9,22 @@ public class Constants {
     public static final String APP_ROOT_NAME = "IbaiXinNotes";
     public static final String LOG_SUBFFIX = ".log";
     public static final String LOG_DIR = "log";
+
+    public static final String DEAULT_APP_FOLDER_NAME = "YunXinNotes";
+    public static final String DEAULT_APP_DOWNLOAD_FOLDER_NAME = "Download";
+    public static final String DATA_MSG_ATT_FOLDER_NAME = "attach";
+
+    /**
+     * 系统默认手动生成的缩略图缩放参造宽度100
+     */
+    public static final int IMAGE_THUMB_WIDTH = 200;
+
+    /**
+     * 系统默认手动生成的缩略图缩放参造高度100
+     */
+    public static final int IMAGE_THUMB_HEIGHT = 200;
+    
+    public static final String CLIP_TEXT_LABLE = "text";
     
     public static final String PREF_HAS_DELETE_OPT = "has_delete_opt";
     /**
