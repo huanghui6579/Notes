@@ -18,6 +18,11 @@ public enum DeleteState {
     DELETE_TRASH,
 
     /**
+     * 隐藏
+     */
+    DELETE_HIDE,
+
+    /**
      * 完全删除
      */
     DELETE_DONE;
@@ -34,6 +39,8 @@ public enum DeleteState {
             case 1:
                 return DELETE_TRASH;
             case 2:
+                return DELETE_HIDE;
+            case 3:
                 return DELETE_DONE;
             default:
                 return DELETE_NONE;

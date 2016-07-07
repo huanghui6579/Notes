@@ -25,6 +25,7 @@
     <dimen name="bottom_tool_bar_padding">4dp</dimen>
 
     <dimen name="list_item_height_small">48dp</dimen>
+    <dimen name="list_item_height_middle">64dp</dimen>
     <dimen name="list_item_height_large">72dp</dimen>
     <dimen name="list_item_icon_size">24dp</dimen>
     <dimen name="list_main_item_img_size">64dp</dimen>

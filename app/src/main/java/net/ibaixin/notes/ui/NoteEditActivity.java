@@ -31,9 +31,12 @@ import android.widget.TextView;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.listener.SimpleAttachAddCompleteListener;
+import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.EditStep;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
+import net.ibaixin.notes.persistent.AttachManager;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.service.CoreService;
 import net.ibaixin.notes.util.Constants;
@@ -46,7 +49,10 @@ import net.ibaixin.notes.widget.MessageBundleSpan;
 import net.ibaixin.notes.widget.NoteEditText;
 import net.ibaixin.notes.widget.NoteLinkMovementMethod;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
 /**
@@ -101,7 +107,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private NoteInfo mNote;
     private boolean mIsEnterLine;
 
-    private AutoLnkTask mAutoLinkTask;
+    private AutoLinkTask mAutoLinkTask;
 
     private Handler mHandler = new MyHandler(this);
     
@@ -114,6 +120,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private boolean mIsViewMode;
     
     private View mBottomBar;
+
+    /**
+     * 附件的临时缓存
+     */
+    private Map<String, Attach> mAttachCache;
 
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -182,6 +193,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void changeNoteMode(boolean editable) {
         if (editable) {
+            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            if (mBottomBar != null) {
+                return;
+            }
             mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
         }
     }
@@ -630,19 +645,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             switch (requestCode) {
                 case REQ_PICK_IMAGE:    //选择图片的结果
                     if (data != null) {
-                        Uri uri = data.getData();
-                        ImageUtil.generateThumbImageAsync(uri, ImageUtil.getNoteImageSize(), new SimpleImageLoadingListener() {
+                        final Uri uri = data.getData();
+                        doInbackground(new Runnable() {
                             @Override
-                            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                                ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
-                                String imgId = "[img=1]";
-                                SpannableStringBuilder builder = new SpannableStringBuilder();
-                                builder.append(imgId);
-                                builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                                int selStart = mEtContent.getSelectionStart();
-                                int selEnd = mEtContent.getSelectionEnd();
-                                Editable editable = mEtContent.getEditableText();
-                                editable.replace(selStart, selEnd, builder);
+                            public void run() {
+                                String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
+                                Attach attach = getAddedAttach(filePath);
+                                mEtContent.addImage(filePath, attach, new SimpleAttachAddCompleteListenerImpl(true));
                             }
                         });
                     }
@@ -659,7 +668,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void choseImage() {
         Intent intent = new Intent();
         intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
+        if (SystemUtil.hasSdkV19()) {
+            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+        } else {
+            intent.setAction(Intent.ACTION_PICK);
+        }
         startActivityForResult(intent, REQ_PICK_IMAGE);
     }
 
@@ -723,14 +737,37 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             int start = editStep.getStart();
             int end = editStep.getEnd();
             setdo(true);
-            if (editStep.isAppend()) {  //之前的操作是插入文字，则此时的操作是删除文字
-                editable.delete(start, end);
-            } else {    //之前的操作是删除文字，则此时的操作是插入文字
-                editable.insert(start, content);
+            boolean addRedo = true;
+            try {
+                if (editStep.isAppend()) {  //之前的操作是插入文字，则此时的操作是删除文字
+                    if (canDeleteText(editable, start)) {
+                        if (end > editable.length()) {  //要删除的文字太多，则直接删除到结尾即可
+                            end = editable.length();
+                            editStep.setEnd(end);
+                        }
+                        editable.delete(start, end);
+                    } else {
+                        addRedo = false;
+                        Log.d(TAG, "----addRedo---false---not--able---to---delete---");
+                    }
+                } else {    //之前的操作是删除文字，则此时的操作是插入文字String sid = mEtContent.getAttachSid(content);
+                    String sid = mEtContent.getAttachSid(content);
+                    if (sid != null && mAttachCache != null && mAttachCache.get(sid) != null) {  //有附件
+                        Attach attach = mAttachCache.get(sid);
+                        resetAttach(editable, editStep, attach);
+                    } else {
+                        editable.insert(start, content);
+                    }
+                }
+            } catch (Exception e) {
+                addRedo = false;
+                Log.e(TAG, "----undo--error---" + e.getMessage());
             }
             setdo(false);
-            editStep.setContent(content);
-            pushRedo(editStep);
+            if (addRedo) {
+                editStep.setContent(content);
+                pushRedo(editStep);
+            }
         }
 
         if (mUndoStack.size() == 0 && mIvUndo.isEnabled()) {
@@ -749,18 +786,85 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         EditStep editStep = mRedoStack.pop();
         CharSequence content = editStep.getContent();
         Editable editable = mEtContent.getEditableText();
-        if (editStep.isAppend()) {  //前进操作是插入文字
-            editable.insert(editStep.getStart(), content);
-        } else {    //前进操作是删除文字
-            editable.delete(editStep.getStart(), editStep.getEnd());
+        boolean addUndo = true;
+        try {
+            if (editStep.isAppend()) {  //前进操作是插入文字
+                String sid = mEtContent.getAttachSid(content);
+                if (sid != null && mAttachCache != null && mAttachCache.get(sid) != null) {  //有附件
+                    Attach attach = mAttachCache.get(sid);
+                    resetAttach(editable, editStep, attach);
+                } else {
+                    editable.insert(editStep.getStart(), content);
+                }
+            } else {    //前进操作是删除文字
+                int start = editStep.getStart();
+                if (canDeleteText(editable, start)) {
+                    int end = editStep.getEnd();
+                    if (end > editable.length()) {  //要删除的文字太多，则直接删除到结尾即可
+                        end = editable.length();
+                        editStep.setEnd(end);
+                    }
+                    editable.delete(start, end);
+                } else {
+                    addUndo = false;
+                    Log.d(TAG, "----addUndo---false---not--able---to---delete---");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "---redo---error-----" + e.getMessage());
+            addUndo = false;
         }
-
-        pushUndo(editStep);
-
+        if (addUndo) {
+            pushUndo(editStep);
+        }
+        
         if (mRedoStack.size() == 0 && mIvRedo.isEnabled()) {
             mIvRedo.setEnabled(false);
         }
         setdo(false);
+    }
+
+    /**
+     * 是否可以删除文字
+     * @param editable
+     * @param start
+     * @return
+     */
+    private boolean canDeleteText(Editable editable, int start) {
+        return start + 1 <= editable.length();
+    }
+
+    /**
+     * 回退、前进显示附件
+     * @param attach
+     */
+    private void resetAttach(final Editable editable, final EditStep editStep, final Attach attach) {
+        String uri = attach.getAvailableUri();
+        if (uri != null) {
+//            final SimpleAttachAddCompleteListener listener = new SimpleAttachAddCompleteListenerImpl(false);
+            ImageUtil.generateThumbImageAsync(uri, ImageUtil.getNoteImageSize(), new SimpleImageLoadingListener() {
+                @Override
+                public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                    ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
+                    CharSequence text = editStep.getContent();
+                    SpannableStringBuilder builder = new SpannableStringBuilder();
+                    builder.append(text);
+                    builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    int selStart = editStep.getStart();
+                    setdo(true);
+                    if (selStart < 0) {
+                        editable.append(builder);
+                    } else {
+                        editable.insert(selStart, builder);
+                    }
+                    setdo(false);
+//                editable.insert(editStep.getStart(), editStep.getContent());
+//                    listener.onAddComplete(imageUri, editStep, attach);
+                }
+            });
+        } else {
+            editable.insert(editStep.getStart(), editStep.getContent());
+        }
     }
 
     /**
@@ -860,6 +964,87 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mIsDo = isDo;
     }
 
+    /**
+     * 添加附件
+     * @param attach 附件
+     */
+    private void handleAddAttach(final String filePath, final Object data, final Attach attach) {
+        if (mAttachCache == null) {
+            mAttachCache = new HashMap<>();
+        }
+        if (attach == null) {
+            Log.d(TAG, "---handleAddAttach---added---not--need--add---");
+            return;
+        }
+        doInbackground(new Runnable() {
+            @Override
+            public void run() {
+                
+                if (filePath != null) {
+                    attach.setUri(filePath);
+                    attach.setLocalPath(filePath);
+                    File file = new File(filePath);
+                    attach.setFilename(file.getName());
+                    attach.setSize(file.length());
+                    
+                    long time = System.currentTimeMillis();
+                    attach.setCreateTime(time);
+                    attach.setModifyTime(time);
+                    
+                    if (mNote != null) {
+                        attach.setNoteId(mNote.getSId());
+                    }
+                    int userId = getCurrentUserId();
+                    if (userId > 0) {
+                        attach.setUserId(userId);
+                    }
+                    AttachManager.getInstance().addAttach(attach);
+                    mAttachCache.put(attach.getSId(), attach);
+                    Log.d(TAG, "---handleAddAttach--mAttachCache--has--not--uri--add--");
+                } else {
+                    Log.d(TAG, "--handleAddAttach--filePath--is---null--");
+                }
+            }
+        });
+    }
+
+    /**
+     * 根据uri获取已经添加的附件
+     * @param filePath 文件的全路径
+     * @return 已添加过的附件
+     */
+    public Attach getAddedAttach(String filePath) {
+        //从缓存中查询，是否已经有该图片了，如果有了，则不需要再存入到数据库了
+        if (mAttachCache != null && mAttachCache.size() > 0) {
+            for (Attach a : mAttachCache.values()) {
+                if (filePath.equals(a.getLocalPath())) {    //与本地路径一样
+                    Log.d(TAG, "---handleAddAttach--mAttachCache--has---uri--");
+                    return a;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 附件加载完成的回调
+     */
+    class SimpleAttachAddCompleteListenerImpl extends SimpleAttachAddCompleteListener {
+        //是添加附件的操作，也有可能只是前进显示图片的操作
+        private boolean isAdd;
+        
+        public SimpleAttachAddCompleteListenerImpl(boolean isAdd) {
+            this.isAdd = isAdd;
+        }
+
+        @Override
+        public void onAddComplete(String uri, Object data, Attach attach) {
+            if (isAdd) {
+                handleAddAttach(uri, data, attach);
+            }
+        }
+    }
+
     class OnPopuMenuItemClickListener implements PopupMenu.OnMenuItemClickListener {
 
         @Override
@@ -879,14 +1064,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @update 2016/3/13 10:41
      * @version 1.0.0
      */
-    class AutoLnkTask implements Runnable {
+    class AutoLinkTask implements Runnable {
 
         @Override
         public void run() {
             NoteLinkify.addLinks(mEtContent, mEtContent.getAutoLinkMask(), MessageBundleSpan.class);
         }
     }
-
+    
     private static class MyHandler extends Handler {
         private final WeakReference<NoteEditActivity> mTarget;
 
@@ -908,7 +1093,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     break;
                 case MSG_AUTO_LINK: //自动链接
                     if (activity.mAutoLinkTask == null) {
-                        activity.mAutoLinkTask = activity.new AutoLnkTask();
+                        activity.mAutoLinkTask = activity.new AutoLinkTask();
                     }
                     post(activity.mAutoLinkTask);
                     break;

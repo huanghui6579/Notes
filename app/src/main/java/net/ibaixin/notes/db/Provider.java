@@ -240,6 +240,11 @@ public final class Provider {
         public static final String USER_ID = "user_id";
 
         /**
+         * 文件的类型
+         */
+        public static final String TYPE = "type";
+
+        /**
          * 本地存储的路径
          */
         public static final String LOCAL_PATH = "local_path";

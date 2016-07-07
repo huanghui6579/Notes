@@ -79,6 +79,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.AttachmentColumns.DELETE_STATE).append(" INTEGER, ")
                 .append(Provider.AttachmentColumns.CREATE_TIME).append(" INTEGER, ")
                 .append(Provider.AttachmentColumns.MODIFY_TIME).append(" INTEGER, ")
+                .append(Provider.AttachmentColumns.TYPE).append(" INTEGER, ")
                 .append(Provider.AttachmentColumns.SIZE).append(" INTEGER); ");
         db.execSQL(builder.toString());
 

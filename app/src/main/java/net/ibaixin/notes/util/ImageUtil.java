@@ -113,7 +113,13 @@ public class ImageUtil {
      * @update 2015年7月27日 下午4:35:46
      */
     public static void generateThumbImageAsync(String imagePath, ImageSize imageSize, ImageLoadingListener loadingListener) {
-        String iconUri = ImageDownloader.Scheme.FILE.wrap(imagePath);
+        String iconUri = null;
+        ImageDownloader.Scheme scheme = ImageDownloader.Scheme.ofUri(imagePath);
+        if (ImageDownloader.Scheme.UNKNOWN == scheme) { //没有前缀，则添加file://
+            iconUri = ImageDownloader.Scheme.FILE.wrap(imagePath);
+        } else {
+            iconUri = imagePath;
+        }
         ImageLoader imageLoader = ImageLoader.getInstance();
         MemoryCacheUtils.removeFromCache(iconUri, imageLoader.getMemoryCache());
         imageLoader.loadImage(iconUri, imageSize, getAlbumImageOptions(), loadingListener);
