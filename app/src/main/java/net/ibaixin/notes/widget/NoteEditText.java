@@ -7,6 +7,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
+import android.text.style.ImageSpan;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,10 +18,13 @@ import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListene
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,10 +77,10 @@ public class NoteEditText extends EditText {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         final int action = event.getActionMasked();
-        final boolean touchIsFinished = (action == MotionEvent.ACTION_UP) && isFocused();
+//        final boolean touchIsFinished = (action == MotionEvent.ACTION_UP) && isFocused();
         MovementMethod mMovement = getMovementMethod();
         CharSequence text = getText();
-        if (touchIsFinished && text != null && (mMovement != null && mMovement instanceof LinkMovementMethod) && isEnabled()
+        if (/*touchIsFinished && */text != null && (mMovement != null && mMovement instanceof LinkMovementMethod) && isEnabled()
                 && text instanceof Spannable && getLayout() != null) {
             boolean handled = mMovement.onTouchEvent(this, (Spannable) text, event);
             if (handled) {
@@ -91,27 +95,32 @@ public class NoteEditText extends EditText {
      * @param filePath 图片的本地全路径
      */
     public void addImage(String filePath, final Attach attach, final AttachAddCompleteListener listener) {
-        ImageUtil.generateThumbImageAsync(filePath, ImageUtil.getNoteImageSize(), new SimpleImageLoadingListener() {
+        ImageUtil.generateThumbImageAsync(filePath, null, new SimpleImageLoadingListener() {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                AttchSpan imageSpan = new AttchSpan(getContext(), loadedImage);
+                ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
                 String fileId = null;
                 if (attach != null) {
                     fileId = attach.getSId();
                 } else {
                     fileId = SystemUtil.generateAttachSid();
                 }
+                AttchSpan attchSpan = new AttchSpan();
+                attchSpan.setAttachId(fileId);
+                attchSpan.setAttachType(Attach.IMAGE);
+                attchSpan.setFilePath(imageUri);
                 String text = "[" + ATTACH_PREFIX + "=" + fileId + "]";
                 final SpannableStringBuilder builder = new SpannableStringBuilder();
                 builder.append(text);
                 builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(attchSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 final int selStart = getSelectionStart();
                 final int selEnd = getSelectionEnd();
                 post(new Runnable() {
                     @Override
                     public void run() {
                         Editable editable = getEditableText();
-                        if (selStart < 0) {
+                        if (selStart < 0 || getText() == null || selStart >= getText().length()) {
                             editable.append(builder);
                         } else {
                             editable.replace(selStart, selEnd, builder);
@@ -161,6 +170,32 @@ public class NoteEditText extends EditText {
         return sid;
     }
 
+    /**
+     * 从文本中获取附件的信息,[0]：是匹配的文本内容[attach=fdfdf],[1]是附件的sid：fdfdf
+     * @param text
+     * @return
+     */
+    public List<AttachSpec> getAttachText(CharSequence text) {
+        if (mPattern == null) {
+            mPattern = Pattern.compile(mAttachRegEx);
+        }
+        Matcher matcher = mPattern.matcher(text);
+        List<AttachSpec> list = new ArrayList<>();
+        while (matcher.find()) {
+            AttachSpec spec = new AttachSpec(); 
+            String s = matcher.group();
+            String sid = matcher.group(1);
+            int start = matcher.start();
+            int end = matcher.end();
+            spec.text = s;
+            spec.sid = sid;
+            spec.start = start;
+            spec.end = end;
+            list.add(spec);
+        }
+        return list;
+    }
+    
     /**
      * 光标位置变化的监听
      * @author tiger

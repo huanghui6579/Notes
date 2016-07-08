@@ -5,6 +5,7 @@ import android.text.Selection;
 import android.text.Spannable;
 import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
+import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.widget.TextView;
 
@@ -43,9 +44,9 @@ public class NoteLinkMovementMethod extends LinkMovementMethod {
             int line = layout.getLineForVertical(y);
             int off = layout.getOffsetForHorizontal(line, x);
 
-            MessageBundleSpan[] link = buffer.getSpans(off, off, MessageBundleSpan.class);
+            ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
 
-            if (link.length != 0) {
+            if (link != null && link.length != 0) {
                 if (action == MotionEvent.ACTION_UP) {
                     link[0].onClick(widget);
                 } else {

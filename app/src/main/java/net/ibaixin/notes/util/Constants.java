@@ -17,12 +17,12 @@ public class Constants {
     /**
      * 系统默认手动生成的缩略图缩放参造宽度100
      */
-    public static final int IMAGE_THUMB_WIDTH = 200;
+    public static final int IMAGE_THUMB_WIDTH = 400;
 
     /**
      * 系统默认手动生成的缩略图缩放参造高度100
      */
-    public static final int IMAGE_THUMB_HEIGHT = 200;
+    public static final int IMAGE_THUMB_HEIGHT = 400;
     
     public static final String CLIP_TEXT_LABLE = "text";
     

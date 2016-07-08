@@ -439,8 +439,22 @@ public class NoteLinkify {
             MessageBundleSpan bundleSpan = (MessageBundleSpan) span;
             bundleSpan.setUrlType(spec.type);
             bundleSpan.setText(spec.text);
+            removeSpans(text, spec.start, spec.end, URLSpan.class);
         }
         text.setSpan(span, spec.start, spec.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    public static <T> void removeSpans(Spannable s, int start, int end, Class<T> clz) {
+        T[] spans = s.getSpans(start, end, clz);
+        if (spans != null) {
+            for (T span : spans) {
+                try {
+                    s.removeSpan(span);
+                } catch (NullPointerException e) {
+                    Log.e(TAG, "remove spans error", e);
+                }
+            }
+        }
     }
 
     private static final void applyLink(String url, int start, int end, Spannable text) {

@@ -9,7 +9,6 @@ import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
-import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
 
 import net.ibaixin.notes.util.log.Log;
 
@@ -73,12 +72,19 @@ public class ImageUtil {
      * 同步加载图片的缩略图
      * @author tiger
      * @update 2015年3月7日 下午5:53:46
-     * @param uri
+     * @param imagePath 
      * @param imageSize
      */
-    public static Bitmap loadImageThumbnailsSync(String uri, ImageSize imageSize) {
+    public static Bitmap loadImageThumbnailsSync(String imagePath, ImageSize imageSize) {
         ImageLoader imageLoader = ImageLoader.getInstance();
-        return imageLoader.loadImageSync(uri, imageSize, getAlbumImageOptions());
+        String iconUri = null;
+        ImageDownloader.Scheme scheme = ImageDownloader.Scheme.ofUri(imagePath);
+        if (ImageDownloader.Scheme.UNKNOWN == scheme) { //没有前缀，则添加file://
+            iconUri = ImageDownloader.Scheme.FILE.wrap(imagePath);
+        } else {
+            iconUri = imagePath;
+        }
+        return imageLoader.loadImageSync(iconUri, imageSize, getAlbumImageOptions());
     }
 
     /**
@@ -121,7 +127,7 @@ public class ImageUtil {
             iconUri = imagePath;
         }
         ImageLoader imageLoader = ImageLoader.getInstance();
-        MemoryCacheUtils.removeFromCache(iconUri, imageLoader.getMemoryCache());
+//        MemoryCacheUtils.removeFromCache(iconUri, imageLoader.getMemoryCache());
         imageLoader.loadImage(iconUri, imageSize, getAlbumImageOptions(), loadingListener);
     }
 

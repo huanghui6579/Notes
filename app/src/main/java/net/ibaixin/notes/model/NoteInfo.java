@@ -11,6 +11,7 @@ import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.TimeUtil;
 
 import java.util.Comparator;
+import java.util.Map;
 
 /**
  * 记事本的基本信息实体
@@ -90,6 +91,11 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
      * 前一版本的文本内容
      */
     private String oldContent;
+
+    /**
+     * 笔记中的附件
+     */
+    private Map<String, Attach> attaches;
     
     public NoteInfo() {}
 
@@ -122,6 +128,14 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         dest.writeLong(modifyTime);
         dest.writeString(hash);
         dest.writeString(oldContent);
+    }
+
+    public Map<String, Attach> getAttaches() {
+        return attaches;
+    }
+
+    public void setAttaches(Map<String, Attach> attaches) {
+        this.attaches = attaches;
     }
 
     @Override

@@ -13,6 +13,7 @@ import net.ibaixin.notes.db.DBHelper;
 import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.db.observer.Observer;
+import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
@@ -22,7 +23,9 @@ import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.log.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * note表的服务层
@@ -269,6 +272,25 @@ public class NoteManager extends Observable<Observer> {
         return note;
     }
     
+    private Attach cursor2Attach(Cursor cursor) {
+        Attach attach = new Attach();
+        attach.setId(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns._ID)));
+        attach.setSId(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.SID)));
+        attach.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.USER_ID)));
+        attach.setNoteId(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.NOTE_ID)));
+        attach.setType(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.TYPE)));
+        attach.setLocalPath(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.LOCAL_PATH)));
+        attach.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.AttachmentColumns.CREATE_TIME)));
+        attach.setDecription(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.DECRIPTION)));
+        attach.setSyncState(SyncState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.SYNC_STATE))));
+        attach.setDeleteState(DeleteState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.DELETE_STATE))));
+        attach.setFilename(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.FILE_NAME)));
+        attach.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.AttachmentColumns.MODIFY_TIME)));
+        attach.setServerPath(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.SERVER_PATH)));
+        attach.setSize(cursor.getLong(cursor.getColumnIndex(Provider.AttachmentColumns.SIZE)));
+        return attach;
+    }
+    
     /**
      * 添加一个记事本
      * @author huanghui1
@@ -352,11 +374,38 @@ public class NoteManager extends Observable<Observer> {
         Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())}, null, null, null);
         if (cursor != null && cursor.moveToFirst()) {
             info = cursor2Note(cursor);
+            
+            //获取笔记中的附件
+            Map<String, Attach> map = getAttachs(info, db);
+
+            info.setAttaches(map);
         }
         if (cursor != null) {
             cursor.close();
         }
         return info;
+    }
+
+    /**
+     * 获取笔记中的附件列表
+     * @param note 笔记
+     * @return 返回笔记中的附件列表
+     */
+    public Map<String, Attach> getAttachs(NoteInfo note, SQLiteDatabase db) {
+        String selection = Provider.AttachmentColumns.NOTE_ID + " = ? AND (" + Provider.AttachmentColumns.DELETE_STATE + " IS NULL OR " + Provider.AttachmentColumns.DELETE_STATE + " = ?)";
+        String[] selectionArgs = {note.getSId(), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+        Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, null, null);
+        Map<String, Attach> map = null;
+        if (cursor != null) {
+            map = new HashMap<>();
+            while (cursor.moveToNext()) {
+                Attach attach = cursor2Attach(cursor);
+                if (attach != null) {
+                    map.put(attach.getSId(), attach);
+                }
+            }
+        }
+        return map;
     }
     
     /**

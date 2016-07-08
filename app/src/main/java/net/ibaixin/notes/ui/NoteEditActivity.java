@@ -38,6 +38,8 @@ import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.persistent.AttachManager;
 import net.ibaixin.notes.persistent.NoteManager;
+import net.ibaixin.notes.richtext.AttachResolver;
+import net.ibaixin.notes.richtext.RichTextWrapper;
 import net.ibaixin.notes.service.CoreService;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.DigestUtil;
@@ -45,6 +47,7 @@ import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.NoteLinkify;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
+import net.ibaixin.notes.widget.AttchSpan;
 import net.ibaixin.notes.widget.MessageBundleSpan;
 import net.ibaixin.notes.widget.NoteEditText;
 import net.ibaixin.notes.widget.NoteLinkMovementMethod;
@@ -120,6 +123,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private boolean mIsViewMode;
     
     private View mBottomBar;
+
+    /**
+     * 富文本的包装器
+     */
+    private RichTextWrapper mRichTextWrapper;
 
     /**
      * 附件的临时缓存
@@ -262,7 +270,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @param note
      */
     private void showNote(NoteInfo note) {
-        mEtContent.setText(note.getContent());
+        mRichTextWrapper.setText(note.getContent(), mAttachCache);
     }
     
     /**
@@ -277,6 +285,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             public void run() {
                 mNote = mNoteManager.getNote(noteId);
                 if (mNote != null) {
+                    mAttachCache = mNote.getAttaches();
                     mHandler.sendEmptyMessage(Constants.MSG_SUCCESS);
                 }
             }
@@ -331,6 +340,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             return;
         }
 
+        mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
+        mRichTextWrapper.addResolver(AttachResolver.class);
+
         mEtContent.addTextChangedListener(this);
 
         mEtContent.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -370,7 +382,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         selEnd, ClickableSpan.class);
                 if (links != null && links.length > 0) {
                     ClickableSpan clickableSpan = links[0];
-                    Log.d(TAG, "----onSelectionChanged-----" + clickableSpan.toString());
+                    Log.d(TAG, "----onSelectionChanged--clickableSpan---" + clickableSpan.toString());
+                } else {
+                    AttchSpan[] images = ((Spannable) text).getSpans(selStart,
+                            selEnd, AttchSpan.class);
+                    if (images != null && images.length > 0) {
+                        Log.d(TAG, "----onSelectionChanged---AttchSpan--");
+                    }
                 }
             }
         });
@@ -597,7 +615,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
-        if (!mIsDo && s != null) {
+        if (s == null) {
+            return;
+        }
+        if (!mIsDo) {
             EditStep editStep = getUndo();
             if (editStep != null && editStep.isAppend()) {  //添加文字
                 int end = start + count;
@@ -607,10 +628,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 editStep.setLength(count);
             }
         }
+        autoLink(s);
     }
 
     @Override
     public void afterTextChanged(Editable s) {
+        Log.d(TAG, "--afterTextChanged--");
         if (mIsEnterLine) {  //手动按的回车键
             mIsEnterLine = false;
             int selectionStart = mEtContent.getSelectionStart();
@@ -622,7 +645,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
             }
         }
-        autoLink();
+        
     }
 
     @Override
@@ -842,7 +865,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         String uri = attach.getAvailableUri();
         if (uri != null) {
 //            final SimpleAttachAddCompleteListener listener = new SimpleAttachAddCompleteListenerImpl(false);
-            ImageUtil.generateThumbImageAsync(uri, ImageUtil.getNoteImageSize(), new SimpleImageLoadingListener() {
+            ImageUtil.generateThumbImageAsync(uri, null, new SimpleImageLoadingListener() {
                 @Override
                 public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
                     ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
@@ -852,10 +875,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     int selStart = editStep.getStart();
                     setdo(true);
-                    if (selStart < 0) {
-                        editable.append(builder);
-                    } else {
-                        editable.insert(selStart, builder);
+                    try {
+                        if (selStart < 0 || mEtContent.getText() == null || selStart >= mEtContent.getText().length()) {
+                            editable.append(builder);
+                        } else {
+                            editable.insert(selStart, builder);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "-----resetAttach--error----" + e.getMessage());
                     }
                     setdo(false);
 //                editable.insert(editStep.getStart(), editStep.getContent());
@@ -922,9 +949,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @update 2016/3/13 10:46
      * @version 1.0.0
      */
-    private void autoLink() {
+    private void autoLink(CharSequence s) {
         mHandler.removeMessages(MSG_AUTO_LINK);
-        mHandler.sendEmptyMessage(MSG_AUTO_LINK);
+        Message msg = mHandler.obtainMessage();
+        msg.what = MSG_AUTO_LINK;
+        msg.obj = s;
+        mHandler.sendMessage(msg);
     }
     
     /**
@@ -1027,6 +1057,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 从缓存中获取附件
+     * @param sid 附件的sid
+     * @return
+     */
+    public Attach getAttach(String sid) {
+        if (mAttachCache != null && mAttachCache.size() > 0) {
+            return mAttachCache.get(sid);
+        }
+        return null;
+    }
+
+    /**
      * 附件加载完成的回调
      */
     class SimpleAttachAddCompleteListenerImpl extends SimpleAttachAddCompleteListener {
@@ -1065,9 +1107,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version 1.0.0
      */
     class AutoLinkTask implements Runnable {
-
+        private CharSequence s;
+        
+        public AutoLinkTask(CharSequence s) {
+            this.s = s;
+        }
+        
         @Override
         public void run() {
+            Log.d(TAG, "-----AutoLinkTask---run---");
+            //判断附件
             NoteLinkify.addLinks(mEtContent, mEtContent.getAutoLinkMask(), MessageBundleSpan.class);
         }
     }
@@ -1093,7 +1142,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     break;
                 case MSG_AUTO_LINK: //自动链接
                     if (activity.mAutoLinkTask == null) {
-                        activity.mAutoLinkTask = activity.new AutoLinkTask();
+                        CharSequence s = (CharSequence) msg.obj;
+                        activity.mAutoLinkTask = activity.new AutoLinkTask(s);
                     }
                     post(activity.mAutoLinkTask);
                     break;

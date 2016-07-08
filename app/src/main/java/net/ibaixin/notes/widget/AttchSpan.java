@@ -1,10 +1,6 @@
 package net.ibaixin.notes.widget;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.text.style.ImageSpan;
+import android.text.style.ClickableSpan;
 import android.view.View;
 
 import net.ibaixin.notes.util.log.Log;
@@ -15,7 +11,7 @@ import net.ibaixin.notes.util.log.Log;
  * @update 2016/7/7 21:34
  * @version: 0.0.1
  */
-public class AttchSpan extends ImageSpan {
+public class AttchSpan extends ClickableSpan {
 
     private static final java.lang.String TAG = "AttchSpan";
     /**
@@ -33,45 +29,10 @@ public class AttchSpan extends ImageSpan {
      */
     private String attachId;
 
-    public AttchSpan(Drawable d) {
-        super(d);
-    }
-
-    public AttchSpan(Context context, Bitmap b) {
-        super(context, b);
-    }
-
-    public AttchSpan(Context context, Bitmap b, int verticalAlignment) {
-        super(context, b, verticalAlignment);
-    }
-
-    public AttchSpan(Drawable d, int verticalAlignment) {
-        super(d, verticalAlignment);
-    }
-
-    public AttchSpan(Drawable d, String source) {
-        super(d, source);
-    }
-
-    public AttchSpan(Drawable d, String source, int verticalAlignment) {
-        super(d, source, verticalAlignment);
-    }
-
-    public AttchSpan(Context context, Uri uri) {
-        super(context, uri);
-    }
-
-    public AttchSpan(Context context, Uri uri, int verticalAlignment) {
-        super(context, uri, verticalAlignment);
-    }
-
-    public AttchSpan(Context context, int resourceId) {
-        super(context, resourceId);
-    }
-
-    public AttchSpan(Context context, int resourceId, int verticalAlignment) {
-        super(context, resourceId, verticalAlignment);
-    }
+    /**
+     * 内容
+     */
+    private CharSequence text;
 
     public int getAttachType() {
         return attachType;
@@ -97,9 +58,18 @@ public class AttchSpan extends ImageSpan {
         this.attachId = attachId;
     }
 
+    public CharSequence getText() {
+        return text;
+    }
+
+    public void setText(CharSequence text) {
+        this.text = text;
+    }
+
     /**
      * Performs the click action associated with this span.
      */
+    @Override
     public void onClick(View widget) {
         Log.d(TAG, "--AttchSpan--onClick----");
     }
