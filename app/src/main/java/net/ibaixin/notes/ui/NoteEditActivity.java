@@ -54,6 +54,7 @@ import net.ibaixin.notes.widget.NoteLinkMovementMethod;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
@@ -298,6 +299,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void saveNote() {
         String content = TextUtils.isEmpty(mEtContent.getText()) ? "" : mEtContent.getText().toString();
+        if (TextUtils.isEmpty(content)) {
+            return;
+        }
         Intent intent = null;
         if (mNote != null) {    //更新笔记
             if (content.equals(mNote.getContent())) {
@@ -328,6 +332,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         if (intent != null) {
             intent.putExtra(Constants.ARG_CORE_OBJ, mNote);
+            if (mAttachCache != null && mAttachCache.size() > 0) {
+                ArrayList<String> list = new ArrayList<>();
+                list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
+                intent.putStringArrayListExtra(Constants.ARG_CORE_LIST, list);
+            }
             startService(intent);
         }
     }
@@ -673,6 +682,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                             @Override
                             public void run() {
                                 String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
+                                Log.d(TAG, "addImage----" + filePath);
                                 Attach attach = getAddedAttach(filePath);
                                 mEtContent.addImage(filePath, attach, new SimpleAttachAddCompleteListenerImpl(true));
                             }
@@ -774,7 +784,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         Log.d(TAG, "----addRedo---false---not--able---to---delete---");
                     }
                 } else {    //之前的操作是删除文字，则此时的操作是插入文字String sid = mEtContent.getAttachSid(content);
-                    String sid = mEtContent.getAttachSid(content);
+                    String sid = SystemUtil.getAttachSid(content);
                     if (sid != null && mAttachCache != null && mAttachCache.get(sid) != null) {  //有附件
                         Attach attach = mAttachCache.get(sid);
                         resetAttach(editable, editStep, attach);
@@ -812,7 +822,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         boolean addUndo = true;
         try {
             if (editStep.isAppend()) {  //前进操作是插入文字
-                String sid = mEtContent.getAttachSid(content);
+                String sid = SystemUtil.getAttachSid(content);
                 if (sid != null && mAttachCache != null && mAttachCache.get(sid) != null) {  //有附件
                     Attach attach = mAttachCache.get(sid);
                     resetAttach(editable, editStep, attach);
@@ -1030,7 +1040,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     AttachManager.getInstance().addAttach(attach);
                     mAttachCache.put(attach.getSId(), attach);
-                    Log.d(TAG, "---handleAddAttach--mAttachCache--has--not--uri--add--");
+                    Log.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
                 } else {
                     Log.d(TAG, "--handleAddAttach--filePath--is---null--");
                 }

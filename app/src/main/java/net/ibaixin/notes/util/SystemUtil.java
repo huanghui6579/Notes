@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -12,6 +13,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.view.View;
@@ -25,14 +27,19 @@ import com.nostra13.universalimageloader.core.download.ImageDownloader;
 
 import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.richtext.AttachSpec;
 
 import java.io.File;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author huanghui1
@@ -48,6 +55,13 @@ public class SystemUtil {
     private static final String PREFIX_ATTACH = "A";
 
     private static ExecutorService cachedThreadPool = null;//可缓存的线程池
+
+    /**
+     * 附件的正则表达式
+     */
+    public static final String mAttachRegEx = "\\[" + Constants.ATTACH_PREFIX + "=([a-zA-Z0-9_]+)\\]";
+
+    private static Pattern mPattern;
     
     private SystemUtil() {}
 
@@ -653,6 +667,67 @@ public class SystemUtil {
     }
 
     /**
+     * 从文本中获取附件的信息,[0]：是匹配的文本内容[attach=fdfdf],[1]是附件的sid：fdfdf
+     * @param text
+     * @return
+     */
+    public static List<AttachSpec> getAttachText(CharSequence text) {
+        if (mPattern == null) {
+            mPattern = Pattern.compile(mAttachRegEx);
+        }
+        Matcher matcher = mPattern.matcher(text);
+        List<AttachSpec> list = new ArrayList<>();
+        while (matcher.find()) {
+            AttachSpec spec = new AttachSpec();
+            String s = matcher.group();
+            String sid = matcher.group(1);
+            int start = matcher.start();
+            int end = matcher.end();
+            spec.text = s;
+            spec.sid = sid;
+            spec.start = start;
+            spec.end = end;
+            list.add(spec);
+        }
+        return list;
+    }
+
+    /**
+     * 从文本中获取附件的sid列表
+     * @param text
+     * @return
+     */
+    public static List<String> getAttachSids(CharSequence text) {
+        if (mPattern == null) {
+            mPattern = Pattern.compile(mAttachRegEx);
+        }
+        Matcher matcher = mPattern.matcher(text);
+        List<String> list = new ArrayList<>();
+        while (matcher.find()) {
+            String sid = matcher.group(1);
+            list.add(sid);
+        }
+        return list;
+    }
+
+    /**
+     * 从文本中获取附件的sid
+     * @param text
+     * @return
+     */
+    public static String getAttachSid(CharSequence text) {
+        if (mPattern == null) {
+            mPattern = Pattern.compile(mAttachRegEx);
+        }
+        Matcher matcher = mPattern.matcher(text);
+        String sid = null;
+        if (matcher.find()) {
+            sid = matcher.group(1);
+        }
+        return sid;
+    }
+
+    /**
      * 从文件的全路径中获取文件名
      * @param filePath 文件的全部路径
      * @return 返回文件名
@@ -667,5 +742,21 @@ public class SystemUtil {
             filename = filePath.substring(index + 1);
         }
         return filename;
+    }
+
+    /**
+     * 查看图片
+     * @param filePath 文件的全路径
+     */
+    public static void openImage(Context context, String filePath) {
+        Uri uri = Uri.fromFile(new File(filePath));
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "image/*");
+        intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
+        if (intent.resolveActivity(context.getPackageManager()) != null) {
+            context.startActivity(intent);
+        } else {
+            SystemUtil.makeShortToast(R.string.tip_no_app_handle);
+        }
     }
 }

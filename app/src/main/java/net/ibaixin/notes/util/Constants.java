@@ -69,7 +69,10 @@ public class Constants {
     
     public static final String ARG_CORE_OPT = "arg_core_opt";
     public static final String ARG_CORE_OBJ = "arg_core_obj";
+    public static final String ARG_CORE_LIST = "arg_core_list";
     public static final String ARG_SUB_OBJ = "arg_sub_obj";
+
+    public static final String ATTACH_PREFIX = "attach";
     
     public static final int MSG_SUCCESS = 1;
     public static final int MSG_SUCCESS2 = 2;

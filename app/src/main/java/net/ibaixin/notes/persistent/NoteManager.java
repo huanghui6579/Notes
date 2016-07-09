@@ -293,11 +293,14 @@ public class NoteManager extends Observable<Observer> {
     
     /**
      * 添加一个记事本
+     * @param note 笔记
+     * @param cacheList 缓存中的附件集合
+     * @param attachList 笔记内容中的附件sid                 
      * @author huanghui1
      * @update 2016/6/18 11:14
      * @version: 1.0.0
      */
-    public NoteInfo addNote(NoteInfo note) {
+    public NoteInfo addNote(NoteInfo note, List<String> cacheList, List<String> attachList) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         ContentValues values = initNoteValues(note);
         db.beginTransaction();
@@ -305,6 +308,27 @@ public class NoteManager extends Observable<Observer> {
         try {
             rowId = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
             updateFolderCount(note, true);
+
+            if (attachList != null && attachList.size() > 0) {  //有附件，则与缓存中比较
+                //更新附件的noteid
+                Log.d(TAG, "--updateAttachNote--list---" + attachList);
+                updateAttachNote(db, attachList, note.getSId());
+                if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
+                    //删除多余的附件
+                    cacheList.removeAll(attachList);
+                    if (cacheList.size() > 0) { //删除了还有多余的附件
+                        Log.d(TAG, "--deleteAttachs--list---" + cacheList);
+                        deleteAttachs(db, cacheList);
+                    }
+                }
+            } else {    //笔记中实际没有附件
+                if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
+                    //删除多余的附件
+                    Log.d(TAG, "--deleteAttachs--list---" + cacheList);
+                    deleteAttachs(db, cacheList);
+                }
+            }
+            
             db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "--addNote--error--" + e.getMessage());
@@ -318,6 +342,61 @@ public class NoteManager extends Observable<Observer> {
         } else {
             return null;
         }
+    }
+
+    /**
+     * 更新附件的笔记id
+     * @param db
+     * @param list 附件的sid
+     * @param noteId 笔记的id            
+     */
+    private void updateAttachNote(SQLiteDatabase db, List<String> list, String noteId) {
+        ContentValues values = new ContentValues();
+        values.put(Provider.AttachmentColumns.NOTE_ID, noteId);
+        int size = list.size();
+        String selection = null;
+        String[] selectionArgs = new String[size];
+        if (size == 1) { //只有一个附件
+            selection = Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID + " = ?";
+            selectionArgs[0] = list.get(0);
+        } else {    //多个附件
+            StringBuilder sb = new StringBuilder(Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID).append(" in (");
+            for (int i = 0; i < size; i++) {
+                String sid = list.get(i);
+                selectionArgs[i] = sid;
+                sb.append("?").append(Constants.TAG_COMMA);
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            sb.append(")");
+            selection = sb.toString();
+        }
+        db.update(Provider.AttachmentColumns.TABLE_NAME, values, selection, selectionArgs);
+    }
+
+    /**
+     * 彻底删除附件
+     * @param db
+     * @param list 附件的sid集合
+     */
+    private void deleteAttachs(SQLiteDatabase db, List<String> list) {
+        int size = list.size();
+        String selection = null;
+        String[] selectionArgs = new String[size];
+        if (size == 1) {    //只有一个附件
+            selection = Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID + " = ?";
+            selectionArgs[0] = list.get(0);
+        } else {    //多个附件
+            StringBuilder sb = new StringBuilder(Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID).append(" in (");
+            for (int i = 0; i < size; i++) {
+                String sid = list.get(i);
+                selectionArgs[i] = sid;
+                sb.append("?").append(Constants.TAG_COMMA);
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            sb.append(")");
+            selection = sb.toString();
+        }
+        db.delete(Provider.AttachmentColumns.TABLE_NAME, selection, selectionArgs);
     }
 
     /**

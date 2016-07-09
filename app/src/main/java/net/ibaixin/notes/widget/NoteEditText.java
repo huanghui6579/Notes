@@ -18,15 +18,10 @@ import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListene
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
-import net.ibaixin.notes.richtext.AttachSpec;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 笔记的编辑控件
@@ -37,15 +32,6 @@ import java.util.regex.Pattern;
 public class NoteEditText extends EditText {
 
     private static final String TAG = "NoteEditText";
-    
-    public static String ATTACH_PREFIX = "attach";
-
-    /**
-     * 附件的正则表达式
-     */
-    protected String mAttachRegEx = "\\[" + ATTACH_PREFIX + "=([a-zA-Z0-9_]+)\\]";
-    
-    private Pattern mPattern;
 
     protected SelectionChangedListener mSelectionChangedListener;
 
@@ -77,10 +63,11 @@ public class NoteEditText extends EditText {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         final int action = event.getActionMasked();
-//        final boolean touchIsFinished = (action == MotionEvent.ACTION_UP) && isFocused();
+        final boolean touchIsFinished = (action == MotionEvent.ACTION_UP) && isFocused();
+        Log.d(TAG, "---touchIsFinished--" + touchIsFinished);
         MovementMethod mMovement = getMovementMethod();
         CharSequence text = getText();
-        if (/*touchIsFinished && */text != null && (mMovement != null && mMovement instanceof LinkMovementMethod) && isEnabled()
+        if (touchIsFinished && text != null && (mMovement != null && mMovement instanceof LinkMovementMethod) && isEnabled()
                 && text instanceof Spannable && getLayout() != null) {
             boolean handled = mMovement.onTouchEvent(this, (Spannable) text, event);
             if (handled) {
@@ -94,7 +81,7 @@ public class NoteEditText extends EditText {
      * 添加图片
      * @param filePath 图片的本地全路径
      */
-    public void addImage(String filePath, final Attach attach, final AttachAddCompleteListener listener) {
+    public void addImage(final String filePath, final Attach attach, final AttachAddCompleteListener listener) {
         ImageUtil.generateThumbImageAsync(filePath, null, new SimpleImageLoadingListener() {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
@@ -108,8 +95,8 @@ public class NoteEditText extends EditText {
                 AttchSpan attchSpan = new AttchSpan();
                 attchSpan.setAttachId(fileId);
                 attchSpan.setAttachType(Attach.IMAGE);
-                attchSpan.setFilePath(imageUri);
-                String text = "[" + ATTACH_PREFIX + "=" + fileId + "]";
+                attchSpan.setFilePath(filePath);
+                String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
                 final SpannableStringBuilder builder = new SpannableStringBuilder();
                 builder.append(text);
                 builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -136,7 +123,7 @@ public class NoteEditText extends EditText {
                         att.setType(Attach.IMAGE);
                     }
                     
-                    listener.onAddComplete(imageUri, text, att);
+                    listener.onAddComplete(filePath, text, att);
                 }
             }
 
@@ -147,53 +134,6 @@ public class NoteEditText extends EditText {
                 }
             }
         });
-    }
-
-    /**
-     * 获取指定内容里的附件信息
-     * @param text 文本内容
-     * @return 附件的sid
-     */
-    public String getAttachSid(CharSequence text) {
-        if (mPattern == null) {
-            mPattern = Pattern.compile(mAttachRegEx);
-        }
-        Matcher matcher = mPattern.matcher(text);
-        String sid = null;
-        if (matcher.find()) {
-            try {
-                sid = matcher.group(1);
-            } catch (Exception e) {
-                Log.e(TAG, "--getAttachSid--error--" + e.getMessage());
-            }
-        }
-        return sid;
-    }
-
-    /**
-     * 从文本中获取附件的信息,[0]：是匹配的文本内容[attach=fdfdf],[1]是附件的sid：fdfdf
-     * @param text
-     * @return
-     */
-    public List<AttachSpec> getAttachText(CharSequence text) {
-        if (mPattern == null) {
-            mPattern = Pattern.compile(mAttachRegEx);
-        }
-        Matcher matcher = mPattern.matcher(text);
-        List<AttachSpec> list = new ArrayList<>();
-        while (matcher.find()) {
-            AttachSpec spec = new AttachSpec(); 
-            String s = matcher.group();
-            String sid = matcher.group(1);
-            int start = matcher.start();
-            int end = matcher.end();
-            spec.text = s;
-            spec.sid = sid;
-            spec.start = start;
-            spec.end = end;
-            list.add(spec);
-        }
-        return list;
     }
     
     /**

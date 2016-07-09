@@ -9,6 +9,8 @@ import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.widget.TextView;
 
+import net.ibaixin.notes.util.log.Log;
+
 /**
  * @author huanghui1
  * @update 2016/7/4 16:13
@@ -49,7 +51,9 @@ public class NoteLinkMovementMethod extends LinkMovementMethod {
             if (link != null && link.length != 0) {
                 if (action == MotionEvent.ACTION_UP) {
                     link[0].onClick(widget);
+                    Log.d(TAG, "---MotionEvent.ACTION_UP--onClick---");
                 } else {
+                    Log.d(TAG, "---MotionEvent.ACTION_DOWN--setSelection---");
                     Selection.setSelection(buffer,
                             buffer.getSpanStart(link[0]),
                             buffer.getSpanEnd(link[0]));

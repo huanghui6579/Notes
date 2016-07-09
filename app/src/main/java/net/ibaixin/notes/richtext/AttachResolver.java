@@ -37,12 +37,9 @@ public class AttachResolver implements Resolver {
         if (textView instanceof NoteEditText) {
             NoteEditText editText = (NoteEditText) textView;
 
-            List<AttachSpec> list = editText.getAttachText(text);
             Map<String, Attach> map = (Map<String, Attach>) extra.get(0);
-            if (map != null && list != null && list.size() > 0) {
-                for (AttachSpec spec : list) {
-                    showAttach(new ResolverAttachTask(editText, spec, map));
-                }
+            if (map != null && map.size() > 0) {
+                postTask(new AnalysisTextTask(editText, text, map));
             }
         }
     }
@@ -52,8 +49,33 @@ public class AttachResolver implements Resolver {
         this.mHandler = handler;
     }
 
-    private void showAttach(Runnable runnable) {
+    private void postTask(Runnable runnable) {
         SystemUtil.getThreadPool().execute(runnable);
+    }
+
+    /**
+     * 从文本解析出附件的sid
+     */
+    class AnalysisTextTask implements Runnable {
+        Map<String, Attach> map;
+        CharSequence text;
+        EditText editText;
+
+        public AnalysisTextTask(EditText editText, CharSequence text, Map<String, Attach> map) {
+            this.map = map;
+            this.text = text;
+            this.editText = editText;
+        }
+
+        @Override
+        public void run() {
+            List<AttachSpec> list = SystemUtil.getAttachText(text);
+            if (list != null && list.size() > 0) {
+                for (AttachSpec spec : list) {
+                    postTask(new ResolverAttachTask(editText, spec, map));
+                }
+            }
+        }
     }
 
     /**
