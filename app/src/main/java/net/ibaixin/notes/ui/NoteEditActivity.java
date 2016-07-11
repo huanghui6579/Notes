@@ -1,11 +1,15 @@
 package net.ibaixin.notes.ui;
 
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
 import android.text.Editable;
 import android.text.Spannable;
@@ -26,11 +30,15 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.db.Provider;
+import net.ibaixin.notes.db.observer.ContentObserver;
+import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.listener.SimpleAttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.EditStep;
@@ -45,6 +53,7 @@ import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.DigestUtil;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.NoteLinkify;
+import net.ibaixin.notes.util.NoteUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttchSpan;
@@ -68,6 +77,7 @@ import java.util.Stack;
 public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher {
     public static final String ARG_NOTE_ID = "noteId";
     public static final String ARG_FOLDER_ID = "folderId";
+    public static final String ARG_OPT_DELETE = "opt_delete";
     
     private static final int MSG_AUTO_LINK = 2;
     private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
@@ -75,8 +85,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private static final int REQ_PICK_IMAGE = 10;
 
     private PopupMenu mAttachPopu;
-    private PopupMenu mCameraPopu;
     private PopupMenu mOverflowPopu;
+    private PopupMenu mOverflowViewPopu;
     
     private NoteEditText mEtContent;
     
@@ -135,6 +145,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private Map<String, Attach> mAttachCache;
 
+    //是否有删除笔记的操作，第一次操作则有删除提示，后面则没有了
+    private boolean mHasDeleteOpt;
+
+    //笔记的监听器
+    private NoteContentObserver mNoteObserver;
+
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
             if (mToolbarTitleView == null) {
@@ -169,10 +185,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     protected void initData() {
         mNoteManager = NoteManager.getInstance();
+        registContentObserver();
         Intent intent = getIntent();
         if (intent != null) {
             int noteId = intent.getIntExtra(ARG_NOTE_ID, 0);
             mFolderId = intent.getStringExtra(ARG_FOLDER_ID);
+            mHasDeleteOpt = intent.getBooleanExtra(ARG_OPT_DELETE, true);
             if (noteId > 0) {   //查看模式
                 mNote = new NoteInfo();
                 mNote.setId(noteId);
@@ -193,6 +211,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void initSoftInputMode(boolean show) {
         if (show) {
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        } else {
+            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
         }
     }
 
@@ -202,6 +222,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void changeNoteMode(boolean editable) {
         if (editable) {
+            if (isViewMode()) {
+                mOverflowViewPopu = null;
+            }
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
             if (mBottomBar != null) {
                 return;
@@ -295,13 +318,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     /**
      * 保存笔记
+     * @param removeAttach　是否移除缓存中的附件数据库记录
      * @return
      */
-    private void saveNote() {
+    private void saveNote(boolean removeAttach) {
         String content = TextUtils.isEmpty(mEtContent.getText()) ? "" : mEtContent.getText().toString();
-        if (TextUtils.isEmpty(content)) {
+        if (TextUtils.isEmpty(content) && removeAttach) {
+            removeCacheAttach();    //移除缓存中的附件，彻底删除数据库记录
             return;
         }
+
         Intent intent = null;
         if (mNote != null) {    //更新笔记
             if (content.equals(mNote.getContent())) {
@@ -312,7 +338,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mNote.setSyncState(SyncState.SYNC_UP);
             intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
-        } else if (!TextUtils.isEmpty(content)) {    //添加笔记
+        } else {    //添加笔记
             mNote = new NoteInfo();
             intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_ADD_NOTE);
@@ -330,13 +356,25 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             }
             mNote.setSyncState(SyncState.SYNC_UP);
         }
-        if (intent != null) {
-            intent.putExtra(Constants.ARG_CORE_OBJ, mNote);
-            if (mAttachCache != null && mAttachCache.size() > 0) {
-                ArrayList<String> list = new ArrayList<>();
-                list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
-                intent.putStringArrayListExtra(Constants.ARG_CORE_LIST, list);
-            }
+        
+        intent.putExtra(Constants.ARG_CORE_OBJ, mNote);
+        if (mAttachCache != null && mAttachCache.size() > 0) {
+            ArrayList<String> list = new ArrayList<>();
+            list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
+            intent.putStringArrayListExtra(Constants.ARG_CORE_LIST, list);
+        }
+        startService(intent);
+    }
+
+    /**
+     * 移除缓存中的附件，彻底删除数据库记录
+     */
+    private void removeCacheAttach() {
+        if (mAttachCache != null && mAttachCache.size() > 0) {
+            Intent intent = new Intent(mContext, CoreService.class);
+            ArrayList<String> list = new ArrayList<>();
+            list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
+            intent.putStringArrayListExtra(Constants.ARG_CORE_LIST, list);
             startService(intent);
         }
     }
@@ -348,7 +386,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mEtContent == null) {
             return;
         }
-
+        
         mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
         mRichTextWrapper.addResolver(AttachResolver.class);
 
@@ -442,7 +480,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         //移除链接的点击事件
         editText.setMovementMethod(ArrowKeyMovementMethod.getInstance());
         mIsViewMode = false;
-        
+
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -454,7 +492,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     protected void onDestroy() {
-        saveNote();
+        unregistContentObserver();
+        saveNote(true);
         super.onDestroy();
     }
 
@@ -462,7 +501,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.note_edit, menu);
         MenuItem item = menu.findItem(R.id.action_more);
-        setMenuOverFlowTint(item);
+        MenuItem viewItem = menu.findItem(R.id.action_view_more);
+        setMenuOverFlowTint(item, viewItem);
         
         if (isViewMode()) {
             setMenuVisible(menu, false);
@@ -476,33 +516,19 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public boolean onOptionsItemSelected(MenuItem item) {
         View attachView = null;
         switch (item.getItemId()) {
+            case R.id.action_save:  //保存
+                saveNote(false);
+                break;
+            case R.id.action_photo: //图片
+                choseImage();
+                break;
             case R.id.action_attach:    //添加附件
                 attachView = getToolBarMenuView(R.id.action_attach);
-                createPopuMenu(attachView, mAttachPopu, R.menu.edit_attach, true);
+                mAttachPopu = createPopuMenu(attachView, mAttachPopu, R.menu.edit_attach, true);
                 break;
             case R.id.action_more:  //更多
                 attachView = getToolBarMenuView(R.id.action_more);
-                final PopupMenu attachPopu = createPopuMenu(attachView, mAttachPopu, R.menu.edit_overflow, false);
-
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (attachPopu != null) {
-                            Menu menu = attachPopu.getMenu();
-
-                            MenuItem shareItem = menu.findItem(R.id.action_share);
-                            setMenuTint(shareItem, 0);
-
-                            MenuItem searchItem = menu.findItem(R.id.action_search);
-                            setMenuTint(searchItem, 0);
-
-                            MenuItem deleteItem = menu.findItem(R.id.action_delete);
-                            setMenuTint(deleteItem, 0);
-
-                            attachPopu.show();
-                        }
-                    }
-                });
+                mOverflowPopu = showEditActionMore(attachView, mOverflowPopu);
 
                 break;
             case R.id.action_edit:  //进入编辑模式
@@ -510,8 +536,71 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     setupEditMode(mEtContent, true);
                 }
                 break;
+            case R.id.action_view_more: //查看模式下的更多菜单
+                if (isViewMode()) { //之前是阅读模式
+                    attachView = getToolBarMenuView(R.id.action_view_more);
+                    mOverflowViewPopu = showViewActionMore(attachView, mOverflowViewPopu);
+                }
+                break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * 显示编辑状态下的更多菜单
+     * @param attachView 点击的view
+     */
+    private PopupMenu showEditActionMore(View attachView, PopupMenu popupMenu) {
+        final PopupMenu tempPopu = createPopuMenu(attachView, popupMenu, R.menu.edit_overflow, false);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (tempPopu != null) {
+                    Menu menu = tempPopu.getMenu();
+                    
+                    if (mNote == null) {    //没有详情
+                        menu.removeItem(R.id.action_info);
+                    }
+                    
+                    MenuItem shareItem = menu.findItem(R.id.action_share);
+                    setMenuTint(shareItem, 0);
+
+                    MenuItem searchItem = menu.findItem(R.id.action_search);
+                    setMenuTint(searchItem, 0);
+
+                    MenuItem deleteItem = menu.findItem(R.id.action_delete);
+                    setMenuTint(deleteItem, 0);
+
+                    tempPopu.show();
+                }
+            }
+        });
+        return tempPopu;
+    }
+
+    /**
+     * 显示查看状态下的更多菜单
+     * @param attachView
+     */
+    private PopupMenu showViewActionMore(View attachView, PopupMenu popupMenu) {
+        final PopupMenu tempPopu = createPopuMenu(attachView, popupMenu, R.menu.edit_view_overflow, false);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (tempPopu != null) {
+                    Menu menu = tempPopu.getMenu();
+
+                    MenuItem shareItem = menu.findItem(R.id.action_share);
+                    setMenuTint(shareItem, 0);
+
+                    MenuItem deleteItem = menu.findItem(R.id.action_delete);
+                    setMenuTint(deleteItem, 0);
+
+                    tempPopu.show();
+                }
+            }
+        });
+        return tempPopu;
     }
 
     /**
@@ -555,7 +644,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mBottomBar = viewStub.inflate();
         ViewGroup toolContainer = (ViewGroup) mBottomBar.findViewById(R.id.tool_container);
 
-        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) mEtContent.getLayoutParams();
+        ScrollView contentLayout = (ScrollView) findViewById(R.id.content_layout);
+        
+        if (contentLayout == null) {
+            return;
+        }
+
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) contentLayout.getLayoutParams();
         layoutParams.addRule(RelativeLayout.ABOVE, toolContainer.getId());
 
         int childSize = toolContainer.getChildCount();
@@ -708,6 +803,26 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             intent.setAction(Intent.ACTION_PICK);
         }
         startActivityForResult(intent, REQ_PICK_IMAGE);
+    }
+
+    /**
+     * 注册观察者的监听
+     * @author huanghui1
+     * @update 2016/3/9 18:10
+     * @version: 1.0.0
+     */
+    private void registContentObserver() {
+        mNoteObserver = new NoteContentObserver(mHandler);
+        NoteManager.getInstance().addObserver(mNoteObserver);
+    }
+
+    /**
+     * 注销观察者的监听
+     */
+    private void unregistContentObserver() {
+        if (mNoteObserver != null) {
+            NoteManager.getInstance().removeObserver(mNoteObserver);
+        }
     }
 
     /**
@@ -1067,6 +1182,51 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 清除文本内容
+     * @param deleteNote 是否手动删除笔记，如果是删除笔记操作，则仅仅是清空内容，然后结束该界面
+     */
+    private void clearContent(boolean deleteNote) {
+        if (deleteNote) {
+            mEtContent.setText("");
+            return;
+        }
+        //给予清空内容非提示
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle(R.string.prompt)
+                .setMessage(R.string.confirm_clear_content)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mEtContent.setText("");
+
+                        //删除附件
+                        removeCacheAttach();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+        
+    }
+
+    /**
+     * 保存删除操作的记录
+     */
+    public void saveDeleteOpt() {
+        if (!mHasDeleteOpt) {   //之前是否有删除操作，如果没有，则需保存  
+            doInbackground(new Runnable() {
+                @Override
+                public void run() {
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putBoolean(Constants.PREF_HAS_DELETE_OPT, true);
+                    editor.apply();
+                    mHasDeleteOpt = true;
+                }
+            });
+        }
+    }
+
+    /**
      * 从缓存中获取附件
      * @param sid 附件的sid
      * @return
@@ -1076,6 +1236,27 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             return mAttachCache.get(sid);
         }
         return null;
+    }
+
+    /**
+     * 添加详情的菜单
+     * @param popupMenu
+     */
+    private void addInfoMenu(PopupMenu popupMenu) {
+        if (popupMenu != null) {
+            Menu menu = popupMenu.getMenu();
+            MenuItem menuItem = menu.add(0, R.id.action_info, 0, getString(R.string.action_info));
+            menuItem.setIcon(R.drawable.ic_action_info);
+        }
+    }
+
+    /**
+     * 保存结果的提示语
+     * @param isSuccess 是否保存成功
+     */
+    private void saveResult(boolean isSuccess) {
+        int resId = isSuccess ? R.string.update_result_success : R.string.update_result_error;
+        SystemUtil.makeShortToast(resId);
     }
 
     /**
@@ -1102,8 +1283,22 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         @Override
         public boolean onMenuItemClick(MenuItem item) {
             switch (item.getItemId()) {
-                case R.id.action_photo: //选择图片
+                case R.id.action_photo: //拍照
                     choseImage();
+                    break;
+                case R.id.action_delete:    //删除
+                    if (mNote != null) {
+                        NoteUtil.handleDeleteNote(mContext, mNote, mHasDeleteOpt);
+                    } else {    //清空内容
+                        clearContent(false);
+                    }
+                    break;
+                case R.id.action_share:    //分享
+                    break;
+                case R.id.action_info:    //详情
+                    if (mNote != null) {
+                        NoteUtil.showInfo(mContext, mNote);
+                    }
                     break;
             }
             return false;
@@ -1128,6 +1323,43 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             Log.d(TAG, "-----AutoLinkTask---run---");
             //判断附件
             NoteLinkify.addLinks(mEtContent, mEtContent.getAutoLinkMask(), MessageBundleSpan.class);
+        }
+    }
+
+    /**
+     * 笔记的更新状态监听器
+     */
+    class NoteContentObserver extends ContentObserver {
+
+        public NoteContentObserver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data) {
+            switch (notifyFlag) {
+                case Provider.NoteColumns.NOTIFY_FLAG:  //笔记的通知
+                    switch (notifyType) {
+                        case ADD:   //保存笔记
+                            //添加“详情”的菜单
+                            addInfoMenu(mOverflowPopu);
+                            saveResult(data != null);
+                            break;
+                        case UPDATE: //更新、保存笔记
+                            saveResult(data != null);
+                            break;
+                        case DELETE:    //删除笔记
+                            saveDeleteOpt();
+                            if (data != null) { //删除成功,结束该界面
+                                clearContent(true);
+                                finish();
+                            } else {
+                                SystemUtil.makeShortToast(R.string.delete_result_error);
+                            }
+                            break;
+                    }
+                    break;
+            }
         }
     }
     

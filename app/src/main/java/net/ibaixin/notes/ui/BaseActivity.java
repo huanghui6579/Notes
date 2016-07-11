@@ -181,15 +181,17 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @update 2016/2/27 16:00
      * @version 1.0.0
      */
-    protected void setMenuOverFlowTint(MenuItem menuItem) {
-        if (menuItem != null) {
+    protected void setMenuOverFlowTint(MenuItem... menuItems) {
+        if (menuItems != null) {
             TypedArray a = obtainStyledAttributes(android.support.v7.appcompat.R.style.Widget_AppCompat_ActionButton_Overflow, new int[]{android.R.attr.src});
             Drawable drawable = a.getDrawable(0);
 //            a = obtainStyledAttributes(R.style.AppTheme_PopupOverlay, new int[] {R.attr.colorButtonNormal});
             int tint = SystemUtil.getColor(this, R.color.colorButtonControl);
             if (drawable != null) {
                 DrawableCompat.setTint(drawable, tint);
-                menuItem.setIcon(drawable);
+                for (MenuItem item : menuItems) {
+                    item.setIcon(drawable);
+                }
             }
             a.recycle();
         }

@@ -19,9 +19,11 @@
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
+    <string name="confirm_clear_content">将会清空输入的内容，确定吗？</string>
     
     <string name="add_result_error">添加失败</string>
     <string name="update_result_error">保存失败</string>
+    <string name="update_result_success">保存成功</string>
     <string name="delete_result_error">删除失败</string>
     <string name="move_result_error">移动失败</string>
     
@@ -67,6 +69,7 @@
     <string name="action_upload">同步</string>
     <string name="action_sort">排序</string>
     <string name="action_attach">附件</string>
+    <string name="action_save">保存</string>
     <string name="action_edit">编辑</string>
     <string name="action_camera">相机</string>
     <string name="action_photo">图片</string>

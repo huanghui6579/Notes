@@ -29,6 +29,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -38,6 +40,7 @@ import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.ContentObserver;
 import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.helper.AdapterRefreshHelper;
+import net.ibaixin.notes.listener.OnCheckedChangeListener;
 import net.ibaixin.notes.listener.OnItemClickListener;
 import net.ibaixin.notes.listener.OnItemLongClickListener;
 import net.ibaixin.notes.model.Folder;
@@ -45,6 +48,7 @@ import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.FolderManager;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.NoteUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.TimeUtil;
 import net.ibaixin.notes.util.log.Log;
@@ -89,8 +93,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * 主界面右上角菜单
      */
     private PopupMenu mMainPopuMenu;
-
-    private SharedPreferences mSharedPreferences;
 
     /**
      * 显示的是否是网格风格
@@ -158,6 +160,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 public void onClick(View view) {
                     Intent intent = new Intent(mContext, NoteEditActivity.class);
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
+                    intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
                     startActivity(intent);
                     
                     //退出选择模式
@@ -833,54 +836,25 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private void handleDeleteNote(final NoteInfo note) {
         List<NoteInfo> list = new ArrayList<>(1);
         list.add(note);
-        handleDeleteNote(list);
+        NoteUtil.handleDeleteNote(mContext, list, mHasDeleteOpt);
     }
 
     /**
-     * 删除多条笔记
-     * @param noteList 要删除的笔记的集合
+     * 保存删除操作的记录
      */
-    private void handleDeleteNote(List<NoteInfo> noteList) {
-        final List<NoteInfo> list = new ArrayList<>();
-        list.addAll(noteList);
-        if (!mHasDeleteOpt) {   //之前是否有删除操作，如果没有，则需弹窗           
-            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-            builder.setTitle(R.string.prompt)
-                    .setMessage(R.string.confirm_to_trash)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            doDeleteNote(list);
-                        }
-                    })
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show();
-        } else {    //直接删除
-            doDeleteNote(list);
-        }
-    }
-    
-    /**
-     * 删除多条笔记
-     * @param noteList 要删除的笔记的集合
-     */
-    private void doDeleteNote(final List<NoteInfo> noteList) {
-        
-        doInbackground(new Runnable() {
-            @Override
-            public void run() {
-                
-                mNoteManager.deleteNote(noteList);
-
-                if (!mHasDeleteOpt) {   //之前是否有删除操作，如果没有，则需保存  
+    public void saveDeleteOpt() {
+        if (!mHasDeleteOpt) {   //之前是否有删除操作，如果没有，则需保存  
+            doInbackground(new Runnable() {
+                @Override
+                public void run() {
                     SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                     SharedPreferences.Editor editor = sharedPreferences.edit();
                     editor.putBoolean(Constants.PREF_HAS_DELETE_OPT, true);
                     editor.apply();
                     mHasDeleteOpt = true;
                 }
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -891,6 +865,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         Intent intent = new Intent(mContext, NoteEditActivity.class);
         intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
         intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
+        intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
         startActivity(intent);
     }
     
@@ -1158,19 +1133,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     /**
-     * 显示笔记详情
-     * @param note
-     */
-    private void showInfo(final NoteInfo note) {
-        String info = note.getNoteInfo(mContext);
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        builder.setTitle(note.getTitle())
-                .setMessage(info)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
-    }
-
-    /**
      * 移动笔记到其他文件夹
      * @param note
      */
@@ -1279,17 +1241,31 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             });
         } else {
             mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
+            mNoteListAdapter.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, int position, boolean isChecked) {
+                    if (isChecked) {
+                        addSelectedItem(position);
+                    } else {
+                        removeSelectedItem(position);
+                    }
+                }
+            });
             mNoteListAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(View view, int position) {
 
                     //初始化actionMode
                     initActionMode();
-                    
-                    if (!view.isSelected()) {
-                        view.setSelected(true);
-                        addSelectedItem(position);
+                    NoteListViewHolder holder = (NoteListViewHolder) view.getTag();
+                    if (!holder.mCbCheck.isSelected()) {
+                        holder.mCbCheck.setChecked(true);
                     }
+                    if (holder.mCbCheck.getVisibility() != View.VISIBLE) {
+                        holder.mCbCheck.setVisibility(View.VISIBLE);
+                        mNoteListAdapter.notifyDataSetChanged();
+                    }
+                    
                     return true;
                 }
             });
@@ -1297,12 +1273,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 @Override
                 public void onItemClick(View view, int position) {
                     if (mIsChooseMode) {    //选择模式
-                        view.setSelected(!view.isSelected());
-                        if (view.isSelected()) {
-                            addSelectedItem(position);
-                        } else {
-                            removeSelectedItem(position);
-                        }
+                        NoteListViewHolder holder = (NoteListViewHolder) view.getTag();
+                        holder.mCbCheck.toggle();
+//                        view.setSelected(!view.isSelected());
+//                        if (view.isSelected()) {
+//                            addSelectedItem(position);
+//                        } else {
+//                            removeSelectedItem(position);
+//                        }
                     } else {
                         showNoteInfo(mNotes.get(position));
                     }
@@ -1483,12 +1461,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     moveNotes(mSelectedList);
                     break;
                 case R.id.action_delete:    //删除
-                    handleDeleteNote(mSelectedList);
+                    NoteUtil.handleDeleteNote(mContext, mSelectedList, mHasDeleteOpt);
                     break;
                 case R.id.action_share:    //分享
                     break;
                 case R.id.action_info:    //详情
-                    showInfo(mSelectedList.get(0));
+                    NoteUtil.showInfo(mContext, mSelectedList.get(0));
                     break;
             }
             outActionMode(true);
@@ -1656,6 +1634,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         ImageView mIvIcon;
         TextView mTvContent;
         TextView mTvTime;
+        CheckBox mCbCheck;
 
         public NoteListViewHolder(View itemView) {
             super(itemView);
@@ -1663,6 +1642,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mIvIcon = (ImageView) itemView.findViewById(R.id.iv_icon);
             mTvContent = (TextView) itemView.findViewById(R.id.tv_content);
             mTvTime = (TextView) itemView.findViewById(R.id.tv_time);
+            mCbCheck = (CheckBox) itemView.findViewById(R.id.cb_check);
         }
     }
     
@@ -1675,6 +1655,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         private OnItemLongClickListener mOnItemLongClickListener;
         
         private OnItemClickListener mOnItemClickListener;
+        
+        private OnCheckedChangeListener mOnCheckedChangeListener;
 
         public NoteListAdapter(Context context, List<NoteInfo> list) {
             this.mContext = context;
@@ -1690,6 +1672,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             this.mOnItemClickListener = onItemClickListener;
         }
 
+        public void setOnCheckedChangeListener(OnCheckedChangeListener onCheckedChangeListener) {
+            this.mOnCheckedChangeListener = onCheckedChangeListener;
+        }
+
         @Override
         public NoteListViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = mLayoutInflater.inflate(R.layout.item_main_list, parent, false);
@@ -1699,14 +1685,28 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         @Override
         public void onBindViewHolder(final NoteListViewHolder holder, int position) {
             NoteInfo note = mList.get(position);
+            holder.itemView.setTag(holder);
             if (note != null) {
-                
-                if (!mIsChooseMode) {
-                    holder.itemView.setSelected(false);
+                holder.mCbCheck.setOnCheckedChangeListener(null);
+                if (mIsChooseMode) {    //选择模式
+                    boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(note);
+                    showCheckbox(holder.mCbCheck);
+                    holder.mCbCheck.setSelected(checked);
+                } else {
+                    hideCheckbox(holder.mCbCheck);
                 }
                 
                 holder.mTvContent.setText(note.getContent());
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
+
+                holder.mCbCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        if (mOnCheckedChangeListener != null) {
+                            mOnCheckedChangeListener.onCheckedChanged(buttonView, holder.getAdapterPosition(), isChecked);
+                        }
+                    }
+                });
                 
                 holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                     @Override
@@ -1730,6 +1730,26 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             }
         }
 
+        /**
+         * 显示复选框
+         * @param checkBox
+         */
+        public void showCheckbox(CheckBox checkBox) {
+            if (checkBox.getVisibility() != View.VISIBLE) {
+                checkBox.setVisibility(View.VISIBLE);
+            }
+        }
+
+        /**
+         * 隐藏复选框
+         * @param checkBox
+         */
+        public void hideCheckbox(CheckBox checkBox) {
+            if (checkBox.getVisibility() == View.VISIBLE) {
+                checkBox.setVisibility(View.GONE);
+            }
+        }
+        
         @Override
         public int getItemCount() {
             return mList == null ? 0 : mList.size();
@@ -1868,7 +1888,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         handleDeleteNote(note);
                         break;
                     case R.id.action_info:  //详情
-                        showInfo(note);
+                        NoteUtil.showInfo(mContext, note);
                         break;
                     case R.id.action_move:  //移动
                         moveNote(note);
@@ -1987,6 +2007,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                                 List<NoteInfo> noteList = (List<NoteInfo>) data;
                                 deleteNotes(noteList, false);
                             }
+                            saveDeleteOpt();
                             break;
                         case MOVE:    //移动到其他文件夹
                             Log.d(TAG, "------moveNote----" + noteInfo);

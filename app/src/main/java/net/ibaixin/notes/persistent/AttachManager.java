@@ -11,7 +11,10 @@ import net.ibaixin.notes.db.observer.Observer;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.SyncState;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.log.Log;
+
+import java.util.List;
 
 /**
  * 附件的数据库服务层
@@ -123,5 +126,45 @@ public class AttachManager extends Observable<Observer> {
             return true;
         }
         return false;
+    }
+
+    /**
+     * 移除指定的附件记录，只删除数据库记录，彻底删除
+     * @param sidList 附件的sid集合
+     * @return
+     */
+    public boolean removeAttachs(List<String> sidList) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+
+        int size = sidList.size();
+        String selection = null;
+        String[] selectionArgs = new String[size];
+        if (size == 1) { //只有一个附件
+            selection = Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID + " = ?";
+            selectionArgs[0] = sidList.get(0);
+        } else {    //多个附件
+            StringBuilder sb = new StringBuilder(Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID).append(" in (");
+            for (int i = 0; i < size; i++) {
+                String sid = sidList.get(i);
+                selectionArgs[i] = sid;
+                sb.append("?").append(Constants.TAG_COMMA);
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            sb.append(")");
+            selection = sb.toString();
+        }
+        db.beginTransaction();
+        int row = 0;
+        try {
+            row = db.delete(Provider.AttachmentColumns.TABLE_NAME, selection, selectionArgs);
+            Log.d(TAG, "--removeAttachs---success--list---" + sidList);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "--removeAttachs--error--" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        return row > 0;
+
     }
 }

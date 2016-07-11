@@ -169,6 +169,7 @@ public class NoteManager extends Observable<Observer> {
             notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, note);
             return true;
         } else {
+            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, null);
             Log.w(TAG, "-------deleteNote---failed----");
             return false;
         }
@@ -309,25 +310,7 @@ public class NoteManager extends Observable<Observer> {
             rowId = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
             updateFolderCount(note, true);
 
-            if (attachList != null && attachList.size() > 0) {  //有附件，则与缓存中比较
-                //更新附件的noteid
-                Log.d(TAG, "--updateAttachNote--list---" + attachList);
-                updateAttachNote(db, attachList, note.getSId());
-                if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
-                    //删除多余的附件
-                    cacheList.removeAll(attachList);
-                    if (cacheList.size() > 0) { //删除了还有多余的附件
-                        Log.d(TAG, "--deleteAttachs--list---" + cacheList);
-                        deleteAttachs(db, cacheList);
-                    }
-                }
-            } else {    //笔记中实际没有附件
-                if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
-                    //删除多余的附件
-                    Log.d(TAG, "--deleteAttachs--list---" + cacheList);
-                    deleteAttachs(db, cacheList);
-                }
-            }
+            updateTextAttach(db, note, cacheList, attachList);
             
             db.setTransactionSuccessful();
         } catch (Exception e) {
@@ -493,7 +476,7 @@ public class NoteManager extends Observable<Observer> {
      * @update 2016/6/18 16:46
      * @version: 1.0.0
      */
-    public boolean updateNote(NoteInfo note) {
+    public boolean updateNote(NoteInfo note, List<String> cacheList, List<String> attachList) {
         ContentValues values = new ContentValues();
         String content = note.getContent();
         if (!TextUtils.isEmpty(content)) {
@@ -545,6 +528,9 @@ public class NoteManager extends Observable<Observer> {
             int row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
             if (row > 0) {
                 updateFolder(note);
+
+                updateTextAttach(db, note, cacheList, attachList);
+                
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, note);
                 return true;
             } else {
@@ -552,6 +538,35 @@ public class NoteManager extends Observable<Observer> {
             }
         } else {
             return true;
+        }
+    }
+
+    /**
+     * 更新文本中的附件信息
+     * @param db
+     * @param note
+     * @param cacheList
+     * @param attachList
+     */
+    private void updateTextAttach(SQLiteDatabase db, NoteInfo note, List<String> cacheList, List<String> attachList) {
+        if (attachList != null && attachList.size() > 0) {  //有附件，则与缓存中比较
+            //更新附件的noteid
+            Log.d(TAG, "--updateAttachNote--list---" + attachList);
+            updateAttachNote(db, attachList, note.getSId());
+            if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
+                //删除多余的附件
+                cacheList.removeAll(attachList);
+                if (cacheList.size() > 0) { //删除了还有多余的附件
+                    Log.d(TAG, "--deleteAttachs--list---" + cacheList);
+                    deleteAttachs(db, cacheList);
+                }
+            }
+        } else {    //笔记中实际没有附件
+            if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
+                //删除多余的附件
+                Log.d(TAG, "--deleteAttachs--list---" + cacheList);
+                deleteAttachs(db, cacheList);
+            }
         }
     }
 

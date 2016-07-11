@@ -2,16 +2,23 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <group android:id="@+id/group_edit_type" android:orderInCategory="100" android:visible="false">
+
+        <item
+            android:id="@+id/action_save"
+            android:title="@string/action_save"
+            android:icon="@drawable/ic_action_save_white"
+            app:showAsAction="always"/>
+
+        <item
+            android:id="@+id/action_photo"
+            android:icon="@drawable/ic_action_photo"
+            android:title="@string/action_photo"
+            app:showAsAction="always"/>
+        
         <item
             android:id="@+id/action_attach"
             android:title="@string/action_attach"
             android:icon="@drawable/ic_action_attach"
-            app:showAsAction="always"/>
-
-        <item
-            android:id="@+id/action_camera"
-            android:title="@string/action_camera"
-            android:icon="@drawable/ic_action_camera"
             app:showAsAction="always"/>
 
         <item
@@ -25,6 +32,10 @@
             android:id="@+id/action_edit"
             android:title="@string/action_edit"
             android:icon="@drawable/ic_create"
+            app:showAsAction="always"/>
+        <item
+            android:id="@+id/action_view_more"
+            android:title="@string/action_more"
             app:showAsAction="always"/>
     </group>
     
