@@ -145,6 +145,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     //选择的笔记集合
     private List<NoteInfo> mSelectedList;
 
+    /**
+     * 新建按钮
+     */
+    private FloatingActionButton mFab;
+    
     @Override
     protected int getContentView() {
         return R.layout.activity_main;
@@ -153,9 +158,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     @Override
     protected void initView() {
         //初始化主界面右下角编辑按钮
-        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        if (fab != null) {
-            fab.setOnClickListener(new View.OnClickListener() {
+        mFab = (FloatingActionButton) findViewById(R.id.fab);
+        if (mFab != null) {
+            mFab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     Intent intent = new Intent(mContext, NoteEditActivity.class);
@@ -208,10 +213,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mNavAdapter = new NavViewAdapter(this, mFolders);
             mNavAdapter.setItemClickListener(new OnItemClickListener() {
                 @Override
-                public void onItemClick(View view, int position) {
+                public void onItemClick(View view) {
+                    Integer pos = (Integer) view.getTag();
+                    if (pos == null) {
+                        return;
+                    }
                     view.setSelected(true);
-                    
-                    Folder folder = mFolders.get(position);
+                    Folder folder = mFolders.get(pos);
                     selectFolder(folder);
                     
                     //退出选择模式
@@ -1216,6 +1224,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             SystemUtil.makeShortToast(R.string.folder_move_no_more);
         }
     }
+
+    /**
+     * 选择模式下每一项的选择事件
+     * @param buttonView
+     * @param isChecked
+     */
+    private void handleItemCheck(CompoundButton buttonView, boolean isChecked) {
+        Integer pos = (Integer) buttonView.getTag();
+        if (pos == null) {
+            return;
+        }
+        if (isChecked) {
+            addSelectedItem(pos);
+        } else {
+            removeSelectedItem(pos);
+        }
+    }
     
     /**
      * 初始化note的适配器
@@ -1226,63 +1251,90 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private void initNoteAdapter(boolean isGridStyle) {
         if (isGridStyle) {
             mNoteGridAdapter = new NoteGridAdapter(mContext, mNotes);
+            mNoteGridAdapter.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    handleItemCheck(buttonView, isChecked);
+                }
+            });
             mNoteGridAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
                 @Override
-                public boolean onItemLongClick(View view, int position) {
-                    mIsChooseMode = true;
-                    return false;
+                public boolean onItemLongClick(View view) {
+                    Integer pos = (Integer) view.getTag(R.integer.item_tag_data);
+
+                    if (pos == null) {
+                        return false;
+                    }
+
+                    NoteGridViewHolder holder = (NoteGridViewHolder) view.getTag();
+                    //初始化actionMode
+                    initActionMode();
+
+                    addSelectedItem(pos);
+
+                    if (holder.mCbCheck.getVisibility() != View.VISIBLE) {
+                        mNoteGridAdapter.notifyDataSetChanged();
+                    }
+                    return true;
                 }
             });
             mNoteGridAdapter.setOnItemClickListener(new OnItemClickListener() {
                 @Override
-                public void onItemClick(View view, int position) {
-                    showNoteInfo(mNotes.get(position));
+                public void onItemClick(View view) {
+                    if (mIsChooseMode) {    //选择模式
+                        NoteGridViewHolder holder = (NoteGridViewHolder) view.getTag();
+                        holder.mCbCheck.toggle();
+                    } else {
+                        Integer pos = (Integer) view.getTag(R.integer.item_tag_data);
+                        if (pos == null) {
+                            return;
+                        }
+                        showNoteInfo(mNotes.get(pos));
+                    }
                 }
             });
         } else {
             mNoteListAdapter = new NoteListAdapter(mContext, mNotes);
             mNoteListAdapter.setOnCheckedChangeListener(new OnCheckedChangeListener() {
                 @Override
-                public void onCheckedChanged(CompoundButton buttonView, int position, boolean isChecked) {
-                    if (isChecked) {
-                        addSelectedItem(position);
-                    } else {
-                        removeSelectedItem(position);
-                    }
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    handleItemCheck(buttonView, isChecked);
                 }
             });
             mNoteListAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
                 @Override
-                public boolean onItemLongClick(View view, int position) {
+                public boolean onItemLongClick(View view) {
 
+                    Integer pos = (Integer) view.getTag(R.integer.item_tag_data);
+
+                    if (pos == null) {
+                        return false;
+                    }
+
+                    NoteListViewHolder holder = (NoteListViewHolder) view.getTag();
                     //初始化actionMode
                     initActionMode();
-                    NoteListViewHolder holder = (NoteListViewHolder) view.getTag();
-                    if (!holder.mCbCheck.isSelected()) {
-                        holder.mCbCheck.setChecked(true);
-                    }
+
+                    addSelectedItem(pos);
+
                     if (holder.mCbCheck.getVisibility() != View.VISIBLE) {
-                        holder.mCbCheck.setVisibility(View.VISIBLE);
                         mNoteListAdapter.notifyDataSetChanged();
                     }
-                    
                     return true;
                 }
             });
             mNoteListAdapter.setOnItemClickListener(new OnItemClickListener() {
                 @Override
-                public void onItemClick(View view, int position) {
+                public void onItemClick(View view) {
                     if (mIsChooseMode) {    //选择模式
                         NoteListViewHolder holder = (NoteListViewHolder) view.getTag();
                         holder.mCbCheck.toggle();
-//                        view.setSelected(!view.isSelected());
-//                        if (view.isSelected()) {
-//                            addSelectedItem(position);
-//                        } else {
-//                            removeSelectedItem(position);
-//                        }
                     } else {
-                        showNoteInfo(mNotes.get(position));
+                        Integer pos = (Integer) view.getTag(R.integer.item_tag_data);
+                        if (pos == null) {
+                            return;
+                        }
+                        showNoteInfo(mNotes.get(pos));
                     }
                 }
             });
@@ -1298,7 +1350,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             if (mSelectedList == null) {
                 mSelectedList = new LinkedList<>();
             }
-            mSelectedList.add(mNotes.get(position));
+            NoteInfo note = mNotes.get(position);
+            if (mSelectedList.contains(note)) {
+                return;
+            }
+            mSelectedList.add(note);
             mActionMode.setTitle(getSelectedTitle(mSelectedList.size(), mNotes.size()));
             
             if (mSelectedList.size() == 1) {
@@ -1318,7 +1374,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             if (mSelectedList == null) {
                 mSelectedList = new LinkedList<>();
             }
-            mSelectedList.remove(mNotes.get(position));
+            NoteInfo note = mNotes.get(position);
+            mSelectedList.remove(note);
             mActionMode.setTitle(getSelectedTitle(mSelectedList.size(), mNotes.size()));
             
             if (mSelectedList.isEmpty()) {  //没有选择项，则将菜单置为不可点
@@ -1383,8 +1440,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * 清除选择的项
      */
     private void clearSelectedItem() {
+        mIsChooseMode = false;
         if (mSelectedList != null) {
             mSelectedList.clear();
+        }
+        if (!mFab.isShown()) {
+            mFab.show();
+        }
+        //允许侧滑
+        if (mNavDrawer != null) {
+            mNavDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         }
     }
 
@@ -1395,6 +1460,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         if (!mIsChooseMode) {
             mIsChooseMode = true;
             mActionMode = startSupportActionMode(new ActionModeCallbackImpl());
+            
+            if (mFab.isShown()) {
+                mFab.hide();
+            }
+            
+            //禁止侧滑
+            if (mNavDrawer != null) {
+                mNavDrawer.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+            }
         }
     }
 
@@ -1405,7 +1479,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         if (!mIsChooseMode) {
             return;
         }
-        mIsChooseMode = false;
 
         //清除选择的项
         clearSelectedItem();
@@ -1507,6 +1580,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
+                            outActionMode(false);
                             mIsGridStyle = !mIsGridStyle;
                             doInbackground(new Runnable() {
                                 @Override
@@ -1591,25 +1665,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         @Override
         public NavTextViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = mLayoutInflater.inflate(R.layout.nav_list_item, parent, false);
-            return new NavTextViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(final NavTextViewHolder holder, final int position) {
-            Folder folder = mList.get(position);
-            final String folderId = folder.getSId();
-            boolean selected = false;
-            if (mSelectedItem != null && mSelectedItem.equals(folderId)) {
-                selected = true;
-            } else if (TextUtils.isEmpty(mSelectedItem) && TextUtils.isEmpty(folderId)) {
-                selected = true;
-            }
-            holder.itemView.setSelected(selected);
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
+            view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mItemClickListener != null) {
-                        int tPos = holder.getAdapterPosition();
+                        String folderId = (String) v.getTag(R.integer.item_tag_data);
                         Folder pForder = new Folder();
                         pForder.setSId(mSelectedItem);
                         int preSelectIndex = mFolders.indexOf(pForder);
@@ -1617,10 +1677,28 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         if (preSelectIndex != -1) {
                             notifyItemChanged(preSelectIndex);
                         }
-                        mItemClickListener.onItemClick(v, tPos);
+                        mItemClickListener.onItemClick(v);
                     }
                 }
             });
+            return new NavTextViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(final NavTextViewHolder holder, final int position) {
+            Folder folder = mList.get(position);
+            final String folderId = folder.getSId();
+            holder.itemView.setTag(holder.getAdapterPosition());
+            holder.itemView.setTag(R.integer.item_tag_data, folderId);
+            boolean selected = false;
+            if (mSelectedItem != null && mSelectedItem.equals(folderId)) {
+                selected = true;
+            } else if (TextUtils.isEmpty(mSelectedItem) && TextUtils.isEmpty(folderId)) {
+                selected = true;
+            }
+            holder.itemView.setTag(holder.getAdapterPosition());
+            holder.itemView.setSelected(selected);
+            
             holder.mTextView.setText(folder.getName());
         }
 
@@ -1679,21 +1757,46 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         @Override
         public NoteListViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = mLayoutInflater.inflate(R.layout.item_main_list, parent, false);
-            return new NoteListViewHolder(view);
+            view.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    if (mOnItemLongClickListener != null) {
+                        return mOnItemLongClickListener.onItemLongClick(v);
+                    } else {
+                        return false;
+                    }
+                }
+            });
+
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mOnItemClickListener != null) {
+                        mOnItemClickListener.onItemClick(v);
+                    }
+                }
+            });
+            NoteListViewHolder holder = new NoteListViewHolder(view);
+            view.setTag(holder);
+            return holder;
         }
 
         @Override
         public void onBindViewHolder(final NoteListViewHolder holder, int position) {
             NoteInfo note = mList.get(position);
-            holder.itemView.setTag(holder);
+            holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
+            holder.mCbCheck.setTag(holder.getAdapterPosition());
             if (note != null) {
                 holder.mCbCheck.setOnCheckedChangeListener(null);
                 if (mIsChooseMode) {    //选择模式
                     boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(note);
                     showCheckbox(holder.mCbCheck);
-                    holder.mCbCheck.setSelected(checked);
+                    holder.mCbCheck.setChecked(checked);
                 } else {
                     hideCheckbox(holder.mCbCheck);
+                    if (holder.mCbCheck.isChecked()) {
+                        holder.mCbCheck.setChecked(false);
+                    }
                 }
                 
                 holder.mTvContent.setText(note.getContent());
@@ -1703,30 +1806,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                         if (mOnCheckedChangeListener != null) {
-                            mOnCheckedChangeListener.onCheckedChanged(buttonView, holder.getAdapterPosition(), isChecked);
+                            mOnCheckedChangeListener.onCheckedChanged(buttonView, isChecked);
                         }
                     }
                 });
                 
-                holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        if (mOnItemLongClickListener != null) {
-                            return mOnItemLongClickListener.onItemLongClick(v, holder.getAdapterPosition());
-                        } else {
-                            return false;
-                        }
-                    }
-                });
-                
-                holder.itemView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (mOnItemClickListener != null) {
-                            mOnItemClickListener.onItemClick(v, holder.getAdapterPosition());
-                        }
-                    }
-                });
             }
         }
 
@@ -1761,6 +1845,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         TextView mTvTitle;
         TextView mTvSumary;
         TextView mTvTime;
+        CheckBox mCbCheck;
 
         public NoteGridViewHolder(View itemView) {
             super(itemView);
@@ -1769,6 +1854,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mTvTitle = (TextView) itemView.findViewById(R.id.tv_title);
             mTvSumary = (TextView) itemView.findViewById(R.id.tv_summary);
             mTvTime = (TextView) itemView.findViewById(R.id.tv_time);
+            mCbCheck = (CheckBox) itemView.findViewById(R.id.cb_check);
         }
     }
 
@@ -1780,6 +1866,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         private OnItemLongClickListener mOnItemLongClickListener;
         
         private OnItemClickListener mOnItemClickListener;
+
+        private OnCheckedChangeListener mOnCheckedChangeListener;
 
         public NoteGridAdapter(Context context, List<NoteInfo> list) {
             this.mContext = context;
@@ -1795,39 +1883,69 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             this.mOnItemClickListener = onItemClickListener;
         }
 
+        public void setOnCheckedChangeListener(OnCheckedChangeListener onCheckedChangeListener) {
+            this.mOnCheckedChangeListener = onCheckedChangeListener;
+        }
+
         @Override
         public NoteGridViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = mLayoutInflater.inflate(R.layout.item_main_grid, parent, false);
-            return new NoteGridViewHolder(view);
+            view.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    if (mOnItemLongClickListener != null) {
+                        return mOnItemLongClickListener.onItemLongClick(v);
+                    }
+                    return false;
+                }
+            });
+
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mOnItemClickListener != null) {
+                        mOnItemClickListener.onItemClick(v);
+                    }
+                }
+            });
+            NoteGridViewHolder holder = new NoteGridViewHolder(view);
+            view.setTag(holder);
+            return holder;
         }
 
         @Override
         public void onBindViewHolder(final NoteGridViewHolder holder, int position) {
             NoteInfo note = mList.get(position);
+            holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
+            holder.mCbCheck.setTag(holder.getAdapterPosition());
             if (note != null) {
-                holder.mIvOverflow.setOnClickListener(new GridItemClickListener(note));
+                
+                if (mIsChooseMode) {
+                    SystemUtil.hideView(holder.mIvOverflow);
+                    SystemUtil.showView(holder.mCbCheck);
+
+                    holder.mCbCheck.setOnCheckedChangeListener(null);
+
+                    boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(note);
+                    holder.mCbCheck.setChecked(checked);
+
+                    holder.mCbCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                            if (mOnCheckedChangeListener != null) {
+                                mOnCheckedChangeListener.onCheckedChanged(buttonView, isChecked);
+                            }
+                        }
+                    });
+                } else {
+                    SystemUtil.showView(holder.mIvOverflow);
+                    SystemUtil.hideView(holder.mCbCheck);
+                    holder.mIvOverflow.setOnClickListener(new GridItemClickListener(note));
+                }
+                
                 holder.mTvTitle.setText(note.getTitle());
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
                 holder.mTvSumary.setText(note.getContent());
-                
-                holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        if (mOnItemLongClickListener != null) {
-                            mOnItemLongClickListener.onItemLongClick(v, holder.getAdapterPosition());
-                        }
-                        return false;
-                    }
-                });
-                
-                holder.itemView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (mOnItemClickListener != null) {
-                            mOnItemClickListener.onItemClick(v, holder.getAdapterPosition());
-                        }
-                    }
-                });
                 
             }
         }

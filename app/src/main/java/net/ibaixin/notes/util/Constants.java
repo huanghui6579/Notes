@@ -6,13 +6,15 @@ package net.ibaixin.notes.util;
  * @version: 0.0.1
  */
 public class Constants {
-    public static final String APP_ROOT_NAME = "IbaiXinNotes";
+    public static final String APP_ROOT_NAME = "YunXinNotes";
     public static final String LOG_SUBFFIX = ".log";
-    public static final String LOG_DIR = "log";
+    public static final String APP_LOG_DIR = "log";
 
-    public static final String DEAULT_APP_FOLDER_NAME = "YunXinNotes";
-    public static final String DEAULT_APP_DOWNLOAD_FOLDER_NAME = "Download";
+    public static final String APP_DOWNLOAD_FOLDER_NAME = "Download";
+    public static final String APP_CAMERA_FOLDER_NAME = "Camera";
+    public static final String APP_VOICE_FOLDER_NAME = "Voice";
     public static final String DATA_MSG_ATT_FOLDER_NAME = "attach";
+    public static final String APP_NOTES_FOLDER_NAME = "notes";
 
     /**
      * 系统默认手动生成的缩略图缩放参造宽度100
@@ -58,6 +60,11 @@ public class Constants {
      * 英文的逗号“,”
      */
     public static final String TAG_COMMA = ",";
+
+    /**
+     * 缩进
+     */
+    public static final String TAG_INDENT = "\t";
 
     /**
      * 列表的标签的长度

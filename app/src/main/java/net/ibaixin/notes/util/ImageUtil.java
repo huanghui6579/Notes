@@ -12,8 +12,11 @@ import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 import net.ibaixin.notes.util.log.Log;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * 图片的工具类
@@ -37,6 +40,20 @@ public class ImageUtil {
      */
     public static boolean generateThumbImage(String imagePath, String savePath) {
         return generateThumbImage(imagePath, null/*new ImageSize(Constants.IMAGE_THUMB_WIDTH, Constants.IMAGE_THUMB_HEIGHT)*/, savePath);
+    }
+
+    /**
+     * 获取图片的缩略图
+     * @param imagePath 原始图片的路径，含完整文件名
+     * @param savePath 存储缩略图的路径，包含文件名
+     * @param compress 是否需要进行质量压缩                
+     * @return 缩略图
+     * @author tiger
+     * @version 1.0.0
+     * @update 2015年5月3日 下午1:51:01
+     */
+    public static boolean generateThumbImage(String imagePath, String savePath, boolean compress) {
+        return generateThumbImage(imagePath, null/*new ImageSize(Constants.IMAGE_THUMB_WIDTH, Constants.IMAGE_THUMB_HEIGHT)*/, savePath, compress);
     }
 
     /**
@@ -98,11 +115,26 @@ public class ImageUtil {
      * @update 2015年5月3日 下午1:51:01
      */
     public static boolean generateThumbImage(String imagePath, ImageSize imageSize, String savePath) {
+        return generateThumbImage(imagePath, imageSize, savePath, true);
+    }
+
+    /**
+     * 获取图片的缩略图
+     * @param imagePath 原始图片的路径，含完整文件名
+     * @param imageSize 指定的缩略图的参考尺寸
+     * @param savePath 存储缩略图的路径，包含文件名
+     * @param compress 是否需要进行质量压缩                     
+     * @return 缩略图
+     * @author tiger
+     * @version 1.0.0
+     * @update 2015年5月3日 下午1:51:01
+     */
+    public static boolean generateThumbImage(String imagePath, ImageSize imageSize, String savePath, boolean compress) {
         if (imagePath != null) {
             Bitmap bitmap = loadImageThumbnailsSync(ImageDownloader.Scheme.FILE.wrap(imagePath), imageSize);
             if (bitmap != null) {
                 try {
-                    return compressImage(bitmap, savePath);
+                    return compressImage(bitmap, savePath, compress);
                 } catch (Exception e) {
                     Log.e(TAG, e.getMessage());
                 }
@@ -153,7 +185,23 @@ public class ImageUtil {
      * @update 2015年8月21日 上午10:01:23
      */
     public static boolean compressImage(Bitmap bitmap, String savePath) {
-        return compressImage(bitmap, savePath, 10);
+        return compressImage(bitmap, savePath, false);
+    }
+
+    /**
+     * 按质量压缩图片,默认10%
+     * @param bitmap 要压缩的图片
+     * @param savePath 要保存压缩后的图片的全路径，包含文件名
+     * @param compress 是否需要进行质量压缩                 
+     * @return 是否压缩成功
+     * @update 2015年8月21日 上午10:01:23
+     */
+    public static boolean compressImage(Bitmap bitmap, String savePath, boolean compress) {
+        int quality = 100;
+        if (compress) {
+            quality = 10;
+        }
+        return compressImage(bitmap, savePath, quality);
     }
 
     /**
@@ -206,4 +254,27 @@ public class ImageUtil {
                 .build();
         return options;
     }
+
+    /**
+     * 保存bitmap到本地文件
+     * @param bitmap 图片对象
+     * @param saveFile 本地的文件
+     * @return
+     * @throws IOException
+     */
+    public static boolean saveBitmap(Bitmap bitmap, File saveFile) throws IOException {
+        if(bitmap == null || saveFile == null) {
+            return false;
+        }
+        try {
+            BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(saveFile));
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os);
+            os.flush();
+            os.close();
+        } finally {
+            bitmap.recycle();
+        }
+        return true;
+    }
+    
 }

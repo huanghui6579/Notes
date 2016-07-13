@@ -59,10 +59,14 @@ public abstract class BaseActivity extends SwipeBackActivity {
         setContentView(getContentView());
 
         initToolBar();
-
+        
         initView();
 
         initData();
+        
+        if (mToolBar != null) {
+            updateToolBar(mToolBar);
+        }
     }
     
     /**
@@ -258,6 +262,13 @@ public abstract class BaseActivity extends SwipeBackActivity {
                 actionBar.setDisplayHomeAsUpEnabled(mShowHomeUp);
             }
         }
+    }
+
+    /**
+     * 更新toolbar的各种信息
+     */
+    protected void updateToolBar(Toolbar toolbar) {
+        //TODO 子类酌情实现
     }
     
     /**

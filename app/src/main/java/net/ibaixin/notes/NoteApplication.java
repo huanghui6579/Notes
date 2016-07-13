@@ -19,6 +19,8 @@ import net.ibaixin.notes.util.log.FilePathGenerator;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.util.log.LogFilter;
 
+import java.io.IOException;
+
 /**
  * @author huanghui1
  * @update 2016/2/24 19:28
@@ -74,7 +76,12 @@ public class NoteApplication extends Application {
         Log.setLog2FileEnabled(BuildConfig.LOG_TO_FILE_ENABLE);
         Log.addLogFilter(new LogFilter.LevelFilter(Log.LEVEL.valueOf(BuildConfig.LOG_TO_FILE_LEVEL)));
         Log.setGlobalTag(Constants.APP_ROOT_NAME);
-        Log.setFilePathGenerator(new FilePathGenerator.DateFilePathGenerator(SystemUtil.getLogPath(), Constants.LOG_DIR, Constants.LOG_SUBFFIX));
+        try {
+            Log.setFilePathGenerator(new FilePathGenerator.DateFilePathGenerator(SystemUtil.getLogPath(), Constants.APP_LOG_DIR, Constants.LOG_SUBFFIX));
+        } catch (IOException e) {
+            Log.e(TAG, "---initLog---error---" + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public String getDefaultFolderSid() {

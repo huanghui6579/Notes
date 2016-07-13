@@ -278,6 +278,14 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
             return tContent;
         }
     }
+
+    /**
+     * 判断该笔记是否为空
+     * @return
+     */
+    public boolean isEmpty() {
+        return TextUtils.isEmpty(hash);
+    }
     
     public int getId() {
         return id;

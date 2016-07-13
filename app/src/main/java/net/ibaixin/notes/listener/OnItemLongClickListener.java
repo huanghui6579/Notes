@@ -12,7 +12,6 @@ public interface OnItemLongClickListener {
     /**
      * 长按事件
      * @param view
-     * @param position
      */
-    public boolean onItemLongClick(View view, int position);
+    public boolean onItemLongClick(View view);
 }

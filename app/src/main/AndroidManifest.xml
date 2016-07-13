@@ -8,7 +8,10 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <!-- 读SDCard数据权限 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- 获取手机状态的权限 -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!-- 添加录音权限 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <application
         android:name=".NoteApplication"
@@ -33,7 +36,8 @@
             android:name=".ui.FolderListActivity"
             android:label="@string/lable_folder_list" />
 
-        <service android:name=".service.CoreService" android:exported="false" />
+        <service android:name=".service.CoreService"
+            android:exported="false" />
 
         <activity android:name=".ui.FolderEditActivity"
             android:label="@string/lable_folder_edit"

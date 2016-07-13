@@ -279,8 +279,12 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         mRecyclerView.setAdapter(mFolderAdapter);
         mFolderAdapter.setOnItemLongClickListener(new OnItemLongClickListener() {
             @Override
-            public boolean onItemLongClick(View view, int position) {
-                final Folder folder = mFolders.get(position);
+            public boolean onItemLongClick(View view) {
+                Integer pos = (Integer) view.getTag(R.integer.item_tag_data);
+                if (pos == null) {
+                    return false;
+                }
+                final Folder folder = mFolders.get(pos);
                 if (folder != null) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
                     builder.setTitle(folder.getName())
@@ -303,8 +307,12 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         });
         mFolderAdapter.setOnItemClickListener(new OnItemClickListener() {
             @Override
-            public void onItemClick(View view, int position) {
-                final Folder folder = mFolders.get(position);
+            public void onItemClick(View view) {
+                Integer pos = (Integer) view.getTag(R.integer.item_tag_data);
+                if (pos == null) {
+                    return;
+                }
+                final Folder folder = mFolders.get(pos);
                 if (folder == null || (mFolders.size() == 1 && folder.isEmpty())) {
                     return;
                 }
@@ -467,37 +475,82 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         @Override
         public FolderViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = mLayoutInflater.inflate(R.layout.item_folder_layout, parent, false);
-            return new FolderViewHolder(view);
+            view.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    Boolean isUnPreFolder = (Boolean) v.getTag(R.integer.item_tag_data);
+                    if (isUnPreFolder == null) {
+                        return false;
+                    }
+                    if (!isUnPreFolder) {
+                        if (mOnItemLongClickListener != null) {
+                            return mOnItemLongClickListener.onItemLongClick(v);
+                        }
+                    }
+                    return false;
+                }
+            });
+
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mOnItemClickListener != null) {
+                        mOnItemClickListener.onItemClick(v);
+                    }
+                }
+            });
+
+
+            FolderViewHolder holder = new FolderViewHolder(view);
+
+            holder.mIvState.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Boolean isUnPreFolder = (Boolean) v.getTag(R.integer.item_tag_data);
+                    if (isUnPreFolder == null) {
+                        return;
+                    }
+                    if (isUnPreFolder) {
+                        mFolderManager.updateShowState(mContext, !isShowFolderAll());
+                        //更新后
+                        if (isShowFolderAll()) {    //显示“所有文件夹项”
+                            ((ImageView)v).setImageResource(R.drawable.ic_visibility);
+                        } else {
+                            ((ImageView)v).setImageResource(R.drawable.ic_visibility_off);
+                        }
+                    }
+                }
+            });
+
+            // Start a drag whenever the handle view it touched
+            holder.mIvState.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    Boolean isUnPreFolder = (Boolean) v.getTag(R.integer.item_tag_data);
+                    if (isUnPreFolder == null) {
+                        return false;
+                    }
+                    FolderViewHolder viewHolder = (FolderViewHolder) v.getTag();
+                    if (!isUnPreFolder && MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+                        mDragStartListener.onStartDrag(viewHolder);
+                    }
+                    return false;
+                }
+            });
+
+            holder.mIvState.setTag(holder);
+            return holder;
         }
 
         @Override
         public void onBindViewHolder(final FolderViewHolder holder, int position) {
             final Folder folder = mList.get(position);
             holder.itemView.setTag(holder);
+            holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
             if (folder != null) {
                 //是否是保存在数据库的文件夹，false：没有保存，如比“所有文件夹”
                 final boolean isUnPersistentFolder = folder.isEmpty();
-                holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        if (!isUnPersistentFolder) {
-                            if (mOnItemLongClickListener != null) {
-                                return mOnItemLongClickListener.onItemLongClick(v, holder.getAdapterPosition());
-                            }
-                        }
-                        return false;
-                    }
-                });
-                
-                holder.itemView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (mOnItemClickListener != null) {
-                            mOnItemClickListener.onItemClick(v, holder.getAdapterPosition());
-                        }
-                    }
-                });
-                
+                holder.mIvState.setTag(R.integer.item_tag_data, isUnPersistentFolder);
                 if (mTextColor == 0) {
                     mTextColor = holder.mTvName.getCurrentTextColor();
                 }
@@ -516,32 +569,6 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                     holder.mIvState.setImageResource(R.drawable.ic_reorder_grey);
                     
                 }
-
-                holder.mIvState.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (isUnPersistentFolder) {
-                            mFolderManager.updateShowState(mContext, !isShowFolderAll());
-                            //更新后
-                            if (isShowFolderAll()) {    //显示“所有文件夹项”
-                                holder.mIvState.setImageResource(R.drawable.ic_visibility);
-                            } else {
-                                holder.mIvState.setImageResource(R.drawable.ic_visibility_off);
-                            }
-                        }
-                    }
-                });
-                
-                // Start a drag whenever the handle view it touched
-                holder.mIvState.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (!isUnPersistentFolder && MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
-                            mDragStartListener.onStartDrag(holder);
-                        }
-                        return false;
-                    }
-                });
                 
                 holder.mTvName.setText(folder.getName());
                 holder.mTvCount.setText(String.valueOf(folder.getCount()));

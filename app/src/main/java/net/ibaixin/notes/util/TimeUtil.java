@@ -10,6 +10,9 @@ import java.util.Locale;
  * @version: 0.0.1
  */
 public class TimeUtil {
+    
+    public static final String PATTERN_FILE_TIME = "yyyy-MM-dd HH:mm:ss";
+    
     private TimeUtil() {}
     
     /**
@@ -19,7 +22,17 @@ public class TimeUtil {
      * @version: 1.0.0
      */
     public static String formatNoteTime(long time) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+        return formatTime(time, "yyyy-MM-dd HH:mm");
+    }
+
+    /**
+     * 格式化时间
+     * @param time
+     * @param pattern
+     * @return
+     */
+    public static String formatTime(long time, String pattern) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(pattern, Locale.getDefault());
         return dateFormat.format(new Date(time));
     }
 }

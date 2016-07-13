@@ -10,7 +10,9 @@ import android.view.View;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
+import net.ibaixin.notes.util.TimeUtil;
 import net.ibaixin.notes.util.log.Log;
 
 import java.io.File;
@@ -130,7 +132,7 @@ public class AttchSpan extends ClickableSpan {
                         shareImage(context, filePath);
                         break;
                     case 2: //详情
-                        
+                        showInfo(context, filePath);
                         break;
                 }
             }
@@ -152,6 +154,24 @@ public class AttchSpan extends ClickableSpan {
         } else {
             SystemUtil.makeShortToast(R.string.tip_no_app_handle);
         }
+    }
+
+    /**
+     * 显示文件的详细新
+     * @param filePath
+     */
+    private void showInfo(Context context, String filePath) {
+        StringBuilder sb = new StringBuilder();
+        File file = new File(filePath);
+        String colon = context.getString(R.string.colon);
+        sb.append(context.getString(R.string.path)).append(colon).append(Constants.TAG_INDENT).append(filePath).append(Constants.TAG_ENTER)
+                .append(context.getString(R.string.size)).append(colon).append(Constants.TAG_INDENT).append(SystemUtil.formatFileSize(file.length())).append(Constants.TAG_ENTER)
+                .append(context.getString(R.string.modify_time)).append(colon).append(Constants.TAG_INDENT).append(TimeUtil.formatTime(file.lastModified(), TimeUtil.PATTERN_FILE_TIME));
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(R.string.action_info)
+                .setMessage(sb.toString())
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     class MenuItem {

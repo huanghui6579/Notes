@@ -39,6 +39,7 @@ public class AttachResolver implements Resolver {
 
             Map<String, Attach> map = (Map<String, Attach>) extra.get(0);
             if (map != null && map.size() > 0) {
+//                mHandler.post(new AnalysisTextTask(editText, text, map));
                 postTask(new AnalysisTextTask(editText, text, map));
             }
         }

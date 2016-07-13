@@ -1,5 +1,6 @@
 package net.ibaixin.notes.util;
 
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentUris;
@@ -27,14 +28,19 @@ import com.nostra13.universalimageloader.core.download.ImageDownloader;
 
 import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.richtext.AttachSpec;
+import net.ibaixin.notes.util.log.Log;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,6 +68,11 @@ public class SystemUtil {
     public static final String mAttachRegEx = "\\[" + Constants.ATTACH_PREFIX + "=([a-zA-Z0-9_]+)\\]";
 
     private static Pattern mPattern;
+
+    /**
+     * 相片名称的格式化
+     */
+    private static SimpleDateFormat mCameraNameFormat;
     
     private SystemUtil() {}
 
@@ -293,7 +304,7 @@ public class SystemUtil {
     }
     
     /**
-     * 获取应用程序的根目录
+     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes
      * @author huanghui1
      * @update 2016/3/3 10:33
      * @version: 1.0.0
@@ -313,7 +324,7 @@ public class SystemUtil {
     }
     
     /**
-     * 获取应用程序的根目录
+     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes
      * @author huanghui1
      * @update 2016/3/3 10:54
      * @version: 1.0.0
@@ -326,20 +337,164 @@ public class SystemUtil {
             return null;
         }
     }
+
+    /**
+     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes/notes
+     * @return
+     */
+    public static File getNoteDir() {
+        File file = getAppRootDir();
+        File path = null;
+        if (file != null) {
+            path = new File(file, Constants.APP_NOTES_FOLDER_NAME);
+            if (!path.exists()) {
+                path.mkdirs();
+            }
+        }
+        return path;
+    }
+
+    /**
+     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes/notes
+     * @return
+     */
+    public static String getNotePath() {
+        File file = getNoteDir();
+        if (file != null) {
+            return file.getAbsolutePath();
+        }
+        return null;
+    }
+
+    /**
+     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes/notes/#{sid}
+     * @param sid 笔记的sid
+     * @return
+     */
+    public static String getNotePath(String sid) {
+        String dir = getNotePath();
+        if (dir != null) {
+            return dir + File.separator + sid;
+        }
+        return null;
+    }
     
     /**
-     * 获取日志的路径,默认为/sdcard/IbaixinNotes/log/
+     * 获取日志的路径,默认为/sdcard/YunXinNotes/log/
      * @author huanghui1
      * @update 2016/3/3 10:58
      * @version: 1.0.0
      */
-    public static String getLogPath() {
+    public static String getLogPath() throws IOException {
         String rootPath = getAppRootPath();
         if (rootPath != null) {
-            return rootPath + File.separator + Constants.LOG_DIR;
+            return rootPath + File.separator + Constants.APP_LOG_DIR;
         } else {
             return null;
         }
+    }
+
+    /**
+     * 根据附件类型获取对应类型的存储路径,默认为/sdcard/YunXinNotes/notes/#{noteid}/#{type}
+     * @param sid
+     * @param attachType
+     * @return
+     * @throws IOException
+     */
+    public static String getAttachPath(String sid, int attachType) throws IOException {
+        String notePath = getNotePath();
+        if (notePath != null) {
+            String typeName = null;
+            switch (attachType) {
+                case Attach.IMAGE:  //图片
+                    typeName = Constants.APP_CAMERA_FOLDER_NAME;
+                    break;
+                case Attach.VOICE:  //语音
+                    typeName = Constants.APP_VOICE_FOLDER_NAME;
+                    break;
+            }
+            String path = notePath + File.separator + sid;
+            if (typeName != null) {
+                path += File.separator + typeName;
+            }
+            File file = new File(path);
+            if (!file.exists()) {
+                file.mkdirs();
+            }
+            return path;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 获取相机图片的全路径，包含文件名
+     * @param sid 笔记的sid
+     * @return
+     * @throws IOException
+     */
+    public static File getCameraFile(String sid) throws IOException {
+        return getAttachFile(sid, Attach.IMAGE);
+    }
+
+    /**
+     * 生成相机的照片，格式为IMG_20160621_120205.jpg
+     */
+    public static String generateCameraFilename() {
+        if (mCameraNameFormat == null) {
+            mCameraNameFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        }
+        return "IMG_" + mCameraNameFormat.format(new Date()) + ".jpg";
+    }
+
+    /**
+     * 生成录音的文件，格式为V20160621_120205.amr
+     * @return
+     */
+    public static String generateVoiceFilename() {
+        if (mCameraNameFormat == null) {
+            mCameraNameFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        }
+        return "V" + mCameraNameFormat.format(new Date()) + ".amr";
+    }
+
+    /**
+     * 获取附件的全路径
+     * @param sid 笔记的sid
+     * @param attachType 文件的类型
+     * @return
+     */
+    public static String getAttachFilePath(String sid, int attachType) throws IOException {
+        String filename = null;
+        switch (attachType) {
+            case Attach.IMAGE:
+                filename = generateCameraFilename();
+                break;
+            case Attach.VOICE:  //语音
+                filename = generateVoiceFilename();
+                break;
+        }
+        String attachDir = SystemUtil.getAttachPath(sid, attachType);
+        if (attachDir == null || filename == null) {
+            Log.d(TAG, "--getAttachFilePath-----error---null--");
+            return null;
+        }
+        return attachDir + File.separator + filename;
+    }
+
+    /**
+     * 获取附件
+     * @param sid 笔记的sid
+     * @param attachType 文件的类型
+     * @return
+     * @throws IOException
+     */
+    public static File getAttachFile(String sid, int attachType) throws IOException {
+        String filePath = getAttachFilePath(sid, attachType);
+        if (filePath != null) {
+            return new File(filePath);
+        }
+        return null;
     }
     
     /**
@@ -448,34 +603,12 @@ public class SystemUtil {
     }
 
     /**
-     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes
-     * @author tiger
-     * @update 2015年3月13日 上午12:00:33
-     * @return
-     */
-    public static File getDefaultAppFile() {
-        File root = new File(Environment.getExternalStorageDirectory(), Constants.DEAULT_APP_FOLDER_NAME);
-        if (!root.exists()) {
-            root.mkdirs();
-        }
-        return root;
-    }
-
-    /**
-     * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes
-     * @return
-     */
-    public static String getDefaultAppPath() {
-        return getDefaultAppFile().getAbsolutePath();
-    }
-
-    /**
      * 根据note id生成文件保存文件的路径，如:/mnt/sdcard/YunXinNotes/attach/N454212545
      * @param noteId
      * @return
      */
     public static String generateNoteAttachPath(String noteId) {
-        String root = getDefaultAppPath();
+        String root = getAppRootPath();
         StringBuilder sb = new StringBuilder(root);
         sb.append(File.separator)
                 .append(Constants.DATA_MSG_ATT_FOLDER_NAME)
@@ -758,5 +891,86 @@ public class SystemUtil {
         } else {
             SystemUtil.makeShortToast(R.string.tip_no_app_handle);
         }
+    }
+
+    /**
+     * 显示控件
+     * @param view
+     */
+    public static void showView(View view) {
+        if (view.getVisibility() != View.VISIBLE) {
+            view.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * 隐藏控件
+     * @param view
+     */
+    public static void hideView(View view) {
+        if (view.getVisibility() == View.VISIBLE) {
+            view.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * 选择图片
+     */
+    public static void choseImage(Activity activity, int requestCode) {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        if (SystemUtil.hasSdkV19()) {
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+//            intent.addCategory(Intent.CATEGORY_OPENABLE);
+        } else {
+            intent.setAction(Intent.ACTION_PICK);
+        }
+        activity.startActivityForResult(intent, requestCode);
+    }
+
+    /**
+     * 将图片添加到相册中
+     * @param image 图片文件
+     */
+    public static void galleryAddPic(Context context, File image) {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        Uri contentUri = Uri.fromFile(image);
+        mediaScanIntent.setData(contentUri);
+        context.sendBroadcast(mediaScanIntent);
+    }
+
+    /**
+     * 打开相机拍照
+     */
+    public static void openCamera(Activity activity, String sid, int requestCode) throws IOException {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);//create a intent to take picture 
+        File file = getCameraFile(sid);
+        if (file == null) {
+            Log.d(TAG, "----openCamera---getCameraFile--error---file----is--null----");
+            return;
+        }
+        //create a intent to take picture  
+        Uri uri = Uri.fromFile(file);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, uri); // set the image file name 
+        if (intent.resolveActivity(activity.getPackageManager()) != null) {
+            activity.startActivityForResult(intent, requestCode);
+        } else {
+            makeShortToast(R.string.tip_no_app_handle);
+        }
+    }
+
+    /**
+     * 格式化文件大小的显示
+     * @param size 文件的大小
+     * @return
+     */
+    public static String formatFileSize(double size) {
+        String[] units = new String[]{"B","KB","MB","GB","TB","PB"};
+        double mod = 1024.0;
+        int i = 0;
+        for (i = 0; size >= mod; i++) {
+            size /= mod;
+        }
+        return String.format(Locale.getDefault(), "%.1f", size) + units[i];
     }
 }

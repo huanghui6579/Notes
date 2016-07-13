@@ -26,10 +26,13 @@
     <string name="update_result_success">保存成功</string>
     <string name="delete_result_error">删除失败</string>
     <string name="move_result_error">移动失败</string>
+    <string name="record_error">录音失败，请检查是否有录音的权限</string>
     
     <string name="copy_success">已复制到剪贴板</string>
     <string name="tip_no_app_handle">没有安装对应的应用程序</string>
     <string name="tip_no_text">没有内容</string>
+    <string name="tip_camera_error">打开相机失败</string>
+    <string name="tip_mkfile_error">没有创建文件的权限，请允许创建文件</string>
     
     <string name="result_success">操作成功</string>
     
@@ -41,6 +44,8 @@
     <string name="sync_type_done">已同步</string>
 
     <string name="note_type">类型</string>
+    <string name="path">路径</string>
+    <string name="size">大小</string>
     <string name="note_words">字数</string>
     <string name="create_time">创建时间</string>
     <string name="modify_time">修改时间</string>

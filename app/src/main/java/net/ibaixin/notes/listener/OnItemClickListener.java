@@ -12,10 +12,9 @@ public interface OnItemClickListener {
     /**
      * 列表每一项点击的事件
      * @param view item 的view
-     * @param position 点击的位置索引            
      * @author huanghui1
      * @update 2016/2/24 19:20
      * @version: 1.0.0
      */
-    public void onItemClick(View view, int position);
+    public void onItemClick(View view);
 }

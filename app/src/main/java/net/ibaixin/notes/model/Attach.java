@@ -13,6 +13,10 @@ public class Attach {
      * 附件类型为图片
      */
     public static final int IMAGE = 1;
+    /**
+     * 附件类型为语音
+     */
+    public static final int VOICE = 2;
     
     /**
      * 主键

@@ -1,5 +1,6 @@
 package net.ibaixin.notes.ui;
 
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,8 +10,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
+import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -36,12 +40,15 @@ import android.widget.TextView;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.cache.FolderCache;
 import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.ContentObserver;
 import net.ibaixin.notes.db.observer.Observable;
+import net.ibaixin.notes.edit.recorder.AudioRecorder;
 import net.ibaixin.notes.listener.SimpleAttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.EditStep;
+import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.persistent.AttachManager;
@@ -62,6 +69,7 @@ import net.ibaixin.notes.widget.NoteEditText;
 import net.ibaixin.notes.widget.NoteLinkMovementMethod;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,6 +91,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
     
     private static final int REQ_PICK_IMAGE = 10;
+    private static final int REQ_TAKE_PIC = 11;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mOverflowPopu;
@@ -151,28 +160,50 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     //笔记的监听器
     private NoteContentObserver mNoteObserver;
 
+    /**
+     * 指定的相机拍照的文件
+     */
+    private File mAttachFile;
+
+    /**
+     * 录音器
+     */
+    private AudioRecorder mAudioRecorder;
+
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
             if (mToolbarTitleView == null) {
                 LayoutInflater inflater = LayoutInflater.from(this);
                 mToolbarTitleView = (TextView) inflater.inflate(R.layout.edit_custom_title, null);
+                mToolbarTitleView.setOnClickListener(this);
             }
             if (mToolBar != mToolbarTitleView.getParent()) {
                 mToolBar.addView(mToolbarTitleView);
             }
             mToolbarTitleView.setText(title);
-
+            if (iconResId != 0) {
+                mToolbarTitleView.setCompoundDrawablesWithIntrinsicBounds(iconResId, 0, 0, 0);
+            } else {
+                mToolbarTitleView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            }
         } else {
             if (mToolbarTitleView != null) {
                 mToolBar.removeView(mToolbarTitleView);
             }
         }
     }
-    
+
     @Override
-    protected void initToolBar() {
-        super.initToolBar();
+    protected void updateToolBar(Toolbar toolbar) {
         CharSequence title = getTitle();
+        
+        if (mFolderId != null) {
+            Folder folder = FolderCache.getInstance().getCacheFolder(mFolderId);
+            if (folder != null) {
+                title = folder.getName();
+            }
+        }
+        
         setTitle(null);
         setCustomTitle(title, 0);
     }
@@ -317,6 +348,22 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 获取笔记的sid,如果没有，则生成
+     * @return
+     */
+    private String getNoteSid() {
+        String sid = null;
+        if (mNote == null) {
+            mNote = new NoteInfo();
+            sid = SystemUtil.generateNoteSid();
+            mNote.setSId(sid);
+        } else {
+            sid = mNote.getSId(); 
+        }
+        return sid;
+    }
+
+    /**
      * 保存笔记
      * @param removeAttach　是否移除缓存中的附件数据库记录
      * @return
@@ -329,7 +376,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
 
         Intent intent = null;
-        if (mNote != null) {    //更新笔记
+        if (mNote != null && !mNote.isEmpty()) {    //更新笔记
             if (content.equals(mNote.getContent())) {
                 return;
             }
@@ -339,7 +386,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
         } else {    //添加笔记
-            mNote = new NoteInfo();
+            if (mNote == null) {
+                mNote = new NoteInfo();
+            }
             intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_ADD_NOTE);
             long time = System.currentTimeMillis();
@@ -349,7 +398,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mNote.setFolderId(mFolderId);
             mNote.setHash(DigestUtil.md5Digest(content));
             mNote.setKind(NoteInfo.NoteKind.TEXT);
-            mNote.setSId(SystemUtil.generateNoteSid());
+            if (mNote.getSId() == null) {
+                mNote.setSId(SystemUtil.generateNoteSid());
+            }
             int userId = getCurrentUserId();
             if (userId > 0) {
                 mNote.setUserId(userId);
@@ -520,7 +571,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 saveNote(false);
                 break;
             case R.id.action_photo: //图片
-                choseImage();
+                SystemUtil.choseImage((Activity) mContext, REQ_PICK_IMAGE);
                 break;
             case R.id.action_attach:    //添加附件
                 attachView = getToolBarMenuView(R.id.action_attach);
@@ -694,6 +745,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     SystemUtil.hideSoftInput(mContext, mEtContent);
                 }
                 break;
+            case R.id.toolbar_title:    //自定义标题的点击事件
+                stopRecorder();
+                break;
         }
     }
 
@@ -773,15 +827,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 case REQ_PICK_IMAGE:    //选择图片的结果
                     if (data != null) {
                         final Uri uri = data.getData();
-                        doInbackground(new Runnable() {
-                            @Override
-                            public void run() {
-                                String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
-                                Log.d(TAG, "addImage----" + filePath);
-                                Attach attach = getAddedAttach(filePath);
-                                mEtContent.addImage(filePath, attach, new SimpleAttachAddCompleteListenerImpl(true));
-                            }
-                        });
+                        handleShowImage(uri, false);
+                    }
+                    break;
+                case REQ_TAKE_PIC:  //拍照，获取缩略图，并保存到本地
+                    if (mAttachFile != null) {
+                        //file uri
+                        Uri fileUri = Uri.fromFile(mAttachFile);
+                        handleShowImage(fileUri, true);
                     }
                     break;
             }
@@ -791,18 +844,74 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
-     * 选择图片
+     * 显示选择的或者拍照后的图拍呢
+     * @param uri 图片的地址
+     * @param compressImg 是否需要压缩图片           
      */
-    private void choseImage() {
-        Intent intent = new Intent();
-        intent.setType("image/*");
-        if (SystemUtil.hasSdkV19()) {
-            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
+    private void handleShowImage(final Uri uri, final boolean compressImg) {
+        doInbackground(new Runnable() {
+            @Override
+            public void run() {
+                String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
+                Log.d(TAG, "addImage----" + filePath);
+                
+                if (compressImg) {
+                    //压缩并保存文件
+                    String savePath = filePath + ".tmp";
+                    boolean success = ImageUtil.generateThumbImage(filePath, savePath, false);
+
+                    if (success) {
+                        File file = new File(savePath);
+                        File renameFile = new File(filePath);
+                        if (renameFile.exists()) {
+                            renameFile.delete();
+                        }
+                        file.renameTo(renameFile);
+                        
+                        //添加到相册
+                        SystemUtil.galleryAddPic(mContext, file);
+                    }
+                }/* else {    //复制图片到笔记的目录
+                    String sid = getNoteSid();
+                    String dirPath = SystemUtil.getNotePath(sid);
+                    boolean isSameDir = false;
+                    if (dirPath != null) {
+                        isSameDir = filePath.startsWith(dirPath);
+                    }
+                    if (!isSameDir) {
+                        try {
+                            String savePath = SystemUtil.getImageFilePath(sid);
+                            if (savePath != null) {
+                                FileUtil.copyFile(filePath, savePath);
+                                filePath = savePath;
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        Log.d(TAG, "---handleShowImage--isSameDir---" + filePath);
+                    }
+                }*/
+                
+                Attach attach = getAddedAttach(filePath);
+                mEtContent.addImage(filePath, attach, new SimpleAttachAddCompleteListenerImpl(true));
+            }
+        });
+    }
+
+    /**
+     * 打开相机拍照
+     */
+    public void openCamera(File file) throws IOException {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);//create a intent to take picture 
+        //create a intent to take picture  
+        Uri uri = Uri.fromFile(file);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, uri); // set the image file name 
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, REQ_TAKE_PIC);
         } else {
-            intent.setAction(Intent.ACTION_PICK);
+            SystemUtil.makeShortToast(R.string.tip_no_app_handle);
         }
-        startActivityForResult(intent, REQ_PICK_IMAGE);
     }
 
     /**
@@ -1239,6 +1348,88 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 初始化录音器
+     */
+    private void startRecorder() throws Exception {
+        if (mAudioRecorder == null) {
+            mAudioRecorder = new AudioRecorder(mHandler);
+        }
+        if (mAttachFile == null) {
+            String sid = getNoteSid();
+            mAttachFile = SystemUtil.getAttachFile(sid, Attach.VOICE);
+            if (mAttachFile == null) {
+                throw new IOException("getAttachFile error");
+            }
+        }
+        mAudioRecorder.setFilePath(mAttachFile.getAbsolutePath());
+        mAudioRecorder.setRecordListener(new AudioRecorder.OnRecordListener() {
+            @Override
+            public void onBeforeRecord(String filePath) {
+                showRecordView();
+            }
+
+            @Override
+            public void onRecording(String filePath, long time) {
+
+            }
+
+            @Override
+            public void onEndRecord(String filePath, long time) {
+
+            }
+
+            @Override
+            public void onRecordError(String filePath, String errorMsg) {
+
+            }
+        });
+        mAudioRecorder.startRecording();
+    }
+
+    /**
+     * 停止录音
+     */
+    private void stopRecorder() {
+        if (mAudioRecorder != null) {
+            mAudioRecorder.releaseRecorder();
+            mAudioRecorder = null;
+            
+            hideRecordView();
+            
+            Log.d(TAG, "----stopRecorder---record---file---" + mAttachFile);
+        }
+    }
+
+    /**
+     * 显示正在录音的试图
+     */
+    private void showRecordView() {
+        if (mToolbarTitleView != null) {
+            mToolbarTitleView.setClickable(true);
+            setCustomTitle("录音中...", R.drawable.ic_record_white);
+
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.setDisplayHomeAsUpEnabled(false);
+            }
+        }
+    }
+
+    /**
+     * 隐藏录音的视图
+     */
+    private void hideRecordView() {
+        if (mToolbarTitleView != null) {
+            mToolbarTitleView.setClickable(false);
+        }
+        updateToolBar(mToolBar);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+    }
+
+    /**
      * 添加详情的菜单
      * @param popupMenu
      */
@@ -1282,9 +1473,32 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
         @Override
         public boolean onMenuItemClick(MenuItem item) {
+            String sid = null;
             switch (item.getItemId()) {
-                case R.id.action_photo: //拍照
-                    choseImage();
+                case R.id.action_camera: //拍照
+                    try {
+                        sid = getNoteSid();
+                        mAttachFile = null;
+                        mAttachFile = SystemUtil.getCameraFile(sid);
+                        if (mAttachFile == null) {
+                            SystemUtil.makeShortToast(R.string.tip_mkfile_error);
+                        } else {
+                            openCamera(mAttachFile);
+                        }
+                    } catch (IOException e) {
+                        SystemUtil.makeShortToast(R.string.tip_camera_error);
+                        Log.e(TAG, "----OnPopuMenuItemClickListener---onMenuItemClick----openCamera---error--" + e.getMessage());
+                    }
+                    break;
+                case R.id.action_voice: //添加语音
+                    mAttachFile = null;
+                    try {
+                        startRecorder();
+                    } catch (Exception e) {
+                        SystemUtil.makeShortToast(R.string.record_error);
+                        Log.e(TAG, "---startRecorder--error--" + e.getMessage());
+                        e.printStackTrace();
+                    }
                     break;
                 case R.id.action_delete:    //删除
                     if (mNote != null) {
@@ -1343,7 +1557,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         case ADD:   //保存笔记
                             //添加“详情”的菜单
                             addInfoMenu(mOverflowPopu);
-                            saveResult(data != null);
+                            boolean success = data != null;
+                            saveResult(success);
+                            if (success && data instanceof NoteInfo) {
+                                NoteInfo note = (NoteInfo) data;
+                                mNote.setId(note.getId());
+                            }
                             break;
                         case UPDATE: //更新、保存笔记
                             saveResult(data != null);
