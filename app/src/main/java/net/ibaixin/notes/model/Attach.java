@@ -1,5 +1,8 @@
 package net.ibaixin.notes.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 
 /**
@@ -8,7 +11,7 @@ import com.nostra13.universalimageloader.core.download.ImageDownloader;
  * @update 2016/7/6 16:01
  * @version: 0.0.1
  */
-public class Attach {
+public class Attach implements Parcelable {
     /**
      * 附件类型为图片
      */
@@ -93,6 +96,58 @@ public class Attach {
      */
     private long size;
     
+    public Attach() {}
+
+    protected Attach(Parcel in) {
+        id = in.readInt();
+        sId = in.readString();
+        noteId = in.readString();
+        userId = in.readInt();
+        filename = in.readString();
+        type = in.readInt();
+        uri = in.readString();
+        localPath = in.readString();
+        decription = in.readString();
+        serverPath = in.readString();
+        createTime = in.readLong();
+        modifyTime = in.readLong();
+        size = in.readLong();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeString(sId);
+        dest.writeString(noteId);
+        dest.writeInt(userId);
+        dest.writeString(filename);
+        dest.writeInt(type);
+        dest.writeString(uri);
+        dest.writeString(localPath);
+        dest.writeString(decription);
+        dest.writeString(serverPath);
+        dest.writeLong(createTime);
+        dest.writeLong(modifyTime);
+        dest.writeLong(size);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<Attach> CREATOR = new Creator<Attach>() {
+        @Override
+        public Attach createFromParcel(Parcel in) {
+            return new Attach(in);
+        }
+
+        @Override
+        public Attach[] newArray(int size) {
+            return new Attach[size];
+        }
+    };
+
     public int getId() {
         return id;
     }
@@ -247,4 +302,5 @@ public class Attach {
                 ", size=" + size +
                 '}';
     }
+
 }

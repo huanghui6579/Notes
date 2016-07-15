@@ -23,9 +23,9 @@ import java.io.File;
  * @update 2016/7/7 21:34
  * @version: 0.0.1
  */
-public class AttchSpan extends ClickableSpan {
+public class AttachSpan extends ClickableSpan {
 
-    private static final java.lang.String TAG = "AttchSpan";
+    private static final java.lang.String TAG = "AttachSpan";
     /**
      * 附件的类型
      */
@@ -85,7 +85,7 @@ public class AttchSpan extends ClickableSpan {
     public void onClick(View widget) {
         Context context = widget.getContext();
         doAction(context, filePath);
-        Log.d(TAG, "--AttchSpan--onClick----");
+        Log.d(TAG, "--AttachSpan--onClick----");
     }
 
     /**

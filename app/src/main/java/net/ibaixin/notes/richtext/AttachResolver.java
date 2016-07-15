@@ -16,7 +16,7 @@ import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
-import net.ibaixin.notes.widget.AttchSpan;
+import net.ibaixin.notes.widget.AttachSpan;
 import net.ibaixin.notes.widget.NoteEditText;
 
 import java.util.List;
@@ -110,7 +110,7 @@ public class AttachResolver implements Resolver {
                     return;
                 }
                 ImageSpan imageSpan = new ImageSpan(context, bitmap);
-                AttchSpan attchSpan = new AttchSpan();
+                AttachSpan attchSpan = new AttachSpan();
                 attchSpan.setAttachId(sid);
                 attchSpan.setAttachType(attach.getType());
                 attchSpan.setFilePath(filePath);

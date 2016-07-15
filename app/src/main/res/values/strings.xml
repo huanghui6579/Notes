@@ -28,6 +28,8 @@
     <string name="move_result_error">移动失败</string>
     <string name="record_error">录音失败，请检查是否有录音的权限</string>
     
+    <string name="init">初始化中…</string>
+    
     <string name="copy_success">已复制到剪贴板</string>
     <string name="tip_no_app_handle">没有安装对应的应用程序</string>
     <string name="tip_no_text">没有内容</string>

@@ -62,8 +62,9 @@ import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.NoteLinkify;
 import net.ibaixin.notes.util.NoteUtil;
 import net.ibaixin.notes.util.SystemUtil;
+import net.ibaixin.notes.util.TimeUtil;
 import net.ibaixin.notes.util.log.Log;
-import net.ibaixin.notes.widget.AttchSpan;
+import net.ibaixin.notes.widget.AttachSpan;
 import net.ibaixin.notes.widget.MessageBundleSpan;
 import net.ibaixin.notes.widget.NoteEditText;
 import net.ibaixin.notes.widget.NoteLinkMovementMethod;
@@ -98,7 +99,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private PopupMenu mOverflowViewPopu;
     
     private NoteEditText mEtContent;
-    
+
     private TextView mToolbarTitleView;
 
     /**
@@ -170,6 +171,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private AudioRecorder mAudioRecorder;
 
+    /**
+     * 标题
+     */
+    private CharSequence mTitle;
+
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
             if (mToolbarTitleView == null) {
@@ -203,9 +209,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 title = folder.getName();
             }
         }
-        
+        mTitle = title;
         setTitle(null);
         setCustomTitle(title, 0);
+    }
+
+    /**
+     * 更新标题
+     */
+    private void updateTitle() {
+        setCustomTitle(mTitle, 0);
     }
 
     @Override
@@ -423,10 +436,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void removeCacheAttach() {
         if (mAttachCache != null && mAttachCache.size() > 0) {
             Intent intent = new Intent(mContext, CoreService.class);
-            ArrayList<String> list = new ArrayList<>();
-            list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
-            intent.putStringArrayListExtra(Constants.ARG_CORE_LIST, list);
+            ArrayList<Attach> list = new ArrayList<>();
+            list.addAll(mAttachCache.values()); //将附件的sid传入，不论附件是否在笔记中
+            intent.putParcelableArrayListExtra(Constants.ARG_CORE_LIST, list);
             startService(intent);
+            mAttachCache.clear();
         }
     }
 
@@ -437,7 +451,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mEtContent == null) {
             return;
         }
-        
+
         mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
         mRichTextWrapper.addResolver(AttachResolver.class);
 
@@ -482,10 +496,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     ClickableSpan clickableSpan = links[0];
                     Log.d(TAG, "----onSelectionChanged--clickableSpan---" + clickableSpan.toString());
                 } else {
-                    AttchSpan[] images = ((Spannable) text).getSpans(selStart,
-                            selEnd, AttchSpan.class);
+                    AttachSpan[] images = ((Spannable) text).getSpans(selStart,
+                            selEnd, AttachSpan.class);
                     if (images != null && images.length > 0) {
-                        Log.d(TAG, "----onSelectionChanged---AttchSpan--");
+                        Log.d(TAG, "----onSelectionChanged---AttachSpan--");
                     }
                 }
             }
@@ -539,6 +553,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             }
         }, 100);
         
+    }
+
+    @Override
+    protected void onPause() {
+        stopRecorder();
+        super.onPause();
     }
 
     @Override
@@ -695,7 +715,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mBottomBar = viewStub.inflate();
         ViewGroup toolContainer = (ViewGroup) mBottomBar.findViewById(R.id.tool_container);
 
-        ScrollView contentLayout = (ScrollView) findViewById(R.id.content_layout);
+        ScrollView contentLayout = (ScrollView) findViewById(R.id.content_scroll);
         
         if (contentLayout == null) {
             return;
@@ -871,27 +891,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         //添加到相册
                         SystemUtil.galleryAddPic(mContext, file);
                     }
-                }/* else {    //复制图片到笔记的目录
-                    String sid = getNoteSid();
-                    String dirPath = SystemUtil.getNotePath(sid);
-                    boolean isSameDir = false;
-                    if (dirPath != null) {
-                        isSameDir = filePath.startsWith(dirPath);
-                    }
-                    if (!isSameDir) {
-                        try {
-                            String savePath = SystemUtil.getImageFilePath(sid);
-                            if (savePath != null) {
-                                FileUtil.copyFile(filePath, savePath);
-                                filePath = savePath;
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    } else {
-                        Log.d(TAG, "---handleShowImage--isSameDir---" + filePath);
-                    }
-                }*/
+                }
                 
                 Attach attach = getAddedAttach(filePath);
                 mEtContent.addImage(filePath, attach, new SimpleAttachAddCompleteListenerImpl(true));
@@ -1098,36 +1098,56 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void resetAttach(final Editable editable, final EditStep editStep, final Attach attach) {
         String uri = attach.getAvailableUri();
         if (uri != null) {
-//            final SimpleAttachAddCompleteListener listener = new SimpleAttachAddCompleteListenerImpl(false);
-            ImageUtil.generateThumbImageAsync(uri, null, new SimpleImageLoadingListener() {
-                @Override
-                public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                    ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
+            switch (attach.getType()) {
+                case Attach.IMAGE:  //显示图片
+                    showSpanImage(editable, editStep, uri);
+                    break;
+                case Attach.VOICE:  //显示语音
                     CharSequence text = editStep.getContent();
-                    SpannableStringBuilder builder = new SpannableStringBuilder();
-                    builder.append(text);
-                    builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     int selStart = editStep.getStart();
                     setdo(true);
-                    try {
-                        if (selStart < 0 || mEtContent.getText() == null || selStart >= mEtContent.getText().length()) {
-                            editable.append(builder);
-                        } else {
-                            editable.insert(selStart, builder);
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "-----resetAttach--error----" + e.getMessage());
-                    }
+                    mEtContent.showSpanAttach(text, selStart, attach);
                     setdo(false);
-//                editable.insert(editStep.getStart(), editStep.getContent());
-//                    listener.onAddComplete(imageUri, editStep, attach);
-                }
-            });
+                    break;
+            }
         } else {
             editable.insert(editStep.getStart(), editStep.getContent());
         }
     }
 
+    /**
+     * 显示图片的span
+     * @param editable
+     * @param editStep
+     * @param uri
+     */
+    private void showSpanImage(final Editable editable, final EditStep editStep, String uri) {
+        ImageUtil.generateThumbImageAsync(uri, null, new SimpleImageLoadingListener() {
+            @Override
+            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
+                CharSequence text = editStep.getContent();
+                SpannableStringBuilder builder = new SpannableStringBuilder();
+                builder.append(text);
+                builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                int selStart = editStep.getStart();
+                setdo(true);
+                try {
+                    if (selStart < 0 || mEtContent.getText() == null || selStart >= mEtContent.getText().length()) {
+                        editable.append(builder);
+                    } else {
+                        editable.insert(selStart, builder);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "-----resetAttach--error----" + e.getMessage());
+                }
+                setdo(false);
+//                editable.insert(editStep.getStart(), editStep.getContent());
+//                    listener.onAddComplete(imageUri, editStep, attach);
+            }
+        });
+    }
+    
     /**
      * 在格式化列表直接切换
      * @author huanghui1
@@ -1246,16 +1266,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 
                 if (filePath != null) {
                     attach.setUri(filePath);
-                    attach.setLocalPath(filePath);
-                    File file = new File(filePath);
-                    attach.setFilename(file.getName());
-                    attach.setSize(file.length());
                     
                     long time = System.currentTimeMillis();
                     attach.setCreateTime(time);
                     attach.setModifyTime(time);
                     
-                    if (mNote != null) {
+                    if (mNote != null && !mNote.isEmpty()) {
                         attach.setNoteId(mNote.getSId());
                     }
                     int userId = getCurrentUserId();
@@ -1365,22 +1381,34 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mAudioRecorder.setRecordListener(new AudioRecorder.OnRecordListener() {
             @Override
             public void onBeforeRecord(String filePath) {
+                Log.d(TAG, "----onBeforeRecord--");
                 showRecordView();
             }
 
             @Override
             public void onRecording(String filePath, long time) {
-
+                updateRecordTime(time);
             }
 
             @Override
             public void onEndRecord(String filePath, long time) {
-
+                File file = new File(filePath);
+                Attach attach = new Attach();
+                attach.setType(Attach.VOICE);
+                attach.setDecription(String.valueOf(time));
+                attach.setSId(SystemUtil.generateAttachSid());
+                attach.setLocalPath(filePath);
+                attach.setFilename(file.getName());
+                attach.setSize(file.length());
+                mEtContent.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
+                hideRecordView();
             }
 
             @Override
             public void onRecordError(String filePath, String errorMsg) {
-
+                Log.d(TAG, "----onRecordError--");
+                hideRecordView();
+                SystemUtil.makeShortToast(R.string.record_error);
             }
         });
         mAudioRecorder.startRecording();
@@ -1404,14 +1432,26 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * 显示正在录音的试图
      */
     private void showRecordView() {
+        SystemUtil.hideSoftInput(mContext, mEtContent);
         if (mToolbarTitleView != null) {
             mToolbarTitleView.setClickable(true);
-            setCustomTitle("录音中...", R.drawable.ic_record_white);
+            setCustomTitle(getString(R.string.init), R.drawable.ic_record_white);
 
             ActionBar actionBar = getSupportActionBar();
             if (actionBar != null) {
                 actionBar.setDisplayHomeAsUpEnabled(false);
             }
+        }
+    }
+
+    /**
+     * 更新录音时长
+     * @param time 录音时长
+     */
+    private void updateRecordTime(long time) {
+        String timeStr = TimeUtil.formatMillis(time);
+        if (mToolbarTitleView != null) {
+            mToolbarTitleView.setText(timeStr);
         }
     }
 
@@ -1422,7 +1462,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mToolbarTitleView != null) {
             mToolbarTitleView.setClickable(false);
         }
-        updateToolBar(mToolBar);
+        updateTitle();
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);

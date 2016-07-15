@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.List;
 
 /**
  * @author huanghui1
@@ -55,5 +56,30 @@ public class FileUtil {
         File src = new File(source);
         File des = new File(dest);
         copyFile(src, des);
+    }
+
+    /**
+     * 删除文件
+     * @param filePath 文件的全路径
+     */
+    public static void deleteFile(String filePath) {
+        if (filePath != null) {
+            File file = new File(filePath);
+            if (file.exists()) {
+                file.delete();
+            }
+        }
+    }
+
+    /**
+     * 删除多个文件
+     * @param list 文件路径的集合
+     */
+    public static void deleteFiles(List<String> list) {
+        if (list != null && list.size() > 0) {
+            for (String path : list) {
+                deleteFile(path);
+            }
+        }
     }
 }

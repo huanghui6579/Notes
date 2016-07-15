@@ -3,6 +3,8 @@ package net.ibaixin.notes.edit.recorder;
 import android.media.MediaRecorder;
 import android.os.Handler;
 
+import net.ibaixin.notes.util.FileUtil;
+import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 
 import java.io.IOException;
@@ -19,7 +21,7 @@ public class AudioRecorder {
     private static final String TAG = "AudioRecorder";
     
     //录音时长最长60分钟
-    private static final long MAX_TIME = 3600;
+    private static final long MAX_TIME = 3600000;
     
     private MediaRecorder mRecorder = null;
 
@@ -115,38 +117,51 @@ public class AudioRecorder {
         
         try {
             if (mRecordListener != null) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mRecordListener.onBeforeRecord(mFilePath);
-                    }
-                });
+                mRecordListener.onBeforeRecord(mFilePath);
             }
             initRecorder();
-
             mRecorder.setOutputFile(mFilePath);
             mRecorder.prepare();
-            Log.d(TAG, "---startRecording--begin--");
-            mRecorder.start();
-            mStartTime = System.currentTimeMillis();
-            mIsRecording = true;
-            //每秒执行一次
-            mTimer = new Timer("TimeRecordTimer");
-            mTimer.schedule(new TimeRecordTask(), 0, 1000);
-            Log.d(TAG, "---startRecording--end--");
+            doRecord();
         } catch (final IOException e) {
-            Log.e(TAG, "---startRecording--error--" + e.getMessage());
-            if (mRecordListener != null) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mRecordListener.onRecordError(mFilePath, e.getMessage());
-                    }
-                });
-            }
-            resetRecorder();
+            recordError(e);
             e.printStackTrace();
         }
+    }
+    
+    private void recordError(final Exception e) {
+        Log.e(TAG, "---startRecording--error--" + e.getMessage());
+        FileUtil.deleteFile(mFilePath);
+        if (mRecordListener != null) {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mRecordListener.onRecordError(mFilePath, e.getMessage());
+                }
+            });
+        }
+        resetRecorder();
+    }
+    
+    private void doRecord() {
+        SystemUtil.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Log.d(TAG, "---startRecording--begin--");
+                    mRecorder.start();
+                    mStartTime = System.currentTimeMillis();
+                    mIsRecording = true;
+                    //每秒执行一次
+                    mTimer = new Timer("TimeRecordTimer");
+                    mTimer.schedule(new TimeRecordTask(), 0, 1000);
+                    Log.d(TAG, "---startRecording--end--");
+                } catch (Exception e) {
+                    recordError(e);
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     /**
@@ -201,6 +216,7 @@ public class AudioRecorder {
         @Override
         public void run() {
             if (mRecordListener != null && mIsRecording) {
+                mEndTime = System.currentTimeMillis();
                 final long time = getRecordTime();
                 if ((time + 1000) >= MAX_TIME) { //超时，停止录音
                     stopRecording();

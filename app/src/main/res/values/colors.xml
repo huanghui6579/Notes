@@ -19,6 +19,8 @@
     
     <color name="text_content_color">#999999</color>
     
+    <color name="content_pressed_color">#666666</color>
+    
     <color name="text_time_color">#CCCCCC</color>
 
 </resources>

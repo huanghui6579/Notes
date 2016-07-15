@@ -35,4 +35,16 @@ public class TimeUtil {
         SimpleDateFormat dateFormat = new SimpleDateFormat(pattern, Locale.getDefault());
         return dateFormat.format(new Date(time));
     }
+
+    /**
+     * 格式化毫秒，格式为:00:56
+     * @param millis 毫秒数
+     * @return
+     */
+    public static String formatMillis(long millis) {
+        long second = (millis / 1000) % 60;
+        long minute = (millis / 60000) % 60;
+
+        return String.format(Locale.getDefault(), "%02d:%02d", minute, second);
+    }
 }

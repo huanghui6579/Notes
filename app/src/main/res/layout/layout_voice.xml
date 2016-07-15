@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" 
+    android:layout_height="wrap_content"
+    android:padding="@dimen/content_padding"
+    android:clickable="true"
+    android:background="@drawable/common_span_background_normal">
+    
+    <ImageView
+        android:id="@id/iv_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_library_music"/>
+    
+    <RelativeLayout
+        android:id="@+id/content_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="@dimen/grid_item_padding"
+        android:layout_marginStart="@dimen/grid_item_padding"
+        android:layout_toRightOf="@id/iv_icon"
+        android:layout_toEndOf="@id/iv_icon">
+        <TextView
+            android:id="@id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/content_text_size_large"/>
+
+        <TextView
+            android:id="@id/tv_summary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_title"
+            android:gravity="center_vertical"/>
+    </RelativeLayout>
+    
+    <ImageButton
+        android:id="@+id/iv_pay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center_vertical"
+        android:layout_toRightOf="@id/content_layout"
+        android:layout_toEndOf="@id/content_layout"
+        android:layout_marginLeft="@dimen/horizonal_space_large"
+        android:layout_marginStart="@dimen/horizonal_space_large"
+        android:src="@drawable/ic_play_arrow"
+        android:background="@drawable/common_circle_background_selector"/>
+</RelativeLayout>

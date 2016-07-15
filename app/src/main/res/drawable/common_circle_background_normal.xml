@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <size android:width="@dimen/btn_bg_size_small"
+        android:height="@dimen/btn_bg_size_small" />
+    
+    <corners android:radius="@dimen/btn_bg_size_small_radius"/>
+    
+    <padding android:top="@dimen/btn_bg_size_small_padding"
+        android:bottom="@dimen/btn_bg_size_small_padding"
+        android:left="@dimen/btn_bg_size_small_padding"
+        android:right="@dimen/btn_bg_size_small_padding"/>
+    
+    <solid android:color="@color/text_content_color"/>
+</shape>

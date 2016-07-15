@@ -3,6 +3,7 @@ package net.ibaixin.notes.service;
 import android.app.IntentService;
 import android.content.Intent;
 
+import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.AttachManager;
 import net.ibaixin.notes.persistent.NoteManager;
@@ -10,6 +11,7 @@ import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -53,9 +55,15 @@ public class CoreService extends IntentService {
                     }
                     break;
                 case Constants.OPT_REMOVE_NOTE_ATTACH:  //移除笔记中的附件数据库记录，彻底删除
-                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
-                    if (list != null && list.size() > 0) {
-                        AttachManager.getInstance().removeAttachs(list);
+                    List<Attach> attachList = intent.getParcelableArrayListExtra(Constants.ARG_CORE_LIST);
+                    if (attachList != null && attachList.size() > 0) {
+                        list = new ArrayList<>();
+                        List<String> fileList = new ArrayList<>();
+                        for (Attach attach : attachList) {
+                            list.add(attach.getSId());
+                            fileList.add(attach.getLocalPath());
+                        }
+                        AttachManager.getInstance().removeAttachs(list, fileList);
                     }
                     break;
             }

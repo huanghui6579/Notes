@@ -12,6 +12,7 @@ import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.DeleteState;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.FileUtil;
 import net.ibaixin.notes.util.log.Log;
 
 import java.util.List;
@@ -131,9 +132,10 @@ public class AttachManager extends Observable<Observer> {
     /**
      * 移除指定的附件记录，只删除数据库记录，彻底删除
      * @param sidList 附件的sid集合
+     * @param fileList 本地文件的集合，需要删除本地文件               
      * @return
      */
-    public boolean removeAttachs(List<String> sidList) {
+    public boolean removeAttachs(List<String> sidList, List<String> fileList) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
 
         int size = sidList.size();
@@ -164,7 +166,12 @@ public class AttachManager extends Observable<Observer> {
         } finally {
             db.endTransaction();
         }
-        return row > 0;
+        boolean success = row > 0;
+        if (success) {
+            //删除本地文件
+            FileUtil.deleteFiles(fileList);
+        }
+        return success;
 
     }
 }
