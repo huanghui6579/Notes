@@ -46,4 +46,10 @@
         <item>@string/action_forward</item>
         <item>@string/action_info</item>
     </string-array>
+
+    <string-array name="voice_menu_items">
+        <item>@string/action_voice_open</item>
+        <item>@string/action_forward</item>
+        <item>@string/action_info</item>
+    </string-array>
 </resources>

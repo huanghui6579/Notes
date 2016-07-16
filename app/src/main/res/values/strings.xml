@@ -100,4 +100,5 @@
     <string name="action_contact_add_edit">保存到现有联系人</string>
     <string name="action_map_open">地图显示</string>
     <string name="action_image_open">查看</string>
+    <string name="action_voice_open">播放</string>
 </resources>

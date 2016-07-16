@@ -878,16 +878,62 @@ public class SystemUtil {
     }
 
     /**
-     * 查看图片
-     * @param filePath 文件的全路径
+     * 打开文件
+     * @param context
+     * @param filePath
+     * @param attachType 文件的类型，参考Attach#Image
      */
-    public static void openImage(Context context, String filePath) {
+    public static void openFile(Context context, String filePath, int attachType) {
         Uri uri = Uri.fromFile(new File(filePath));
         Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(uri, "image/*");
+
+        String type = null;
+        switch (attachType) {
+            case Attach.IMAGE:  //图片
+                type = "image/*";
+                break;
+            case Attach.VOICE:  //音频文件
+                type = "audio/*";
+                break;
+            default:
+                type = "*/*";
+                break;
+        }
+
+        intent.setDataAndType(uri, type);
         intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
         if (intent.resolveActivity(context.getPackageManager()) != null) {
             context.startActivity(intent);
+        } else {
+            SystemUtil.makeShortToast(R.string.tip_no_app_handle);
+        }
+    }
+
+    /**
+     * 分享文件
+     * @param context
+     * @param filePath
+     * @param attachType 文件的类型如图片：image/*
+     */
+    public static void shareFile(Context context, String filePath, int attachType) {
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(filePath)));
+        String type = null;
+        switch (attachType) {
+            case Attach.IMAGE:  //图片
+                type = "image/*";
+                break;
+            case Attach.VOICE:  //音频文件
+                type = "audio/*";
+                break;
+            default:
+                type = "*/*";
+                break;
+        }
+        sendIntent.setType(type);
+        if (sendIntent.resolveActivity(context.getPackageManager()) != null) {
+            context.startActivity(sendIntent);
         } else {
             SystemUtil.makeShortToast(R.string.tip_no_app_handle);
         }

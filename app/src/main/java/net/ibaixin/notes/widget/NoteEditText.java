@@ -10,8 +10,7 @@ import android.text.method.MovementMethod;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
-import android.view.View;
+import android.view.*;
 import android.widget.EditText;
 
 import com.nostra13.universalimageloader.core.assist.FailReason;
@@ -37,6 +36,8 @@ public class NoteEditText extends EditText {
     private static final String TAG = "NoteEditText";
 
     protected SelectionChangedListener mSelectionChangedListener;
+
+    private long mFirstTouchDownTime = 0;
 
     public void setOnSelectionChangedListener(SelectionChangedListener selectionChangedListener) {
         this.mSelectionChangedListener = selectionChangedListener;
@@ -74,10 +75,13 @@ public class NoteEditText extends EditText {
                 && text instanceof Spannable && getLayout() != null) {
             boolean handled = mMovement.onTouchEvent(this, (Spannable) text, event);
             if (handled) {
+                mFirstTouchDownTime = 0;
                 return true;
             }
         }
+
         return super.onTouchEvent(event);
+
     }
 
     /**
@@ -99,8 +103,9 @@ public class NoteEditText extends EditText {
                 attachSpan.setAttachId(fileId);
                 attachSpan.setAttachType(Attach.IMAGE);
                 attachSpan.setFilePath(filePath);
+                String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
 
-                String text = addSpane(fileId, attachSpan, imageSpan);
+                addSpane(text, attachSpan, imageSpan);
                 
                 if (listener != null) {
                     Attach att = null;
@@ -141,8 +146,10 @@ public class NoteEditText extends EditText {
         attachSpan.setAttachId(fileId);
         attachSpan.setAttachType(attach.getType());
         attachSpan.setFilePath(filePath);
-        
-        CharSequence text = addSpane(fileId, attachSpan, voiceSpan);
+
+        String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
+
+        addSpane(text, attachSpan, voiceSpan);
 
         if (listener != null) {
             listener.onAddComplete(filePath, text, attach);
@@ -151,32 +158,46 @@ public class NoteEditText extends EditText {
 
     /**
      * 添加Span
-     * @param fileId 附件的sid
+     * @param text 原文本
      * @param clickSpan 可点击的Span              
      * @param replaceSpan 附件显示的span
      */
-    private String addSpane(String fileId, AttachSpan clickSpan, ReplacementSpan replaceSpan) {
-        String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
+    private String addSpane(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan) {
+        final int selStart = getSelectionStart();
+        final int selEnd = getSelectionEnd();
+        return addSpane(text, clickSpan, replaceSpan, selStart, selEnd);
+    }
+
+    /**
+     * 添加Span
+     * @param text 原文本
+     * @param clickSpan 可点击的Span
+     * @param replaceSpan 附件显示的span
+     */
+    public String addSpane(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
 
         /*AttachSpan attachSpan = new AttachSpan();
         attachSpan.setAttachId(fileId);
         attachSpan.setAttachType(attach.getType());
         attachSpan.setFilePath(filePath);*/
-        
+
         final SpannableStringBuilder builder = new SpannableStringBuilder();
         builder.append(text);
         builder.setSpan(replaceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         builder.setSpan(clickSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        final int selStart = getSelectionStart();
-        final int selEnd = getSelectionEnd();
+
         post(new Runnable() {
             @Override
             public void run() {
-                Editable editable = getEditableText();
-                if (selStart < 0 || getText() == null || selStart >= getText().length()) {
-                    editable.append(builder);
-                } else {
-                    editable.replace(selStart, selEnd, builder);
+                try {
+                    Editable editable = getEditableText();
+                    if (selStart < 0 || getText() == null || selStart >= getText().length()) {
+                        editable.append(builder);
+                    } else {
+                        editable.replace(selStart, selEnd, builder);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "---note---edit--addSpane---error--" + e.getMessage());
                 }
             }
         });
@@ -190,22 +211,47 @@ public class NoteEditText extends EditText {
      * @param attach
      */
     public void showSpanAttach(CharSequence text, final int selStart, Attach attach) {
+        showSpanAttach(text, selStart, attach, false);
+    }
+
+    /**
+     * 显示附件的span
+     * @param text
+     * @param selStart
+     * @param attach
+     * @param inHander 是否需要在handler中执行
+     */
+    public void showSpanAttach(CharSequence text, final int selStart, Attach attach, boolean inHander) {
         VoiceSpan voiceSpan = new VoiceSpan(getContext(), attach);
         final SpannableStringBuilder builder = new SpannableStringBuilder();
         builder.append(text);
         builder.setSpan(voiceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        Editable editable = getEditableText();
+        final Editable editable = getEditableText();
         try {
-            if (selStart < 0 || getText() == null || selStart >= getText().length()) {
-                editable.append(builder);
+            if (inHander) {
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (selStart < 0 || getText() == null || selStart >= getText().length()) {
+                            editable.append(builder);
+                        } else {
+                            editable.insert(selStart, builder);
+                        }
+                    }
+                });
             } else {
-                editable.insert(selStart, builder);
+                if (selStart < 0 || getText() == null || selStart >= getText().length()) {
+                    editable.append(builder);
+                } else {
+                    editable.insert(selStart, builder);
+                }
             }
+
         } catch (Exception e) {
             Log.e(TAG, "-----resetAttach--error----" + e.getMessage());
         }
     }
-    
+
     /**
      * 光标位置变化的监听
      * @author tiger

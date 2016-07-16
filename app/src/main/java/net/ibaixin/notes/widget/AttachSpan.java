@@ -2,8 +2,6 @@ package net.ibaixin.notes.widget;
 
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
 import android.support.v7.app.AlertDialog;
 import android.text.style.ClickableSpan;
 import android.view.View;
@@ -97,7 +95,8 @@ public class AttachSpan extends ClickableSpan {
         MenuItem menuItem = new MenuItem();
         switch (attachType) {
             case Attach.IMAGE:  //图片
-                menuItem.menuRes = R.array.image_menu_items;
+            case Attach.VOICE:  //录音
+                menuItem.menuRes = R.array.voice_menu_items;
                 handleAttach(context, menuItem, filePath);
                 break;
         }
@@ -122,14 +121,10 @@ public class AttachSpan extends ClickableSpan {
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case 0: //打开
-                        switch (attachType) {
-                            case Attach.IMAGE:  //图片类型
-                                SystemUtil.openImage(context, filePath);
-                                break;
-                        }
+                        SystemUtil.openFile(context, filePath, attachType);
                         break;
                     case 1: //分享
-                        shareImage(context, filePath);
+                        SystemUtil.shareFile(context, filePath, attachType);
                         break;
                     case 2: //详情
                         showInfo(context, filePath);
@@ -137,23 +132,6 @@ public class AttachSpan extends ClickableSpan {
                 }
             }
         });
-    }
-
-    /**
-     * 分享图片
-     * @param context
-     * @param filePath
-     */
-    private void shareImage(Context context, String filePath) {
-        Intent sendIntent = new Intent();
-        sendIntent.setAction(Intent.ACTION_SEND);
-        sendIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(filePath)));
-        sendIntent.setType("image/*");
-        if (sendIntent.resolveActivity(context.getPackageManager()) != null) {
-            context.startActivity(sendIntent);
-        } else {
-            SystemUtil.makeShortToast(R.string.tip_no_app_handle);
-        }
     }
 
     /**

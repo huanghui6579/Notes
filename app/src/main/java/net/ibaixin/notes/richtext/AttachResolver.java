@@ -3,12 +3,9 @@ package net.ibaixin.notes.richtext;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Handler;
-import android.text.Editable;
-import android.text.Spannable;
-import android.text.SpannableStringBuilder;
 import android.text.style.ImageSpan;
+import android.text.style.ReplacementSpan;
 import android.util.SparseArray;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import net.ibaixin.notes.listener.RichTextClickListener;
@@ -18,6 +15,7 @@ import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttachSpan;
 import net.ibaixin.notes.widget.NoteEditText;
+import net.ibaixin.notes.widget.VoiceSpan;
 
 import java.util.List;
 import java.util.Map;
@@ -60,9 +58,9 @@ public class AttachResolver implements Resolver {
     class AnalysisTextTask implements Runnable {
         Map<String, Attach> map;
         CharSequence text;
-        EditText editText;
+        NoteEditText editText;
 
-        public AnalysisTextTask(EditText editText, CharSequence text, Map<String, Attach> map) {
+        public AnalysisTextTask(NoteEditText editText, CharSequence text, Map<String, Attach> map) {
             this.map = map;
             this.text = text;
             this.editText = editText;
@@ -90,9 +88,9 @@ public class AttachResolver implements Resolver {
         
         private Context context;
         
-        private EditText editText;
+        private NoteEditText editText;
 
-        public ResolverAttachTask(EditText editText, AttachSpec spec, Map<String, Attach> map) {
+        public ResolverAttachTask(NoteEditText editText, AttachSpec spec, Map<String, Attach> map) {
             this.editText = editText;
             this.map = map;
             this.spec = spec;
@@ -105,38 +103,31 @@ public class AttachResolver implements Resolver {
             Attach attach = map.get(sid);
             if (attach != null) {
                 String filePath = attach.getLocalPath();
-                Bitmap bitmap = ImageUtil.loadImageThumbnailsSync(filePath);
-                if (bitmap == null) {
-                    return;
-                }
-                ImageSpan imageSpan = new ImageSpan(context, bitmap);
                 AttachSpan attchSpan = new AttachSpan();
                 attchSpan.setAttachId(sid);
                 attchSpan.setAttachType(attach.getType());
                 attchSpan.setFilePath(filePath);
                 String text = spec.text.toString();
-                final SpannableStringBuilder builder = new SpannableStringBuilder();
-                builder.append(text);
-                builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                builder.setSpan(attchSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
                 final int selStart = spec.start;
                 final int selEnd = spec.end;
-                final Editable editable = editText.getEditableText();
-                try {
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (selStart < 0 || editText.getText() == null || selStart >= editText.getText().length()) {
-                                editable.append(builder);
-                            } else {
-                                editable.replace(selStart, selEnd, builder);
-                            }
+                ReplacementSpan replacementSpan = null;
+                switch (attach.getType()) {
+                    case Attach.IMAGE:  //显示图片
+                        Bitmap bitmap = ImageUtil.loadImageThumbnailsSync(filePath);
+                        if (bitmap == null) {
+                            return;
                         }
-                    });
-                    
-                } catch (Exception e) {
-                    Log.e(TAG, "--ResolverAttachTask---error---" + e.getMessage());
-                    e.printStackTrace();
+                        replacementSpan = new ImageSpan(context, bitmap);
+                        break;
+                    case Attach.VOICE:  //录音文件
+                        replacementSpan = new VoiceSpan(context, attach);
+                        break;
+                }
+                if (replacementSpan != null) {
+                    editText.addSpane(text, attchSpan, replacementSpan, selStart, selEnd);
+                } else {
+                    Log.d(TAG, "---ResolverAttachTask--replacementSpan--is---null--");
                 }
             }
         }
