@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
@@ -21,6 +20,8 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.ArrowKeyMovementMethod;
+import android.text.method.LinkMovementMethod;
+import android.text.method.MovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ImageSpan;
 import android.view.KeyEvent;
@@ -31,7 +32,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.WindowManager;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
@@ -67,7 +67,9 @@ import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttachSpan;
 import net.ibaixin.notes.widget.MessageBundleSpan;
 import net.ibaixin.notes.widget.NoteEditText;
+import net.ibaixin.notes.widget.NoteFramenLayout;
 import net.ibaixin.notes.widget.NoteLinkMovementMethod;
+import net.ibaixin.notes.widget.NoteTextView;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,8 +99,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private PopupMenu mAttachPopu;
     private PopupMenu mOverflowPopu;
     private PopupMenu mOverflowViewPopu;
-    
+
+    //笔记的编辑框
     private NoteEditText mEtContent;
+
+    //笔记的显示视图
+    private NoteTextView mTvContent;
+
+    private NoteFramenLayout mContentLayout;
 
     private TextView mToolbarTitleView;
 
@@ -239,11 +247,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 mNote = new NoteInfo();
                 mNote.setId(noteId);
                 mIsViewMode = true;
-                initNoteMode(mEtContent, true);
+//                initNoteMode(mEtContent, true);
                 loadNoteInfo(noteId);
             } else {    //编辑模式
-                initNoteMode(mEtContent, false);
-                changeNoteMode(true); 
+//                initNoteMode(mEtContent, false);
+
+                mContentLayout.changeToEditMode();
+                initEditText(mEtContent);
+                changeNoteMode(true);
             }
         }
     }
@@ -269,7 +280,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             if (isViewMode()) {
                 mOverflowViewPopu = null;
             }
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+//            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
             if (mBottomBar != null) {
                 return;
             }
@@ -338,7 +349,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @param note
      */
     private void showNote(NoteInfo note) {
-        mRichTextWrapper.setText(note.getContent(), mAttachCache);
+        CharSequence s = note.getContent();
+        mRichTextWrapper.setText(s, mAttachCache);
+        if (mRichTextWrapper.getRichSpan() instanceof NoteTextView) {
+            autoLink(s);
+        }
     }
     
     /**
@@ -447,17 +462,41 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     protected void initView() {
         mEtContent = (NoteEditText) findViewById(R.id.et_content);
+        mTvContent = (NoteTextView) findViewById(R.id.tv_content);
 
-        if (mEtContent == null) {
+        if (mTvContent == null || mEtContent == null) {
             return;
         }
 
-        mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
+        mContentLayout = (NoteFramenLayout) findViewById(R.id.content_layout);
+
+//        mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
+        mRichTextWrapper = new RichTextWrapper(mTvContent, mHandler);
+        mRichTextWrapper.setMovementMethod(NoteLinkMovementMethod.getInstance());
         mRichTextWrapper.addResolver(AttachResolver.class);
 
-        mEtContent.addTextChangedListener(this);
+        //初始化文本显示控件
+        initTextView();
 
-        mEtContent.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        //初始化编辑框
+        initEditText(mEtContent);
+    }
+
+    /**
+     * 初始化文本显示
+     */
+    private void initTextView() {
+        mContentLayout.setOnItemClickListener(this);
+    }
+
+    /**
+     * 初始化编辑框
+     * @param editText
+     */
+    private void initEditText(final NoteEditText editText) {
+        editText.addTextChangedListener(this);
+
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
@@ -486,10 +525,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 return false;
             }
         });
-        mEtContent.setOnSelectionChangedListener(new NoteEditText.SelectionChangedListener() {
+        editText.setOnSelectionChangedListener(new NoteEditText.SelectionChangedListener() {
             @Override
             public void onSelectionChanged(int selStart, int selEnd) {
-                CharSequence text = mEtContent.getText();
+                CharSequence text = editText.getText();
                 ClickableSpan[] links = ((Spannable) text).getSpans(selStart,
                         selEnd, ClickableSpan.class);
                 if (links != null && links.length > 0) {
@@ -504,47 +543,58 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
             }
         });
-        mEtContent.setMovementMethod(NoteLinkMovementMethod.getInstance());
-        mEtContent.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View v) {
-                Log.d(TAG, "----setOnClickListener-----");
-                if (isViewMode()) { //之前是阅读模式
-                    setupEditMode((EditText) v, false);
-                } else {    //编辑模式
-                    changeNoteMode(true);
-                }
-            }
-        });
+//        editText.setMovementMethod(NoteLinkMovementMethod.getInstance());
+//        editText.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(final View v) {
+//                Log.d(TAG, "----setOnClickListener-----");
+//                if (isViewMode()) { //之前是阅读模式
+//                    setupEditMode((EditText) v, false);
+//                } else {    //编辑模式
+//                    changeNoteMode(true);
+//                }
+//            }
+//        });
     }
 
     /**
      * 进入编辑模式
      * @param showSoftInput 是否显示软键盘
      */
-    private void setupEditMode(EditText editText, boolean showSoftInput) {
-        initSoftInputMode(true);
+    private void setupEditMode(NoteEditText editText, boolean showSoftInput) {
+        /*initSoftInputMode(true);
         if (showSoftInput) {    //显示软键盘
             editText.requestFocus();
             SystemUtil.showSoftInput(mContext, editText);
             if (editText.getText() != null) {
                 editText.setSelection(editText.getText().length());
             }
-        }
+        }*/
         
         //显示光标
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             if (!editText.isCursorVisible()) {
                 editText.setCursorVisible(true);
             }
         } else {
             editText.setCursorVisible(true);
-        }
+        }*/
+        mIsViewMode = false;
+
+        mContentLayout.changeToEditMode();
+
+        mRichTextWrapper.setRichSpan(editText);
+
         //显示菜单
         setMenuVisible(null, true);
-        //移除链接的点击事件
-        editText.setMovementMethod(ArrowKeyMovementMethod.getInstance());
-        mIsViewMode = false;
+
+//        initEditText(editText);
+
+        showNote(mNote);
+
+        editText.setSelection(editText.getText().length());
+
+        SystemUtil.showSoftInput(mContext, editText);
 
         mHandler.postDelayed(new Runnable() {
             @Override
@@ -767,6 +817,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 break;
             case R.id.toolbar_title:    //自定义标题的点击事件
                 stopRecorder();
+                break;
+            case R.id.tv_content:   //阅读模式的文本点击事件
+                setupEditMode(mEtContent, false);
                 break;
         }
     }
@@ -1576,7 +1629,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         public void run() {
             Log.d(TAG, "-----AutoLinkTask---run---");
             //判断附件
-            NoteLinkify.addLinks(mEtContent, mEtContent.getAutoLinkMask(), MessageBundleSpan.class);
+            TextView textView = (TextView) mRichTextWrapper.getRichSpan();
+            NoteLinkify.addLinks(textView, textView.getAutoLinkMask(), MessageBundleSpan.class);
+            MovementMethod movement = textView.getMovementMethod();
+            if (mContentLayout.isEditMode() && (movement == null || movement instanceof LinkMovementMethod)) {
+
+                //移除链接的点击事件
+                mRichTextWrapper.setMovementMethod(ArrowKeyMovementMethod.getInstance());
+            }
         }
     }
 

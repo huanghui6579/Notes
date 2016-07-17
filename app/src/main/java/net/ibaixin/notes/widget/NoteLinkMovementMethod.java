@@ -52,17 +52,18 @@ public class NoteLinkMovementMethod extends LinkMovementMethod {
                 if (action == MotionEvent.ACTION_UP) {
                     link[0].onClick(widget);
                     Log.d(TAG, "---MotionEvent.ACTION_UP--onClick---");
+                    return true;
                 } else {
                     Log.d(TAG, "---MotionEvent.ACTION_DOWN--setSelection---");
                     Selection.setSelection(buffer,
                             buffer.getSpanStart(link[0]),
                             buffer.getSpanEnd(link[0]));
                 }
-                return true;
+                return false;
             } else {
-                Selection.removeSelection(buffer);
+//                Selection.removeSelection(buffer);
             }
         }
-        return super.onTouchEvent(widget, buffer, event);
+        return false;
     }
 }

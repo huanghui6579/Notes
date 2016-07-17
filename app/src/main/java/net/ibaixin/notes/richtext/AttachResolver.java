@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.SparseArray;
-import android.widget.TextView;
 
 import net.ibaixin.notes.listener.RichTextClickListener;
 import net.ibaixin.notes.model.Attach;
@@ -14,7 +13,6 @@ import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttachSpan;
-import net.ibaixin.notes.widget.NoteEditText;
 import net.ibaixin.notes.widget.VoiceSpan;
 
 import java.util.List;
@@ -31,15 +29,11 @@ public class AttachResolver implements Resolver {
     private Handler mHandler;
 
     @Override
-    public void resolve(TextView textView, CharSequence text, SparseArray<Object> extra, RichTextClickListener listener) {
-        if (textView instanceof NoteEditText) {
-            NoteEditText editText = (NoteEditText) textView;
-
-            Map<String, Attach> map = (Map<String, Attach>) extra.get(0);
-            if (map != null && map.size() > 0) {
+    public void resolve(NoteRichSpan richSpan, CharSequence text, SparseArray<Object> extra, RichTextClickListener listener) {
+        Map<String, Attach> map = (Map<String, Attach>) extra.get(0);
+        if (map != null && map.size() > 0) {
 //                mHandler.post(new AnalysisTextTask(editText, text, map));
-                postTask(new AnalysisTextTask(editText, text, map));
-            }
+            postTask(new AnalysisTextTask(richSpan, text, map));
         }
     }
 
@@ -58,12 +52,12 @@ public class AttachResolver implements Resolver {
     class AnalysisTextTask implements Runnable {
         Map<String, Attach> map;
         CharSequence text;
-        NoteEditText editText;
+        NoteRichSpan richSpan;
 
-        public AnalysisTextTask(NoteEditText editText, CharSequence text, Map<String, Attach> map) {
+        public AnalysisTextTask(NoteRichSpan richSpan, CharSequence text, Map<String, Attach> map) {
             this.map = map;
             this.text = text;
-            this.editText = editText;
+            this.richSpan = richSpan;
         }
 
         @Override
@@ -71,7 +65,7 @@ public class AttachResolver implements Resolver {
             List<AttachSpec> list = SystemUtil.getAttachText(text);
             if (list != null && list.size() > 0) {
                 for (AttachSpec spec : list) {
-                    postTask(new ResolverAttachTask(editText, spec, map));
+                    postTask(new ResolverAttachTask(richSpan, spec, map));
                 }
             }
         }
@@ -88,13 +82,13 @@ public class AttachResolver implements Resolver {
         
         private Context context;
         
-        private NoteEditText editText;
+        private NoteRichSpan richSpan;
 
-        public ResolverAttachTask(NoteEditText editText, AttachSpec spec, Map<String, Attach> map) {
-            this.editText = editText;
+        public ResolverAttachTask(NoteRichSpan richSpan, AttachSpec spec, Map<String, Attach> map) {
+            this.richSpan = richSpan;
             this.map = map;
             this.spec = spec;
-            context = editText.getContext();
+            context = richSpan.getNoteContext();
         }
 
         @Override
@@ -125,7 +119,7 @@ public class AttachResolver implements Resolver {
                         break;
                 }
                 if (replacementSpan != null) {
-                    editText.addSpane(text, attchSpan, replacementSpan, selStart, selEnd);
+                    richSpan.addSpan(text, attchSpan, replacementSpan, selStart, selEnd);
                 } else {
                     Log.d(TAG, "---ResolverAttachTask--replacementSpan--is---null--");
                 }

@@ -18,6 +18,7 @@ import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListene
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.richtext.NoteRichSpan;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
@@ -31,13 +32,11 @@ import java.io.File;
  * @version 1.0.0
  * @update 2016/3/13 14:34
  */
-public class NoteEditText extends EditText {
+public class NoteEditText extends EditText implements NoteRichSpan {
 
     private static final String TAG = "NoteEditText";
 
     protected SelectionChangedListener mSelectionChangedListener;
-
-    private long mFirstTouchDownTime = 0;
 
     public void setOnSelectionChangedListener(SelectionChangedListener selectionChangedListener) {
         this.mSelectionChangedListener = selectionChangedListener;
@@ -75,7 +74,6 @@ public class NoteEditText extends EditText {
                 && text instanceof Spannable && getLayout() != null) {
             boolean handled = mMovement.onTouchEvent(this, (Spannable) text, event);
             if (handled) {
-                mFirstTouchDownTime = 0;
                 return true;
             }
         }
@@ -105,7 +103,7 @@ public class NoteEditText extends EditText {
                 attachSpan.setFilePath(filePath);
                 String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
 
-                addSpane(text, attachSpan, imageSpan);
+                addSpan(text, attachSpan, imageSpan);
                 
                 if (listener != null) {
                     Attach att = null;
@@ -149,7 +147,7 @@ public class NoteEditText extends EditText {
 
         String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
 
-        addSpane(text, attachSpan, voiceSpan);
+        addSpan(text, attachSpan, voiceSpan);
 
         if (listener != null) {
             listener.onAddComplete(filePath, text, attach);
@@ -162,10 +160,20 @@ public class NoteEditText extends EditText {
      * @param clickSpan 可点击的Span              
      * @param replaceSpan 附件显示的span
      */
-    private String addSpane(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan) {
+    private String addSpan(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan) {
         final int selStart = getSelectionStart();
         final int selEnd = getSelectionEnd();
-        return addSpane(text, clickSpan, replaceSpan, selStart, selEnd);
+        return addSpan(text, clickSpan, replaceSpan, selStart, selEnd);
+    }
+
+    @Override
+    public CharSequence getTextContent() {
+        return getText();
+    }
+
+    @Override
+    public Context getNoteContext() {
+        return getContext();
     }
 
     /**
@@ -174,7 +182,8 @@ public class NoteEditText extends EditText {
      * @param clickSpan 可点击的Span
      * @param replaceSpan 附件显示的span
      */
-    public String addSpane(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
+    @Override
+    public String addSpan(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
 
         /*AttachSpan attachSpan = new AttachSpan();
         attachSpan.setAttachId(fileId);
@@ -184,7 +193,7 @@ public class NoteEditText extends EditText {
         final SpannableStringBuilder builder = new SpannableStringBuilder();
         builder.append(text);
         builder.setSpan(replaceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        builder.setSpan(clickSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+//        builder.setSpan(clickSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         post(new Runnable() {
             @Override
@@ -197,11 +206,21 @@ public class NoteEditText extends EditText {
                         editable.replace(selStart, selEnd, builder);
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "---note---edit--addSpane---error--" + e.getMessage());
+                    Log.e(TAG, "---note---edit--addSpan---error--" + e.getMessage());
                 }
             }
         });
         return text;
+    }
+
+    @Override
+    public void setTextContent(CharSequence text) {
+        setText(text);
+    }
+
+    @Override
+    public void setTextMovementMethod(MovementMethod movement) {
+        setMovementMethod(movement);
     }
 
     /**

@@ -12,4 +12,5 @@
     <item type="id" name="refresher" />
     <item type="id" name="action_add" />
     <item type="id" name="cb_check" />
+    <item type="id" name="content_layout" />
 </resources>
