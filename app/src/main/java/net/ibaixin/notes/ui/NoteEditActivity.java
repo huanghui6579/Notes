@@ -253,6 +253,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 //                initNoteMode(mEtContent, false);
 
                 mContentLayout.changeToEditMode();
+                mRichTextWrapper.setRichSpan(mEtContent);
                 initEditText(mEtContent);
                 changeNoteMode(true);
             }
@@ -1599,6 +1600,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     } else {    //清空内容
                         clearContent(false);
                     }
+                    break;
+                case R.id.action_brush: //涂鸦
+                    Intent intent = new Intent(mContext, HandWritingActivity.class);
+                    startActivity(intent);
                     break;
                 case R.id.action_share:    //分享
                     break;

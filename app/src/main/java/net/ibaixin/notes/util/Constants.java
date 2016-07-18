@@ -15,6 +15,9 @@ public class Constants {
     public static final String APP_VOICE_FOLDER_NAME = "Voice";
     public static final String DATA_MSG_ATT_FOLDER_NAME = "attach";
     public static final String APP_NOTES_FOLDER_NAME = "notes";
+    
+    //菜单各项的不可用的alpha颜色值
+    public static final float MENU_ITEM_COLOR_ALPHA = 0.25F;
 
     /**
      * 系统默认手动生成的缩略图缩放参造宽度100

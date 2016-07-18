@@ -24,7 +24,7 @@
     <dimen name="content_padding">8dp</dimen>
 
     <dimen name="bottom_tool_bar_padding">4dp</dimen>
-    
+
     <dimen name="btn_bg_size_small">24dp</dimen>
     <dimen name="btn_bg_size_small_radius">12dp</dimen>
     <dimen name="btn_bg_size_small_padding">0dp</dimen>
@@ -35,9 +35,9 @@
     <dimen name="list_item_icon_size">24dp</dimen>
     <dimen name="list_main_item_img_size">64dp</dimen>
     <dimen name="list_main_item_height">96dp</dimen>
-    
+
     <dimen name="list_divider_height">1px</dimen>
-    
+
     <dimen name="horizonal_space_middle">24dp</dimen>
     <dimen name="horizonal_space_large">36dp</dimen>
 

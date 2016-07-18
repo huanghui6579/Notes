@@ -20,24 +20,24 @@
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
     <string name="confirm_clear_content">将会清空输入的内容，确定吗？</string>
-    
+
     <string name="add_result_error">添加失败</string>
     <string name="update_result_error">保存失败</string>
     <string name="update_result_success">保存成功</string>
     <string name="delete_result_error">删除失败</string>
     <string name="move_result_error">移动失败</string>
     <string name="record_error">录音失败，请检查是否有录音的权限</string>
-    
+
     <string name="init">初始化中…</string>
-    
+
     <string name="copy_success">已复制到剪贴板</string>
     <string name="tip_no_app_handle">没有安装对应的应用程序</string>
     <string name="tip_no_text">没有内容</string>
     <string name="tip_camera_error">打开相机失败</string>
     <string name="tip_mkfile_error">没有创建文件的权限，请允许创建文件</string>
-    
+
     <string name="result_success">操作成功</string>
-    
+
     <string name="move_to">移动到</string>
 
     <string name="note_type_text">文本</string>
@@ -54,9 +54,9 @@
     <string name="sync_state">同步状态</string>
     <string name="default_state">默认状态</string>
     <string name="default_folder">默认文件夹</string>
-    
+
     <string name="hint_folder_edit">输入文件夹名称</string>
-    
+
     <string name="folder_title_lock">加锁</string>
     <string name="folder_summary_lock">给文件夹加锁</string>
     <string name="folder_title_hide">设为默认</string>
@@ -101,4 +101,8 @@
     <string name="action_map_open">地图显示</string>
     <string name="action_image_open">查看</string>
     <string name="action_voice_open">播放</string>
+    <string name="action_paint">画笔</string>
+    <string name="action_eraser">橡皮檫</string>
+    <string name="action_undo">撤销</string>
+    <string name="action_redo">重做</string>
 </resources>

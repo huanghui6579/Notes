@@ -13,7 +13,7 @@
         android:src="@drawable/ic_library_music"/>
     
     <RelativeLayout
-        android:id="@id/content_layout"
+        android:id="@+id/voice_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
@@ -41,8 +41,8 @@
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:layout_gravity="center_vertical"
-        android:layout_toRightOf="@id/content_layout"
-        android:layout_toEndOf="@id/content_layout"
+        android:layout_toRightOf="@id/voice_layout"
+        android:layout_toEndOf="@id/voice_layout"
         android:layout_marginLeft="@dimen/horizonal_space_large"
         android:layout_marginStart="@dimen/horizonal_space_large"
         android:src="@drawable/ic_play_arrow"

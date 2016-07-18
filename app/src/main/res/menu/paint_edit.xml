@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_pen"
+        android:title="@string/action_paint"
+        android:icon="@drawable/ic_action_brush"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/action_eraser"
+        android:icon="@drawable/ic_action_eraser"
+        android:title="@string/action_eraser"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/action_undo"
+        android:title="@string/action_undo"
+        android:icon="@drawable/ic_content_undo"
+        android:enabled="false"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/action_redo"
+        android:title="@string/action_redo"
+        android:icon="@drawable/ic_content_redo"
+        android:enabled="false"
+        app:showAsAction="always"/>
+</menu>
