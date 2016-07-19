@@ -220,6 +220,23 @@ public abstract class BaseActivity extends SwipeBackActivity {
             }
         }
     }
+
+    /**
+     * 返回着色后的图标
+     * @param srcIcon 原始图标
+     * @param color
+     * @return
+     */
+    protected Drawable getTintDrawable(Drawable srcIcon, int color) {
+        if (srcIcon != null) {
+            int tint = color;
+            if (tint == 0) {
+                tint = getPrimaryColor();
+            }
+            DrawableCompat.setTint(srcIcon, tint);
+        }
+        return srcIcon;
+    }
     
     /**
      * 获取应用的主题色

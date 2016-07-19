@@ -647,6 +647,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             case R.id.action_attach:    //添加附件
                 attachView = getToolBarMenuView(R.id.action_attach);
                 mAttachPopu = createPopuMenu(attachView, mAttachPopu, R.menu.edit_attach, true);
+                MenuItem brushItem = mAttachPopu.getMenu().findItem(R.id.action_brush);
+                setMenuTint(brushItem, getResources().getColor(R.color.colorPrimary));
                 break;
             case R.id.action_more:  //更多
                 attachView = getToolBarMenuView(R.id.action_more);

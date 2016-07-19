@@ -17,6 +17,7 @@ import android.preference.PreferenceManager;
 import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -1032,5 +1033,43 @@ public class SystemUtil {
         int green = Color.green(color);
         int blue = Color.blue(color);
         return Color.argb(alpha, red, green, blue);
+    }
+
+    /**
+     * 计算控件爱你的宽度
+     * @param itemView
+     * @param maxWidth
+     * @return
+     */
+    public static int measureContentWidth(View itemView, int maxWidth) {
+        int widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        int heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        itemView.measure(widthMeasureSpec, heightMeasureSpec);
+        int itemWidth = itemView.getMeasuredWidth();
+        if (itemWidth >= maxWidth) {
+            itemWidth = maxWidth;
+        }
+        return itemWidth;
+    }
+
+    /**
+     * 根据提供的属性获得该属性值对应的资源id
+     * @update 2015年1月22日 下午6:48:30
+     * @param attr 属性
+     * @return
+     */
+    public static int getResourceId(Context context, int attr) {
+        TypedValue typedValue = new TypedValue();
+        if (context.getTheme().resolveAttribute(attr, typedValue, true)) {
+            if (typedValue.type >= TypedValue.TYPE_FIRST_INT && typedValue.type <= TypedValue.TYPE_LAST_INT) {
+                return typedValue.data;
+            } else if (typedValue.type == TypedValue.TYPE_STRING) {
+                return typedValue.resourceId;
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
     }
 }
