@@ -1448,15 +1448,19 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
             @Override
             public void onEndRecord(String filePath, long time) {
-                File file = new File(filePath);
-                Attach attach = new Attach();
-                attach.setType(Attach.VOICE);
-                attach.setDecription(String.valueOf(time));
-                attach.setSId(SystemUtil.generateAttachSid());
-                attach.setLocalPath(filePath);
-                attach.setFilename(file.getName());
-                attach.setSize(file.length());
-                mEtContent.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
+                if (filePath != null) {
+                    File file = new File(filePath);
+                    Attach attach = new Attach();
+                    attach.setType(Attach.VOICE);
+                    attach.setDecription(String.valueOf(time));
+                    attach.setSId(SystemUtil.generateAttachSid());
+                    attach.setLocalPath(filePath);
+                    attach.setFilename(file.getName());
+                    attach.setSize(file.length());
+                    mEtContent.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
+                } else {
+                    mAttachFile = null;
+                }
                 hideRecordView();
             }
 

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <layer-list>
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="@android:color/black"/>
+                    <size android:width="@dimen/radio_bg_size_small" android:height="@dimen/radio_bg_size_small"/>
+                </shape>
+            </item>
+            
+            <item android:top="@dimen/radio_bg_circuit_small" 
+                android:right="@dimen/radio_bg_circuit_small" 
+                android:bottom="@dimen/radio_bg_circuit_small"
+                android:left="@dimen/radio_bg_circuit_small">
+                <shape android:shape="oval">
+                    <stroke android:width="@dimen/radio_bg_circuit_small" android:color="@android:color/white"/>
+                    <size android:width="@dimen/radio_bg_size_small" android:height="@dimen/radio_bg_size_small"/>
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    
+    <item android:state_checked="false">
+        <layer-list>
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="@android:color/black" />
+                    <size android:width="@dimen/radio_bg_size_small" android:height="@dimen/radio_bg_size_small" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

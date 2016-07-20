@@ -40,5 +40,12 @@
 
     <dimen name="horizonal_space_middle">24dp</dimen>
     <dimen name="horizonal_space_large">36dp</dimen>
-
+    
+    <dimen name="radio_bg_size_small">20dp</dimen>
+    <dimen name="radio_bg_circuit_small">2dp</dimen>
+    
+    <dimen name="stroke_split_viertical_space">10dp</dimen>
+    <dimen name="stroke_base_size">30dp</dimen>
+    
+    <dimen name="popup_min_width">200dp</dimen>
 </resources>

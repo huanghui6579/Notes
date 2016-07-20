@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="@dimen/activity_horizontal_margin">
+    
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/stroke_tip_type"/>
+    
+    <RadioGroup
+        android:id="@+id/stroke_type_group"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/list_item_height_small"
+        android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/stroke_draw"
+            android:checked="true"
+            style="@style/StokeRadioStyle.Type"/>
+        <RadioButton
+            android:id="@+id/stroke_line"
+            style="@style/StokeRadioStyle.Type"
+            android:layout_gravity="center"/>
+        <RadioButton
+            android:id="@+id/stroke_circle"
+            style="@style/StokeRadioStyle.Type"/>
+        <RadioButton
+            android:id="@+id/stroke_rectangle"
+            style="@style/StokeRadioStyle.Type"/>
+        <RadioButton
+            android:id="@+id/stroke_text"
+            style="@style/StokeRadioStyle.Type"/>
+        
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/stroke_tip_size"/>
+    
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/grid_item_spacing"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <ImageView
+            android:id="@+id/stroke_size_tip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/stroke_radio_dark_color"/>
+        <SeekBar
+            android:id="@+id/sb_stroke_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/stroke_split_viertical_space"
+        android:text="@string/stroke_tip_color"/>
+
+    <RadioGroup
+        android:id="@+id/stroke_color_group"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/list_item_height_small"
+        android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/stroke_black"
+            android:checked="true"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_dark_color"/>
+        <RadioButton
+            android:id="@+id/stroke_red"
+            style="@style/StokeRadioStyle"
+            android:layout_gravity="center"
+            android:button="@drawable/stroke_radio_red_color"/>
+        <RadioButton
+            android:id="@+id/stroke_green"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_green_color"/>
+        <RadioButton
+            android:id="@+id/stroke_orange"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_orange_color"/>
+        <RadioButton
+            android:id="@+id/stroke_blue"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_blue_color"/>
+
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/stroke_tip_alpha"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/grid_item_spacing"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <ImageView
+            android:id="@+id/stroke_alpha_tip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/stroke_radio_dark_color"/>
+        <SeekBar
+            android:id="@+id/sb_stroke_alpha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+</LinearLayout>

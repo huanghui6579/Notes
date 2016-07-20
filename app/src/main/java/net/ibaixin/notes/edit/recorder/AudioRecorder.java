@@ -131,6 +131,7 @@ public class AudioRecorder {
     
     private void recordError(final Exception e) {
         Log.e(TAG, "---startRecording--error--" + e.getMessage());
+        mIsRecording = false;
         FileUtil.deleteFile(mFilePath);
         if (mRecordListener != null) {
             mHandler.post(new Runnable() {
@@ -181,10 +182,15 @@ public class AudioRecorder {
      * 停止录音
      */
     public void stopRecording() {
-        mRecorder.stop();
-        mIsRecording = false;
-        if (mTimer != null) {
-            mTimer.cancel();
+        try {
+            mRecorder.stop();
+        } catch (IllegalStateException e) {
+            Log.e(TAG, "---stopRecording--error---" + e.getMessage());
+        } finally {
+            mIsRecording = false;
+            if (mTimer != null) {
+                mTimer.cancel();
+            }
         }
         if (mRecordListener != null) {
             mHandler.post(new Runnable() {
