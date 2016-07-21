@@ -1,5 +1,6 @@
 package net.ibaixin.notes.paint;
 
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.RectF;
@@ -41,10 +42,14 @@ public class PaintRecord {
      * 文字类型
      */
     public static final int PAINT_TYPE_TEXT = 6;
+
+    public static final int DEFAULT_STROKE_SIZE = 7;
+    public static final int DEFAULT_STROKE_ALPHA = 100;
+    public static final int DEFAULT_ERASER_SIZE = 50;
     
     public int type;    //记录的类型
     
-    public int paint;   //笔
+    public Paint paint;   //笔
     
     public Path path;   //画笔的路径
     

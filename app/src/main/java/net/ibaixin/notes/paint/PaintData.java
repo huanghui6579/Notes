@@ -1,6 +1,7 @@
 package net.ibaixin.notes.paint;
 
-import java.util.Stack;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 画笔的数据
@@ -10,12 +11,20 @@ import java.util.Stack;
  */
 public class PaintData {
     //回撤的集合
-    public Stack<PaintRecord> mUndoStack;
+    public List<PaintRecord> mUndoList;
     //前进的集合
-    public Stack<PaintRecord> mRedoStack;
+    public List<PaintRecord> mRedoList;
     
     public PaintData() {
-        mUndoStack = new Stack<>();
-        mRedoStack = new Stack<>();
-    }    
+        mUndoList = new LinkedList<>();
+        mRedoList = new LinkedList<>();
+    }
+
+    /**
+     * 清除
+     */
+    public void clear() {
+        mUndoList.clear();
+        mRedoList.clear();
+    }
 }

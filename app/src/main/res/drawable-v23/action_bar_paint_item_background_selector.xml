@@ -8,7 +8,7 @@
 
     <item>
         <selector>
-            <item android:drawable="@drawable/ic_spinner_ink_action" android:state_selected="true"/>
+            <item  android:state_selected="true" android:drawable="@drawable/ic_action_spinner_ink" />
         </selector>
     </item>
 </ripple>

@@ -17,11 +17,19 @@ public class Painter implements Parcelable {
     
     //画笔类型
     public int type;
+    
+    //画笔颜色的alpha
+    public int alpha;
+    
+    //橡皮檫的尺寸大小
+    public int eraseSize;
 
-    public Painter(int size, int color, int type) {
+    public Painter(int size, int color, int type, int alpha, int eraseSize) {
         this.size = size;
         this.color = color;
         this.type = type;
+        this.alpha = alpha;
+        this.eraseSize = eraseSize;
     }
 
     public Painter() {
@@ -31,6 +39,8 @@ public class Painter implements Parcelable {
         size = in.readInt();
         color = in.readInt();
         type = in.readInt();
+        alpha = in.readInt();
+        eraseSize = in.readInt();
     }
 
     @Override
@@ -38,6 +48,8 @@ public class Painter implements Parcelable {
         dest.writeInt(size);
         dest.writeInt(color);
         dest.writeInt(type);
+        dest.writeInt(alpha);
+        dest.writeInt(eraseSize);
     }
 
     @Override

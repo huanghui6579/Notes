@@ -140,19 +140,29 @@ public abstract class BaseActivity extends SwipeBackActivity {
     protected View getToolBarMenuView(int menuItemId) {
         if (mToolBar != null) {
             View child = mToolBar.findViewById(menuItemId);
-            View parent = null;
-            if (child != null) {
-                ViewParent viewParent = child.getParent();
-                if (viewParent instanceof ViewGroup) {
-                    parent = (ViewGroup) viewParent;
-                } else {
-                    parent = child;
-                }
-            }
-            return parent;
+            return getToolBarMenuView(child);
         } else {
             return null;
         }
+    }
+
+    /**
+     * 获取toolbar上各菜单项的view
+     * @author huanghui1
+     * @update 2016/7/21 16:57
+     * @version: 1.0.0
+     */
+    protected View getToolBarMenuView(View child) {
+        View parent = null;
+        if (child != null) {
+            ViewParent viewParent = child.getParent();
+            if (viewParent instanceof ViewGroup) {
+                parent = (ViewGroup) viewParent;
+            } else {
+                parent = child;
+            }
+        }
+        return parent;
     }
     
     /**

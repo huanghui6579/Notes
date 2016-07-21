@@ -3,13 +3,17 @@ package net.ibaixin.notes.paint.ui;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.paint.PaintData;
+import net.ibaixin.notes.paint.PaintRecord;
 import net.ibaixin.notes.paint.Painter;
+import net.ibaixin.notes.paint.widget.PaintView;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -28,11 +32,95 @@ public class PaintFragment extends Fragment {
     private Painter mPainter;
 
     private OnFragmentInteractionListener mListener;
+    
+    //当前面板的画笔编辑数据
+    private PaintData mPaintData;
+    
+    //画板
+    private PaintView mPaintView;
 
     public PaintFragment() {
         // Required empty public constructor
     }
 
+    public void setPaintData(PaintData paintData) {
+        this.mPaintData = paintData;
+        if (mPaintView != null) {
+            mPaintView.setPaintData(paintData);
+        }
+    }
+
+    /**
+     * 设置画笔颜色的alpha
+     * @param alpha
+     */
+    public void setPaintAlpha(int alpha) {
+        if (mPaintView != null) {
+            mPaintView.setPaintAlpha(alpha);
+        }
+    }
+
+    /**
+     * 设置画笔的颜色
+     * @param color
+     */
+    public void setPaintColor(int color) {
+        if (mPaintView != null) {
+            mPaintView.setPaintColor(color);
+        }
+    }
+
+    /**
+     * 设置画笔的尺寸大小
+     * @param size
+     */
+    public void setPaintSize(int size) {
+        if (mPaintView != null) {
+            mPaintView.setPaintSize(size);
+        }
+    }
+
+    /**
+     * 设置画笔的尺寸大小
+     * @param size
+     * @param paintType
+     */
+    public void setPaintSize(int size, int paintType) {
+        if (paintType == PaintRecord.PAINT_TYPE_ERASE) {
+            setEraseSize(size);
+        } else {
+            setPaintSize(size);
+        }
+    }
+
+    /**
+     * 设置橡皮檫的尺寸大小
+     * @param size
+     */
+    public void setEraseSize(int size) {
+        if (mPaintView != null) {
+            mPaintView.setPaintSize(size, PaintRecord.PAINT_TYPE_ERASE);
+        }
+    }
+
+    /**
+     * 设置画笔的类型
+     * @param type
+     */
+    public void setPaintType(int type) {
+        if (mPaintView != null) {
+            mPaintView.setPaintType(type);
+        }
+    }
+
+    /**
+     * 是否是橡皮檫模式
+     * @return
+     */
+    public boolean isEraseType() {
+        return mPaintView.getPaintType() == PaintRecord.PAINT_TYPE_ERASE;
+    }
+    
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
@@ -62,6 +150,12 @@ public class PaintFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_paint, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        mPaintView = (PaintView) view.findViewById(R.id.paint_view);
+        mPaintView.setPaintData(mPaintData);
     }
 
     // TODO: Rename method, update argument and hook method into UI event

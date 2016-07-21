@@ -1072,4 +1072,14 @@ public class SystemUtil {
             return 0;
         }
     }
+
+    /**
+     * 根据alpha合成颜色
+     * @param alpha Alpha component [0..255] of the color
+     * @param srcColor
+     * @return
+     */
+    public static int calculColor(int alpha, int srcColor) {
+        return Color.argb(alpha, Color.red(srcColor), Color.green(srcColor), Color.blue(srcColor));
+    }
 }

@@ -7,7 +7,7 @@
     <color name="divider_color">#D3D3D3</color>
     
     <color name="control_color">#20000000</color>
-    <color name="control_color_light">#60ffffff</color>
+    <color name="control_color_light">#33ffffff</color>
     
     <color name="item_selected_color">#56000000</color>
     

@@ -4,10 +4,11 @@
     android:layout_height="match_parent"
     tools:context="net.ibaixin.notes.paint.ui.PaintFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <net.ibaixin.notes.paint.widget.PaintView
+        android:id="@+id/paint_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:focusable="true"
+        android:focusableInTouchMode="true"/>
 
 </FrameLayout>
