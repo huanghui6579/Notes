@@ -147,25 +147,16 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         Drawable drawable = tintPenDrawable(mPaintColor);
         penItem.setIcon(drawable);
 
-//        setMenuTint(penItem, Color.BLACK);
-        
-//        MenuItem eraseItem = menu.findItem(R.id.action_eraser);
-
         int disableColor = SystemUtil.adjustAlpha(Color.WHITE, Constants.MENU_ITEM_COLOR_ALPHA);
         
         mUndoItem = menu.findItem(R.id.action_undo);
-        setMenuTint(mUndoItem, disableColor);
-
-        mRedoItem = menu.findItem(R.id.action_redo);
-        setMenuTint(mRedoItem, disableColor);
-        /*
-        if (mPaintType == PaintRecord.PAINT_TYPE_ERASE) {   //橡皮檫模式
-            eraseItem.setIcon(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_action_bar_item_erase_checked, getTheme()));
-        } else {
-            Drawable drawable = getTintDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_action_bar_item_brush_checked, getTheme()), Color.WHITE);
-            penItem.setIcon(drawable);
-        }*/
         
+        tintDoMenuIcon(mUndoItem, R.drawable.ic_content_undo_normal, disableColor);
+        
+        mRedoItem = menu.findItem(R.id.action_redo);
+
+        tintDoMenuIcon(mRedoItem, R.drawable.ic_content_redo_normal, disableColor);
+
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -362,6 +353,27 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     }
 
     /**
+     * 为撤销、前进的菜单设置图标
+     * @param item 菜单项
+     * @param resId 图标的id
+     * @param disableColor 不可用的颜色
+     */
+    private void tintDoMenuIcon(MenuItem item, int resId, int disableColor) {
+        StateListDrawable listDrawable = new StateListDrawable();
+
+        Drawable normalDrawable = ResourcesCompat.getDrawable(getResources(), resId, getTheme());
+        getTintDrawable(normalDrawable, Color.WHITE);
+
+        Drawable disableDrawable = ResourcesCompat.getDrawable(getResources(), resId, getTheme()).mutate();
+        getTintDrawable(disableDrawable, disableColor);
+
+        listDrawable.addState(new int[] {-android.R.attr.state_enabled}, disableDrawable);
+        listDrawable.addState(new int[] {}, normalDrawable);
+
+        item.setIcon(listDrawable);
+    }
+
+    /**
      * 更新画笔的图标
      * @param resId 原始图标的资源id
      * @param color 着色的颜色
@@ -512,9 +524,11 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                 mPaintColor = color;
 
                 updateBrushMenuColor(color);
+
+                int alpha = (mPaintAlpha * 255) / 100;
                 
                 //合成实际的颜色
-                int relColor = SystemUtil.calculColor(mPaintAlpha, color);
+                int relColor = SystemUtil.calculColor(alpha, color);
                 
                 PaintFragment paintFragment = getPaintFragment();
                 paintFragment.setPaintColor(color);
@@ -538,7 +552,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                     ivStrokeAlpha.setAlpha(alpha);
                 }
 
-                mPaintAlpha = alpha;
+                mPaintAlpha = progress;
                 
                 //合成实际的颜色
                 int relColor = SystemUtil.calculColor(alpha, mPaintColor);
