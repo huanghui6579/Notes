@@ -5,6 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -15,7 +17,6 @@ import android.view.View;
 
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
-import net.ibaixin.notes.util.SystemUtil;
 
 /**
  * @author huanghui1
@@ -163,7 +164,7 @@ public class PaintView extends View implements View.OnTouchListener {
      */
     private void drawRecord(Canvas canvas) {
         //设置背景
-        canvas.drawColor(Color.WHITE);
+//        canvas.drawColor(Color.WHITE);
         if (mCurPaintData != null) {
             for (PaintRecord record : mCurPaintData.mUndoList) {
                 int type = record.type;
@@ -205,8 +206,8 @@ public class PaintView extends View implements View.OnTouchListener {
             case PaintRecord.PAINT_TYPE_ERASE:  //橡皮檫
                 mPath = new Path();
                 mPath.moveTo(mDownX, mDownY);
-                
-                mPaint.setColor(Color.WHITE);
+//                mPaint.setColor(Color.WHITE);
+                mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));//擦除模式
                 mPaint.setStrokeWidth(mEraserSize);
                 
                 //设置当前的画笔
@@ -217,7 +218,8 @@ public class PaintView extends View implements View.OnTouchListener {
             case PaintRecord.PAINT_TYPE_LINE:   //画直线
                 mPath = new Path();
                 mPath.moveTo(mDownX, mDownY);
-
+                
+                mPaint.setXfermode(null);
                 mPaint.setColor(mStrokeRealColor);
                 mPaint.setStrokeWidth(mStrokeSize);
 
@@ -229,6 +231,7 @@ public class PaintView extends View implements View.OnTouchListener {
             case PaintRecord.PAINT_TYPE_RECTANGLE:    //画矩形
                 RectF rect = new RectF(mDownX, mDownY, mDownX, mDownY);
 
+                mPaint.setXfermode(null);
                 mPaint.setColor(mStrokeRealColor);
                 mPaint.setStrokeWidth(mStrokeSize);
                 
@@ -291,8 +294,8 @@ public class PaintView extends View implements View.OnTouchListener {
      */
     public void setPaintAlpha(int alpha) {
         mStrokeAlpha = alpha;
-        mStrokeRealColor = SystemUtil.calculColor(alpha, mStrokeColor);
-        mPaint.setColor(mStrokeRealColor);
+//        mStrokeRealColor = SystemUtil.calculColor(alpha, mStrokeColor);
+//        mPaint.setColor(mStrokeRealColor);
     }
 
     /**
@@ -301,8 +304,16 @@ public class PaintView extends View implements View.OnTouchListener {
      */
     public void setPaintColor(int color) {
         mStrokeColor = color;
-        mStrokeRealColor = SystemUtil.calculColor(mStrokeAlpha, color);
-        mPaint.setColor(mStrokeRealColor);
+//        mStrokeRealColor = SystemUtil.calculColor(mStrokeAlpha, color);
+//        mPaint.setColor(mStrokeRealColor);
+    }
+
+    /**
+     * 设置画笔的实际颜色
+     * @param color
+     */
+    public void setPaintRealColor(int color) {
+        mStrokeRealColor = color;
     }
 
     /**
@@ -376,7 +387,7 @@ public class PaintView extends View implements View.OnTouchListener {
     
     public int getUndoCount() {
         int count = 0;
-        if (mCurPaintData != null && mCurPaintData. mUndoList.size() > 0) {
+        if (mCurPaintData != null && mCurPaintData.mUndoList.size() > 0) {
             count = mCurPaintData.mUndoList.size();
         }
         return count;

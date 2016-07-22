@@ -23,7 +23,7 @@ import net.ibaixin.notes.paint.widget.PaintView;
  * Use the {@link PaintFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class PaintFragment extends Fragment {
+public class PaintFragment extends Fragment implements PaintView.OnDrawChangedListener {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PAINTER = "arg_painter";
@@ -57,6 +57,16 @@ public class PaintFragment extends Fragment {
     public void setPaintAlpha(int alpha) {
         if (mPaintView != null) {
             mPaintView.setPaintAlpha(alpha);
+        }
+    }
+
+    /**
+     * 设置画笔的实际颜色
+     * @param color
+     */
+    public void setPaintRealColor(int color) {
+        if (mPaintView != null) {
+            mPaintView.setPaintRealColor(color);
         }
     }
 
@@ -120,6 +130,24 @@ public class PaintFragment extends Fragment {
     public boolean isEraseType() {
         return mPaintView.getPaintType() == PaintRecord.PAINT_TYPE_ERASE;
     }
+
+    /**
+     * 撤销
+     */
+    public void undo() {
+        if (mPaintView != null) {
+            mPaintView.undo();
+        }
+    }
+
+    /**
+     * 前进
+     */
+    public void redo() {
+        if (mPaintView != null) {
+            mPaintView.redo();
+        }
+    }
     
     /**
      * Use this factory method to create a new instance of
@@ -155,7 +183,11 @@ public class PaintFragment extends Fragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         mPaintView = (PaintView) view.findViewById(R.id.paint_view);
+
         mPaintView.setPaintData(mPaintData);
+
+        mPaintView.setOnDrawChangedListener(this);
+
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -178,8 +210,23 @@ public class PaintFragment extends Fragment {
 
     @Override
     public void onDetach() {
-        super.onDetach();
         mListener = null;
+        super.onDetach();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mPaintView != null) {
+            mPaintView.setOnDrawChangedListener(null);
+        }
+        super.onDestroy();
+    }
+
+    @Override
+    public void onDrawChanged() {
+       if (mListener != null) {
+           mListener.onDrawChange(mPaintView.getUndoCount(), mPaintView.getRedoCount());
+       }
     }
 
     /**
@@ -195,5 +242,13 @@ public class PaintFragment extends Fragment {
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+
+        /**
+         * 画笔的步骤数量变化
+         * @param undoSize 撤销的步骤数量
+         * @param redoSize 前进的步骤数量                
+         */
+        void onDrawChange(int undoSize, int redoSize);
+
     }
 }

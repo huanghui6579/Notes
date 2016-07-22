@@ -1080,6 +1080,21 @@ public class SystemUtil {
      * @return
      */
     public static int calculColor(int alpha, int srcColor) {
-        return Color.argb(alpha, Color.red(srcColor), Color.green(srcColor), Color.blue(srcColor));
+        int red = Color.red(srcColor);
+        int green = Color.green(srcColor);
+        int blue = Color.blue(srcColor);
+        return Color.argb(alpha, red, green, blue);
+    }
+
+    public static String addAlpha(String originalColor, int alpha) {
+//        long alphaFixed = Math.round(alpha * 255);
+        String alphaHex = Long.toHexString(alpha);
+        if (alphaHex.length() == 1) {
+            alphaHex = "0" + alphaHex;
+        }
+        originalColor = originalColor.replace("#", "#" + alphaHex);
+
+
+        return originalColor;
     }
 }
