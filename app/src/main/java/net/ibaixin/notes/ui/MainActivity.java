@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.GravityCompat;
@@ -33,6 +34,10 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.anthonycr.grant.PermissionsManager;
+import com.anthonycr.grant.PermissionsResultAction;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
@@ -61,6 +66,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -167,7 +173,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                     intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
                     startActivity(intent);
-                    
+
                     //退出选择模式
                     outActionMode(true);
                     
@@ -321,6 +327,31 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 mOnRefreshListener.onRefresh();
             }
         });
+
+        // Requesting all the permissions in the manifest
+        PermissionsManager.getInstance().requestAllManifestPermissionsIfNecessary(this, new PermissionsResultAction() {
+            @Override
+            public void onGranted() {
+                Toast.makeText(MainActivity.this, "已获取权限", Toast.LENGTH_SHORT).show();
+//                writeToStorage("Hello, World!");
+//                readFromStorage();
+            }
+
+            @Override
+            public void onDenied(String permission) {
+                String message = String.format(Locale.getDefault(), getString(R.string.message_denied), permission);
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        Log.i(TAG, "Activity-onRequestPermissionsResult() PermissionsManager.notifyPermissionsChange()");
+        PermissionsManager.getInstance().notifyPermissionsChange(permissions, grantResults);
     }
 
     /**

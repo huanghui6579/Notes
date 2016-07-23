@@ -11,15 +11,14 @@ import android.os.Handler;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
-import android.support.v4.widget.PopupWindowCompat;
 import android.support.v7.view.menu.ActionMenuItemView;
 import android.util.StateSet;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -282,15 +281,16 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         if (mStrokePopupWindow == null) {
             mStrokePopupWindow = createStrokeWindow(R.layout.popup_brush_panel);
         }
-
-        PopupWindowCompat.showAsDropDown(mStrokePopupWindow, author, 0, 0, Gravity.TOP | Gravity.START);
+        mStrokePopupWindow.showAsDropDown(author);
+//        PopupWindowCompat.showAsDropDown(mStrokePopupWindow, author, 0, 0, Gravity.TOP | Gravity.START);
     }
     
     private void showEraseWindow(View author) {
         if (mErasePopupWindow == null) {
             mErasePopupWindow = createEraseWindow(R.layout.popup_erase_panel);
         }
-        PopupWindowCompat.showAsDropDown(mErasePopupWindow, author, 0, 0, Gravity.TOP | Gravity.START);
+        mErasePopupWindow.showAsDropDown(author);
+//        PopupWindowCompat.showAsDropDown(mErasePopupWindow, author, 0, 0, Gravity.TOP | Gravity.START);
     }
 
     /**
@@ -590,11 +590,12 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         Drawable textDrawable = getCheckDrawable(R.drawable.ic_stroke_text, normalColor, checkedColor);
         strokeText.setButtonDrawable(textDrawable);
 
-        int popuWidth = SystemUtil.measureContentWidth(rootPanel, mPopupMaxWidth);
+        int[] size = SystemUtil.measureContentSize(rootPanel, mPopupMaxWidth);
 
         NotePopupWindow popupWindow = new NotePopupWindow(mContext);
         popupWindow.setContentView(rootPanel);
-        popupWindow.setWidth(popuWidth);
+        popupWindow.setWidth(size[0]);
+        popupWindow.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         popupWindow.setFocusable(true);
         
         return popupWindow;
@@ -683,11 +684,12 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
             }
         });
 
-        int popuWidth = SystemUtil.measureContentWidth(rootPanel, mPopupMaxWidth);
+        int[] size = SystemUtil.measureContentSize(rootPanel, mPopupMaxWidth);
 
         NotePopupWindow popupWindow = new NotePopupWindow(mContext);
         popupWindow.setContentView(rootPanel);
-        popupWindow.setWidth(popuWidth);
+        popupWindow.setWidth(size[0]);
+        popupWindow.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         popupWindow.setFocusable(true);
 
         return popupWindow;

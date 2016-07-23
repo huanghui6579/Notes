@@ -1039,17 +1039,18 @@ public class SystemUtil {
      * 计算控件爱你的宽度
      * @param itemView
      * @param maxWidth
-     * @return
+     * @return [0]:width,[1]:height
      */
-    public static int measureContentWidth(View itemView, int maxWidth) {
+    public static int[] measureContentSize(View itemView, int maxWidth) {
         int widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
         int heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
         itemView.measure(widthMeasureSpec, heightMeasureSpec);
         int itemWidth = itemView.getMeasuredWidth();
+        int itemHeight = itemView.getMeasuredHeight();
         if (itemWidth >= maxWidth) {
             itemWidth = maxWidth;
         }
-        return itemWidth;
+        return new int[] {itemWidth, itemHeight};
     }
 
     /**

@@ -1479,9 +1479,15 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void stopRecorder() {
         if (mAudioRecorder != null) {
-            mAudioRecorder.releaseRecorder();
-            mAudioRecorder = null;
-            
+
+            doInbackground(new Runnable() {
+                @Override
+                public void run() {
+                    mAudioRecorder.releaseRecorder();
+                    mAudioRecorder = null;
+                }
+            });
+
             hideRecordView();
             
             Log.d(TAG, "----stopRecorder---record---file---" + mAttachFile);

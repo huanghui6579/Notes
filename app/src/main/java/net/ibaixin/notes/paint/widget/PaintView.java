@@ -167,6 +167,7 @@ public class PaintView extends View implements View.OnTouchListener {
 //        canvas.drawColor(Color.WHITE);
         if (mCurPaintData != null) {
             for (PaintRecord record : mCurPaintData.mUndoList) {
+
                 int type = record.type;
                 switch (type) {
                     case PaintRecord.PAINT_TYPE_ERASE:
@@ -183,9 +184,11 @@ public class PaintView extends View implements View.OnTouchListener {
                     case PaintRecord.PAINT_TYPE_TEXT:
                         if (record.text != null) {
                             StaticLayout layout = new StaticLayout(record.text, record.textPaint, record.textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0F, 0.0F, true);
+                            canvas.save();
                             canvas.translate(record.textOffX, record.textOffY);
                             layout.draw(canvas);
-                            canvas.translate(-record.textOffX, -record.textOffY);
+                            canvas.restore();
+//                            canvas.translate(-record.textOffX, -record.textOffY);
                         }
                         break;
                 }
@@ -245,7 +248,7 @@ public class PaintView extends View implements View.OnTouchListener {
                 TextPaint textPaint = new TextPaint();
                 textPaint.setColor(mStrokeRealColor);
                 mCurPaintRecord.textPaint = textPaint;
-                
+
                 if (mTextWindowCallback != null) {
                     mTextWindowCallback.onText(this, mCurPaintRecord);
                 }
