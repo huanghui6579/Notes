@@ -182,13 +182,13 @@ public class PaintView extends View implements View.OnTouchListener {
                         canvas.drawRect(record.rect, record.paint);
                         break;
                     case PaintRecord.PAINT_TYPE_TEXT:
-                        if (record.text != null) {
+                        if (record.text != null && record.textWidth > 0) {
                             StaticLayout layout = new StaticLayout(record.text, record.textPaint, record.textWidth, Layout.Alignment.ALIGN_NORMAL, 1.0F, 0.0F, true);
-                            canvas.save();
+//                            canvas.save();
                             canvas.translate(record.textOffX, record.textOffY);
                             layout.draw(canvas);
-                            canvas.restore();
-//                            canvas.translate(-record.textOffX, -record.textOffY);
+//                            canvas.restore();
+                            canvas.translate(-record.textOffX, -record.textOffY);
                         }
                         break;
                 }
@@ -252,7 +252,7 @@ public class PaintView extends View implements View.OnTouchListener {
                 if (mTextWindowCallback != null) {
                     mTextWindowCallback.onText(this, mCurPaintRecord);
                 }
-                break;
+                return;
         }
         //将该操作步骤添加到撤销的栈中
         mCurPaintData.mUndoList.add(mCurPaintRecord);

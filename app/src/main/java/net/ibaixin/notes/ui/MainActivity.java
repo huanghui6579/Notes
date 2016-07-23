@@ -1,5 +1,6 @@
 package net.ibaixin.notes.ui;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -11,6 +12,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -66,7 +68,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -328,22 +329,37 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             }
         });
 
-        // Requesting all the permissions in the manifest
-        PermissionsManager.getInstance().requestAllManifestPermissionsIfNecessary(this, new PermissionsResultAction() {
+        requestPermission();
+    }
+
+    /**
+     * 请求权限
+     */
+    private void requestPermission() {
+        final String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissions, new PermissionsResultAction() {
+
             @Override
             public void onGranted() {
-                Toast.makeText(MainActivity.this, "已获取权限", Toast.LENGTH_SHORT).show();
-//                writeToStorage("Hello, World!");
-//                readFromStorage();
+                Log.d(TAG, "---requestPermission---onGranted---");
+//                Toast.makeText(mContext,"onGranted",Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onDenied(String permission) {
-                String message = String.format(Locale.getDefault(), getString(R.string.message_denied), permission);
-                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
+                if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
+                        permissions[0])) {
+                    Toast.makeText(mContext,"please give me the permission",Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(mContext,"onDenied--request--",Toast.LENGTH_SHORT).show();
+                    //进行权限请求
+                    /*ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            EXTERNAL_STORAGE_REQ_CODE);*/
+                }
             }
         });
-
     }
 
     @Override

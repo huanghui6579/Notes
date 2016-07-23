@@ -1,5 +1,6 @@
 package net.ibaixin.notes.ui;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
@@ -36,7 +38,10 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.anthonycr.grant.PermissionsManager;
+import com.anthonycr.grant.PermissionsResultAction;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import net.ibaixin.notes.R;
@@ -1420,58 +1425,95 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 请求录音的权限，还包含文件写入sd卡的权限
+     * @param resultAction
+     */
+    private void requestPermission(PermissionsResultAction resultAction) {
+        String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
+        PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissions, resultAction);
+    }
+
+    /**
      * 初始化录音器
      */
-    private void startRecorder() throws Exception {
+    private void startRecorder() {
         if (mAudioRecorder == null) {
             mAudioRecorder = new AudioRecorder(mHandler);
         }
-        if (mAttachFile == null) {
-            String sid = getNoteSid();
-            mAttachFile = SystemUtil.getAttachFile(sid, Attach.VOICE);
-            if (mAttachFile == null) {
-                throw new IOException("getAttachFile error");
-            }
-        }
-        mAudioRecorder.setFilePath(mAttachFile.getAbsolutePath());
-        mAudioRecorder.setRecordListener(new AudioRecorder.OnRecordListener() {
-            @Override
-            public void onBeforeRecord(String filePath) {
-                Log.d(TAG, "----onBeforeRecord--");
-                showRecordView();
-            }
 
+        requestPermission(new PermissionsResultAction() {
             @Override
-            public void onRecording(String filePath, long time) {
-                updateRecordTime(time);
-            }
-
-            @Override
-            public void onEndRecord(String filePath, long time) {
-                if (filePath != null) {
-                    File file = new File(filePath);
-                    Attach attach = new Attach();
-                    attach.setType(Attach.VOICE);
-                    attach.setDecription(String.valueOf(time));
-                    attach.setSId(SystemUtil.generateAttachSid());
-                    attach.setLocalPath(filePath);
-                    attach.setFilename(file.getName());
-                    attach.setSize(file.length());
-                    mEtContent.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
-                } else {
-                    mAttachFile = null;
+            public void onGranted() {
+                if (mAttachFile == null) {
+                    String sid = getNoteSid();
+                    try {
+                        mAttachFile = SystemUtil.getAttachFile(sid, Attach.VOICE);
+                    } catch (IOException e) {
+                        Log.e(TAG, "getAttachFile error：" + e.getMessage());
+                        e.printStackTrace();
+                    }
+                    if (mAttachFile == null) {
+                        SystemUtil.makeShortToast(R.string.record_error);
+                        Log.e(TAG, "getAttachFile error");
+                    }
                 }
-                hideRecordView();
+                mAudioRecorder.setFilePath(mAttachFile.getAbsolutePath());
+                mAudioRecorder.setRecordListener(new AudioRecorder.OnRecordListener() {
+                    @Override
+                    public void onBeforeRecord(String filePath) {
+                        Log.d(TAG, "----onBeforeRecord--");
+                        showRecordView();
+                    }
+
+                    @Override
+                    public void onRecording(String filePath, long time) {
+                        updateRecordTime(time);
+                    }
+
+                    @Override
+                    public void onEndRecord(String filePath, long time) {
+                        if (filePath != null) {
+                            File file = new File(filePath);
+                            Attach attach = new Attach();
+                            attach.setType(Attach.VOICE);
+                            attach.setDecription(String.valueOf(time));
+                            attach.setSId(SystemUtil.generateAttachSid());
+                            attach.setLocalPath(filePath);
+                            attach.setFilename(file.getName());
+                            attach.setSize(file.length());
+                            mEtContent.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
+                        } else {
+                            mAttachFile = null;
+                        }
+                        hideRecordView();
+                    }
+
+                    @Override
+                    public void onRecordError(String filePath, String errorMsg) {
+                        Log.d(TAG, "----onRecordError--");
+                        hideRecordView();
+                        SystemUtil.makeShortToast(R.string.record_error);
+                    }
+                });
+                mAudioRecorder.startRecording();
             }
 
             @Override
-            public void onRecordError(String filePath, String errorMsg) {
-                Log.d(TAG, "----onRecordError--");
-                hideRecordView();
-                SystemUtil.makeShortToast(R.string.record_error);
+            public void onDenied(String permission) {
+                //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
+                if (ActivityCompat.shouldShowRequestPermissionRationale(NoteEditActivity.this,
+                        permission)) {
+                    Toast.makeText(mContext,"please give me the permission",Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(mContext,"onDenied--request--",Toast.LENGTH_SHORT).show();
+                    //进行权限请求
+                    /*ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            EXTERNAL_STORAGE_REQ_CODE);*/
+                }
             }
         });
-        mAudioRecorder.startRecording();
+
     }
 
     /**

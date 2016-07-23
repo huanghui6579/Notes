@@ -234,6 +234,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         setupBrushMenuIcon();
         mMenuBrushView.setSelected(false);
         if (!paintFragment.isEraseType()) {  //之前选择的是画笔，则此次选择橡皮檫，不弹窗
+            mPrePainType = mPaintType;
             mPaintType = PaintRecord.PAINT_TYPE_ERASE;
             paintFragment.setPaintType(mPaintType);
         } else {    //之前选择的是橡皮檫，则此次弹窗
@@ -246,6 +247,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
      */
     private void setupBrushMenuIcon() {
         if (mMenuBrushView == null) {
+            Log.d(TAG, "--setupBrushMenuIcon----in--");
             mMenuBrushView = getBrushMenuItem();
             Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_action_bar_item_brush, getTheme());
             mMenuBrushView.setIcon(drawable);
@@ -719,20 +721,20 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     @Override
     public void onDrawChange(int undoSize, int redoSize) {
         if (undoSize > 0) {
-            if (!mUndoItem.isEnabled()) {
+            if (mUndoItem != null && !mUndoItem.isEnabled()) {
                 mUndoItem.setEnabled(true);
             }
         } else {
-            if (mUndoItem.isEnabled()) {
+            if (mUndoItem != null && mUndoItem.isEnabled()) {
                 mUndoItem.setEnabled(false);
             }
         }
         if (redoSize > 0) {
-            if (!mRedoItem.isEnabled()) {
+            if (mRedoItem != null && !mRedoItem.isEnabled()) {
                 mRedoItem.setEnabled(true);
             }
         } else {
-            if (mRedoItem.isEnabled()) {
+            if (mRedoItem != null && mRedoItem.isEnabled()) {
                 mRedoItem.setEnabled(false);
             }
         }

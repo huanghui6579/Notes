@@ -5,15 +5,24 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.PopupWindow;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
 import net.ibaixin.notes.paint.Painter;
 import net.ibaixin.notes.paint.widget.PaintView;
+import net.ibaixin.notes.util.SystemUtil;
+import net.ibaixin.notes.util.log.Log;
+import net.ibaixin.notes.widget.NotePopupWindow;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -23,10 +32,11 @@ import net.ibaixin.notes.paint.widget.PaintView;
  * Use the {@link PaintFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class PaintFragment extends Fragment implements PaintView.OnDrawChangedListener {
+public class PaintFragment extends Fragment implements PaintView.OnDrawChangedListener, PaintView.TextWindowCallback {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PAINTER = "arg_painter";
+    private static final java.lang.String TAG = "PaintFragment";
 
     // TODO: Rename and change types of parameters
     private Painter mPainter;
@@ -38,6 +48,19 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
     
     //画板
     private PaintView mPaintView;
+    
+    //画本文的弹窗
+    private PopupWindow mTextWindow;
+    
+    //画板的高度
+    private int mPintViewHeight;
+    private int mPintViewWidth;
+    
+    /*//软键盘的高度
+    private int mKeyboardHeight;
+    //文本的偏移量
+    private int mTextOffX;
+    private int mTextOffY;*/
 
     public PaintFragment() {
         // Required empty public constructor
@@ -181,13 +204,38 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(final View view, @Nullable Bundle savedInstanceState) {
         mPaintView = (PaintView) view.findViewById(R.id.paint_view);
+
+//        getPaintViewSize(mPaintView);
 
         mPaintView.setPaintData(mPaintData);
 
+        mPaintView.setTextWindowCallback(this);
+
         mPaintView.setOnDrawChangedListener(this);
 
+    }
+
+    /**
+     * 计算画板的尺寸
+     * @param view
+     */
+    @Deprecated
+    public void getPaintViewSize(final View view) {
+        ViewTreeObserver vto = view.getViewTreeObserver();
+        vto.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            public boolean onPreDraw() {
+                if (mPintViewHeight == 0 && mPintViewWidth == 0) {
+                    int height = view.getMeasuredHeight();
+                    int width = view.getMeasuredWidth();
+                    mPintViewHeight = height;
+                    mPintViewWidth = width;
+                    Log.d(TAG, "--getPaintViewSize---mPintViewWidth--" + mPintViewWidth + "---mPintViewHeight---" + mPintViewHeight);
+                }
+                return true;
+            }
+        });
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -227,6 +275,52 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
        if (mListener != null) {
            mListener.onDrawChange(mPaintView.getUndoCount(), mPaintView.getRedoCount());
        }
+    }
+
+    @Override
+    public void onText(View view, PaintRecord paintRecord) {
+        showTextWindow(view, paintRecord);
+    }
+
+    /**
+     * 显示文本的弹窗
+     * @param author
+     * @param record
+     */
+    private void showTextWindow(View author, final PaintRecord record) {
+        Context context = getContext();
+        if (mTextWindow == null) {
+            mTextWindow = new NotePopupWindow(context);
+
+            final EditText editText = new EditText(context);
+            editText.setMaxEms(20);
+            editText.setMinEms(10);
+            editText.setTextSize(16.0f);
+            editText.setSelectAllOnFocus(true);
+
+            mTextWindow.setContentView(editText);
+            mTextWindow.setWidth(WindowManager.LayoutParams.WRAP_CONTENT);
+            mTextWindow.setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
+            mTextWindow.setFocusable(true);
+            mTextWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
+        }
+        mTextWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                EditText editText = (EditText) mTextWindow.getContentView();
+                if (editText.getText() != null && !TextUtils.isEmpty(editText.getText())) {
+                    record.text = editText.getText().toString();
+                    record.textPaint.setTextSize(editText.getTextSize());
+                    record.textWidth = editText.getWidth();
+                    mPaintView.addRecord(record);
+                }
+            }
+        });
+        mTextWindow.showAtLocation(author, Gravity.CENTER, 0, 0);
+        mTextWindow.setInputMethodMode(PopupWindow.INPUT_METHOD_NEEDED);
+
+        SystemUtil.toggleSoftInput(context);
     }
 
     /**
