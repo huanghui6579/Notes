@@ -75,7 +75,9 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     private ActionMenuItemView mMenuBrushView;
     //橡皮檫的菜单控件
     private ActionMenuItemView mMenuEraseView;
-    
+
+    private MenuItem mBrushItem;
+
     //撤销菜单项
     private MenuItem mUndoItem;
     //前进菜单项
@@ -98,6 +100,11 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         mPaintList.add(paintData);
 
         paintFragment.setPaintData(paintData);
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled() {
+        return false;
     }
 
     /**
@@ -140,11 +147,12 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = getMenuInflater();
         menuInflater.inflate(R.menu.paint_edit, menu);
-        
-        MenuItem penItem = menu.findItem(R.id.action_pen);
-        
-        Drawable drawable = tintPenDrawable(mPaintColor);
-        penItem.setIcon(drawable);
+
+        mBrushItem = menu.findItem(R.id.action_pen);
+
+        int alpha = getRelAlpha(mPaintAlpha);
+        Drawable drawable = tintPenDrawable(mPaintType, mPaintColor, alpha);
+        mBrushItem.setIcon(drawable);
 
         int disableColor = SystemUtil.adjustAlpha(Color.WHITE, Constants.MENU_ITEM_COLOR_ALPHA);
         
@@ -249,8 +257,10 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         if (mMenuBrushView == null) {
             Log.d(TAG, "--setupBrushMenuIcon----in--");
             mMenuBrushView = getBrushMenuItem();
-            Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_action_bar_item_brush, getTheme());
-            mMenuBrushView.setIcon(drawable);
+
+            Drawable drawable = getBrushMenuIcon(mPaintType, mPaintColor, mPaintAlpha);
+            mBrushItem.setIcon(drawable);
+//            mMenuBrushView.setIcon(drawable);
         }
     }
 
@@ -259,8 +269,52 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
      * @param drawable
      */
     private void setupBrushMenuIcon(Drawable drawable) {
-        mMenuBrushView = getBrushMenuItem();
-        mMenuBrushView.setIcon(drawable);
+//        mMenuBrushView = getBrushMenuItem();
+        mBrushItem.setIcon(drawable);
+    }
+
+    /**
+     * 根据画笔的类型、颜色、alpha来设置画笔菜单的图标
+     * @param paintType 画笔的类型
+     * @param paintColor 画笔的颜色，选择的颜色，可能不是实际颜色
+     * @param paintAlpha 画笔颜色的alpha，画笔的颜色有alpha和选择的颜色合成
+     */
+    private Drawable getBrushMenuIcon(int paintType, int paintColor, int paintAlpha) {
+        int resId = getDrawableRes(paintType);
+
+        //合成后的实际颜色
+        int relColor = SystemUtil.calculColor(paintAlpha, paintColor);
+        return getBrushMenuIcon(resId, relColor);
+    }
+
+    /**
+     * 根据画笔的类型、实际颜色
+     * @param resId 画笔的图标资源id
+     * @param relColor 画笔的实际颜色
+     */
+    private Drawable getBrushMenuIcon(int resId, int relColor) {
+        //选中后的小角标图标
+        Resources resources = getResources();
+        Drawable spinnerInkDrawable = resources.getDrawable(R.drawable.ic_action_spinner_ink);
+
+        //正常非点击状态下的图标颜色
+        Drawable normalDrawable = resources.getDrawable(resId);
+
+        //给正常的图标着色
+        getTintDrawable(normalDrawable, relColor);
+
+        //合成的选中后的图标
+        Drawable[] drawables = new Drawable[2];
+        drawables[0] = normalDrawable;
+        drawables[1] = spinnerInkDrawable;
+        LayerDrawable layerDrawable = new LayerDrawable(drawables);
+
+        StateListDrawable listDrawable = new StateListDrawable();
+        listDrawable.addState(new int[] {android.R.attr.state_checked}, layerDrawable);
+        listDrawable.addState(new int[] {android.R.attr.state_selected}, layerDrawable);
+        listDrawable.addState(new int[] {}, normalDrawable);
+
+        return listDrawable;
     }
 
     /**
@@ -345,13 +399,54 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     }
 
     /**
-     * 给画笔的菜单图标着色
-     * @param color
+     * 给画笔的图标的着色
+     * @param paintType 画笔的类型
+     * @param paintColor 画笔的选中颜色
+     * @param paintAlpha 画笔的alpha,[0...100]
      * @return
      */
-    private Drawable tintPenDrawable(int color) {
-        Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_action_bar_item_brush_checked, getTheme());
-        return tintLayerDrawable(drawable, color);
+    private Drawable tintPenDrawable(int paintType, int paintColor, int paintAlpha) {
+        int resId = getDrawableRes(paintType);
+        Resources resources = getResources();
+        Drawable drawable = ResourcesCompat.getDrawable(resources, resId, getTheme());
+        Drawable inkDrawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_action_spinner_ink, getTheme());
+
+        Drawable[] drawables = new Drawable[2];
+        drawables[0] = drawable;
+        drawables[1] = inkDrawable;
+
+        LayerDrawable layerDrawable = new LayerDrawable(drawables);
+
+        int relColor = SystemUtil.calculColor(paintAlpha, paintColor);
+
+        return tintLayerDrawable(layerDrawable, relColor);
+    }
+
+    /**
+     * 根据画笔的类型获取对应类型的图标
+     * @param paintType 画笔的类型
+     * @return
+     */
+    private int getDrawableRes(int paintType) {
+        int resId = 0;
+        switch (paintType) {
+            case PaintRecord.PAINT_TYPE_DRAW:
+                resId = R.drawable.ic_action_brush;
+                break;
+            case PaintRecord.PAINT_TYPE_LINE:
+                resId = R.drawable.ic_stroke_line;
+                break;
+            case PaintRecord.PAINT_TYPE_CIRCLE:
+                resId = R.drawable.ic_stroke_circle;
+                break;
+            case PaintRecord.PAINT_TYPE_RECTANGLE:
+                resId = R.drawable.ic_stroke_rectangle;
+                break;
+            case PaintRecord.PAINT_TYPE_TEXT:
+                resId = R.drawable.ic_stroke_text;
+                break;
+        }
+        return resId;
     }
 
     /**
@@ -376,38 +471,16 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     }
 
     /**
-     * 更新画笔的图标
-     * @param resId 原始图标的资源id
-     * @param color 着色的颜色
-     */
-    private void updateBrushMenuIcon(int resId, int color) {
-        Resources resources = getResources();
-        Drawable[] drawables = new Drawable[2];
-        Drawable firstDrawable = ResourcesCompat.getDrawable(resources, resId, getTheme());
-        drawables[0] = firstDrawable;
-        drawables[1] = ResourcesCompat.getDrawable(resources, R.drawable.ic_action_spinner_ink, getTheme());
-
-        getTintDrawable(firstDrawable, color);
-
-        LayerDrawable layerDrawable = new LayerDrawable(drawables);
-
-        StateListDrawable listDrawable = new StateListDrawable();
-        listDrawable.addState(new int[] {android.R.attr.state_checked}, layerDrawable);
-        listDrawable.addState(new int[] {android.R.attr.state_selected}, layerDrawable);
-        listDrawable.addState(new int[] {}, firstDrawable);
-
-        setupBrushMenuIcon(listDrawable);
-    }
-
-    /**
      * 更新菜单图标的颜色
      * @param color
      */
     private void updateBrushMenuColor(int color) {
-        mMenuBrushView = getBrushMenuItem();
-        Drawable[] drawables = mMenuBrushView.getCompoundDrawables();
-        if (drawables.length > 0 && drawables[0] instanceof StateListDrawable) {
-            StateListDrawable listDrawable = (StateListDrawable) drawables[0];
+        if (mBrushItem == null) {
+            return;
+        }
+        Drawable drawable = mBrushItem.getIcon();
+        if (drawable instanceof StateListDrawable) {
+            StateListDrawable listDrawable = (StateListDrawable) drawable;
             //给没有选择状态的图标着色
             tintNormalDrawable(listDrawable, color);
             //给选中的层级图标着色
@@ -465,7 +538,11 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                         break;
                 }
 
-                updateBrushMenuIcon(resId, mPaintColor);
+                int relColor = SystemUtil.calculColor(mPaintAlpha, mPaintColor);
+
+                Drawable icon = getBrushMenuIcon(resId, relColor);
+
+                setupBrushMenuIcon(icon);
                 
                 PaintFragment paintFragment = getPaintFragment();
                 paintFragment.setPaintType(mPaintType);
@@ -525,13 +602,13 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                 
                 mPaintColor = color;
 
-                updateBrushMenuColor(color);
+                int alpha = getRelAlpha(mPaintAlpha);
 
-                int alpha = (mPaintAlpha * 255) / 100;
-                
                 //合成实际的颜色
                 int relColor = SystemUtil.calculColor(alpha, color);
-                
+
+                updateBrushMenuColor(relColor);
+
                 PaintFragment paintFragment = getPaintFragment();
                 paintFragment.setPaintColor(color);
                 paintFragment.setPaintRealColor(relColor);
@@ -546,8 +623,8 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         sbStrokeAlpha.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                
-                int alpha = (progress * 255) / 100;//百分比转换成255级透明度
+                int alpha = getRelAlpha(progress);
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                     ivStrokeAlpha.setImageAlpha(alpha);
                 } else {
@@ -555,7 +632,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                 }
 
                 mPaintAlpha = progress;
-                
+
                 //合成实际的颜色
                 int relColor = SystemUtil.calculColor(alpha, mPaintColor);
                 
@@ -601,6 +678,15 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         popupWindow.setFocusable(true);
         
         return popupWindow;
+    }
+
+    /**
+     * alpha的百分比，[0...100]
+     * @param alpha alpha的百分比，[0...100]
+     * @return
+     */
+    private int getRelAlpha(int alpha) {
+        return (alpha * 255) / 100;//百分比转换成255级透明度
     }
 
     /**
@@ -669,6 +755,14 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         TextView tvClear = (TextView) rootPanel.findViewById(R.id.tv_clear);
         sbEraseSize.setProgress(mEraseSize);
         setPaintSize(ivEraseSizeTip, mEraseSize, PaintRecord.PAINT_TYPE_ERASE);
+        tvClear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //清除屏幕
+                PaintFragment paintFragment = getPaintFragment();
+                paintFragment.erase();
+            }
+        });
         sbEraseSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {

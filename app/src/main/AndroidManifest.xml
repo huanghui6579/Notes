@@ -43,7 +43,7 @@
             android:name=".ui.FolderEditActivity"
             android:label="@string/lable_folder_edit"
             android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.HandWritingActivity" />
+        <activity android:name=".ui.HandWritingActivity"/>
     </application>
 
 </manifest>

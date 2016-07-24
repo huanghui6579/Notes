@@ -137,6 +137,15 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
     }
 
     /**
+     * 清屏
+     */
+    public void erase() {
+        if (mPaintView != null) {
+            mPaintView.erase();
+        }
+    }
+
+    /**
      * 设置画笔的类型
      * @param type
      */

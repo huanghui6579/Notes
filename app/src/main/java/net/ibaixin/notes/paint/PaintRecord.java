@@ -43,6 +43,11 @@ public class PaintRecord {
      */
     public static final int PAINT_TYPE_TEXT = 6;
 
+    /**
+     * 清屏
+     */
+    public static final int PAINT_TYPE_CLEAR_ALL = 7;
+
     public static final int DEFAULT_STROKE_SIZE = 7;
     public static final int DEFAULT_STROKE_ALPHA = 100;
     public static final int DEFAULT_ERASER_SIZE = 50;

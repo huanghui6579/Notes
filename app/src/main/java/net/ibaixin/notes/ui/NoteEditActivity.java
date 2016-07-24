@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -1437,13 +1438,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * 初始化录音器
      */
     private void startRecorder() {
-        if (mAudioRecorder == null) {
-            mAudioRecorder = new AudioRecorder(mHandler);
-        }
-
         requestPermission(new PermissionsResultAction() {
             @Override
             public void onGranted() {
+                if (mAudioRecorder == null) {
+                    mAudioRecorder = new AudioRecorder(mHandler);
+                }
                 if (mAttachFile == null) {
                     String sid = getNoteSid();
                     try {
@@ -1516,19 +1516,21 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        PermissionsManager.getInstance().notifyPermissionsChange(permissions, grantResults);
+    }
+
     /**
      * 停止录音
      */
     private void stopRecorder() {
         if (mAudioRecorder != null) {
 
-            doInbackground(new Runnable() {
-                @Override
-                public void run() {
-                    mAudioRecorder.releaseRecorder();
-                    mAudioRecorder = null;
-                }
-            });
+            mAudioRecorder.releaseRecorder();
+            mAudioRecorder = null;
 
             hideRecordView();
             

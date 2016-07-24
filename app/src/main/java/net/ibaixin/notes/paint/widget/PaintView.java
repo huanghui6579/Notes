@@ -191,6 +191,15 @@ public class PaintView extends View implements View.OnTouchListener {
                             canvas.translate(-record.textOffX, -record.textOffY);
                         }
                         break;
+                    case PaintRecord.PAINT_TYPE_CLEAR_ALL:  //清屏
+                        Paint paint = record.paint;
+                        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+                        canvas.drawPaint(paint);
+
+                        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+                        canvas.drawColor(Color.WHITE);
+
+                        break;
                 }
             }
         }
@@ -207,10 +216,11 @@ public class PaintView extends View implements View.OnTouchListener {
         mCurPaintRecord = new PaintRecord(mPaintType);
         switch (mPaintType) {
             case PaintRecord.PAINT_TYPE_ERASE:  //橡皮檫
+                mPaint.setXfermode(null);
                 mPath = new Path();
                 mPath.moveTo(mDownX, mDownY);
-//                mPaint.setColor(Color.WHITE);
-                mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));//擦除模式
+//                mPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));//擦除模式
+                mPaint.setColor(Color.WHITE);
                 mPaint.setStrokeWidth(mEraserSize);
                 
                 //设置当前的画笔
@@ -400,10 +410,10 @@ public class PaintView extends View implements View.OnTouchListener {
      * 回收，清屏
      */
     public void erase() {
-        if (mCurPaintData != null) {
-            mCurPaintData.clear();
-            invalidate();
-        }
+        PaintRecord record = new PaintRecord(PaintRecord.PAINT_TYPE_CLEAR_ALL);
+        record.paint = new Paint();
+        RectF rect = new RectF(0, 0, getWidth(), getHeight());
+        addRecord(record);
     }
 
     /**
