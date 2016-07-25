@@ -31,6 +31,12 @@ public interface NoteRichSpan {
     String addSpan(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd);
 
     /**
+     * 获取控件的尺寸
+     * @return
+     */
+    int[] getSize();
+
+    /**
      * 设置文本
      * @param text
      */

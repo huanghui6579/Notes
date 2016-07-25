@@ -7,6 +7,8 @@ import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.SparseArray;
 
+import com.nostra13.universalimageloader.core.assist.ImageSize;
+
 import net.ibaixin.notes.listener.RichTextClickListener;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.util.ImageUtil;
@@ -106,9 +108,19 @@ public class AttachResolver implements Resolver {
                 final int selStart = spec.start;
                 final int selEnd = spec.end;
                 ReplacementSpan replacementSpan = null;
+                Bitmap bitmap = null;
                 switch (attach.getType()) {
                     case Attach.IMAGE:  //显示图片
-                        Bitmap bitmap = ImageUtil.loadImageThumbnailsSync(filePath);
+                        bitmap = ImageUtil.loadImageThumbnailsSync(filePath);
+                        if (bitmap == null) {
+                            return;
+                        }
+                        replacementSpan = new ImageSpan(context, bitmap);
+                        break;
+                    case Attach.PAINT:  //显示绘画
+                        int[] size = richSpan.getSize();
+                        ImageSize imageSize = new ImageSize(size[0], size[1]);
+                        bitmap = ImageUtil.loadImageThumbnailsSync(filePath, imageSize);
                         if (bitmap == null) {
                             return;
                         }

@@ -1,6 +1,7 @@
 package net.ibaixin.notes.paint.widget;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -17,6 +18,7 @@ import android.view.View;
 
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
+import net.ibaixin.notes.util.log.Log;
 
 /**
  * @author huanghui1
@@ -412,8 +414,35 @@ public class PaintView extends View implements View.OnTouchListener {
     public void erase() {
         PaintRecord record = new PaintRecord(PaintRecord.PAINT_TYPE_CLEAR_ALL);
         record.paint = new Paint();
-        RectF rect = new RectF(0, 0, getWidth(), getHeight());
         addRecord(record);
+    }
+
+    /**
+     * 是否有绘画内容
+     * @return
+     */
+    public boolean hasPaintContent() {
+        if (mCurPaintData == null || mCurPaintData.mUndoList.size() == 0) { //没有画
+            Log.d(TAG, "---Paint---has--no---paint---content---");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * 将画板转换成图片来保存
+     * @return
+     */
+    public Bitmap getBitmap() {
+        if (!hasPaintContent()) {
+            return null;
+        }
+        Bitmap bitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawColor(Color.WHITE);
+        draw(canvas);
+        return bitmap;
     }
 
     /**

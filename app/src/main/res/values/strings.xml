@@ -27,6 +27,8 @@
     <string name="delete_result_error">删除失败</string>
     <string name="move_result_error">移动失败</string>
     <string name="record_error">录音失败，请检查是否有录音的权限</string>
+    <string name="paint_save_error_reason">画图保存失败，由于画图需要保存文件到SD卡中，所以请授予该应用SD卡的读写权限</string>
+    <string name="paint_save_error">画图保存失败，请检查是否授予应用SD卡读写权限</string>
 
     <string name="init">初始化中…</string>
 

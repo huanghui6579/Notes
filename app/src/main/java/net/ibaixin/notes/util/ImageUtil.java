@@ -1,6 +1,7 @@
 package net.ibaixin.notes.util;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
@@ -263,18 +264,62 @@ public class ImageUtil {
      * @throws IOException
      */
     public static boolean saveBitmap(Bitmap bitmap, File saveFile) throws IOException {
+        return saveBitmap(bitmap, saveFile, Bitmap.CompressFormat.JPEG);
+    }
+
+    /**
+     * 保存bitmap到本地文件
+     * @param bitmap 图片对象
+     * @param saveFile 本地的文件
+     * @param format 图片的格式                
+     * @return
+     * @throws IOException
+     */
+    public static boolean saveBitmap(Bitmap bitmap, File saveFile, Bitmap.CompressFormat format) throws IOException {
         if(bitmap == null || saveFile == null) {
             return false;
         }
         try {
             BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(saveFile));
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os);
+            bitmap.compress(format, 100, os);
             os.flush();
             os.close();
         } finally {
             bitmap.recycle();
         }
         return true;
+    }
+
+    /**
+     * 计算图片的缩放值
+     * @param options
+     * @param reqWidth
+     * @param reqHeight
+     * @return
+     */
+    public static int calculateInSampleSize(BitmapFactory.Options options,
+                                            int reqWidth, int reqHeight) {
+        // Raw height and width of image
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+
+            // Calculate ratios of height and width to requested height and
+            // width
+            final int heightRatio = Math.round((float) height
+                    / (float) reqHeight);
+            final int widthRatio = Math.round((float) width / (float) reqWidth);
+
+            // Choose the smallest ratio as inSampleSize value, this will
+            // guarantee
+            // a final image with both dimensions larger than or equal to the
+            // requested height and width.
+            inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
+        }
+
+        return inSampleSize;
     }
     
 }

@@ -549,10 +549,29 @@ public class NoteManager extends Observable<Observer> {
      * @param attachList
      */
     private void updateTextAttach(SQLiteDatabase db, NoteInfo note, List<String> cacheList, List<String> attachList) {
+        updateTextAttach(db, note, cacheList, attachList, true);
+    }
+
+    /**
+     * 更新文本中的附件信息
+     * @param db
+     * @param note
+     * @param cacheList 缓存中的附件集合
+     * @param attachList 实际文本中识别出来的附件集合
+     * @param updateUpdate 是否需要更新笔记的信息，false:仅仅删除附件数据库记录
+     */
+    public void updateTextAttach(SQLiteDatabase db, NoteInfo note, List<String> cacheList, List<String> attachList, boolean updateUpdate) {
+        if (db == null) {
+            db = mDBHelper.getWritableDatabase();
+        }
         if (attachList != null && attachList.size() > 0) {  //有附件，则与缓存中比较
-            //更新附件的noteid
-            Log.d(TAG, "--updateAttachNote--list---" + attachList);
-            updateAttachNote(db, attachList, note.getSId());
+            if (updateUpdate) {
+                //更新附件的noteid
+                Log.d(TAG, "--updateAttachNote--list---" + attachList);
+                updateAttachNote(db, attachList, note.getSId());
+            } else {
+                Log.d(TAG, "--updateTextAttach---not--updateUpdate---attach---note---");
+            }
             if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
                 //删除多余的附件
                 cacheList.removeAll(attachList);

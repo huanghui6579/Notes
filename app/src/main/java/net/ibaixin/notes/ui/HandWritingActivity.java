@@ -1,5 +1,7 @@
 package net.ibaixin.notes.ui;
 
+import android.Manifest;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -8,10 +10,13 @@ import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.view.menu.ActionMenuItemView;
+import android.text.TextUtils;
 import android.util.StateSet;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -27,7 +32,11 @@ import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.anthonycr.grant.PermissionsManager;
+import com.anthonycr.grant.PermissionsResultAction;
+
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
 import net.ibaixin.notes.paint.Painter;
@@ -37,6 +46,7 @@ import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.NotePopupWindow;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +93,12 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     //前进菜单项
     private MenuItem mRedoItem;
     
+    //笔记对象
+    private NoteInfo mNote;
+    
+    //编辑模式下的文件路径
+    private String mFilePath;
+    
     private Handler mHandler = new Handler();
     
     @Override
@@ -92,9 +108,21 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
 
     @Override
     protected void initData() {
+        
+        Intent intent = getIntent();
+        mNote = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
+
+        //如果是新创建的，则此值为null
+        mFilePath = intent.getStringExtra(Constants.ARG_SUB_OBJ);
+        
+        if (mNote == null) {
+            mNote = new NoteInfo();
+            mNote.setSId(SystemUtil.generateNoteSid());
+        }
+        
         initPaintParams();
 
-        PaintFragment paintFragment = attachContainer();
+        PaintFragment paintFragment = attachContainer(TextUtils.isEmpty(mFilePath));
 
         PaintData paintData = new PaintData();
         mPaintList.add(paintData);
@@ -111,11 +139,16 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
      * 填充内容
      * @return
      */
-    private PaintFragment attachContainer() {
+    private PaintFragment attachContainer(boolean isNew) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
 
         Painter painter = new Painter(mBaseSize, mPaintColor, mPaintType, mPaintAlpha, mEraseSize);
+
+        if (!isNew) {
+            painter.isNew = false;
+            painter.filePath = mFilePath;
+        }
 
         PaintFragment paintFragment = PaintFragment.newInstance(painter);
         transaction.replace(R.id.content_container, paintFragment, paintFragment.getClass().getSimpleName());
@@ -191,6 +224,16 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         }
         
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onBack() {
+        savePaintImage();
+    }
+
+    @Override
+    public void onBackPressed() {
+        onBack();
     }
 
     /**
@@ -742,6 +785,57 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     }
 
     /**
+     * 保存涂鸦的图片到本地
+     */
+    private void savePaintImage() {
+        PaintFragment paintFragment = getPaintFragment();
+        if (!paintFragment.hasPaintContent()) {
+            setResult(RESULT_CANCELED);
+            finish();
+            return;
+        }
+        String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissions, new PermissionsResultAction() {
+            @Override
+            public void onGranted() {
+                doInbackground(new Runnable() {
+                    @Override
+                    public void run() {
+                        PaintFragment paintFragment = getPaintFragment();
+                        paintFragment.savePaintImage(mNote.getSId());
+                    }
+                });
+            }
+
+            @Override
+            public void onDenied(String permission) {
+                //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
+                if (ActivityCompat.shouldShowRequestPermissionRationale(HandWritingActivity.this,
+                        permission)) {
+                    SystemUtil.makeShortToast(R.string.paint_save_error_reason);
+                } else {
+                    SystemUtil.makeShortToast(R.string.paint_save_error);
+                    Log.d(TAG, "---savePaintImage----permissions--onDenied----" + permission);
+                    //进行权限请求
+                    /*ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            EXTERNAL_STORAGE_REQ_CODE);*/
+                }
+                setResult(RESULT_CANCELED);
+                finish();
+            }
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        
+        Log.d(TAG, "--HandWritingActivity----onRequestPermissionsResult---");
+        PermissionsManager.getInstance().notifyPermissionsChange(permissions, grantResults);
+    }
+
+    /**
      * 创建橡皮檫的弹窗
      * @param layoutId
      * @return
@@ -810,6 +904,45 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     @Override
     public void onFragmentInteraction(Uri uri) {
         
+    }
+
+    @Override
+    public void onSaveImageError(String reason) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                SystemUtil.makeShortToast(R.string.paint_save_error);
+                setResult(RESULT_CANCELED);
+                Log.d(TAG, "---savePaintImage----onSaveImageError------");
+                finish();
+            }
+        });
+        
+    }
+
+    @Override
+    public void onSaveImageSuccess(final String filePath) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                Uri uri = Uri.fromFile(new File(filePath));
+                Intent intent = new Intent();
+                intent.setData(uri);
+                setResult(RESULT_OK, intent);
+                finish();
+            }
+        });
+    }
+
+    @Override
+    public void onSaveImageCancel() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                setResult(RESULT_CANCELED);
+                finish();
+            }
+        });
     }
 
     @Override

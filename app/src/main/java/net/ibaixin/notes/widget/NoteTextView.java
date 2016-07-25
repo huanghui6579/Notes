@@ -81,6 +81,16 @@ public class NoteTextView extends TextView implements NoteRichSpan {
     }
 
     @Override
+    public int[] getSize() {
+        int width = getWidth();
+        int height = getHeight();
+        int[] size = new int[2];
+        size[0] = width;
+        size[1] = height;
+        return size;
+    }
+
+    @Override
     public void setTextContent(CharSequence text) {
         setText(text);
     }

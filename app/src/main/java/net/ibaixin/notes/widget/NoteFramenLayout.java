@@ -17,6 +17,7 @@ import net.ibaixin.notes.util.SystemUtil;
  * @update 2016/7/17 10:34
  */
 public class NoteFramenLayout extends FrameLayout {
+    private static final java.lang.String TAG = "NoteFramenLayout";
     /**
      * 是否是编辑模式
      */

@@ -52,4 +52,11 @@
         <item>@string/action_forward</item>
         <item>@string/action_info</item>
     </string-array>
+
+    <string-array name="paint_menu_items">
+        <item>@string/action_image_open</item>
+        <item>@string/action_edit</item>
+        <item>@string/action_forward</item>
+        <item>@string/action_info</item>
+    </string-array>
 </resources>

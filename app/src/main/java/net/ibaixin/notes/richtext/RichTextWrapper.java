@@ -19,6 +19,8 @@ import java.util.Map;
  * @version: 0.0.1
  */
 public class RichTextWrapper {
+    private static final java.lang.String TAG = "RichTextWrapper";
+    
     private SparseArray<Object> mExtra = new SparseArray<>();
     private HashMap<Class<? extends Resolver>, Resolver> mResolvers = new HashMap<>();
     private ArrayMap<String, RichTextClickListener> mListenerMap = new ArrayMap<>();

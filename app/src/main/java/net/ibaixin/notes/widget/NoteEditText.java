@@ -14,6 +14,7 @@ import android.view.*;
 import android.widget.EditText;
 
 import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
@@ -67,7 +68,6 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     public boolean onTouchEvent(MotionEvent event) {
         final int action = event.getActionMasked();
         final boolean touchIsFinished = (action == MotionEvent.ACTION_UP) && isFocused();
-        Log.d(TAG, "---touchIsFinished--" + touchIsFinished);
         MovementMethod mMovement = getMovementMethod();
         CharSequence text = getText();
         if (touchIsFinished && text != null && (mMovement != null && mMovement instanceof LinkMovementMethod) && isEnabled()
@@ -87,19 +87,33 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param filePath 图片的本地全路径
      */
     public void addImage(final String filePath, final Attach attach, final AttachAddCompleteListener listener) {
-        ImageUtil.generateThumbImageAsync(filePath, null, new SimpleImageLoadingListener() {
+        addImage(filePath, Attach.IMAGE, attach, listener);
+    }
+    
+    /**
+     * 添加图片
+     * @param filePath 图片的本地全路径
+     */
+    public void addImage(final String filePath, final int attachType, final Attach attach, final AttachAddCompleteListener listener) {
+        ImageSize imageSize = null;
+        if (attachType == Attach.PAINT) {
+            int width = getWidth();
+            int height = getHeight();
+            imageSize = new ImageSize(width, height);
+        }
+        ImageUtil.generateThumbImageAsync(filePath, imageSize, new SimpleImageLoadingListener() {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
                 ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
                 String fileId = null;
                 if (attach == null) {
-                    fileId = SystemUtil.generateAttachSid();
+                    fileId = SystemUtil.generateAttachSid(attachType);
                 } else {
                     fileId = attach.getSId();
                 }
                 AttachSpan attachSpan = new AttachSpan();
                 attachSpan.setAttachId(fileId);
-                attachSpan.setAttachType(Attach.IMAGE);
+                attachSpan.setAttachType(attachType);
                 attachSpan.setFilePath(filePath);
                 String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
 
@@ -111,7 +125,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
                         File file = new File(filePath);
                         att = new Attach();
                         att.setSId(fileId);
-                        att.setType(Attach.IMAGE);
+                        att.setType(attachType);
                         att.setLocalPath(filePath);
                         att.setFilename(file.getName());
                         att.setSize(file.length());
@@ -201,7 +215,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
                 try {
                     Editable editable = getEditableText();
                     if (selStart < 0 || getText() == null || selStart >= getText().length()) {
-                        editable.append(builder);
+                        editable.append(builder).append(Constants.TAG_ENTER);
                     } else {
                         editable.replace(selStart, selEnd, builder);
                     }
@@ -211,6 +225,24 @@ public class NoteEditText extends EditText implements NoteRichSpan {
             }
         });
         return text;
+    }
+
+    @Override
+    public int[] getSize() {
+        int width = getWidth();
+        int height = getHeight();
+        if (width == 0 || height == 0) {
+            //计算尺寸
+            int w = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+            int h = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+            measure(w, h);
+            width = getMeasuredWidth();
+            height = getMeasuredHeight();
+        }
+        int[] size = new int[2];
+        size[0] = width;
+        size[1] = height;
+        return size;
     }
 
     @Override
@@ -252,7 +284,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
                     @Override
                     public void run() {
                         if (selStart < 0 || getText() == null || selStart >= getText().length()) {
-                            editable.append(builder);
+                            editable.append(builder).append(Constants.TAG_ENTER);
                         } else {
                             editable.insert(selStart, builder);
                         }

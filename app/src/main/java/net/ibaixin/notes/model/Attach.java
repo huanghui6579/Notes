@@ -20,6 +20,11 @@ public class Attach implements Parcelable {
      * 附件类型为语音
      */
     public static final int VOICE = 2;
+
+    /**
+     * 涂鸦文件
+     */
+    public static final int PAINT = 3;
     
     /**
      * 主键

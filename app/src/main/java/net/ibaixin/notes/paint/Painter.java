@@ -23,6 +23,12 @@ public class Painter implements Parcelable {
     
     //橡皮檫的尺寸大小
     public int eraseSize;
+    
+    //是否是新创建
+    public boolean isNew = true;
+    
+    //如果是编辑模式，则该值为文件的路径
+    public String filePath;
 
     public Painter(int size, int color, int type, int alpha, int eraseSize) {
         this.size = size;
@@ -41,6 +47,8 @@ public class Painter implements Parcelable {
         type = in.readInt();
         alpha = in.readInt();
         eraseSize = in.readInt();
+        isNew = in.readByte() != 0;
+        filePath = in.readString();
     }
 
     @Override
@@ -50,6 +58,8 @@ public class Painter implements Parcelable {
         dest.writeInt(type);
         dest.writeInt(alpha);
         dest.writeInt(eraseSize);
+        dest.writeByte((byte) (isNew ? 1 : 0));
+        dest.writeString(filePath);
     }
 
     @Override

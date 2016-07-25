@@ -60,6 +60,7 @@ public class SystemUtil {
     private static final String PREFIX_NOTE = "N";
     private static final String PREFIX_FOLDER = "F";
     private static final String PREFIX_ATTACH = "A";
+    private static final String PREFIX_PAINT = "P";
 
     private static ExecutorService cachedThreadPool = null;//可缓存的线程池
 
@@ -109,7 +110,25 @@ public class SystemUtil {
      * @version: 1.0.0
      */
     public static String generateAttachSid() {
-        return PREFIX_ATTACH + generateSid();
+        return generateAttachSid(0);
+    }
+
+    /**
+     * 生成附件的sid
+     * @param attachType 附件的类型
+     * @return
+     */
+    public static String generateAttachSid(int attachType) {
+        String prefix = null;
+        switch (attachType) {
+            case Attach.PAINT:
+                prefix = PREFIX_PAINT;
+                break;
+            default:
+                prefix = PREFIX_ATTACH;
+                break;
+        }
+        return prefix + generateSid();
     }
     
     /**
@@ -403,6 +422,18 @@ public class SystemUtil {
      * @throws IOException
      */
     public static String getAttachPath(String sid, int attachType) throws IOException {
+        return getAttachPath(sid, attachType, true);
+    }
+
+    /**
+     * 根据附件类型获取对应类型的存储路径,默认为/sdcard/YunXinNotes/notes/#{noteid}/#{type}
+     * @param sid
+     * @param attachType
+     * @param createDir 当文件夹不存在时，是否创建文件夹
+     * @return
+     * @throws IOException
+     */
+    public static String getAttachPath(String sid, int attachType, boolean createDir) throws IOException {
         String notePath = getNotePath();
         if (notePath != null) {
             String typeName = null;
@@ -413,14 +444,19 @@ public class SystemUtil {
                 case Attach.VOICE:  //语音
                     typeName = Constants.APP_VOICE_FOLDER_NAME;
                     break;
+                case Attach.PAINT:  //涂鸦
+                    typeName = Constants.APP_PAINT_FOLDER_NAME;
+                    break;
             }
             String path = notePath + File.separator + sid;
             if (typeName != null) {
                 path += File.separator + typeName;
             }
-            File file = new File(path);
-            if (!file.exists()) {
-                file.mkdirs();
+            if (createDir) {
+                File file = new File(path);
+                if (!file.exists()) {
+                    file.mkdirs();
+                }
             }
             return path;
         } else {
@@ -460,6 +496,17 @@ public class SystemUtil {
     }
 
     /**
+     * 生成涂鸦的文件，格式为P20160621_120205.png
+     * @return
+     */
+    public static String generateHandWriteFilename() {
+        if (mCameraNameFormat == null) {
+            mCameraNameFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        }
+        return "P" + mCameraNameFormat.format(new Date()) + ".png";
+    }
+
+    /**
      * 获取附件的全路径
      * @param sid 笔记的sid
      * @param attachType 文件的类型
@@ -473,6 +520,9 @@ public class SystemUtil {
                 break;
             case Attach.VOICE:  //语音
                 filename = generateVoiceFilename();
+                break;
+            case Attach.PAINT:  //涂鸦文件
+                filename = generateHandWriteFilename();
                 break;
         }
         String attachDir = SystemUtil.getAttachPath(sid, attachType);
@@ -964,8 +1014,18 @@ public class SystemUtil {
      * 选择图片
      */
     public static void choseImage(Activity activity, int requestCode) {
+        choseFile(activity, "image/*", requestCode);
+    }
+
+    /**
+     * 选择文件，不限格式
+     */
+    public static void choseFile(Activity activity, String type, int requestCode) {
         Intent intent = new Intent();
-        intent.setType("image/*");
+        if (type == null) { //所有格式的文件
+            type = "*/*";
+        }
+        intent.setType(type);
         if (SystemUtil.hasSdkV19()) {
             intent.setAction(Intent.ACTION_GET_CONTENT);
 //            intent.addCategory(Intent.CATEGORY_OPENABLE);

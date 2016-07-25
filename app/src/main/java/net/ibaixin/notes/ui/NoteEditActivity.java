@@ -101,6 +101,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     
     private static final int REQ_PICK_IMAGE = 10;
     private static final int REQ_TAKE_PIC = 11;
+    private static final int REQ_PAINT = 12;
+    private static final int REQ_PICK_FILE = 13;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mOverflowPopu;
@@ -406,19 +408,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void saveNote(boolean removeAttach) {
         String content = TextUtils.isEmpty(mEtContent.getText()) ? "" : mEtContent.getText().toString();
         if (TextUtils.isEmpty(content) && removeAttach) {
-            removeCacheAttach();    //移除缓存中的附件，彻底删除数据库记录
+            if (mNote == null || mNote.isEmpty()) {
+                removeCacheAttach(true);    //移除缓存中的附件，彻底删除数据库记录
+            } else {
+                removeCacheAttach(false);    //移除缓存中的附件，彻底删除数据库记录
+            }
             return;
         }
 
         Intent intent = null;
         if (mNote != null && !mNote.isEmpty()) {    //更新笔记
-            if (content.equals(mNote.getContent())) {
-                return;
+            intent = new Intent(mContext, CoreService.class);
+            if (content.equals(mNote.getContent())) {   //内容相同，没有修改
+                //则只检测是否有多余的附件记录，有，则删除
+                intent.putExtra(Constants.ARG_SUB_OBJ, false);
             }
             mNote.setContent(content);
             mNote.setModifyTime(System.currentTimeMillis());
             mNote.setSyncState(SyncState.SYNC_UP);
-            intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
         } else {    //添加笔记
             if (mNote == null) {
@@ -454,13 +461,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     /**
      * 移除缓存中的附件，彻底删除数据库记录
+     * @param deleteParent 是否删除父类目录
      */
-    private void removeCacheAttach() {
+    private void removeCacheAttach(boolean deleteParent) {
         if (mAttachCache != null && mAttachCache.size() > 0) {
             Intent intent = new Intent(mContext, CoreService.class);
             ArrayList<Attach> list = new ArrayList<>();
             list.addAll(mAttachCache.values()); //将附件的sid传入，不论附件是否在笔记中
             intent.putParcelableArrayListExtra(Constants.ARG_CORE_LIST, list);
+            intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_REMOVE_NOTE_ATTACH);
+            if (deleteParent) {
+                try {
+                    String dir = SystemUtil.getAttachPath(getNoteSid(), 0, false);
+                    intent.putExtra(Constants.ARG_SUB_OBJ, dir);
+                } catch (IOException e) {
+                    Log.e(TAG, "--removeCacheAttach---getAttachPath--error--" + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
             startService(intent);
             mAttachCache.clear();
         }
@@ -621,7 +639,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     protected void onDestroy() {
         unregistContentObserver();
-        saveNote(true);
+        if (!isViewMode()) {
+            saveNote(true);
+        }
         super.onDestroy();
     }
 
@@ -919,6 +939,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         handleShowImage(fileUri, true);
                     }
                     break;
+                case REQ_PAINT: //画图
+                    if (data != null) {
+                        final Uri uri = data.getData();
+                        handleShowImage(uri, Attach.PAINT, false);
+                    } else {
+                        Log.d(TAG, "---onActivityResult---REQ_PAINT---data---is----null--");
+                    }
+                    break;
             }
         }
         
@@ -928,9 +956,19 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     /**
      * 显示选择的或者拍照后的图拍呢
      * @param uri 图片的地址
-     * @param compressImg 是否需要压缩图片           
+     * @param compressImg 是否需要压缩图片   
      */
     private void handleShowImage(final Uri uri, final boolean compressImg) {
+        handleShowImage(uri, Attach.IMAGE, compressImg);
+    }
+
+    /**
+     * 显示选择的或者拍照后的图拍呢
+     * @param uri 图片的地址
+     * @param compressImg 是否需要压缩图片   
+     * @param attachType 附件的类型                   
+     */
+    private void handleShowImage(final Uri uri, final int attachType, final boolean compressImg) {
         doInbackground(new Runnable() {
             @Override
             public void run() {
@@ -956,7 +994,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
                 
                 Attach attach = getAddedAttach(filePath);
-                mEtContent.addImage(filePath, attach, new SimpleAttachAddCompleteListenerImpl(true));
+                mEtContent.addImage(filePath, attachType, attach, new SimpleAttachAddCompleteListenerImpl(true));
             }
         });
     }
@@ -1224,11 +1262,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         //光标所在位置前面的文字
         String beforeText = text.substring(0, selectionStart);
         //光标所在行的第一位
-        int lineStart = beforeText.lastIndexOf(Constants.TAG_ENTER) + 1;
+        int lineStart = beforeText.lastIndexOf(Constants.TAG_NEXT_LINE) + 1;
         //光标后面的文字
         String endText = text.substring(selectionStart);
         //光标后面文字的第一个回车的索引
-        int lineEnd = endText.indexOf(Constants.TAG_ENTER);
+        int lineEnd = endText.indexOf(Constants.TAG_NEXT_LINE);
         //光标所在行的文字
         String lineText = null;
         if (lineEnd != -1) {    //光标后面的文字有回车换行
@@ -1281,7 +1319,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     */
     private String getSelectionLineBeforeText(String text, int selectionStart) {
         String beforeText = text.substring(0, selectionStart);
-        int lineStart = beforeText.lastIndexOf(Constants.TAG_ENTER) + 1;
+        int lineStart = beforeText.lastIndexOf(Constants.TAG_NEXT_LINE) + 1;
         return beforeText.substring(lineStart);
     }
 
@@ -1293,7 +1331,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     */
     private String getSelectionLineEndText(String text, int selectionStart) {
         String endText = text.substring(selectionStart);
-        int lineEnd = endText.indexOf(Constants.TAG_ENTER);
+        int lineEnd = endText.indexOf(Constants.TAG_NEXT_LINE);
         if (lineEnd != -1) {    //有回车换行，则截取
             endText = endText.substring(0, lineEnd);
         }
@@ -1387,7 +1425,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         mEtContent.setText("");
 
                         //删除附件
-                        removeCacheAttach();
+                        removeCacheAttach(false);
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
@@ -1624,6 +1662,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         @Override
         public boolean onMenuItemClick(MenuItem item) {
             String sid = null;
+            Intent intent = null;
             switch (item.getItemId()) {
                 case R.id.action_camera: //拍照
                     try {
@@ -1658,8 +1697,15 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case R.id.action_brush: //涂鸦
-                    Intent intent = new Intent(mContext, HandWritingActivity.class);
-                    startActivity(intent);
+                    intent = new Intent(mContext, HandWritingActivity.class);
+                    if (mNote == null) {
+                        getNoteSid();
+                    }
+                    intent.putExtra(Constants.ARG_CORE_OBJ, mNote);
+                    startActivityForResult(intent, REQ_PAINT);
+                    break;
+                case R.id.action_file:    //添加附件
+                    SystemUtil.choseFile(NoteEditActivity.this, null, REQ_PICK_FILE);
                     break;
                 case R.id.action_share:    //分享
                     break;

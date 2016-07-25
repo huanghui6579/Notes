@@ -13,6 +13,7 @@ public class Constants {
     public static final String APP_DOWNLOAD_FOLDER_NAME = "Download";
     public static final String APP_CAMERA_FOLDER_NAME = "Camera";
     public static final String APP_VOICE_FOLDER_NAME = "Voice";
+    public static final String APP_PAINT_FOLDER_NAME = "Paint";
     public static final String DATA_MSG_ATT_FOLDER_NAME = "attach";
     public static final String APP_NOTES_FOLDER_NAME = "notes";
     
@@ -53,7 +54,12 @@ public class Constants {
     /**
      * 回车的标签
      */
-    public static final String TAG_ENTER = "\n";
+    public static final String TAG_ENTER = "\r";
+    
+    /**
+     * 回车的标签
+     */
+    public static final String TAG_NEXT_LINE = "\n";
     /**
      * 列表的标签
      */

@@ -271,7 +271,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         }
         //去掉开头和结尾的空格
         String tContent = content.trim();
-        int index = tContent.indexOf(Constants.TAG_ENTER);
+        int index = tContent.indexOf(Constants.TAG_NEXT_LINE);
         if (index != -1) {  //有换行
             return tContent.substring(0, index);
         } else {

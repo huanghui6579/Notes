@@ -1,6 +1,7 @@
 package net.ibaixin.notes.paint.ui;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -16,13 +17,18 @@ import android.widget.EditText;
 import android.widget.PopupWindow;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
 import net.ibaixin.notes.paint.Painter;
 import net.ibaixin.notes.paint.widget.PaintView;
+import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.NotePopupWindow;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -227,6 +233,57 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
     }
 
     /**
+     * 设置原始的图片
+     * @param filePath
+     */
+    public void setImageBitmap(String filePath) {
+        if (mPainter != null && !mPainter.isNew && !TextUtils.isEmpty(filePath)) {  //有文件
+//            ImageLoader.getInstance().loadImage();
+        }
+    }
+
+    /**
+     * 是否有绘画内容
+     * @return
+     */
+    public boolean hasPaintContent() {
+        return mPaintView.hasPaintContent();
+    }
+    
+    /**
+     * 将画板保存为图片存储到本地
+     */
+    public void savePaintImage(String noteSid) {
+        Bitmap bitmap = mPaintView.getBitmap();
+        if (bitmap != null) {
+            String filePath = null;
+            try {
+                filePath = SystemUtil.getAttachFilePath(noteSid, Attach.PAINT);
+                if (!TextUtils.isEmpty(filePath)) {
+                    ImageUtil.saveBitmap(bitmap, new File(filePath), Bitmap.CompressFormat.PNG);
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "---savePaintImage---" + e.getMessage());
+                filePath = null;
+                e.printStackTrace();
+            }
+            if (mListener != null) {
+                if (TextUtils.isEmpty(filePath)) {
+                    mListener.onSaveImageError(null);
+                } else {
+                    mListener.onSaveImageSuccess(filePath);
+                }
+            }
+        } else {
+            if (mListener != null) {
+                //取消保存绘画
+                mListener.onSaveImageCancel();
+            }
+            Log.d(TAG, "---savePaintImage----no--bitmap--");
+        }
+    }
+
+    /**
      * 计算画板的尺寸
      * @param view
      */
@@ -345,6 +402,23 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+
+        /**
+         * 保存文件失败
+         * @param reason 失败的原因
+         */
+        void onSaveImageError(String reason);
+
+        /**
+         * 保存图片成功
+         * @param filePath    保存的文件路径
+         */
+        void onSaveImageSuccess(String filePath);
+
+        /**
+         * 取消保存绘画
+         */
+        void onSaveImageCancel();
 
         /**
          * 画笔的步骤数量变化
