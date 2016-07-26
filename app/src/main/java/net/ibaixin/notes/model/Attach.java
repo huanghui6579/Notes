@@ -25,6 +25,21 @@ public class Attach implements Parcelable {
      * 涂鸦文件
      */
     public static final int PAINT = 3;
+
+    /**
+     * 压缩文件
+     */
+    public static final int ARCHIVE = 4;
+
+    /**
+     * 视频文件
+     */
+    public static final int VIDEO = 5;
+
+    /**
+     * 其他普通文件
+     */
+    public static final int FILE = 6;
     
     /**
      * 主键

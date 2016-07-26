@@ -65,6 +65,7 @@ import net.ibaixin.notes.richtext.RichTextWrapper;
 import net.ibaixin.notes.service.CoreService;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.DigestUtil;
+import net.ibaixin.notes.util.FileUtil;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.NoteLinkify;
 import net.ibaixin.notes.util.NoteUtil;
@@ -1026,12 +1027,23 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void handleUpdateImage(AttachSpec attachSpec) {
         mRichTextWrapper.getRichSpan().showImage(attachSpec, new SimpleAttachAddCompleteListenerImpl(false));
     }
-    
+
+    /**
+     * 显示选择的附件
+     * @param uri
+     */
     private void handleShowAttach(final Uri uri) {
         doInbackground(new Runnable() {
             @Override
             public void run() {
                 String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
+                if (TextUtils.isEmpty(filePath)) {
+                    Log.d(TAG, "--handleShowAttach---filePath--is---empty--");
+                    return;
+                }
+                File file = new File(filePath);
+                String mimeType = FileUtil.getMimeType(file);
+                
                 Log.d(TAG, "handleShowAttach----" + filePath);
             }
         });

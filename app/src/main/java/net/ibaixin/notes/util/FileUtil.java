@@ -1,5 +1,7 @@
 package net.ibaixin.notes.util;
 
+import android.webkit.MimeTypeMap;
+
 import net.ibaixin.notes.util.log.Log;
 
 import java.io.File;
@@ -7,7 +9,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @author huanghui1
@@ -16,6 +20,21 @@ import java.util.List;
  */
 public class FileUtil {
     private static final java.lang.String TAG = "FileUtil";
+    
+    //压缩文件的格式集合
+    public static List<String> suffixList = null;
+    
+    static {
+        suffixList = new ArrayList<>();
+        suffixList.add("zip");
+        suffixList.add("gz");
+        suffixList.add("nar");
+        suffixList.add("rar");
+        suffixList.add("gtar");
+        suffixList.add("tar");
+        suffixList.add("taz");
+        suffixList.add("tgz");
+    }
 
     private FileUtil() {}
 
@@ -81,5 +100,43 @@ public class FileUtil {
                 deleteFile(path);
             }
         }
+    }
+
+    /**
+     * 获取文件的后缀名，不包含"."
+     * @param file
+     * @return
+     */
+    public static String getSuffix(File file) {
+        if (file == null || !file.exists() || file.isDirectory()) {
+            return null;
+        }
+        String fileName = file.getName();
+        if (fileName.equals("") || fileName.endsWith(".")) {
+            return null;
+        }
+        int index = fileName.lastIndexOf(".");
+        if (index != -1) {
+            return fileName.substring(index + 1).toLowerCase(Locale.getDefault());
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 获取文件的mime类型
+     * @param file
+     * @return
+     */
+    public static String getMimeType(File file) {
+        String suffix = getSuffix(file);
+        if (suffix == null) {
+            return "file/*";
+        }
+        String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(suffix);
+        if (type != null && !type.isEmpty()) {
+            return type;
+        }
+        return "file/*";
     }
 }

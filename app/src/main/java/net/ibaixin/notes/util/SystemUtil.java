@@ -1155,4 +1155,23 @@ public class SystemUtil {
     public static int getScreenWidth(Context context) {
         return context.getResources().getDisplayMetrics().widthPixels;
     }
+
+    /**
+     * 获取文件的类型，{@link Attach#type}
+     * @param file
+     * @return
+     */
+    public static int guessFileType(File file) {
+        String mimeType = FileUtil.getMimeType(file);
+        String suffix = FileUtil.getSuffix(file);
+        int type = Attach.FILE;
+        if (mimeType.startsWith("image/")) {    //图片
+            type = Attach.IMAGE;
+        } else if (mimeType.startsWith("audio/")) { //音频文件
+            type = Attach.VOICE;
+        } else if (mimeType.startsWith("video/")) { //视频频文件
+            type = Attach.VIDEO;
+        }
+        return type;
+    }
 }

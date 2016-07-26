@@ -145,11 +145,8 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param listener
      */
     public void addAttach(Attach attach, final AttachAddCompleteListener listener) {
-        int width = SystemUtil.getScreenWidth(getContext());
         
-        
-        
-        FileSpan fileSpan = new FileSpan(getContext(), attach, width);
+        FileSpan fileSpan = new FileSpan(getContext(), attach, getWidth());
         
         String fileId = attach.getSId();
         String filePath = attach.getLocalPath();
