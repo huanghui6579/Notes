@@ -3,6 +3,7 @@ package net.ibaixin.notes.util;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.text.TextUtils;
 
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
@@ -10,6 +11,7 @@ import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
+import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
 
 import net.ibaixin.notes.util.log.Log;
 
@@ -320,6 +322,17 @@ public class ImageUtil {
         }
 
         return inSampleSize;
+    }
+
+    /**
+     * 清除图片的内存缓存
+     * @param imagePath 图片的本地路径
+     */
+    public static void clearMemoryCache(String imagePath) {
+        if (!TextUtils.isEmpty(imagePath)) {
+            String fileUri = ImageDownloader.Scheme.FILE.wrap(imagePath);
+            MemoryCacheUtils.removeFromCache(fileUri, ImageLoader.getInstance().getMemoryCache());
+        }
     }
     
 }

@@ -60,6 +60,7 @@ import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.persistent.AttachManager;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.richtext.AttachResolver;
+import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.richtext.RichTextWrapper;
 import net.ibaixin.notes.service.CoreService;
 import net.ibaixin.notes.util.Constants;
@@ -99,10 +100,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private static final int MSG_AUTO_LINK = 2;
     private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
     
-    private static final int REQ_PICK_IMAGE = 10;
-    private static final int REQ_TAKE_PIC = 11;
-    private static final int REQ_PAINT = 12;
-    private static final int REQ_PICK_FILE = 13;
+    public static final int REQ_PICK_IMAGE = 10;
+    public static final int REQ_TAKE_PIC = 11;
+    public static final int REQ_PAINT = 12;
+    public static final int REQ_PICK_FILE = 13;
+    public static final int REQ_EDIT_PAINT = 14;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mOverflowPopu;
@@ -568,6 +570,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
             }
         });
+
 //        editText.setMovementMethod(NoteLinkMovementMethod.getInstance());
 //        editText.setOnClickListener(new View.OnClickListener() {
 //            @Override
@@ -763,7 +766,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private PopupMenu createPopuMenu(View aucher, PopupMenu popupMenu, int menuResId, boolean showImmediate) {
         if (aucher != null) {
             if (popupMenu == null) {
-                popupMenu = createPopuMenu(aucher, menuResId, true, new OnPopuMenuItemClickListener());
+                popupMenu = createPopuMenu(aucher, menuResId, true, new OnPopMenuItemClickListener());
             }
             if (showImmediate) {
                 popupMenu.show();
@@ -947,6 +950,23 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         Log.d(TAG, "---onActivityResult---REQ_PAINT---data---is----null--");
                     }
                     break;
+                case REQ_EDIT_PAINT:    //编辑绘画
+                    if (data != null) {
+                        AttachSpec attachSpec = data.getParcelableExtra(Constants.ARG_CORE_OBJ);
+                        handleUpdateImage(attachSpec);
+                    } else {
+                        Log.d(TAG, "---onActivityResult---REQ_EDIT_PAINT---data---is----null--");
+                    }
+                    break;
+                case REQ_PICK_FILE: //选择文件，不限格式
+                    if (data != null) {
+                        final Uri uri = data.getData();
+                        Log.d(TAG, "--onActivityResult---req_pick_file---uri--" + uri);
+                        handleShowAttach(uri);
+                    } else {
+                        Log.d(TAG, "---onActivityResult---req_pick_file---data---is----null--");
+                    }
+                    break;
             }
         }
         
@@ -995,6 +1015,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 
                 Attach attach = getAddedAttach(filePath);
                 mEtContent.addImage(filePath, attachType, attach, new SimpleAttachAddCompleteListenerImpl(true));
+            }
+        });
+    }
+
+    /**
+     * 处理图片的更新，主要是绘画
+     * @param attachSpec
+     */
+    private void handleUpdateImage(AttachSpec attachSpec) {
+        mRichTextWrapper.getRichSpan().showImage(attachSpec, new SimpleAttachAddCompleteListenerImpl(false));
+    }
+    
+    private void handleShowAttach(final Uri uri) {
+        doInbackground(new Runnable() {
+            @Override
+            public void run() {
+                String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
+                Log.d(TAG, "handleShowAttach----" + filePath);
             }
         });
     }
@@ -1389,6 +1427,51 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 更新附件
+     * @param attach 附件
+     */
+    private void handleUpdateAttach(final Attach attach) {
+        if (mAttachCache == null) {
+            mAttachCache = new HashMap<>();
+        }
+        if (attach == null) {
+            Log.d(TAG, "---handleAddAttach---added---not--need--add---");
+            return;
+        }
+        doInbackground(new Runnable() {
+            @Override
+            public void run() {
+                String filePath = attach.getLocalPath();
+                Attach tmpAttach = getAddedAttach(filePath);
+
+                if (tmpAttach == null) {
+                    tmpAttach = attach;
+                }
+
+                if (filePath != null) {
+                    tmpAttach.setUri(filePath);
+
+                    long time = System.currentTimeMillis();
+                    tmpAttach.setModifyTime(time);
+
+                    int userId = getCurrentUserId();
+                    if (userId > 0) {
+                        tmpAttach.setUserId(userId);
+                    }
+
+                    tmpAttach.setSize(new File(filePath).length());
+
+                    AttachManager.getInstance().updateAttach(tmpAttach);
+                    mAttachCache.put(tmpAttach.getSId(), tmpAttach);
+                    Log.d(TAG, "---handleUpdateAttach--mAttachCache--has---uri--update--");
+                } else {
+                    Log.d(TAG, "--handleUpdateAttach--filePath--is---null--");
+                }
+            }
+        });
+    }
+
+    /**
      * 根据uri获取已经添加的附件
      * @param filePath 文件的全路径
      * @return 已添加过的附件
@@ -1653,11 +1736,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         public void onAddComplete(String uri, Object data, Attach attach) {
             if (isAdd) {
                 handleAddAttach(uri, data, attach);
+            } else {
+                handleUpdateAttach(attach);
             }
         }
     }
 
-    class OnPopuMenuItemClickListener implements PopupMenu.OnMenuItemClickListener {
+    class OnPopMenuItemClickListener implements PopupMenu.OnMenuItemClickListener {
 
         @Override
         public boolean onMenuItemClick(MenuItem item) {
@@ -1676,7 +1761,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         }
                     } catch (IOException e) {
                         SystemUtil.makeShortToast(R.string.tip_camera_error);
-                        Log.e(TAG, "----OnPopuMenuItemClickListener---onMenuItemClick----openCamera---error--" + e.getMessage());
+                        Log.e(TAG, "----OnPopMenuItemClickListener---onMenuItemClick----openCamera---error--" + e.getMessage());
                     }
                     break;
                 case R.id.action_voice: //添加语音
@@ -1698,10 +1783,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     break;
                 case R.id.action_brush: //涂鸦
                     intent = new Intent(mContext, HandWritingActivity.class);
-                    if (mNote == null) {
-                        getNoteSid();
-                    }
-                    intent.putExtra(Constants.ARG_CORE_OBJ, mNote);
+                    AttachSpec attachSpec = new AttachSpec();
+                    attachSpec.noteSid = getNoteSid();
+                    attachSpec.attachType = Attach.PAINT;
+                    intent.putExtra(Constants.ARG_CORE_OBJ, attachSpec);
                     startActivityForResult(intent, REQ_PAINT);
                     break;
                 case R.id.action_file:    //添加附件

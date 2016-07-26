@@ -9,6 +9,7 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -19,6 +20,8 @@ import android.view.View;
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
 import net.ibaixin.notes.util.log.Log;
+
+import java.lang.reflect.Method;
 
 /**
  * @author huanghui1
@@ -60,6 +63,8 @@ public class PaintView extends View implements View.OnTouchListener {
 
     //触摸焦点的屏幕位置
     private float mDownX, mDownY, mPreX, mPreY, mCurX, mCurY;
+    
+    private BitmapDrawable mBitmapDrawable;
     
     public PaintView(Context context) {
         this(context, null);
@@ -154,9 +159,20 @@ public class PaintView extends View implements View.OnTouchListener {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        drawBackground(canvas);
         drawRecord(canvas);
         if (mOnDrawChangedListener != null) {
             mOnDrawChangedListener.onDrawChanged();
+        }
+    }
+
+    /**
+     * 画背景
+     * @param canvas
+     */
+    private void drawBackground(Canvas canvas) {
+        if (mBitmapDrawable != null) {
+            canvas.drawBitmap(mBitmapDrawable.getBitmap(), 0, 0, null);
         }
     }
 
@@ -427,6 +443,41 @@ public class PaintView extends View implements View.OnTouchListener {
             return false;
         } else {
             return true;
+        }
+    }
+
+    /**
+     * 设置已有的图片
+     * @param bitmap
+     */
+    public void setImageBitmap(Bitmap bitmap) {
+        if (bitmap == null) {
+            return;
+        }
+        if (mBitmapDrawable == null) {
+            mBitmapDrawable = new BitmapDrawable(getResources(), bitmap);
+        }
+        try {
+            Method method = mBitmapDrawable.getClass().getDeclaredMethod("setBitmap", Bitmap.class);
+            if (method != null) {
+                method.setAccessible(true);
+                method.invoke(mBitmapDrawable, bitmap);
+
+                invalidate();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "----setImageBitmap---error----" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 销毁背景图
+     */
+    public void destoryBitmap() {
+        if (mBitmapDrawable != null) {
+            mBitmapDrawable.getBitmap().recycle();
+            mBitmapDrawable = null;
         }
     }
 

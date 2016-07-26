@@ -4,6 +4,7 @@ import android.content.Context;
 import android.text.method.MovementMethod;
 import android.text.style.ReplacementSpan;
 
+import net.ibaixin.notes.listener.AttachAddCompleteListener;
 import net.ibaixin.notes.widget.AttachSpan;
 
 /**
@@ -29,6 +30,13 @@ public interface NoteRichSpan {
      *  添加Span
      */
     String addSpan(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd);
+
+    /**
+     * 显示图片、绘画
+     * @param attachSpec 附件对象
+     * @param listener 回调
+     */
+    void showImage(AttachSpec attachSpec, AttachAddCompleteListener listener);
 
     /**
      * 获取控件的尺寸

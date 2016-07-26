@@ -15,7 +15,7 @@ import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttachSpan;
-import net.ibaixin.notes.widget.VoiceSpan;
+import net.ibaixin.notes.widget.FileSpan;
 
 import java.util.List;
 import java.util.Map;
@@ -95,20 +95,26 @@ public class AttachResolver implements Resolver {
 
         @Override
         public void run() {
-            String sid = spec.sid.toString();
+            String sid = spec.sid;
             Attach attach = map.get(sid);
             if (attach != null) {
-                String filePath = attach.getLocalPath();
-                AttachSpan attchSpan = new AttachSpan();
-                attchSpan.setAttachId(sid);
-                attchSpan.setAttachType(attach.getType());
-                attchSpan.setFilePath(filePath);
                 String text = spec.text.toString();
-
                 final int selStart = spec.start;
                 final int selEnd = spec.end;
+                
+                String filePath = attach.getLocalPath();
+                AttachSpan attachSpan = new AttachSpan();
+                attachSpan.setAttachId(sid);
+                attachSpan.setAttachType(attach.getType());
+                attachSpan.setFilePath(filePath);
+                attachSpan.setText(text);
+                attachSpan.setSelStart(selStart);
+                attachSpan.setSelEnd(selEnd);
+                attachSpan.setNoteSid(attach.getNoteId());
+
                 ReplacementSpan replacementSpan = null;
                 Bitmap bitmap = null;
+                int[] size = null;
                 switch (attach.getType()) {
                     case Attach.IMAGE:  //显示图片
                         bitmap = ImageUtil.loadImageThumbnailsSync(filePath);
@@ -118,7 +124,7 @@ public class AttachResolver implements Resolver {
                         replacementSpan = new ImageSpan(context, bitmap);
                         break;
                     case Attach.PAINT:  //显示绘画
-                        int[] size = richSpan.getSize();
+                        size = richSpan.getSize();
                         ImageSize imageSize = new ImageSize(size[0], size[1]);
                         bitmap = ImageUtil.loadImageThumbnailsSync(filePath, imageSize);
                         if (bitmap == null) {
@@ -127,11 +133,12 @@ public class AttachResolver implements Resolver {
                         replacementSpan = new ImageSpan(context, bitmap);
                         break;
                     case Attach.VOICE:  //录音文件
-                        replacementSpan = new VoiceSpan(context, attach);
+                        size = richSpan.getSize();
+                        replacementSpan = new FileSpan(context, attach, size[0]);
                         break;
                 }
                 if (replacementSpan != null) {
-                    richSpan.addSpan(text, attchSpan, replacementSpan, selStart, selEnd);
+                    richSpan.addSpan(text, attachSpan, replacementSpan, selStart, selEnd);
                 } else {
                     Log.d(TAG, "---ResolverAttachTask--replacementSpan--is---null--");
                 }

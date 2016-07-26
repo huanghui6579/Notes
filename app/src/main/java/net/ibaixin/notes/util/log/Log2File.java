@@ -63,16 +63,21 @@ public class Log2File {
                     PrintWriter out = null;
 
                     File file = GetFileFromPath(path);
-
-                    try {
-                        out = new PrintWriter(new BufferedWriter(new FileWriter(file, true)));
-                        out.println(str);
-                        out.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        out.close();
+                    
+                    if (file != null && file.exists()) {
+                        try {
+                            out = new PrintWriter(new BufferedWriter(new FileWriter(file, true)));
+                            out.println(str);
+                            out.flush();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            out.close();
+                        }
+                    } else {
+                        net.ibaixin.notes.util.log.Log.d("No such file or directory:" + file);
                     }
+
                 }
             });
         }

@@ -16,12 +16,18 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.PopupWindow;
 
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.assist.ImageSize;
+import com.nostra13.universalimageloader.core.download.ImageDownloader;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
 import net.ibaixin.notes.paint.Painter;
 import net.ibaixin.notes.paint.widget.PaintView;
+import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
@@ -229,6 +235,8 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
         mPaintView.setTextWindowCallback(this);
 
         mPaintView.setOnDrawChangedListener(this);
+        
+        getPaintViewSize(mPaintView);
 
     }
 
@@ -238,7 +246,14 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
      */
     public void setImageBitmap(String filePath) {
         if (mPainter != null && !mPainter.isNew && !TextUtils.isEmpty(filePath)) {  //有文件
-//            ImageLoader.getInstance().loadImage();
+            String uri = ImageDownloader.Scheme.FILE.wrap(filePath);
+            ImageSize imageSize = new ImageSize(mPintViewWidth, mPintViewWidth);
+            ImageLoader.getInstance().loadImage(uri, imageSize, ImageUtil.getAlbumImageOptions(), new SimpleImageLoadingListener() {
+                @Override
+                public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                    mPaintView.setImageBitmap(loadedImage);
+                }
+            });
         }
     }
 
@@ -253,12 +268,15 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
     /**
      * 将画板保存为图片存储到本地
      */
-    public void savePaintImage(String noteSid) {
+    public void savePaintImage(AttachSpec attachSpec) {
         Bitmap bitmap = mPaintView.getBitmap();
         if (bitmap != null) {
             String filePath = null;
             try {
-                filePath = SystemUtil.getAttachFilePath(noteSid, Attach.PAINT);
+                filePath = attachSpec.filePath;
+                if (TextUtils.isEmpty(filePath)) {
+                    filePath = SystemUtil.getAttachFilePath(attachSpec.noteSid, Attach.PAINT);
+                }
                 if (!TextUtils.isEmpty(filePath)) {
                     ImageUtil.saveBitmap(bitmap, new File(filePath), Bitmap.CompressFormat.PNG);
                 }
@@ -271,7 +289,8 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
                 if (TextUtils.isEmpty(filePath)) {
                     mListener.onSaveImageError(null);
                 } else {
-                    mListener.onSaveImageSuccess(filePath);
+                    mPainter.attachSpec.filePath = filePath;
+                    mListener.onSaveImageSuccess(mPainter.attachSpec);
                 }
             }
         } else {
@@ -287,7 +306,6 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
      * 计算画板的尺寸
      * @param view
      */
-    @Deprecated
     public void getPaintViewSize(final View view) {
         ViewTreeObserver vto = view.getViewTreeObserver();
         vto.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -297,6 +315,11 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
                     int width = view.getMeasuredWidth();
                     mPintViewHeight = height;
                     mPintViewWidth = width;
+
+                    if (mPainter != null && mPainter.isEditMode()) {
+                        setImageBitmap(mPainter.attachSpec.filePath);
+                    }
+                    
                     Log.d(TAG, "--getPaintViewSize---mPintViewWidth--" + mPintViewWidth + "---mPintViewHeight---" + mPintViewHeight);
                 }
                 return true;
@@ -332,6 +355,7 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
     public void onDestroy() {
         if (mPaintView != null) {
             mPaintView.setOnDrawChangedListener(null);
+            mPaintView.destoryBitmap();
         }
         super.onDestroy();
     }
@@ -411,9 +435,9 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
 
         /**
          * 保存图片成功
-         * @param filePath    保存的文件路径
+         * @param attachSpec    保存的文件的基本信息
          */
-        void onSaveImageSuccess(String filePath);
+        void onSaveImageSuccess(AttachSpec attachSpec);
 
         /**
          * 取消保存绘画

@@ -36,12 +36,13 @@ import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 
 import net.ibaixin.notes.R;
-import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.paint.PaintData;
 import net.ibaixin.notes.paint.PaintRecord;
 import net.ibaixin.notes.paint.Painter;
 import net.ibaixin.notes.paint.ui.PaintFragment;
+import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.NotePopupWindow;
@@ -93,11 +94,8 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     //前进菜单项
     private MenuItem mRedoItem;
     
-    //笔记对象
-    private NoteInfo mNote;
-    
-    //编辑模式下的文件路径
-    private String mFilePath;
+    //附件对象
+    private AttachSpec mAttachSpec;
     
     private Handler mHandler = new Handler();
     
@@ -110,19 +108,16 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     protected void initData() {
         
         Intent intent = getIntent();
-        mNote = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
-
-        //如果是新创建的，则此值为null
-        mFilePath = intent.getStringExtra(Constants.ARG_SUB_OBJ);
+        mAttachSpec = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
         
-        if (mNote == null) {
-            mNote = new NoteInfo();
-            mNote.setSId(SystemUtil.generateNoteSid());
+        if (mAttachSpec == null) {
+            mAttachSpec = new AttachSpec();
+            mAttachSpec.noteSid = SystemUtil.generateNoteSid();
         }
         
         initPaintParams();
 
-        PaintFragment paintFragment = attachContainer(TextUtils.isEmpty(mFilePath));
+        PaintFragment paintFragment = attachContainer(TextUtils.isEmpty(mAttachSpec.filePath));
 
         PaintData paintData = new PaintData();
         mPaintList.add(paintData);
@@ -147,8 +142,8 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
 
         if (!isNew) {
             painter.isNew = false;
-            painter.filePath = mFilePath;
         }
+        painter.attachSpec = mAttachSpec;
 
         PaintFragment paintFragment = PaintFragment.newInstance(painter);
         transaction.replace(R.id.content_container, paintFragment, paintFragment.getClass().getSimpleName());
@@ -228,6 +223,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
 
     @Override
     protected void onBack() {
+//        finish();
         savePaintImage();
     }
 
@@ -802,7 +798,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                     @Override
                     public void run() {
                         PaintFragment paintFragment = getPaintFragment();
-                        paintFragment.savePaintImage(mNote.getSId());
+                        paintFragment.savePaintImage(mAttachSpec);
                     }
                 });
             }
@@ -921,13 +917,19 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     }
 
     @Override
-    public void onSaveImageSuccess(final String filePath) {
+    public void onSaveImageSuccess(final AttachSpec attachSpec) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
+                String filePath = attachSpec.filePath;
                 Uri uri = Uri.fromFile(new File(filePath));
+                //清除该图片的内存缓存
+                ImageUtil.clearMemoryCache(filePath);
                 Intent intent = new Intent();
                 intent.setData(uri);
+                if (attachSpec.isEditMode()) {  //编辑已有的
+                    intent.putExtra(Constants.ARG_CORE_OBJ, attachSpec);
+                }
                 setResult(RESULT_OK, intent);
                 finish();
             }

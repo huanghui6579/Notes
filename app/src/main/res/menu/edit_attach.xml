@@ -7,17 +7,21 @@
     <item
         android:id="@+id/action_camera"
         android:title="@string/action_camera"
+        android:numericShortcut="1"
         android:icon="@drawable/ic_action_camera"/>
     <item
         android:id="@+id/action_voice"
         android:icon="@drawable/ic_action_voice"
+        android:numericShortcut="2"
         android:title="@string/action_voice"/>
     <item
         android:id="@+id/action_brush"
         android:icon="@drawable/ic_action_brush"
+        android:numericShortcut="3"
         android:title="@string/action_brush"/>
     <item
         android:id="@+id/action_file"
         android:icon="@drawable/ic_action_insert_file"
+        android:numericShortcut="4"
         android:title="@string/action_attach"/>
 </menu>

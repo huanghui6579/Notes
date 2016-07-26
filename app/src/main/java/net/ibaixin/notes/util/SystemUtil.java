@@ -1147,15 +1147,12 @@ public class SystemUtil {
         return Color.argb(alpha, red, green, blue);
     }
 
-    public static String addAlpha(String originalColor, int alpha) {
-//        long alphaFixed = Math.round(alpha * 255);
-        String alphaHex = Long.toHexString(alpha);
-        if (alphaHex.length() == 1) {
-            alphaHex = "0" + alphaHex;
-        }
-        originalColor = originalColor.replace("#", "#" + alphaHex);
-
-
-        return originalColor;
+    /**
+     * 获取屏幕的宽度
+     * @param context
+     * @return
+     */
+    public static int getScreenWidth(Context context) {
+        return context.getResources().getDisplayMetrics().widthPixels;
     }
 }

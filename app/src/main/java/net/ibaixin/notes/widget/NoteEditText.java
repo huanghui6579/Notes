@@ -19,6 +19,7 @@ import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListene
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.richtext.NoteRichSpan;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.ImageUtil;
@@ -95,12 +96,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param filePath 图片的本地全路径
      */
     public void addImage(final String filePath, final int attachType, final Attach attach, final AttachAddCompleteListener listener) {
-        ImageSize imageSize = null;
-        if (attachType == Attach.PAINT) {
-            int width = getWidth();
-            int height = getHeight();
-            imageSize = new ImageSize(width, height);
-        }
+        ImageSize imageSize = getImageSize(attachType);
         ImageUtil.generateThumbImageAsync(filePath, imageSize, new SimpleImageLoadingListener() {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
@@ -149,7 +145,11 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param listener
      */
     public void addAttach(Attach attach, final AttachAddCompleteListener listener) {
-        VoiceSpan voiceSpan = new VoiceSpan(getContext(), attach);
+        int width = SystemUtil.getScreenWidth(getContext());
+        
+        
+        
+        FileSpan fileSpan = new FileSpan(getContext(), attach, width);
         
         String fileId = attach.getSId();
         String filePath = attach.getLocalPath();
@@ -161,7 +161,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
 
         String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
 
-        addSpan(text, attachSpan, voiceSpan);
+        addSpan(text, attachSpan, fileSpan);
 
         if (listener != null) {
             listener.onAddComplete(filePath, text, attach);
@@ -228,6 +228,29 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     }
 
     @Override
+    public void showImage(AttachSpec attachSpec, AttachAddCompleteListener listener) {
+        ImageSize imageSize = getImageSize(attachSpec.attachType);
+
+        ImageUtil.generateThumbImageAsync(attachSpec.filePath, imageSize, new SimpleImageLoadingListenerImpl(attachSpec, listener));
+    }
+
+    /**
+     * 根据附件的类型获取对应的显示尺寸大小
+     * @param attachType 附件类型
+     * @return
+     */
+    private ImageSize getImageSize(int attachType) {
+        ImageSize imageSize = null;
+        if (attachType == Attach.PAINT) {    //绘画
+            int width = getWidth();
+//            int height = getHeight();
+            int height = width;
+            imageSize = new ImageSize(width, height);
+        }
+        return imageSize;
+    }
+
+    @Override
     public int[] getSize() {
         int width = getWidth();
         int height = getHeight();
@@ -237,7 +260,8 @@ public class NoteEditText extends EditText implements NoteRichSpan {
             int h = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
             measure(w, h);
             width = getMeasuredWidth();
-            height = getMeasuredHeight();
+//            height = getMeasuredHeight();
+            height = width;
         }
         int[] size = new int[2];
         size[0] = width;
@@ -273,10 +297,10 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param inHander 是否需要在handler中执行
      */
     public void showSpanAttach(CharSequence text, final int selStart, Attach attach, boolean inHander) {
-        VoiceSpan voiceSpan = new VoiceSpan(getContext(), attach);
+        FileSpan fileSpan = new FileSpan(getContext(), attach, getWidth());
         final SpannableStringBuilder builder = new SpannableStringBuilder();
         builder.append(text);
-        builder.setSpan(voiceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        builder.setSpan(fileSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         final Editable editable = getEditableText();
         try {
             if (inHander) {
@@ -304,6 +328,52 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     }
 
     /**
+     * 图片加载完毕的回调
+     */
+    class SimpleImageLoadingListenerImpl extends SimpleImageLoadingListener {
+        private AttachSpec attachSpec;
+        
+        private AttachAddCompleteListener listener;
+
+        public SimpleImageLoadingListenerImpl(AttachSpec attachSpec, AttachAddCompleteListener listener) {
+            this.attachSpec = attachSpec;
+            this.listener = listener;
+        }
+
+        @Override
+        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+            final int selStart = attachSpec.start;
+            final int selEnd = attachSpec.end;
+
+            final String text = attachSpec.text.toString();
+
+            final AttachSpan attachSpan = new AttachSpan();
+            attachSpan.setAttachId(attachSpec.sid);
+            attachSpan.setAttachType(attachSpec.attachType);
+            attachSpan.setFilePath(attachSpec.filePath);
+            attachSpan.setText(attachSpec.text);
+            attachSpan.setSelStart(selStart);
+            attachSpan.setSelEnd(selEnd);
+            attachSpan.setNoteSid(attachSpec.noteSid);
+
+            ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
+
+            addSpan(text, attachSpan, imageSpan, selStart, selEnd);
+            
+            if (listener != null) {
+                
+                Attach attach = new Attach();
+                attach.setNoteId(attachSpec.noteSid);
+                attach.setSId(attachSpec.sid);
+                attach.setLocalPath(attachSpec.filePath);
+                attach.setType(attachSpec.attachType);
+                
+                listener.onAddComplete(null, null, attach);
+            }
+        }
+    }
+
+    /**
      * 光标位置变化的监听
      * @author tiger
      * @update 2016/3/13 14:36
@@ -312,4 +382,5 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     public interface SelectionChangedListener {
         public void onSelectionChanged(int selStart, int selEnd);
     }
+    
 }

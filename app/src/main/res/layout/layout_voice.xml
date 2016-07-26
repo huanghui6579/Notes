@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/span_container"
     android:layout_width="match_parent" 
     android:layout_height="wrap_content"
     android:padding="@dimen/content_padding"
@@ -25,6 +26,9 @@
             android:id="@id/tv_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxEms="@integer/file_span_title_ems"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textSize="@dimen/content_text_size_large"/>
 
         <TextView
@@ -32,6 +36,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@id/tv_title"
+            android:maxEms="@integer/file_span_title_ems"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:gravity="center_vertical"/>
     </RelativeLayout>
     

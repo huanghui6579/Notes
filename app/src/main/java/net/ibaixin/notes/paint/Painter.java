@@ -2,6 +2,9 @@ package net.ibaixin.notes.paint;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.TextUtils;
+
+import net.ibaixin.notes.richtext.AttachSpec;
 
 /**
  * @author huanghui1
@@ -26,9 +29,17 @@ public class Painter implements Parcelable {
     
     //是否是新创建
     public boolean isNew = true;
-    
-    //如果是编辑模式，则该值为文件的路径
-    public String filePath;
+
+    //如果是编辑模式，则该值为附件的信息
+    public AttachSpec attachSpec;
+
+    /**
+     * 判断是否是编辑模式
+     * @return
+     */
+    public boolean isEditMode() {
+        return !isNew && attachSpec != null && !TextUtils.isEmpty(attachSpec.sid);
+    }
 
     public Painter(int size, int color, int type, int alpha, int eraseSize) {
         this.size = size;
@@ -48,7 +59,7 @@ public class Painter implements Parcelable {
         alpha = in.readInt();
         eraseSize = in.readInt();
         isNew = in.readByte() != 0;
-        filePath = in.readString();
+        attachSpec = in.readParcelable(AttachSpec.class.getClassLoader());
     }
 
     @Override
@@ -59,7 +70,9 @@ public class Painter implements Parcelable {
         dest.writeInt(alpha);
         dest.writeInt(eraseSize);
         dest.writeByte((byte) (isNew ? 1 : 0));
-        dest.writeString(filePath);
+        if (attachSpec != null) {
+            dest.writeParcelable(attachSpec, flags);
+        }
     }
 
     @Override

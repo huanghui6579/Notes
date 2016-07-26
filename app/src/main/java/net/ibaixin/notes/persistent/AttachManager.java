@@ -70,6 +70,7 @@ public class AttachManager extends Observable<Observer> {
         values.put(Provider.AttachmentColumns.SERVER_PATH, attach.getServerPath());
         values.put(Provider.AttachmentColumns.SIZE, attach.getSize());
         values.put(Provider.AttachmentColumns.TYPE, attach.getType());
+        values.put(Provider.AttachmentColumns.USER_ID, attach.getUserId());
         return values;
     }
 
@@ -96,6 +97,41 @@ public class AttachManager extends Observable<Observer> {
                 attach.setId((int) rowId);
             }
             notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, attach);
+            return attach;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 更新附件
+     * @param attach
+     * @return
+     */
+    public Attach updateAttach(Attach attach) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        SyncState syncState = attach.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.AttachmentColumns.SYNC_STATE, syncState.ordinal());
+        }
+        values.put(Provider.AttachmentColumns.MODIFY_TIME, attach.getModifyTime());
+        values.put(Provider.AttachmentColumns.SIZE, attach.getSize());
+        values.put(Provider.AttachmentColumns.USER_ID, attach.getUserId());
+        db.beginTransaction();
+        long rowId = 0;
+        try {
+            String selection = Provider.AttachmentColumns.SID + " = ?";
+            String[] args = {attach.getSId()};
+            rowId = db.update(Provider.AttachmentColumns.TABLE_NAME, values, selection, args);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e(TAG, "---updateAttach--error--" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        if (rowId > 0) {
+            notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, attach);
             return attach;
         } else {
             return null;

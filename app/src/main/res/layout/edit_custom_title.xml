@@ -6,6 +6,8 @@
     style="@style/TextAppearance.Widget.AppCompat.Toolbar.Title"
     android:textColor="@android:color/white"
     android:background="@drawable/common_action_bar_item_background_selector"
+    android:maxLines="1"
+    android:ellipsize="end"
     android:drawablePadding="@dimen/content_padding">
 
 </TextView>

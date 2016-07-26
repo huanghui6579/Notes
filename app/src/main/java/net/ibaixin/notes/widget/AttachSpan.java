@@ -1,13 +1,18 @@
 package net.ibaixin.notes.widget;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.support.v7.app.AlertDialog;
 import android.text.style.ClickableSpan;
 import android.view.View;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.richtext.AttachSpec;
+import net.ibaixin.notes.ui.HandWritingActivity;
+import net.ibaixin.notes.ui.NoteEditActivity;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.TimeUtil;
@@ -24,56 +29,67 @@ import java.io.File;
 public class AttachSpan extends ClickableSpan {
 
     private static final java.lang.String TAG = "AttachSpan";
-    /**
-     * 附件的类型
-     */
-    protected int attachType = 0;
+    
+    private AttachSpec attachSpec = new AttachSpec();
 
-    /**
-     * 附件的本地全路径
-     */
-    protected String filePath;
+    public AttachSpec getAttachSpec() {
+        return attachSpec;
+    }
 
-    /**
-     * 附件的id
-     */
-    private String attachId;
-
-    /**
-     * 内容
-     */
-    private CharSequence text;
+    public void setAttachSpec(AttachSpec attachSpec) {
+        this.attachSpec = attachSpec;
+    }
 
     public int getAttachType() {
-        return attachType;
+        return attachSpec.attachType;
     }
 
     public void setAttachType(int attachType) {
-        this.attachType = attachType;
+        this.attachSpec.attachType = attachType;
     }
 
     public String getFilePath() {
-        return filePath;
+        return attachSpec.filePath;
     }
 
     public void setFilePath(String filePath) {
-        this.filePath = filePath;
+        this.attachSpec.filePath = filePath;
     }
 
     public String getAttachId() {
-        return attachId;
+        return attachSpec.sid;
     }
 
     public void setAttachId(String attachId) {
-        this.attachId = attachId;
+        this.attachSpec.sid = attachId;
     }
 
     public CharSequence getText() {
-        return text;
+        return attachSpec.text;
     }
 
     public void setText(CharSequence text) {
-        this.text = text;
+        this.attachSpec.text = text;
+    }
+    
+    public void setNoteSid(String sid) {
+        this.attachSpec.noteSid = sid;
+    }
+
+    public int getSelStart() {
+        return attachSpec.start;
+    }
+
+    public void setSelStart(int selStart) {
+        this.attachSpec.start = selStart;
+    }
+
+    public int getSelEnd() {
+        return attachSpec.end;
+    }
+
+    public void setSelEnd(int selEnd) {
+        this.attachSpec.end = selEnd;
     }
 
     /**
@@ -82,7 +98,7 @@ public class AttachSpan extends ClickableSpan {
     @Override
     public void onClick(View widget) {
         Context context = widget.getContext();
-        doAction(context, filePath);
+        doAction(context, attachSpec.filePath);
         Log.d(TAG, "--AttachSpan--onClick----");
     }
 
@@ -93,12 +109,13 @@ public class AttachSpan extends ClickableSpan {
      */
     public void doAction(Context context, String filePath) {
         MenuItem menuItem = new MenuItem();
-        switch (attachType) {
+        switch (attachSpec.attachType) {
             case Attach.IMAGE:  //图片
                 menuItem.menuRes = R.array.image_menu_items;
                 handleAttach(context, menuItem, filePath);
             case Attach.PAINT:  //绘画
                 menuItem.menuRes = R.array.paint_menu_items;
+                handlePaint(context, menuItem, filePath);
                 break;
             case Attach.VOICE:  //录音
                 menuItem.menuRes = R.array.voice_menu_items;
@@ -132,10 +149,10 @@ public class AttachSpan extends ClickableSpan {
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case 0: //打开
-                        SystemUtil.openFile(context, filePath, attachType);
+                        SystemUtil.openFile(context, filePath, attachSpec.attachType);
                         break;
                     case 1: //分享
-                        SystemUtil.shareFile(context, filePath, attachType);
+                        SystemUtil.shareFile(context, filePath, attachSpec.attachType);
                         break;
                     case 2: //详情
                         showInfo(context, filePath);
@@ -157,13 +174,23 @@ public class AttachSpan extends ClickableSpan {
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case 0: //打开
-                        SystemUtil.openFile(context, filePath, attachType);
+                        SystemUtil.openFile(context, filePath, attachSpec.attachType);
                         break;
                     case 1: //编辑
-                        SystemUtil.openFile(context, filePath, attachType);
+                        Intent intent = new Intent(context, HandWritingActivity.class);
+                        intent.putExtra(Constants.ARG_CORE_OBJ, attachSpec);
+                        
+                        if (context instanceof Activity) {
+                            Activity activity = (Activity) context;
+                            activity.startActivityForResult(intent, NoteEditActivity.REQ_EDIT_PAINT);
+                        } else {
+                            context.startActivity(intent);
+                            Log.d(TAG, "---handlePaint----context---is---not---activity---");
+                        }
+//                        SystemUtil.openFile(context, filePath, attachType);
                         break;
                     case 2: //分享
-                        SystemUtil.shareFile(context, filePath, attachType);
+                        SystemUtil.shareFile(context, filePath, attachSpec.attachType);
                         break;
                     case 3: //详情
                         showInfo(context, filePath);
