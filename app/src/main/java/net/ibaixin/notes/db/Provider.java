@@ -262,7 +262,7 @@ public final class Provider {
         /**
          * 附件的描述
          */
-        public static final String DECRIPTION = "decription";
+        public static final String DESCRIPTION = "description";
 
         /**
          * 服务器的路径
@@ -278,6 +278,11 @@ public final class Provider {
          * 修改时间
          */
         public static final String MODIFY_TIME = "modify_time";
+
+        /**
+         * 文件的mime类型
+         */
+        public static final String MIME_TYPE = "mime_type";
     }
 
     /**

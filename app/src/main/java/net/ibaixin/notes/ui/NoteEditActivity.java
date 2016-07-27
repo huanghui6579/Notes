@@ -1415,11 +1415,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             public void run() {
                 
                 if (filePath != null) {
+                    
+                    File file = new File(filePath);
+                    
                     attach.setUri(filePath);
                     
                     long time = System.currentTimeMillis();
                     attach.setCreateTime(time);
                     attach.setModifyTime(time);
+
+                    attach.setMimeType(FileUtil.getMimeType(file));
                     
                     if (mNote != null && !mNote.isEmpty()) {
                         attach.setNoteId(mNote.getSId());
@@ -1609,7 +1614,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                             File file = new File(filePath);
                             Attach attach = new Attach();
                             attach.setType(Attach.VOICE);
-                            attach.setDecription(String.valueOf(time));
+                            attach.setDescription(String.valueOf(time));
                             attach.setSId(SystemUtil.generateAttachSid());
                             attach.setLocalPath(filePath);
                             attach.setFilename(file.getName());
@@ -1662,10 +1667,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void stopRecorder() {
         if (mAudioRecorder != null) {
 
-            mAudioRecorder.releaseRecorder();
+            doInbackground(new Runnable() {
+                @Override
+                public void run() {
+                    mAudioRecorder.releaseRecorder();
+                    mAudioRecorder = null;
+                    Log.d(TAG, "----stopRecorder---record---file---" + mAttachFile);
+                }
+            });
+            /*mAudioRecorder.releaseRecorder();
             mAudioRecorder = null;
 
-            hideRecordView();
+            hideRecordView();*/
             
             Log.d(TAG, "----stopRecorder---record---file---" + mAttachFile);
         }

@@ -1,8 +1,11 @@
 package net.ibaixin.notes.ui;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.ActionBar;
@@ -117,9 +120,9 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @update 2016/3/2 11:37
      * @version: 1.0.0
      */
-    protected PopupMenu createPopuMenu(View auchor, int menuResId, boolean showIcon, PopupMenu.OnMenuItemClickListener itemClickListener) {
-        if (auchor != null) {
-            PopupMenu popupMenu = new PopupMenu(this, auchor);
+    protected PopupMenu createPopuMenu(View author, int menuResId, boolean showIcon, PopupMenu.OnMenuItemClickListener itemClickListener) {
+        if (author != null) {
+            PopupMenu popupMenu = new PopupMenu(this, author);
             popupMenu.inflate(menuResId);
             popupMenu.setOnMenuItemClickListener(itemClickListener);
             if (showIcon) {
@@ -219,15 +222,9 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     protected void setMenuTint(MenuItem item, int color) {
         if (item != null) {
-            Drawable icon = item.getIcon();
-            if (icon != null) {
-                int tint = color;
-                if (tint == 0) {
-                    tint = getPrimaryColor();
-                }
-                DrawableCompat.setTint(icon, tint);
-                item.setIcon(icon);
-            }
+            Drawable icon = item.getIcon().mutate();
+            getTintDrawable(icon, color);
+            item.setIcon(icon);
         }
     }
 
@@ -243,9 +240,39 @@ public abstract class BaseActivity extends SwipeBackActivity {
             if (tint == 0) {
                 tint = getPrimaryColor();
             }
-            DrawableCompat.setTint(srcIcon, tint);
+//            DrawableCompat.setTint(srcIcon, tint);
+            if (SystemUtil.hasSdkV21()) {
+                srcIcon = DrawableCompat.wrap(srcIcon);
+                DrawableCompat.setTint(srcIcon, tint);
+            } else {
+                srcIcon.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
+            }
         }
         return srcIcon;
+    }
+    
+    protected Drawable tintDrawableCompat(Drawable drawable, int color) {
+        int[] colors = new int[] {color, color};
+
+        int[][] states = new int[2][];
+
+        states[0] = new int[] {android.R.attr.state_selected};
+        states[1] = new int[] {};
+
+        ColorStateList colorList = new ColorStateList(states, colors);
+
+        StateListDrawable stateListDrawable = new StateListDrawable();
+
+        stateListDrawable.addState(states[0], drawable);//注意顺序
+        stateListDrawable.addState(states[0], drawable);//注意顺序
+
+        Drawable.ConstantState state = stateListDrawable.getConstantState();
+
+        drawable = DrawableCompat.wrap(state == null ? stateListDrawable : state.newDrawable()).mutate();
+
+        DrawableCompat.setTintList(drawable, colorList);
+        
+        return drawable;
     }
     
     /**

@@ -84,7 +84,7 @@ public class Attach implements Parcelable {
     /**
      * 文件的描述
      */
-    private String decription;
+    private String description;
 
     /**
      * 服务器的全路径
@@ -115,6 +115,11 @@ public class Attach implements Parcelable {
      * 文件的大小
      */
     private long size;
+
+    /**
+     * 文件的mime类型
+     */
+    private String mimeType;
     
     public Attach() {}
 
@@ -127,11 +132,12 @@ public class Attach implements Parcelable {
         type = in.readInt();
         uri = in.readString();
         localPath = in.readString();
-        decription = in.readString();
+        description = in.readString();
         serverPath = in.readString();
         createTime = in.readLong();
         modifyTime = in.readLong();
         size = in.readLong();
+        mimeType = in.readString();
     }
 
     @Override
@@ -144,11 +150,12 @@ public class Attach implements Parcelable {
         dest.writeInt(type);
         dest.writeString(uri);
         dest.writeString(localPath);
-        dest.writeString(decription);
+        dest.writeString(description);
         dest.writeString(serverPath);
         dest.writeLong(createTime);
         dest.writeLong(modifyTime);
         dest.writeLong(size);
+        dest.writeString(mimeType);
     }
 
     @Override
@@ -216,12 +223,12 @@ public class Attach implements Parcelable {
         this.localPath = localPath;
     }
 
-    public String getDecription() {
-        return decription;
+    public String getDescription() {
+        return description;
     }
 
-    public void setDecription(String decription) {
-        this.decription = decription;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getServerPath() {
@@ -288,6 +295,14 @@ public class Attach implements Parcelable {
         this.uri = uri;
     }
 
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+    }
+
     /**
      * 获取可用的uri,优先使用uri
      * @return uri
@@ -313,13 +328,14 @@ public class Attach implements Parcelable {
                 ", type=" + type +
                 ", uri='" + uri + '\'' +
                 ", localPath='" + localPath + '\'' +
-                ", decription='" + decription + '\'' +
+                ", description='" + description + '\'' +
                 ", serverPath='" + serverPath + '\'' +
                 ", syncState=" + syncState +
                 ", deleteState=" + deleteState +
                 ", createTime=" + createTime +
                 ", modifyTime=" + modifyTime +
                 ", size=" + size +
+                ", mimeType=" + mimeType + 
                 '}';
     }
 

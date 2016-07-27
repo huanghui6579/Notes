@@ -325,7 +325,7 @@ public class PaintView extends View implements View.OnTouchListener {
      */
     public void setPaintAlpha(int alpha) {
         mStrokeAlpha = alpha;
-//        mStrokeRealColor = SystemUtil.calculColor(alpha, mStrokeColor);
+//        mStrokeRealColor = SystemUtil.calcColor(alpha, mStrokeColor);
 //        mPaint.setColor(mStrokeRealColor);
     }
 
@@ -335,7 +335,7 @@ public class PaintView extends View implements View.OnTouchListener {
      */
     public void setPaintColor(int color) {
         mStrokeColor = color;
-//        mStrokeRealColor = SystemUtil.calculColor(mStrokeAlpha, color);
+//        mStrokeRealColor = SystemUtil.calcColor(mStrokeAlpha, color);
 //        mPaint.setColor(mStrokeRealColor);
     }
 

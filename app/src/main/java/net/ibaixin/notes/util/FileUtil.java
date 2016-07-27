@@ -1,5 +1,6 @@
 package net.ibaixin.notes.util;
 
+import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
 import net.ibaixin.notes.util.log.Log;
@@ -124,6 +125,18 @@ public class FileUtil {
     }
 
     /**
+     * 获取文件的后缀名，不包含"."
+     * @param filePath
+     * @return
+     */
+    public static String getSuffix(String filePath) {
+        if (TextUtils.isEmpty(filePath)) {
+            return null;
+        }
+        return getSuffix(new File(filePath));
+    }
+
+    /**
      * 获取文件的mime类型
      * @param file
      * @return
@@ -138,5 +151,14 @@ public class FileUtil {
             return type;
         }
         return "file/*";
+    }
+
+    /**
+     * 是否是压缩包
+     * @param suffix 文件的后缀，如rar
+     * @return
+     */
+    public static boolean isArchive(String suffix) {
+        return suffixList.contains(suffix);
     }
 }

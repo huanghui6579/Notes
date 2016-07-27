@@ -73,14 +73,15 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.AttachmentColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
                 .append(Provider.AttachmentColumns.FILE_NAME).append(" TEXT, ")
                 .append(Provider.AttachmentColumns.LOCAL_PATH).append(" TEXT, ")
-                .append(Provider.AttachmentColumns.DECRIPTION).append(" TEXT, ")
+                .append(Provider.AttachmentColumns.DESCRIPTION).append(" TEXT, ")
                 .append(Provider.AttachmentColumns.SERVER_PATH).append(" TEXT, ")
                 .append(Provider.AttachmentColumns.SYNC_STATE).append(" INTEGER, ")
                 .append(Provider.AttachmentColumns.DELETE_STATE).append(" INTEGER, ")
                 .append(Provider.AttachmentColumns.CREATE_TIME).append(" INTEGER, ")
                 .append(Provider.AttachmentColumns.MODIFY_TIME).append(" INTEGER, ")
                 .append(Provider.AttachmentColumns.TYPE).append(" INTEGER, ")
-                .append(Provider.AttachmentColumns.SIZE).append(" INTEGER); ");
+                .append(Provider.AttachmentColumns.SIZE).append(" INTEGER, ")
+                .append(Provider.AttachmentColumns.MIME_TYPE).append(" TEXT); ");
         db.execSQL(builder.toString());
 
         //创建手写、涂鸦表

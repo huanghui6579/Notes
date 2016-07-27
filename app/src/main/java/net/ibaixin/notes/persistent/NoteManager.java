@@ -282,13 +282,14 @@ public class NoteManager extends Observable<Observer> {
         attach.setType(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.TYPE)));
         attach.setLocalPath(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.LOCAL_PATH)));
         attach.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.AttachmentColumns.CREATE_TIME)));
-        attach.setDecription(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.DECRIPTION)));
+        attach.setDescription(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.DESCRIPTION)));
         attach.setSyncState(SyncState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.SYNC_STATE))));
         attach.setDeleteState(DeleteState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.DELETE_STATE))));
         attach.setFilename(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.FILE_NAME)));
         attach.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.AttachmentColumns.MODIFY_TIME)));
         attach.setServerPath(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.SERVER_PATH)));
         attach.setSize(cursor.getLong(cursor.getColumnIndex(Provider.AttachmentColumns.SIZE)));
+        attach.setMimeType(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.MIME_TYPE)));
         return attach;
     }
     
@@ -361,7 +362,7 @@ public class NoteManager extends Observable<Observer> {
      * @param db
      * @param list 附件的sid集合
      */
-    private void deleteAttachs(SQLiteDatabase db, List<String> list) {
+    private void deleteAttaches(SQLiteDatabase db, List<String> list) {
         int size = list.size();
         String selection = null;
         String[] selectionArgs = new String[size];
@@ -438,7 +439,7 @@ public class NoteManager extends Observable<Observer> {
             info = cursor2Note(cursor);
             
             //获取笔记中的附件
-            Map<String, Attach> map = getAttachs(info, db);
+            Map<String, Attach> map = getAttaches(info, db);
 
             info.setAttaches(map);
         }
@@ -453,7 +454,7 @@ public class NoteManager extends Observable<Observer> {
      * @param note 笔记
      * @return 返回笔记中的附件列表
      */
-    public Map<String, Attach> getAttachs(NoteInfo note, SQLiteDatabase db) {
+    public Map<String, Attach> getAttaches(NoteInfo note, SQLiteDatabase db) {
         String selection = Provider.AttachmentColumns.NOTE_ID + " = ? AND (" + Provider.AttachmentColumns.DELETE_STATE + " IS NULL OR " + Provider.AttachmentColumns.DELETE_STATE + " = ?)";
         String[] selectionArgs = {note.getSId(), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
         Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, null, null);
@@ -576,15 +577,15 @@ public class NoteManager extends Observable<Observer> {
                 //删除多余的附件
                 cacheList.removeAll(attachList);
                 if (cacheList.size() > 0) { //删除了还有多余的附件
-                    Log.d(TAG, "--deleteAttachs--list---" + cacheList);
-                    deleteAttachs(db, cacheList);
+                    Log.d(TAG, "--deleteAttaches--list---" + cacheList);
+                    deleteAttaches(db, cacheList);
                 }
             }
         } else {    //笔记中实际没有附件
             if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
                 //删除多余的附件
-                Log.d(TAG, "--deleteAttachs--list---" + cacheList);
-                deleteAttachs(db, cacheList);
+                Log.d(TAG, "--deleteAttaches--list---" + cacheList);
+                deleteAttaches(db, cacheList);
             }
         }
     }

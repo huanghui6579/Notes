@@ -258,6 +258,16 @@ public class SystemUtil {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     }
 
+    /**
+     * 当前Android系统版本是否在Android4.1或者之上
+     * @author tiger
+     * @update 2016/3/5 8:06
+     * @version 1.0.0
+     */
+    public static boolean hasSdkV17() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1;
+    }
+
 
     /**
      * 获取默认名称的SharedPreferences
@@ -1140,7 +1150,7 @@ public class SystemUtil {
      * @param srcColor
      * @return
      */
-    public static int calculColor(int alpha, int srcColor) {
+    public static int calcColor(int alpha, int srcColor) {
         int red = Color.red(srcColor);
         int green = Color.green(srcColor);
         int blue = Color.blue(srcColor);
@@ -1163,14 +1173,28 @@ public class SystemUtil {
      */
     public static int guessFileType(File file) {
         String mimeType = FileUtil.getMimeType(file);
-        String suffix = FileUtil.getSuffix(file);
+        return guessFileType(file.getAbsolutePath(), mimeType);
+    }
+
+    /**
+     * 获取文件的类型，{@link Attach#type}
+     * @param filePath 文件名或者文件的路径
+     * @param mimeType 文件的mime类型                
+     * @return
+     */
+    public static int guessFileType(String filePath, String mimeType) {
         int type = Attach.FILE;
-        if (mimeType.startsWith("image/")) {    //图片
-            type = Attach.IMAGE;
-        } else if (mimeType.startsWith("audio/")) { //音频文件
-            type = Attach.VOICE;
-        } else if (mimeType.startsWith("video/")) { //视频频文件
-            type = Attach.VIDEO;
+        String suffix = FileUtil.getSuffix(filePath);
+        if (FileUtil.isArchive(suffix)) {
+            type = Attach.ARCHIVE;
+        } else {
+            if (mimeType.startsWith("image/")) {    //图片
+                type = Attach.IMAGE;
+            } else if (mimeType.startsWith("audio/")) { //音频文件
+                type = Attach.VOICE;
+            } else if (mimeType.startsWith("video/")) { //视频频文件
+                type = Attach.VIDEO;
+            }
         }
         return type;
     }

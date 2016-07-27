@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.text.style.DynamicDrawableSpan;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -15,6 +16,8 @@ import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.TimeUtil;
 import net.ibaixin.notes.util.log.Log;
+
+import java.io.File;
 
 /**
  * 语音的span
@@ -47,13 +50,37 @@ public class FileSpan extends DynamicDrawableSpan {
         
         TextView titleView = (TextView) view.findViewById(R.id.tv_title);
         TextView summaryView = (TextView) view.findViewById(R.id.tv_summary);
+        ImageView ivIcon = (ImageView) view.findViewById(R.id.iv_icon);
+        ImageView ivPlay = (ImageView) view.findViewById(R.id.iv_play);
 
+        File file = new File(attach.getLocalPath());
+        
+        int fileType = SystemUtil.guessFileType(file);
+        int optIcon = 0;
+        switch (fileType) {
+            case Attach.VOICE:  //语音
+                optIcon = R.drawable.ic_play_circle;
+                break;
+            case Attach.FILE:
+            case Attach.ARCHIVE:
+            case Attach.IMAGE:
+            case Attach.VIDEO:
+                optIcon = R.drawable.ic_file_open;
+                break;
+            default:
+                optIcon = R.drawable.ic_file_open;
+                break;
+        }
+
+        ivIcon.setImageResource(R.drawable.ic_library_music);
+        ivPlay.setImageResource(optIcon);
+        
         titleView.setMaxWidth((int) (viewWidth * 0.6));
         
         titleView.setText(attach.getFilename());
         String summary = SystemUtil.formatFileSize(attach.getSize());
-        if (Attach.VOICE == mAttach.getType() && mAttach.getDecription() != null) {    //录音
-            summary += "  " + TimeUtil.formatMillis(Long.parseLong(attach.getDecription()));
+        if (Attach.VOICE == mAttach.getType() && mAttach.getDescription() != null) {    //录音
+            summary += "  " + TimeUtil.formatMillis(Long.parseLong(attach.getDescription()));
         }
         summaryView.setText(summary);
 

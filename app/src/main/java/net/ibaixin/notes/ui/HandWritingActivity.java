@@ -2,6 +2,7 @@ package net.ibaixin.notes.ui;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -15,6 +16,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.view.menu.ActionMenuItemView;
 import android.text.TextUtils;
 import android.util.StateSet;
@@ -66,7 +68,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     //之前的画笔类型
     private int mPrePainType = mPaintType;
     //默认的画笔颜色
-    private int mPaintColor = Color.BLACK;
+    private int mPaintColor = Color.RED;
     //画笔颜色的alpha
     private int mPaintAlpha = PaintRecord.DEFAULT_STROKE_ALPHA;
     //默认的橡皮檫尺寸
@@ -203,10 +205,10 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
             child.setSelected(true);
             switch (item.getItemId()) {
                 case R.id.action_pen:
-                    onStrokeChosed(view);
+                    onStrokeChose(view);
                     break;
                 case R.id.action_eraser:
-                    onEraseChosed(child, view);
+                    onEraseChose(child, view);
                     break;
                 case R.id.action_undo:  //撤销
                     undo();
@@ -236,7 +238,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
      * 显示橡皮檫
      * @param view 菜单的父类控件
      */
-    private void onStrokeChosed(View view) {
+    private void onStrokeChose(View view) {
         PaintFragment paintFragment = getPaintFragment();
         //设置画笔的图标
         setupBrushMenuIcon();
@@ -272,7 +274,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
      * @param child 菜单的控件
      * @param view 菜单的父类控件
      */
-    private void onEraseChosed(View child, View view) {
+    private void onEraseChose(View child, View view) {
         PaintFragment paintFragment = getPaintFragment();
         if (mMenuEraseView == null) {
             mMenuEraseView = (ActionMenuItemView) child;
@@ -320,9 +322,11 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
      */
     private Drawable getBrushMenuIcon(int paintType, int paintColor, int paintAlpha) {
         int resId = getDrawableRes(paintType);
+        
+        int alpha = getRelAlpha(paintAlpha);
 
         //合成后的实际颜色
-        int relColor = SystemUtil.calculColor(paintAlpha, paintColor);
+        int relColor = SystemUtil.calcColor(alpha, paintColor);
         return getBrushMenuIcon(resId, relColor);
     }
 
@@ -340,7 +344,37 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         Drawable normalDrawable = resources.getDrawable(resId);
 
         //给正常的图标着色
-        getTintDrawable(normalDrawable, relColor);
+//        getTintDrawable(normalDrawable, relColor);
+        if (SystemUtil.hasSdkV21()) {
+            getTintDrawable(normalDrawable, relColor);
+            
+        } else {
+            int[] colors = new int[] {relColor, relColor};
+
+            int[][] states = new int[2][];
+            
+            states[0] = new int[] {android.R.attr.state_selected};
+            states[1] = new int[] {};
+
+            ColorStateList colorList = new ColorStateList(states, colors);
+
+            StateListDrawable stateListDrawable = new StateListDrawable();
+
+            //合成的选中后的图标
+            Drawable[] drawables = new Drawable[2];
+            drawables[0] = normalDrawable;
+            drawables[1] = spinnerInkDrawable;
+            LayerDrawable layerDrawable = new LayerDrawable(drawables);
+
+            stateListDrawable.addState(states[0], normalDrawable);//注意顺序
+            stateListDrawable.addState(states[0], layerDrawable);//注意顺序
+
+            Drawable.ConstantState state = stateListDrawable.getConstantState();
+
+            normalDrawable = DrawableCompat.wrap(state == null ? stateListDrawable : state.newDrawable()).mutate();
+
+            DrawableCompat.setTintList(normalDrawable, colorList);
+        }
 
         //合成的选中后的图标
         Drawable[] drawables = new Drawable[2];
@@ -456,7 +490,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
 
         LayerDrawable layerDrawable = new LayerDrawable(drawables);
 
-        int relColor = SystemUtil.calculColor(paintAlpha, paintColor);
+        int relColor = SystemUtil.calcColor(paintAlpha, paintColor);
 
         return tintLayerDrawable(layerDrawable, relColor);
     }
@@ -524,6 +558,18 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
             tintNormalDrawable(listDrawable, color);
             //给选中的层级图标着色
             tintSelectedDrawable(listDrawable, color);
+            /*if (SystemUtil.hasSdkV21()) {
+            } else {
+                Drawable normalDrawable = getStateDrawable(listDrawable, StateSet.NOTHING);
+                tintDrawableCompat(normalDrawable, color);
+                
+                Drawable selectedDrawable = getStateDrawable(listDrawable, new int[] {android.R.attr.state_selected});
+                tintDrawableCompat(selectedDrawable, color);
+            }*/
+
+            if (!SystemUtil.hasSdkV21()) {
+                mBrushItem.setIcon(listDrawable);
+            }
         }
     }
 
@@ -577,7 +623,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                         break;
                 }
 
-                int relColor = SystemUtil.calculColor(mPaintAlpha, mPaintColor);
+                int relColor = SystemUtil.calcColor(mPaintAlpha, mPaintColor);
 
                 Drawable icon = getBrushMenuIcon(resId, relColor);
 
@@ -644,7 +690,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                 int alpha = getRelAlpha(mPaintAlpha);
 
                 //合成实际的颜色
-                int relColor = SystemUtil.calculColor(alpha, color);
+                int relColor = SystemUtil.calcColor(alpha, color);
 
                 updateBrushMenuColor(relColor);
 
@@ -673,7 +719,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                 mPaintAlpha = progress;
 
                 //合成实际的颜色
-                int relColor = SystemUtil.calculColor(alpha, mPaintColor);
+                int relColor = SystemUtil.calcColor(alpha, mPaintColor);
                 
                 updateBrushMenuColor(relColor);
                 PaintFragment paintFragment = getPaintFragment();
@@ -755,6 +801,28 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         }
     }
 
+    private Drawable getStateDrawable(StateListDrawable listDrawable, int[] state) {
+        //给默认的图标着色
+        Drawable drawable = null;
+        try {
+            Method method = StateListDrawable.class.getDeclaredMethod("getStateDrawableIndex", int[].class);
+            if (method != null) {
+                method.setAccessible(true);
+                int index = (int) method.invoke(listDrawable, state);
+                method = StateListDrawable.class.getDeclaredMethod("getStateDrawable", int.class);
+                if (method != null) {
+                    method.setAccessible(true);
+
+                    drawable = (Drawable) method.invoke(listDrawable, index);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "---tintNormalDrawable----error---" + e.getMessage());
+            e.printStackTrace();
+        }
+        return drawable;
+    }
+
     /**
      * //给选中的层级图标着色
      * @param listDrawable
@@ -768,6 +836,8 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
             getTintDrawable(firstDrawable, color);
         }
     }
+    
+//    private Drawable getSelected
 
     /**
      * 获取画笔的面板

@@ -63,7 +63,7 @@ public class AttachManager extends Observable<Observer> {
         }
         values.put(Provider.AttachmentColumns.CREATE_TIME, attach.getCreateTime());
         values.put(Provider.AttachmentColumns.MODIFY_TIME, attach.getModifyTime());
-        values.put(Provider.AttachmentColumns.DECRIPTION, attach.getDecription());
+        values.put(Provider.AttachmentColumns.DESCRIPTION, attach.getDescription());
         values.put(Provider.AttachmentColumns.FILE_NAME, attach.getFilename());
         values.put(Provider.AttachmentColumns.LOCAL_PATH, attach.getLocalPath());
         values.put(Provider.AttachmentColumns.NOTE_ID, attach.getNoteId());
@@ -71,6 +71,7 @@ public class AttachManager extends Observable<Observer> {
         values.put(Provider.AttachmentColumns.SIZE, attach.getSize());
         values.put(Provider.AttachmentColumns.TYPE, attach.getType());
         values.put(Provider.AttachmentColumns.USER_ID, attach.getUserId());
+        values.put(Provider.AttachmentColumns.MIME_TYPE, attach.getMimeType());
         return values;
     }
 

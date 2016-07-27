@@ -170,7 +170,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mFab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent = new Intent(mContext, NoteEditActivity.class);
+//                    Intent intent = new Intent(mContext, NoteEditActivity.class);
+                    Intent intent = new Intent(mContext, TestActivity.class);
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                     intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
                     startActivity(intent);

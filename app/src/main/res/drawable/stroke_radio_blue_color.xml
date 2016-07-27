@@ -16,6 +16,7 @@
                 <shape android:shape="oval">
                     <stroke android:width="@dimen/radio_bg_circuit_small" android:color="@android:color/white"/>
                     <size android:width="@dimen/radio_bg_size_small" android:height="@dimen/radio_bg_size_small"/>
+                    <solid android:color="@android:color/holo_blue_light"/>
                 </shape>
             </item>
         </layer-list>
