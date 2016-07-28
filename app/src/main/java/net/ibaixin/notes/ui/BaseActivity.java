@@ -120,7 +120,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @update 2016/3/2 11:37
      * @version: 1.0.0
      */
-    protected PopupMenu createPopuMenu(View author, int menuResId, boolean showIcon, PopupMenu.OnMenuItemClickListener itemClickListener) {
+    protected PopupMenu createPopMenu(View author, int menuResId, boolean showIcon, PopupMenu.OnMenuItemClickListener itemClickListener) {
         if (author != null) {
             PopupMenu popupMenu = new PopupMenu(this, author);
             popupMenu.inflate(menuResId);
@@ -274,13 +274,25 @@ public abstract class BaseActivity extends SwipeBackActivity {
 
         states[1] = new int[] {};
 
-        ColorStateList colorList = new ColorStateList(states, colors);
+        return getStateListDrawable(drawable, states, colors);
+    }
+
+    /**
+     * 获取包装状态的图标
+     * @param drawable 原始的图标
+     * @param colors 不同状态的颜色数组
+     * @return
+     */
+    protected Drawable getStateListDrawable(Drawable drawable, int[][] stateSet, int[] colors) {
+
+        ColorStateList colorList = new ColorStateList(stateSet, colors);
 
         StateListDrawable stateListDrawable = new StateListDrawable();
 
-        stateListDrawable.addState(states[0], drawable);//注意顺序
-
-        stateListDrawable.addState(states[1], drawable);
+        int length = stateSet.length;
+        for (int i = 0; i < length; i++) {
+            stateListDrawable.addState(stateSet[i], drawable);//注意顺序
+        }
 
         Drawable.ConstantState state = stateListDrawable.getConstantState();
 

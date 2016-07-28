@@ -767,7 +767,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private PopupMenu createPopuMenu(View aucher, PopupMenu popupMenu, int menuResId, boolean showImmediate) {
         if (aucher != null) {
             if (popupMenu == null) {
-                popupMenu = createPopuMenu(aucher, menuResId, true, new OnPopMenuItemClickListener());
+                popupMenu = createPopMenu(aucher, menuResId, true, new OnPopMenuItemClickListener());
             }
             if (showImmediate) {
                 popupMenu.show();

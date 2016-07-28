@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="net.ibaixin.notes.ui.TestActivity">
+    
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <RadioGroup
+        android:id="@+id/stroke_color_group"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/list_item_height_small"
+        android:layout_below="@id/icon"
+        android:layout_marginTop="@dimen/activity_vertical_margin"
+        android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/stroke_black"
+            android:checked="true"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_dark_color"/>
+        <RadioButton
+            android:id="@+id/stroke_red"
+            style="@style/StokeRadioStyle"
+            android:layout_gravity="center"
+            android:button="@drawable/stroke_radio_red_color"/>
+        <RadioButton
+            android:id="@+id/stroke_green"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_green_color"/>
+        <RadioButton
+            android:id="@+id/stroke_orange"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_orange_color"/>
+        <RadioButton
+            android:id="@+id/stroke_blue"
+            style="@style/StokeRadioStyle"
+            android:button="@drawable/stroke_radio_blue_color"/>
+
+    </RadioGroup>
+    
+    <ImageButton
+        android:id="@+id/btn_do"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/stroke_color_group"
+        android:layout_marginTop="@dimen/activity_vertical_margin"/>
+
+</RelativeLayout>

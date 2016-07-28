@@ -649,7 +649,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
                 View view = getToolBarMenuView(R.id.action_more);
 
-                createPopuMenu(view);
+                createPopMenu(view);
                 break;
         }
 
@@ -664,7 +664,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     togglePopuMenu(mMainPopuMenu);
                 } else {
                     View view = getToolBarMenuView(R.id.action_more);
-                    createPopuMenu(view);
+                    createPopMenu(view);
                 }
                 return true;
         }
@@ -710,15 +710,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     /**
      * 创建popuMenu
-     * @param auchor 菜单要在哪个view上弹出
+     * @param author 菜单要在哪个view上弹出
      * @author tiger
      * @update 2016/2/27 17:46
      * @version 1.0.0
      */
-    private PopupMenu createPopuMenu(View auchor) {
-        if (auchor != null) {
+    private PopupMenu createPopMenu(View author) {
+        if (author != null) {
             if (mMainPopuMenu == null) {
-                mMainPopuMenu = createPopuMenu(auchor, R.menu.main_overflow, true, new OnPopuMenuItemClickListener());
+                mMainPopuMenu = createPopMenu(author, R.menu.main_overflow, true, new OnPopuMenuItemClickListener());
                 if (!mIsGridStyle) {    //开始就显示列表，则菜单为网格
                     Menu menu = mMainPopuMenu.getMenu();
                     MenuItem menuItem = menu.findItem(R.id.nav_show_style);
@@ -2020,7 +2020,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             public void onClick(View v) {
                 switch (v.getId()) {
                     case R.id.iv_overflow:
-                        PopupMenu itemMenu = createPopuMenu(v, R.menu.grid_item_opt, false, new ItemMenuClickListener(note));
+                        PopupMenu itemMenu = createPopMenu(v, R.menu.grid_item_opt, false, new ItemMenuClickListener(note));
                         boolean hasMoreFolder = FolderCache.getInstance().hasMoreFolder();
                         if (!hasMoreFolder) {   //删除“移动”菜单项
                             Menu menu = itemMenu.getMenu();

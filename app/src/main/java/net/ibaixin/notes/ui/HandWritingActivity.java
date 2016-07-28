@@ -393,7 +393,11 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         if (mStrokePopupWindow == null) {
             mStrokePopupWindow = createStrokeWindow(R.layout.popup_brush_panel);
         }
-        mStrokePopupWindow.showAsDropDown(author);
+        int offsetY = 0;
+        if (!SystemUtil.hasSdkV21()) {
+            offsetY = -16;
+        }
+        mStrokePopupWindow.showAsDropDown(author, 0, offsetY);
 //        PopupWindowCompat.showAsDropDown(mStrokePopupWindow, author, 0, 0, Gravity.TOP | Gravity.START);
     }
     
@@ -401,7 +405,11 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
         if (mErasePopupWindow == null) {
             mErasePopupWindow = createEraseWindow(R.layout.popup_erase_panel);
         }
-        mErasePopupWindow.showAsDropDown(author);
+        int offsetY = 0;
+        if (!SystemUtil.hasSdkV21()) {
+            offsetY = -16;
+        }
+        mErasePopupWindow.showAsDropDown(author, 0, offsetY);
 //        PopupWindowCompat.showAsDropDown(mErasePopupWindow, author, 0, 0, Gravity.TOP | Gravity.START);
     }
 
@@ -512,18 +520,28 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
      * @param disableColor 不可用的颜色
      */
     private void tintDoMenuIcon(MenuItem item, int resId, int disableColor) {
-        StateListDrawable listDrawable = new StateListDrawable();
-
         Drawable normalDrawable = ResourcesCompat.getDrawable(getResources(), resId, getTheme());
+
+        int[][] states = new int[2][];
+
+        states[0] = new int[] {-android.R.attr.state_enabled};
+        states[1] = new int[] {};
+        
+        
+        int[] colors = new int[] {disableColor, Color.WHITE};
+        Drawable drawable = getStateListDrawable(normalDrawable, states, colors);
+        
+        /*StateListDrawable listDrawable = new StateListDrawable();
+
         getTintDrawable(normalDrawable, Color.WHITE);
 
         Drawable disableDrawable = ResourcesCompat.getDrawable(getResources(), resId, getTheme()).mutate();
         getTintDrawable(disableDrawable, disableColor);
 
         listDrawable.addState(new int[] {-android.R.attr.state_enabled}, disableDrawable);
-        listDrawable.addState(new int[] {}, normalDrawable);
+        listDrawable.addState(new int[] {}, normalDrawable);*/
 
-        item.setIcon(listDrawable);
+        item.setIcon(drawable);
     }
 
     /**
