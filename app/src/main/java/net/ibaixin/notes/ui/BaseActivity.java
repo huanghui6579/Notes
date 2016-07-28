@@ -3,8 +3,8 @@ package net.ibaixin.notes.ui;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
-import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
 import android.support.v4.graphics.drawable.DrawableCompat;
@@ -126,7 +126,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
             popupMenu.inflate(menuResId);
             popupMenu.setOnMenuItemClickListener(itemClickListener);
             if (showIcon) {
-                showPopuMenuIcon(popupMenu);
+                showPopMenuIcon(popupMenu);
             }
             return popupMenu;
         } else {
@@ -174,7 +174,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @update 2016/3/2 11:31
      * @version: 1.0.0
      */
-    protected void showPopuMenuIcon(PopupMenu popupMenu) {
+    protected void showPopMenuIcon(PopupMenu popupMenu) {
         try {
             Field field = popupMenu.getClass().getDeclaredField("mPopup");
             if (field != null) {
@@ -240,23 +240,38 @@ public abstract class BaseActivity extends SwipeBackActivity {
             if (tint == 0) {
                 tint = getPrimaryColor();
             }
-//            DrawableCompat.setTint(srcIcon, tint);
-            if (SystemUtil.hasSdkV21()) {
-                srcIcon = DrawableCompat.wrap(srcIcon);
-                DrawableCompat.setTint(srcIcon, tint);
-            } else {
-                srcIcon.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
-            }
+            srcIcon = DrawableCompat.wrap(srcIcon);
+            DrawableCompat.setTint(srcIcon, tint);
         }
         return srcIcon;
     }
-    
-    protected Drawable tintDrawableCompat(Drawable drawable, int color) {
-        int[] colors = new int[] {color, color};
 
+    /**
+     * 创建叠层样式的图标
+     * @param drawable
+     * @return
+     */
+    protected LayerDrawable layerDrawable(Drawable... drawable) {
+        int length = drawable.length;
+        //合成的选中后的图标
+        Drawable[] drawables = new Drawable[length];
+        for (int i = 0; i < length; i++) {
+            drawables[i] = drawable[i];
+        }
+        return new LayerDrawable(drawables);
+    }
+
+    /**
+     * 获取包装状态的图标
+     * @param drawable 原始的图标
+     * @param colors 不同状态的颜色数组
+     * @return
+     */
+    protected Drawable getStateListDrawable(Drawable drawable, int[] colors) {
         int[][] states = new int[2][];
 
-        states[0] = new int[] {android.R.attr.state_selected};
+        states[0] = new int[] { android.R.attr.state_selected};
+
         states[1] = new int[] {};
 
         ColorStateList colorList = new ColorStateList(states, colors);
@@ -264,15 +279,15 @@ public abstract class BaseActivity extends SwipeBackActivity {
         StateListDrawable stateListDrawable = new StateListDrawable();
 
         stateListDrawable.addState(states[0], drawable);//注意顺序
-        stateListDrawable.addState(states[0], drawable);//注意顺序
+
+        stateListDrawable.addState(states[1], drawable);
 
         Drawable.ConstantState state = stateListDrawable.getConstantState();
 
-        drawable = DrawableCompat.wrap(state == null ? stateListDrawable : state.newDrawable()).mutate();
+        Drawable srcDrawable = DrawableCompat.wrap(state == null ? stateListDrawable : state.newDrawable()).mutate();
 
-        DrawableCompat.setTintList(drawable, colorList);
-        
-        return drawable;
+        DrawableCompat.setTintList(srcDrawable, colorList);
+        return srcDrawable;
     }
     
     /**
@@ -283,8 +298,8 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     protected int getPrimaryColor() {
         TypedArray a = obtainStyledAttributes(R.style.AppTheme, new int[] {R.attr.colorPrimary});
-        int defautColor = SystemUtil.getColor(this, R.color.colorPrimary);
-        int color = a.getColor(0, defautColor);
+        int defaultColor = SystemUtil.getColor(this, R.color.colorPrimary);
+        int color = a.getColor(0, defaultColor);
         a.recycle();
         return color;
     }

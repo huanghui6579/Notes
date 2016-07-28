@@ -2,7 +2,6 @@ package net.ibaixin.notes.ui;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -16,7 +15,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.view.menu.ActionMenuItemView;
 import android.text.TextUtils;
 import android.util.StateSet;
@@ -68,7 +66,7 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
     //之前的画笔类型
     private int mPrePainType = mPaintType;
     //默认的画笔颜色
-    private int mPaintColor = Color.RED;
+    private int mPaintColor = Color.BLACK;
     //画笔颜色的alpha
     private int mPaintAlpha = PaintRecord.DEFAULT_STROKE_ALPHA;
     //默认的橡皮檫尺寸
@@ -347,18 +345,6 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
 //        getTintDrawable(normalDrawable, relColor);
         if (SystemUtil.hasSdkV21()) {
             getTintDrawable(normalDrawable, relColor);
-            
-        } else {
-            int[] colors = new int[] {relColor, relColor};
-
-            int[][] states = new int[2][];
-            
-            states[0] = new int[] {android.R.attr.state_selected};
-            states[1] = new int[] {};
-
-            ColorStateList colorList = new ColorStateList(states, colors);
-
-            StateListDrawable stateListDrawable = new StateListDrawable();
 
             //合成的选中后的图标
             Drawable[] drawables = new Drawable[2];
@@ -366,28 +352,25 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
             drawables[1] = spinnerInkDrawable;
             LayerDrawable layerDrawable = new LayerDrawable(drawables);
 
-            stateListDrawable.addState(states[0], normalDrawable);//注意顺序
-            stateListDrawable.addState(states[0], layerDrawable);//注意顺序
+            StateListDrawable listDrawable = new StateListDrawable();
+            listDrawable.addState(new int[] {android.R.attr.state_checked}, layerDrawable);
+            listDrawable.addState(new int[] {android.R.attr.state_selected}, layerDrawable);
+            listDrawable.addState(new int[] {}, normalDrawable);
+            
+            return listDrawable;
+            
+        } else {
+            int[] colors = new int[] {relColor, relColor};
 
-            Drawable.ConstantState state = stateListDrawable.getConstantState();
+            Drawable srcDrawable = getStateListDrawable(normalDrawable, colors);
 
-            normalDrawable = DrawableCompat.wrap(state == null ? stateListDrawable : state.newDrawable()).mutate();
-
-            DrawableCompat.setTintList(normalDrawable, colorList);
+            colors = new int[] {Color.WHITE, 0};
+            Drawable linkDrawable = getStateListDrawable(spinnerInkDrawable, colors);
+            Log.d(TAG, "---srcDrawable---" + srcDrawable);
+            Log.d(TAG, "---linkDrawable---" + linkDrawable);
+            return layerDrawable(srcDrawable, linkDrawable);
         }
 
-        //合成的选中后的图标
-        Drawable[] drawables = new Drawable[2];
-        drawables[0] = normalDrawable;
-        drawables[1] = spinnerInkDrawable;
-        LayerDrawable layerDrawable = new LayerDrawable(drawables);
-
-        StateListDrawable listDrawable = new StateListDrawable();
-        listDrawable.addState(new int[] {android.R.attr.state_checked}, layerDrawable);
-        listDrawable.addState(new int[] {android.R.attr.state_selected}, layerDrawable);
-        listDrawable.addState(new int[] {}, normalDrawable);
-
-        return listDrawable;
     }
 
     /**
@@ -552,24 +535,25 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
             return;
         }
         Drawable drawable = mBrushItem.getIcon();
-        if (drawable instanceof StateListDrawable) {
+        if (drawable instanceof StateListDrawable) {    //Android5.1或者之上
             StateListDrawable listDrawable = (StateListDrawable) drawable;
             //给没有选择状态的图标着色
             tintNormalDrawable(listDrawable, color);
             //给选中的层级图标着色
             tintSelectedDrawable(listDrawable, color);
-            /*if (SystemUtil.hasSdkV21()) {
-            } else {
-                Drawable normalDrawable = getStateDrawable(listDrawable, StateSet.NOTHING);
-                tintDrawableCompat(normalDrawable, color);
-                
-                Drawable selectedDrawable = getStateDrawable(listDrawable, new int[] {android.R.attr.state_selected});
-                tintDrawableCompat(selectedDrawable, color);
-            }*/
+        } else if (drawable instanceof LayerDrawable) { //Android5.1或者之下
 
-            if (!SystemUtil.hasSdkV21()) {
-                mBrushItem.setIcon(listDrawable);
-            }
+            Drawable normalDrawable = getResources().getDrawable(getDrawableRes(mPaintType));
+            Drawable spinnerInkDrawable = getResources().getDrawable(R.drawable.ic_action_spinner_ink);
+            
+            int[] colors = new int[] {color, color};
+            Drawable srcDrawable = getStateListDrawable(normalDrawable, colors);
+
+            colors = new int[] {Color.WHITE, 0};
+            Drawable bgDrawable = getStateListDrawable(spinnerInkDrawable, colors);
+
+            LayerDrawable layerDrawable = layerDrawable(srcDrawable, bgDrawable);
+            mBrushItem.setIcon(layerDrawable);
         }
     }
 
@@ -622,8 +606,10 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
                         resId = R.drawable.ic_stroke_text;
                         break;
                 }
+                
+                int alpha = getRelAlpha(mPaintAlpha);
 
-                int relColor = SystemUtil.calcColor(mPaintAlpha, mPaintColor);
+                int relColor = SystemUtil.calcColor(alpha, mPaintColor);
 
                 Drawable icon = getBrushMenuIcon(resId, relColor);
 
