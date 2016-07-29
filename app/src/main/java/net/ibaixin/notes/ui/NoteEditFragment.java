@@ -92,6 +92,11 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     private OnFragmentInteractionListener mListener;
 
+    /**
+     * 是查看模式或者编辑模式
+     */
+    private boolean mIsViewMode = true;
+
     public NoteEditFragment() {
         // Required empty public constructor
     }
@@ -119,12 +124,16 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+        
+        Log.d(TAG, "--NoteEditFragment---onCreate----");
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
+
+        Log.d(TAG, "--NoteEditFragment---onCreateView----");
         return inflater.inflate(R.layout.fragment_note_edit, container, false);
     }
 
@@ -133,6 +142,8 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         super.onViewCreated(view, savedInstanceState);
 
         initView(view);
+
+        Log.d(TAG, "--NoteEditFragment---onViewCreated----");
     }
 
     /**
@@ -159,6 +170,18 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
         //初始化编辑框
         initEditText(mEtContent);
+        
+        if (mListener != null) {
+            mListener.onInitCompleted(mIsViewMode);
+        }
+    }
+
+    public boolean isViewMode() {
+        return mIsViewMode;
+    }
+
+    public void setViewMode(boolean isViewMode) {
+        this.mIsViewMode = isViewMode;
     }
 
     /**
@@ -178,8 +201,11 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      * 初始化编辑模式
      */
     public void initEditInfo() {
-        mContentLayout.changeToEditMode();
-        mRichTextWrapper.setRichSpan(mEtContent);
+        Log.d(TAG, "--NoteEditFragment---initEditInfo--");
+        if (mContentLayout != null) {
+            mContentLayout.changeToEditMode();
+            mRichTextWrapper.setRichSpan(mEtContent);
+        }
     }
 
     /**
@@ -494,6 +520,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     @Override
     public void onAttach(Context context) {
+        Log.d(TAG, "--NoteEditFragment---onAttach----");
         super.onAttach(context);
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
@@ -505,6 +532,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     @Override
     public void onDetach() {
+        Log.d(TAG, "--NoteEditFragment---onDetach----");
         super.onDetach();
         mListener = null;
     }
@@ -612,6 +640,11 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         void onNoteTextChanged(CharSequence s, int start, int before, int count);
 
         void afterNoteTextChanged(Editable s);
+
+        /**
+         * 初始化完毕
+         */
+        void onInitCompleted(boolean isViewMode);
     }
 
     /**

@@ -36,6 +36,8 @@
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceListItemSmall"
             android:textColor="@color/text_content_color"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textSize="@dimen/content_text_size"/>
     </LinearLayout>
 

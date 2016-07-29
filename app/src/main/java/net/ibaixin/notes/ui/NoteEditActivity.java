@@ -31,9 +31,9 @@ import android.view.ViewStub;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -126,7 +126,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     /**
      * 是否是阅读模式
      */
-    private boolean mIsViewMode;
+    private boolean mIsViewMode = true;
     
     private View mBottomBar;
 
@@ -157,6 +157,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private CharSequence mTitle;
 
     private NoteEditFragment mNoteEditFragment;
+    
+    private FrameLayout mContentContainer;
     
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -220,13 +222,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             if (noteId > 0) {   //查看模式
                 mNote = new NoteInfo();
                 mNote.setId(noteId);
-                mIsViewMode = true;
+                setViewMode(true);
 //                initNoteMode(mEtContent, true);
                 loadNoteInfo(noteId);
             } else {    //编辑模式
 //                initNoteMode(mEtContent, false);
-
-                initEditInfo();
+                setViewMode(false);
             }
         }
     }
@@ -269,9 +270,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 设置模式
+     * @param isViewMode
+     */
+    public void setViewMode(boolean isViewMode) {
+        this.mIsViewMode = isViewMode;
+        if (mNoteEditFragment != null) {
+            mNoteEditFragment.setViewMode(isViewMode);
+        }
+    }
+
+    /**
      * 初始化编辑模式
      */
-    private void initEditInfo() {
+    private void initEditInfo(boolean isViewMode) {
+        if (isViewMode) {  //查看模式
+            Log.d(TAG, "--initEditInfo---isViewMode-----true--");
+            return;
+        }
         if (mNoteEditFragment != null) {
             mNoteEditFragment.initEditInfo();
             changeNoteMode(true);
@@ -433,7 +449,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     protected void initView() {
-
+        mContentContainer = (FrameLayout) findViewById(R.id.content_container);
+        
         mNoteEditFragment = NoteEditFragment.newInstance();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.content_container, mNoteEditFragment, NoteEditFragment.class.getSimpleName());
@@ -447,8 +464,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mNoteEditFragment == null) {
             return;
         }
-        mIsViewMode = false;
-
+        
+        setViewMode(false);
+        
         mNoteEditFragment.setupEditMode();
 
         //显示菜单
@@ -635,13 +653,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mBottomBar = viewStub.inflate();
         ViewGroup toolContainer = (ViewGroup) mBottomBar.findViewById(R.id.tool_container);
 
-        ScrollView contentLayout = (ScrollView) findViewById(R.id.content_scroll);
-        
-        if (contentLayout == null) {
-            return;
-        }
-
-        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) contentLayout.getLayoutParams();
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) mContentContainer.getLayoutParams();
         layoutParams.addRule(RelativeLayout.ABOVE, toolContainer.getId());
 
         int childSize = toolContainer.getChildCount();
@@ -1518,7 +1530,22 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     public void beforeNoteTextChanged(CharSequence s, int start, int count, int after) {
-        
+        if (!mIsDo && s != null) {
+            EditStep editStep = new EditStep();
+            editStep.setLength(count);
+            editStep.setStart(start);
+            if (after == 0 && count > 0) {  //删除的文字
+                String content = s.toString();
+                int end = start + count;
+                content = content.substring(start, end);    //截取出删除的文字
+                editStep.setContent(content);
+                editStep.setAppend(false);
+                editStep.setEnd(end);
+            } else {
+                editStep.setAppend(true);
+            }
+            pushUndo(editStep);
+        }
     }
 
     @Override
@@ -1541,6 +1568,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     public void afterNoteTextChanged(Editable s) {
 
+    }
+
+    @Override
+    public void onInitCompleted(boolean isViewMode) {
+        initEditInfo(isViewMode);
     }
 
     /**
