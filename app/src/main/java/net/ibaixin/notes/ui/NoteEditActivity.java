@@ -2,6 +2,7 @@ package net.ibaixin.notes.ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -16,6 +17,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.Spannable;
@@ -35,6 +37,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.WindowManager;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
@@ -43,6 +47,7 @@ import android.widget.Toast;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
+import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import net.ibaixin.notes.R;
@@ -53,6 +58,7 @@ import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.edit.recorder.AudioRecorder;
 import net.ibaixin.notes.listener.SimpleAttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.model.DetailList;
 import net.ibaixin.notes.model.EditStep;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
@@ -75,7 +81,7 @@ import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttachSpan;
 import net.ibaixin.notes.widget.MessageBundleSpan;
 import net.ibaixin.notes.widget.NoteEditText;
-import net.ibaixin.notes.widget.NoteFramenLayout;
+import net.ibaixin.notes.widget.NoteFrameLayout;
 import net.ibaixin.notes.widget.NoteLinkMovementMethod;
 import net.ibaixin.notes.widget.NoteTextView;
 
@@ -84,6 +90,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -117,7 +124,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     //笔记的显示视图
     private NoteTextView mTvContent;
 
-    private NoteFramenLayout mContentLayout;
+    private NoteFrameLayout mContentLayout;
 
     private TextView mToolbarTitleView;
 
@@ -195,6 +202,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private CharSequence mTitle;
 
+    private RecyclerView mRecyclerView;
+
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
             if (mToolbarTitleView == null) {
@@ -267,6 +276,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 mRichTextWrapper.setRichSpan(mEtContent);
                 initEditText(mEtContent);
                 changeNoteMode(true);
+
+                generateDetailList();
             }
         }
     }
@@ -496,7 +507,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             return;
         }
 
-        mContentLayout = (NoteFramenLayout) findViewById(R.id.content_layout);
+        mContentLayout = (NoteFrameLayout) findViewById(R.id.content_layout);
 
 //        mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
         mRichTextWrapper = new RichTextWrapper(mTvContent, mHandler);
@@ -1015,9 +1026,37 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
                 
                 Attach attach = getAddedAttach(filePath);
-                mEtContent.addImage(filePath, attachType, attach, new SimpleAttachAddCompleteListenerImpl(true));
+                if (attach == null) {
+                    File file = new File(filePath);
+                    attach = file2Attach(file, attachType);
+                }
+                mEtContent.addImage(attach, new SimpleAttachAddCompleteListenerImpl(true));
             }
         });
+    }
+
+    /**
+     * 将文件转换成附件
+     * @param file
+     * @param attachType
+     * @return
+     */
+    private Attach file2Attach(File file, int attachType) {
+        String mimeType = FileUtil.getMimeType(file);
+        String filePath = file.getAbsolutePath();
+        if (attachType == 0) {
+            attachType = SystemUtil.guessFileType(filePath, mimeType);
+        }
+        Attach attach = new Attach();
+        attach.setType(attachType);
+        attach.setSId(SystemUtil.generateAttachSid());
+        attach.setLocalPath(filePath);
+        attach.setFilename(file.getName());
+        attach.setSize(file.length());
+        attach.setNoteId(getNoteSid());
+        attach.setMimeType(mimeType);
+        
+        return attach;
     }
 
     /**
@@ -1042,8 +1081,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     return;
                 }
                 File file = new File(filePath);
-                String mimeType = FileUtil.getMimeType(file);
-                
+                Attach attach = getAddedAttach(filePath);
+                if (attach != null) {   //该文件已添加过
+                    mEtContent.addAttach(attach, null);
+                } else {
+                    attach = file2Attach(file, 0);
+                    
+                    mEtContent.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
+                }
                 Log.d(TAG, "handleShowAttach----" + filePath);
             }
         });
@@ -1247,12 +1292,20 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void resetAttach(final Editable editable, final EditStep editStep, final Attach attach) {
         String uri = attach.getAvailableUri();
+        int attachType = attach.getType();
         if (uri != null) {
-            switch (attach.getType()) {
+            switch (attachType) {
                 case Attach.IMAGE:  //显示图片
-                    showSpanImage(editable, editStep, uri);
+                    showSpanImage(editable, null, editStep, uri);
+                    break;
+                case Attach.PAINT:  //显示绘画
+                    ImageSize imageSize = mEtContent.getImageSize(attachType);
+                    showSpanImage(editable, imageSize, editStep, uri);
                     break;
                 case Attach.VOICE:  //显示语音
+                case Attach.ARCHIVE:    //显示压缩包
+                case Attach.VIDEO:    //显示视频
+                case Attach.FILE:    //显示视频
                     CharSequence text = editStep.getContent();
                     int selStart = editStep.getStart();
                     setdo(true);
@@ -1271,8 +1324,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @param editStep
      * @param uri
      */
-    private void showSpanImage(final Editable editable, final EditStep editStep, String uri) {
-        ImageUtil.generateThumbImageAsync(uri, null, new SimpleImageLoadingListener() {
+    private void showSpanImage(final Editable editable, ImageSize imageSize, final EditStep editStep, String uri) {
+        ImageUtil.generateThumbImageAsync(uri, imageSize, new SimpleImageLoadingListener() {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
                 ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
@@ -1413,32 +1466,19 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         doInbackground(new Runnable() {
             @Override
             public void run() {
-                
-                if (filePath != null) {
-                    
-                    File file = new File(filePath);
-                    
-                    attach.setUri(filePath);
-                    
-                    long time = System.currentTimeMillis();
-                    attach.setCreateTime(time);
-                    attach.setModifyTime(time);
+                attach.setUri(filePath);
 
-                    attach.setMimeType(FileUtil.getMimeType(file));
-                    
-                    if (mNote != null && !mNote.isEmpty()) {
-                        attach.setNoteId(mNote.getSId());
-                    }
-                    int userId = getCurrentUserId();
-                    if (userId > 0) {
-                        attach.setUserId(userId);
-                    }
-                    AttachManager.getInstance().addAttach(attach);
-                    mAttachCache.put(attach.getSId(), attach);
-                    Log.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
-                } else {
-                    Log.d(TAG, "--handleAddAttach--filePath--is---null--");
+                long time = System.currentTimeMillis();
+                attach.setCreateTime(time);
+                attach.setModifyTime(time);
+
+                int userId = getCurrentUserId();
+                if (userId > 0) {
+                    attach.setUserId(userId);
                 }
+                AttachManager.getInstance().addAttach(attach);
+                mAttachCache.put(attach.getSId(), attach);
+                Log.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
             }
         });
     }
@@ -1612,13 +1652,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     public void onEndRecord(String filePath, long time) {
                         if (filePath != null) {
                             File file = new File(filePath);
-                            Attach attach = new Attach();
-                            attach.setType(Attach.VOICE);
+                            Attach attach = file2Attach(file, Attach.VOICE);
                             attach.setDescription(String.valueOf(time));
-                            attach.setSId(SystemUtil.generateAttachSid());
-                            attach.setLocalPath(filePath);
-                            attach.setFilename(file.getName());
-                            attach.setSize(file.length());
                             mEtContent.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
                         } else {
                             mAttachFile = null;
@@ -1820,12 +1855,105 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 case R.id.action_share:    //分享
                     break;
                 case R.id.action_info:    //详情
-                    if (mNote != null) {
+                    if (mNote != null && !mNote.isEmpty()) {
                         NoteUtil.showInfo(mContext, mNote);
+                    }
+                    break;
+                case R.id.action_detailed_list: //清单与文本之间的切换
+                    View view = generateDetailList();
+                    if (!(mContentLayout.getChildAt(mContentLayout.getChildCount() - 1) instanceof RecyclerView)) {    //没有添加了
+                        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+                        view.setLayoutParams(params);
+                        params.addRule(RelativeLayout.BELOW, mEtContent.getId());
+                        mContentLayout.addView(view, params);
+                    } else {
+                        Log.d(TAG, "---action_detailed_list----already---added--");
                     }
                     break;
             }
             return false;
+        }
+    }
+    
+    private List<DetailList> initDetailList() {
+        List<DetailList> list = new ArrayList<>();
+        for (int i = 0; i < 15; i++) {
+            DetailList detail = new DetailList();
+            detail.setTitle("比啊提升人" + i);
+
+            list.add(detail);
+        }
+        return list;
+    }
+
+    /**
+     * 创建清单的view
+     * @return
+     */
+    private View generateDetailList() {
+        /*if (mRecyclerView == null) {
+//            mRecyclerView = new RecyclerView(mContext);
+            mRecyclerView = (RecyclerView) findViewById(R.id.detail_list_view);
+
+            List<DetailList> list = initDetailList();
+            DetailListAdapter adapter = new DetailListAdapter(mContext, list);
+            LayoutManagerFactory mLayoutManagerFactory = new LayoutManagerFactory();
+            mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, false));
+            mRecyclerView.setAdapter(adapter);
+        } else {
+            mRecyclerView.getAdapter().notifyDataSetChanged();
+        }*/
+        return mRecyclerView;
+    }
+
+    /**
+     * 清单列表的holder
+     */
+    class DetailListViewHolder extends RecyclerView.ViewHolder {
+        CheckBox checkBox;
+        
+        EditText tvTitle;
+        public DetailListViewHolder(View itemView) {
+            super(itemView);
+
+            checkBox = (CheckBox) itemView.findViewById(R.id.cb_check);
+            tvTitle = (EditText) itemView.findViewById(R.id.tv_title);
+        }
+    }
+
+    /**
+     * 清单列表的适配器
+     */
+    class DetailListAdapter extends RecyclerView.Adapter<DetailListViewHolder> {
+        private Context context;
+        
+        private List<DetailList> list;
+        
+        private LayoutInflater inflater;
+
+        public DetailListAdapter(Context context, List<DetailList> list) {
+            this.context = context;
+            this.list = list;
+            inflater = LayoutInflater.from(context);
+        }
+
+        @Override
+        public DetailListViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = inflater.inflate(R.layout.item_detail_list, parent, false);
+            DetailListViewHolder holder = new DetailListViewHolder(view);
+            return holder;
+        }
+
+        @Override
+        public void onBindViewHolder(DetailListViewHolder holder, int position) {
+            DetailList detail = list.get(position);
+            holder.checkBox.setChecked(detail.isChecked());
+            holder.tvTitle.setText(detail.getTitle());
+        }
+
+        @Override
+        public int getItemCount() {
+            return list == null ? 0 : list.size();
         }
     }
     

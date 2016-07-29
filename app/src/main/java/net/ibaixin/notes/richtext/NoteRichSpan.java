@@ -29,7 +29,7 @@ public interface NoteRichSpan {
     /**
      *  添加Span
      */
-    String addSpan(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd);
+    CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd);
 
     /**
      * 显示图片、绘画

@@ -71,7 +71,7 @@ public class NoteTextView extends TextView implements NoteRichSpan {
     }
 
     @Override
-    public String addSpan(final String text, final AttachSpan clickSpan, final ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
+    public CharSequence addSpan(final CharSequence text, final AttachSpan clickSpan, final ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
 
         post(new Runnable() {
             @Override
@@ -162,6 +162,7 @@ public class NoteTextView extends TextView implements NoteRichSpan {
             attachSpan.setSelStart(selStart);
             attachSpan.setSelEnd(selEnd);
             attachSpan.setNoteSid(attachSpec.noteSid);
+            attachSpan.setMimeType(attachSpec.mimeType);
 
             ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
 

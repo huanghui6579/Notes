@@ -5,7 +5,7 @@ import android.text.TextWatcher;
 import android.text.method.MovementMethod;
 import android.util.AttributeSet;
 import android.widget.EditText;
-import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import net.ibaixin.notes.R;
@@ -16,7 +16,7 @@ import net.ibaixin.notes.util.SystemUtil;
  * @version 1.0.0
  * @update 2016/7/17 10:34
  */
-public class NoteFramenLayout extends FrameLayout {
+public class NoteFrameLayout extends RelativeLayout {
     private static final java.lang.String TAG = "NoteFramenLayout";
     /**
      * 是否是编辑模式
@@ -27,15 +27,15 @@ public class NoteFramenLayout extends FrameLayout {
 
     private NoteEditText mEtContent;
 
-    public NoteFramenLayout(Context context) {
+    public NoteFrameLayout(Context context) {
         super(context);
     }
 
-    public NoteFramenLayout(Context context, AttributeSet attrs) {
+    public NoteFrameLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    public NoteFramenLayout(Context context, AttributeSet attrs, int defStyleAttr) {
+    public NoteFrameLayout(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
 

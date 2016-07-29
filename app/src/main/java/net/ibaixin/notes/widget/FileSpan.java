@@ -75,7 +75,7 @@ public class FileSpan extends DynamicDrawableSpan {
         ivIcon.setImageResource(R.drawable.ic_library_music);
         ivPlay.setImageResource(optIcon);
         
-        titleView.setMaxWidth((int) (viewWidth * 0.6));
+        titleView.setWidth((int) (viewWidth * 0.6));
         
         titleView.setText(attach.getFilename());
         String summary = SystemUtil.formatFileSize(attach.getSize());

@@ -22,6 +22,9 @@ public class AttachSpec implements Parcelable {
     //笔记的sid
     public String noteSid;
     
+    //文件的mimeType
+    public String mimeType;
+    
     public AttachSpec() {}
 
     /**
@@ -40,6 +43,7 @@ public class AttachSpec implements Parcelable {
         filePath = in.readString();
         text = in.readString();
         noteSid = in.readString();
+        mimeType = in.readString();
     }
 
     @Override
@@ -51,6 +55,7 @@ public class AttachSpec implements Parcelable {
         dest.writeString(filePath);
         dest.writeString(text == null ? "" : text.toString());
         dest.writeString(noteSid);
+        dest.writeString(mimeType);
     }
 
     @Override

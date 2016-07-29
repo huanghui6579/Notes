@@ -10,7 +10,8 @@ import android.text.method.MovementMethod;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.AttributeSet;
-import android.view.*;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.EditText;
 
 import com.nostra13.universalimageloader.core.assist.FailReason;
@@ -23,10 +24,7 @@ import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.richtext.NoteRichSpan;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.ImageUtil;
-import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.log.Log;
-
-import java.io.File;
 
 /**
  * 笔记的编辑控件
@@ -82,51 +80,24 @@ public class NoteEditText extends EditText implements NoteRichSpan {
         return super.onTouchEvent(event);
 
     }
-
-    /**
-     * 添加图片
-     * @param filePath 图片的本地全路径
-     */
-    public void addImage(final String filePath, final Attach attach, final AttachAddCompleteListener listener) {
-        addImage(filePath, Attach.IMAGE, attach, listener);
-    }
     
     /**
      * 添加图片
-     * @param filePath 图片的本地全路径
+     * @param attach 图片
      */
-    public void addImage(final String filePath, final int attachType, final Attach attach, final AttachAddCompleteListener listener) {
-        ImageSize imageSize = getImageSize(attachType);
+    public void addImage(final Attach attach, final AttachAddCompleteListener listener) {
+        final AttachSpan attachSpan = getAttachSpan(attach);
+        ImageSize imageSize = getImageSize(attachSpan.getAttachType());
+        final String filePath = attach.getLocalPath();
         ImageUtil.generateThumbImageAsync(filePath, imageSize, new SimpleImageLoadingListener() {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
                 ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
-                String fileId = null;
-                if (attach == null) {
-                    fileId = SystemUtil.generateAttachSid(attachType);
-                } else {
-                    fileId = attach.getSId();
-                }
-                AttachSpan attachSpan = new AttachSpan();
-                attachSpan.setAttachId(fileId);
-                attachSpan.setAttachType(attachType);
-                attachSpan.setFilePath(filePath);
-                String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
-
+                CharSequence text = attachSpan.getText();
                 addSpan(text, attachSpan, imageSpan);
                 
                 if (listener != null) {
-                    Attach att = null;
-                    if (attach == null) {
-                        File file = new File(filePath);
-                        att = new Attach();
-                        att.setSId(fileId);
-                        att.setType(attachType);
-                        att.setLocalPath(filePath);
-                        att.setFilename(file.getName());
-                        att.setSize(file.length());
-                    }
-                    listener.onAddComplete(filePath, text, att);
+                    listener.onAddComplete(filePath, text, attach);
                 }
             }
 
@@ -145,19 +116,17 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param listener
      */
     public void addAttach(Attach attach, final AttachAddCompleteListener listener) {
-        
+        int attachType = attach.getType();
+        if (attachType == Attach.IMAGE || attachType == Attach.PAINT) { //图片
+            addImage(attach, listener);
+            return;
+        }
+
+        String filePath = attach.getLocalPath();
         FileSpan fileSpan = new FileSpan(getContext(), attach, getWidth());
         
-        String fileId = attach.getSId();
-        String filePath = attach.getLocalPath();
-        
-        AttachSpan attachSpan = new AttachSpan();
-        attachSpan.setAttachId(fileId);
-        attachSpan.setAttachType(attach.getType());
-        attachSpan.setFilePath(filePath);
-
-        String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
-
+        AttachSpan attachSpan = getAttachSpan(attach);
+        CharSequence text = attachSpan.getText();
         addSpan(text, attachSpan, fileSpan);
 
         if (listener != null) {
@@ -166,12 +135,33 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     }
 
     /**
+     * 获取AttachSpan
+     * @param attach 附件
+     * @return
+     */
+    public AttachSpan getAttachSpan(Attach attach) {
+        int attachType = attach.getType();
+        String fileId = attach.getSId();
+        String filePath = attach.getLocalPath();
+        
+        String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
+        AttachSpan attachSpan = new AttachSpan();
+        attachSpan.setAttachId(fileId);
+        attachSpan.setAttachType(attachType);
+        attachSpan.setFilePath(filePath);
+        attachSpan.setMimeType(attach.getMimeType());
+        attachSpan.setText(text);
+        attachSpan.setNoteSid(attach.getNoteId());
+        return attachSpan;
+    }
+
+    /**
      * 添加Span
      * @param text 原文本
      * @param clickSpan 可点击的Span              
      * @param replaceSpan 附件显示的span
      */
-    private String addSpan(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan) {
+    private CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan) {
         final int selStart = getSelectionStart();
         final int selEnd = getSelectionEnd();
         return addSpan(text, clickSpan, replaceSpan, selStart, selEnd);
@@ -194,7 +184,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param replaceSpan 附件显示的span
      */
     @Override
-    public String addSpan(String text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
+    public CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
 
         /*AttachSpan attachSpan = new AttachSpan();
         attachSpan.setAttachId(fileId);
@@ -236,7 +226,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param attachType 附件类型
      * @return
      */
-    private ImageSize getImageSize(int attachType) {
+    public ImageSize getImageSize(int attachType) {
         ImageSize imageSize = null;
         if (attachType == Attach.PAINT) {    //绘画
             int width = getWidth();

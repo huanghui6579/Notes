@@ -92,6 +92,15 @@ public class AttachSpan extends ClickableSpan {
         this.attachSpec.end = selEnd;
     }
 
+
+    public String getMimeType() {
+        return attachSpec.mimeType;
+    }
+
+    public void setMimeType(String mimeType) {
+        this.attachSpec.mimeType = mimeType;
+    }
+
     /**
      * Performs the click action associated with this span.
      */
