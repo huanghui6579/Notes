@@ -85,7 +85,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * 添加图片
      * @param attach 图片
      */
-    public void addImage(final Attach attach, final AttachAddCompleteListener listener) {
+    private void addImage(final Attach attach, final AttachAddCompleteListener listener) {
         final AttachSpan attachSpan = getAttachSpan(attach);
         ImageSize imageSize = getImageSize(attachSpan.getAttachType());
         final String filePath = attach.getLocalPath();

@@ -16,38 +16,10 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <ScrollView
-            android:id="@+id/content_scroll"
+        <FrameLayout
+            android:id="@+id/content_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentTop="true">
-            <net.ibaixin.notes.widget.NoteFrameLayout
-                android:id="@id/content_layout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-                <net.ibaixin.notes.widget.NoteTextView
-                    android:id="@id/tv_content"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    style="?attr/editTextStyle"
-                    android:background="@null"
-                    android:padding="@dimen/content_padding"
-                    android:textIsSelectable="true"
-                    android:autoLink="all"/>
-                <net.ibaixin.notes.widget.NoteEditText
-                    android:id="@id/et_content"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    style="?attr/editTextStyle"
-                    android:background="@null"
-                    android:padding="@dimen/content_padding"
-                    android:gravity="start|top"
-                    android:hint="@string/note_edit_hint"
-                    android:autoLink="all"
-                    android:visibility="gone"/>
-            </net.ibaixin.notes.widget.NoteFrameLayout>
-
-        </ScrollView>
+            android:layout_height="match_parent"/>
         <ViewStub
             android:id="@+id/bottom_tool_bar"
             android:layout_width="match_parent"
