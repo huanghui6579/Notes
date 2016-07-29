@@ -39,7 +39,6 @@ import android.widget.Toast;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
-import com.nostra13.universalimageloader.core.assist.ImageSize;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
@@ -87,7 +86,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public static final String ARG_FOLDER_ID = "folderId";
     public static final String ARG_OPT_DELETE = "opt_delete";
     
-//    private static final int MSG_AUTO_LINK = 2;
     private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
     
     public static final int REQ_PICK_IMAGE = 10;
@@ -99,14 +97,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private PopupMenu mAttachPopu;
     private PopupMenu mOverflowPopu;
     private PopupMenu mOverflowViewPopu;
-
-//    //笔记的编辑框
-//    private NoteEditText mEtContent;
-//
-//    //笔记的显示视图
-//    private NoteTextView mTvContent;
-//
-//    private NoteFrameLayout mContentLayout;
 
     private TextView mToolbarTitleView;
 
@@ -124,22 +114,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private boolean mIsDo;
 
-    /**
-     * 是否是编辑列表，每按依次回车，则在前面添加一个“-”
-     */
-    private boolean mIsFormatList;
-
-    /**
-     * 是否是手动回车换行
-     */
-//    private boolean mIsNextLine;
-    
     private NoteManager mNoteManager;
     
     private NoteInfo mNote;
-//    private boolean mIsEnterLine;
-
-//    private AutoLinkTask mAutoLinkTask;
 
     private Handler mHandler = new MyHandler(this);
     
@@ -152,11 +129,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private boolean mIsViewMode;
     
     private View mBottomBar;
-
-    /**
-     * 富文本的包装器
-     */
-//    private RichTextWrapper mRichTextWrapper;
 
     /**
      * 附件的临时缓存
@@ -320,23 +292,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (visible) {
             menu.setGroupVisible(R.id.group_edit_type, true);
             menu.setGroupVisible(R.id.group_edit, false);
-            /*MenuItem menuItem = menu.findItem(R.id.group_edit_type);
-            if (menuItem != null && !menuItem.isVisible()) {
-                menuItem.setVisible(true);
-            }
-            //隐藏编辑菜单
-            menuItem = menu.findItem(R.id.group_edit);
-            if (menuItem != null && menuItem.isVisible()) {
-                menuItem.setVisible(false);
-            }*/
         } else {
             menu.setGroupVisible(R.id.group_edit_type, false);
             menu.setGroupVisible(R.id.group_edit, true);
-            //显示编辑菜单
-            /*MenuItem menuItem = menu.findItem(R.id.group_edit);
-            if (menuItem != null && !menuItem.isVisible()) {
-                menuItem.setVisible(true);  
-            }*/
         }
     }
 
@@ -348,11 +306,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mNoteEditFragment != null) {
             mNoteEditFragment.showNote(note, mAttachCache);
         }
-        /*CharSequence s = note.getContent();
-        mRichTextWrapper.setText(s, mAttachCache);
-        if (mRichTextWrapper.getRichSpan() instanceof NoteTextView) {
-            autoLink(s);
-        }*/
     }
     
     /**
@@ -485,103 +438,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.content_container, mNoteEditFragment, NoteEditFragment.class.getSimpleName());
         transaction.commit();
-        
-        /*mEtContent = (NoteEditText) findViewById(R.id.et_content);
-        mTvContent = (NoteTextView) findViewById(R.id.tv_content);
-
-        if (mTvContent == null || mEtContent == null) {
-            return;
-        }
-
-        mContentLayout = (NoteFrameLayout) findViewById(R.id.content_layout);
-
-//        mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
-        mRichTextWrapper = new RichTextWrapper(mTvContent, mHandler);
-        mRichTextWrapper.setMovementMethod(NoteLinkMovementMethod.getInstance());
-        mRichTextWrapper.addResolver(AttachResolver.class);
-
-        //初始化文本显示控件
-        initTextView();
-
-        //初始化编辑框
-        initEditText(mEtContent);*/
     }
-
-    /**
-     * 初始化文本显示
-     */
-    /*private void initTextView() {
-        mContentLayout.setOnItemClickListener(this);
-    }*/
-
-    /**
-     * 初始化编辑框
-     * @param editText
-     */
-    /*private void initEditText(final NoteEditText editText) {
-        editText.addTextChangedListener(this);
-
-        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
-                    mIsEnterLine = true;
-                    //光标所在行
-                    int selectionStart = v.getSelectionStart();
-                    String text = v.getText().toString();
-                    //光标所在行的开头到光标处的文本
-                    String selectionLineBeforeText = getSelectionLineBeforeText(text, selectionStart);
-                    int tagLength = Constants.FORMAT_LIST_TAG_LENGTH;
-                    if (Constants.TAG_FORMAT_LIST.equals(selectionLineBeforeText)) {    //清除格式列表
-                        String endText = getSelectionLineEndText(text, selectionStart);
-                        if (endText.length() == 0) {   //该行只有“- ”，则删除
-                            Editable editable = v.getEditableText();
-                            int start = selectionStart - tagLength;
-                            try {
-                                mIsEnterLine = false;
-                                editable.delete(start, selectionStart);
-                                return true;
-                            } catch (Exception e) {
-                                Log.e(e.getMessage());
-                            }
-                        }
-                    }
-                }
-                return false;
-            }
-        });
-        editText.setOnSelectionChangedListener(new NoteEditText.SelectionChangedListener() {
-            @Override
-            public void onSelectionChanged(int selStart, int selEnd) {
-                CharSequence text = editText.getText();
-                ClickableSpan[] links = ((Spannable) text).getSpans(selStart,
-                        selEnd, ClickableSpan.class);
-                if (links != null && links.length > 0) {
-                    ClickableSpan clickableSpan = links[0];
-                    Log.d(TAG, "----onSelectionChanged--clickableSpan---" + clickableSpan.toString());
-                } else {
-                    AttachSpan[] images = ((Spannable) text).getSpans(selStart,
-                            selEnd, AttachSpan.class);
-                    if (images != null && images.length > 0) {
-                        Log.d(TAG, "----onSelectionChanged---AttachSpan--");
-                    }
-                }
-            }
-        });
-
-//        editText.setMovementMethod(NoteLinkMovementMethod.getInstance());
-//        editText.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(final View v) {
-//                Log.d(TAG, "----setOnClickListener-----");
-//                if (isViewMode()) { //之前是阅读模式
-//                    setupEditMode((EditText) v, false);
-//                } else {    //编辑模式
-//                    changeNoteMode(true);
-//                }
-//            }
-//        });
-    }*/
 
     /**
      * 进入编辑模式
@@ -590,23 +447,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mNoteEditFragment == null) {
             return;
         }
-        /*initSoftInputMode(true);
-        if (showSoftInput) {    //显示软键盘
-            editText.requestFocus();
-            SystemUtil.showSoftInput(mContext, editText);
-            if (editText.getText() != null) {
-                editText.setSelection(editText.getText().length());
-            }
-        }*/
-        
-        //显示光标
-        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            if (!editText.isCursorVisible()) {
-                editText.setCursorVisible(true);
-            }
-        } else {
-            editText.setCursorVisible(true);
-        }*/
         mIsViewMode = false;
 
         mNoteEditFragment.setupEditMode();
@@ -889,23 +729,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 editStep.setLength(count);
             }
         }
-//        autoLink(s);
     }
 
     @Override
     public void afterTextChanged(Editable s) {
-        /*Log.d(TAG, "--afterTextChanged--");
-        if (mIsEnterLine) {  //手动按的回车键
-            mIsEnterLine = false;
-            int selectionStart = mEtContent.getSelectionStart();
-
-            //回车前的光标索引
-            int previousIndex = selectionStart - 1;
-            String lineBeforeText = getSelectionLineBeforeText(s.toString(), previousIndex);
-            if (lineBeforeText.startsWith(Constants.TAG_FORMAT_LIST)) {   //上一行有“- ”，则本行继续添加
-                s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
-            }
-        }*/
         
     }
 
@@ -1302,77 +1129,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
             });
         }
-        /*String uri = attach.getAvailableUri();
-        int attachType = attach.getType();
-        if (uri != null) {
-            switch (attachType) {
-                case Attach.IMAGE:  //显示图片
-                    showSpanImage(editable, null, editStep, uri);
-                    break;
-                case Attach.PAINT:  //显示绘画
-                    ImageSize imageSize = mEtContent.getImageSize(attachType);
-                    showSpanImage(editable, imageSize, editStep, uri);
-                    break;
-                case Attach.VOICE:  //显示语音
-                case Attach.ARCHIVE:    //显示压缩包
-                case Attach.VIDEO:    //显示视频
-                case Attach.FILE:    //显示视频
-                    CharSequence text = editStep.getContent();
-                    int selStart = editStep.getStart();
-                    setdo(true);
-                    mEtContent.showSpanAttach(text, selStart, attach);
-                    setdo(false);
-                    break;
-            }
-        } else {
-            editable.insert(editStep.getStart(), editStep.getContent());
-        }*/
-    }
-
-    /**
-     * 显示图片的span
-     * @param editable
-     * @param editStep
-     * @param uri
-     */
-    private void showSpanImage(final Editable editable, ImageSize imageSize, final EditStep editStep, String uri) {
-        if (mNoteEditFragment != null) {
-            mNoteEditFragment.showSpanImage(editable, imageSize, editStep, uri, new NoteEditFragment.InsertTextCallback() {
-                @Override
-                public void beforeInsertText() {
-                    setdo(true);
-                }
-
-                @Override
-                public void afterInsertText() {
-                    setdo(false);
-                }
-            });
-        }
-        /*ImageUtil.generateThumbImageAsync(uri, imageSize, new SimpleImageLoadingListener() {
-            @Override
-            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                ImageSpan imageSpan = new ImageSpan(mContext, loadedImage);
-                CharSequence text = editStep.getContent();
-                SpannableStringBuilder builder = new SpannableStringBuilder();
-                builder.append(text);
-                builder.setSpan(imageSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                int selStart = editStep.getStart();
-                setdo(true);
-                try {
-                    if (selStart < 0 || mEtContent.getText() == null || selStart >= mEtContent.getText().length()) {
-                        editable.append(builder);
-                    } else {
-                        editable.insert(selStart, builder);
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "-----resetAttach--error----" + e.getMessage());
-                }
-                setdo(false);
-//                editable.insert(editStep.getStart(), editStep.getContent());
-//                    listener.onAddComplete(imageUri, editStep, attach);
-            }
-        });*/
     }
     
     /**
@@ -1398,47 +1154,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mNoteEditFragment.insertTime();
         }
     }
-
-    /**
-     * 自动链接文本
-     * @author tiger
-     * @update 2016/3/13 10:46
-     * @version 1.0.0
-     */
-    /*private void autoLink(CharSequence s) {
-        mHandler.removeMessages(MSG_AUTO_LINK);
-        Message msg = mHandler.obtainMessage();
-        msg.what = MSG_AUTO_LINK;
-        msg.obj = s;
-        mHandler.sendMessage(msg);
-    }*/
-    
-    /**
-     * 获取光标所在行的开头到光标处的文本
-     * @author Administrator
-     * @update 2016/3/12 14:30
-     * @version: 1.0.0
-    */
-    /*private String getSelectionLineBeforeText(String text, int selectionStart) {
-        String beforeText = text.substring(0, selectionStart);
-        int lineStart = beforeText.lastIndexOf(Constants.TAG_NEXT_LINE) + 1;
-        return beforeText.substring(lineStart);
-    }*/
-
-    /**
-     * 获取光标所在行的光标处到该行结尾的文本
-     * @author Administrator
-     * @update 2016/3/12 22:29
-     * @version: 1.0.0
-    */
-    /*private String getSelectionLineEndText(String text, int selectionStart) {
-        String endText = text.substring(selectionStart);
-        int lineEnd = endText.indexOf(Constants.TAG_NEXT_LINE);
-        if (lineEnd != -1) {    //有回车换行，则截取
-            endText = endText.substring(0, lineEnd);
-        }
-        return endText;
-    }*/
 
     /**
      * 设置该操作是都前进操作
@@ -1974,34 +1689,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             return list == null ? 0 : list.size();
         }
     }
-    
-    /**
-     * 自动识别链接的任务
-     * @author tiger
-     * @update 2016/3/13 10:41
-     * @version 1.0.0
-     */
-    /*class AutoLinkTask implements Runnable {
-        private CharSequence s;
-        
-        public AutoLinkTask(CharSequence s) {
-            this.s = s;
-        }
-        
-        @Override
-        public void run() {
-            Log.d(TAG, "-----AutoLinkTask---run---");
-            //判断附件
-            TextView textView = (TextView) mRichTextWrapper.getRichSpan();
-            NoteLinkify.addLinks(textView, textView.getAutoLinkMask(), MessageBundleSpan.class);
-            MovementMethod movement = textView.getMovementMethod();
-            if (mContentLayout.isEditMode() && (movement == null || movement instanceof LinkMovementMethod)) {
-
-                //移除链接的点击事件
-                mRichTextWrapper.setMovementMethod(ArrowKeyMovementMethod.getInstance());
-            }
-        }
-    }*/
 
     /**
      * 笔记的更新状态监听器
