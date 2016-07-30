@@ -2,7 +2,6 @@ package net.ibaixin.notes.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -511,13 +510,6 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         return endText;
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
     @Override
     public void onAttach(Context context) {
         Log.d(TAG, "--NoteEditFragment---onAttach----");
@@ -632,8 +624,6 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
 
         void beforeNoteTextChanged(CharSequence s, int start, int count, int after);
 

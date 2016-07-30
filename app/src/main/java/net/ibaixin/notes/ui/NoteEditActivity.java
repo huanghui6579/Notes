@@ -2,7 +2,6 @@ package net.ibaixin.notes.ui;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,7 +16,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -29,8 +27,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.WindowManager;
-import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -81,7 +77,7 @@ import java.util.Stack;
  * @update 2016/3/2 10:13
  * @version: 1.0.0
  */
-public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher, NoteEditFragment.OnFragmentInteractionListener {
+public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher, NoteEditFragment.OnFragmentInteractionListener, DetailListFragment.OnDetailInteractionListener {
     public static final String ARG_NOTE_ID = "noteId";
     public static final String ARG_FOLDER_ID = "folderId";
     public static final String ARG_OPT_DELETE = "opt_delete";
@@ -1524,11 +1520,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-        
-    }
-
-    @Override
     public void beforeNoteTextChanged(CharSequence s, int start, int count, int after) {
         if (!mIsDo && s != null) {
             EditStep editStep = new EditStep();
@@ -1654,6 +1645,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case R.id.action_detailed_list: //清单与文本之间的切换
+                    DetailListFragment detailListFragment = DetailListFragment.newInstance();
+                    FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                    fragmentTransaction.replace(R.id.content_container, detailListFragment, DetailListFragment.class.getSimpleName());
+                    fragmentTransaction.commit();
                     break;
             }
             return false;
@@ -1669,57 +1664,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             list.add(detail);
         }
         return list;
-    }
-
-    /**
-     * 清单列表的holder
-     */
-    class DetailListViewHolder extends RecyclerView.ViewHolder {
-        CheckBox checkBox;
-        
-        EditText tvTitle;
-        public DetailListViewHolder(View itemView) {
-            super(itemView);
-
-            checkBox = (CheckBox) itemView.findViewById(R.id.cb_check);
-            tvTitle = (EditText) itemView.findViewById(R.id.tv_title);
-        }
-    }
-
-    /**
-     * 清单列表的适配器
-     */
-    class DetailListAdapter extends RecyclerView.Adapter<DetailListViewHolder> {
-        private Context context;
-        
-        private List<DetailList> list;
-        
-        private LayoutInflater inflater;
-
-        public DetailListAdapter(Context context, List<DetailList> list) {
-            this.context = context;
-            this.list = list;
-            inflater = LayoutInflater.from(context);
-        }
-
-        @Override
-        public DetailListViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = inflater.inflate(R.layout.item_detail_list, parent, false);
-            DetailListViewHolder holder = new DetailListViewHolder(view);
-            return holder;
-        }
-
-        @Override
-        public void onBindViewHolder(DetailListViewHolder holder, int position) {
-            DetailList detail = list.get(position);
-            holder.checkBox.setChecked(detail.isChecked());
-            holder.tvTitle.setText(detail.getTitle());
-        }
-
-        @Override
-        public int getItemCount() {
-            return list == null ? 0 : list.size();
-        }
     }
 
     /**

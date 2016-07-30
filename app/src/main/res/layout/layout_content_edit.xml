@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<net.ibaixin.notes.widget.NoteEditText xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@id/et_content"
+    style="?attr/editTextStyle"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:autoLink="all"
+    android:background="@null"
+    android:gravity="start|top"
+    android:hint="@string/note_edit_hint"
+    android:padding="@dimen/content_padding" />
