@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.view.View;
 
@@ -130,6 +131,10 @@ public class AttachSpan extends ClickableSpan {
                 menuItem.menuRes = R.array.voice_menu_items;
                 handleAttach(context, menuItem, filePath);
                 break;
+            default:    //文件
+                menuItem.menuRes = R.array.file_menu_items;
+                handleAttach(context, menuItem, filePath);
+                break;
         }
     }
 
@@ -158,13 +163,13 @@ public class AttachSpan extends ClickableSpan {
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case 0: //打开
-                        SystemUtil.openFile(context, filePath, attachSpec.attachType);
+                        SystemUtil.openFile(context, filePath, attachSpec.attachType, attachSpec.mimeType);
                         break;
                     case 1: //分享
-                        SystemUtil.shareFile(context, filePath, attachSpec.attachType);
+                        SystemUtil.shareFile(context, filePath, attachSpec.attachType, attachSpec.mimeType);
                         break;
                     case 2: //详情
-                        showInfo(context, filePath);
+                        showInfo(context, filePath, attachSpec.mimeType);
                         break;
                 }
             }
@@ -183,7 +188,7 @@ public class AttachSpan extends ClickableSpan {
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case 0: //打开
-                        SystemUtil.openFile(context, filePath, attachSpec.attachType);
+                        SystemUtil.openFile(context, filePath, attachSpec.attachType, attachSpec.mimeType);
                         break;
                     case 1: //编辑
                         Intent intent = new Intent(context, HandWritingActivity.class);
@@ -199,10 +204,10 @@ public class AttachSpan extends ClickableSpan {
 //                        SystemUtil.openFile(context, filePath, attachType);
                         break;
                     case 2: //分享
-                        SystemUtil.shareFile(context, filePath, attachSpec.attachType);
+                        SystemUtil.shareFile(context, filePath, attachSpec.attachType, attachSpec.mimeType);
                         break;
                     case 3: //详情
-                        showInfo(context, filePath);
+                        showInfo(context, filePath, attachSpec.mimeType);
                         break;
                 }
             }
@@ -213,12 +218,15 @@ public class AttachSpan extends ClickableSpan {
      * 显示文件的详细新
      * @param filePath
      */
-    private void showInfo(Context context, String filePath) {
+    private void showInfo(Context context, String filePath, String mimeType) {
         StringBuilder sb = new StringBuilder();
         File file = new File(filePath);
         String colon = context.getString(R.string.colon);
-        sb.append(context.getString(R.string.path)).append(colon).append(Constants.TAG_INDENT).append(filePath).append(Constants.TAG_NEXT_LINE)
-                .append(context.getString(R.string.size)).append(colon).append(Constants.TAG_INDENT).append(SystemUtil.formatFileSize(file.length())).append(Constants.TAG_NEXT_LINE)
+        sb.append(context.getString(R.string.path)).append(colon).append(Constants.TAG_INDENT).append(filePath).append(Constants.TAG_NEXT_LINE);
+        if (!TextUtils.isEmpty(mimeType)) {
+            sb.append(context.getString(R.string.note_type)).append(colon).append(Constants.TAG_INDENT).append(mimeType).append(Constants.TAG_NEXT_LINE);
+        }
+        sb.append(context.getString(R.string.size)).append(colon).append(Constants.TAG_INDENT).append(SystemUtil.formatFileSize(file.length())).append(Constants.TAG_NEXT_LINE)
                 .append(context.getString(R.string.modify_time)).append(colon).append(Constants.TAG_INDENT).append(TimeUtil.formatTime(file.lastModified(), TimeUtil.PATTERN_FILE_TIME));
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(R.string.action_info)

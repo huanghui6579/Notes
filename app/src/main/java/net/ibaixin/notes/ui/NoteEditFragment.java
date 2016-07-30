@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
@@ -37,7 +38,6 @@ import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.NoteLinkify;
 import net.ibaixin.notes.util.SystemUtil;
-import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttachSpan;
 import net.ibaixin.notes.widget.MessageBundleSpan;
 import net.ibaixin.notes.widget.NoteEditText;
@@ -124,7 +124,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
         
-        Log.d(TAG, "--NoteEditFragment---onCreate----");
+        KLog.d(TAG, "--NoteEditFragment---onCreate----");
     }
 
     @Override
@@ -132,7 +132,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
 
-        Log.d(TAG, "--NoteEditFragment---onCreateView----");
+        KLog.d(TAG, "--NoteEditFragment---onCreateView----");
         return inflater.inflate(R.layout.fragment_note_edit, container, false);
     }
 
@@ -142,7 +142,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
         initView(view);
 
-        Log.d(TAG, "--NoteEditFragment---onViewCreated----");
+        KLog.d(TAG, "--NoteEditFragment---onViewCreated----");
     }
 
     /**
@@ -200,7 +200,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      * 初始化编辑模式
      */
     public void initEditInfo() {
-        Log.d(TAG, "--NoteEditFragment---initEditInfo--");
+        KLog.d(TAG, "--NoteEditFragment---initEditInfo--");
         if (mContentLayout != null) {
             mContentLayout.changeToEditMode();
             mRichTextWrapper.setRichSpan(mEtContent);
@@ -255,7 +255,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                         editable.insert(selStart, builder);
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "-----resetAttach--error----" + e.getMessage());
+                    KLog.e(TAG, "-----resetAttach--error----" + e.getMessage());
                 }
                 if (callback != null) {
                     callback.afterInsertText();
@@ -378,7 +378,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                                 editable.delete(start, selectionStart);
                                 return true;
                             } catch (Exception e) {
-                                Log.e(e.getMessage());
+                                KLog.e(e.getMessage());
                             }
                         }
                     }
@@ -394,12 +394,12 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                         selEnd, ClickableSpan.class);
                 if (links != null && links.length > 0) {
                     ClickableSpan clickableSpan = links[0];
-                    Log.d(TAG, "----onSelectionChanged--clickableSpan---" + clickableSpan.toString());
+                    KLog.d(TAG, "----onSelectionChanged--clickableSpan---" + clickableSpan.toString());
                 } else {
                     AttachSpan[] images = ((Spannable) text).getSpans(selStart,
                             selEnd, AttachSpan.class);
                     if (images != null && images.length > 0) {
-                        Log.d(TAG, "----onSelectionChanged---AttachSpan--");
+                        KLog.d(TAG, "----onSelectionChanged---AttachSpan--");
                     }
                 }
             }
@@ -409,7 +409,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 //        editText.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(final View v) {
-//                Log.d(TAG, "----setOnClickListener-----");
+//                KLog.d(TAG, "----setOnClickListener-----");
 //                if (isViewMode()) { //之前是阅读模式
 //                    setupEditMode((EditText) v, false);
 //                } else {    //编辑模式
@@ -512,7 +512,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     @Override
     public void onAttach(Context context) {
-        Log.d(TAG, "--NoteEditFragment---onAttach----");
+        KLog.d(TAG, "--NoteEditFragment---onAttach----");
         super.onAttach(context);
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
@@ -524,7 +524,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     @Override
     public void onDetach() {
-        Log.d(TAG, "--NoteEditFragment---onDetach----");
+        KLog.d(TAG, "--NoteEditFragment---onDetach----");
         super.onDetach();
         mListener = null;
     }
@@ -536,12 +536,15 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
+        if (s != null) {
+            autoLink(s);
+        }
         mListener.onNoteTextChanged(s, start, before, count);
     }
 
     @Override
     public void afterTextChanged(Editable s) {
-        Log.d(TAG, "--afterTextChanged--");
+        KLog.d(TAG, "--afterTextChanged--");
         if (mIsEnterLine) {  //手动按的回车键
             mIsEnterLine = false;
             int selectionStart = mEtContent.getSelectionStart();
@@ -553,7 +556,6 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                 s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
             }
         }
-        autoLink(s);
         mListener.afterNoteTextChanged(s);
     }
 
@@ -577,7 +579,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
         @Override
         public void run() {
-            Log.d(TAG, "-----AutoLinkTask---run---");
+            KLog.d(TAG, "-----AutoLinkTask---run---");
             //判断附件
             TextView textView = (TextView) mRichTextWrapper.getRichSpan();
             NoteLinkify.addLinks(textView, textView.getAutoLinkMask(), MessageBundleSpan.class);

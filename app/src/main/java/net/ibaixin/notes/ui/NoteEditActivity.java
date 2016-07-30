@@ -35,6 +35,7 @@ import android.widget.Toast;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
@@ -60,7 +61,6 @@ import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.NoteUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.TimeUtil;
-import net.ibaixin.notes.util.log.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -281,7 +281,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void initEditInfo(boolean isViewMode) {
         if (isViewMode) {  //查看模式
-            Log.d(TAG, "--initEditInfo---isViewMode-----true--");
+            KLog.d(TAG, "--initEditInfo---isViewMode-----true--");
             return;
         }
         if (mNoteEditFragment != null) {
@@ -434,7 +434,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     String dir = SystemUtil.getAttachPath(getNoteSid(), 0, false);
                     intent.putExtra(Constants.ARG_SUB_OBJ, dir);
                 } catch (IOException e) {
-                    Log.e(TAG, "--removeCacheAttach---getAttachPath--error--" + e.getMessage());
+                    KLog.e(TAG, "--removeCacheAttach---getAttachPath--error--" + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -747,7 +747,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     public void onBackPressed() {
         if (mNoteEditFragment != null) {
-            Log.d(TAG, "*****content***" + mNoteEditFragment.getText());
+            KLog.d(TAG, "*****content***" + mNoteEditFragment.getText());
         }
         super.onBackPressed();
     }
@@ -783,7 +783,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         final Uri uri = data.getData();
                         handleShowImage(uri, Attach.PAINT, false);
                     } else {
-                        Log.d(TAG, "---onActivityResult---REQ_PAINT---data---is----null--");
+                        KLog.d(TAG, "---onActivityResult---REQ_PAINT---data---is----null--");
                     }
                     break;
                 case REQ_EDIT_PAINT:    //编辑绘画
@@ -791,16 +791,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         AttachSpec attachSpec = data.getParcelableExtra(Constants.ARG_CORE_OBJ);
                         handleUpdateImage(attachSpec);
                     } else {
-                        Log.d(TAG, "---onActivityResult---REQ_EDIT_PAINT---data---is----null--");
+                        KLog.d(TAG, "---onActivityResult---REQ_EDIT_PAINT---data---is----null--");
                     }
                     break;
                 case REQ_PICK_FILE: //选择文件，不限格式
                     if (data != null) {
                         final Uri uri = data.getData();
-                        Log.d(TAG, "--onActivityResult---req_pick_file---uri--" + uri);
+                        KLog.d(TAG, "--onActivityResult---req_pick_file---uri--" + uri);
                         handleShowAttach(uri);
                     } else {
-                        Log.d(TAG, "---onActivityResult---req_pick_file---data---is----null--");
+                        KLog.d(TAG, "---onActivityResult---req_pick_file---data---is----null--");
                     }
                     break;
             }
@@ -829,7 +829,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             @Override
             public void run() {
                 String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
-                Log.d(TAG, "addImage----" + filePath);
+                KLog.d(TAG, "addImage----" + filePath);
                 
                 if (compressImg) {
                     //压缩并保存文件
@@ -905,12 +905,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             public void run() {
                 String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
                 if (TextUtils.isEmpty(filePath)) {
-                    Log.d(TAG, "--handleShowAttach---filePath--is---empty--");
+                    KLog.d(TAG, "--handleShowAttach---filePath--is---empty--");
                     return;
                 }
                 File file = new File(filePath);
                 Attach attach = getAddedAttach(filePath);
                 if (mNoteEditFragment != null) {
+                    KLog.d(TAG, "handleShowAttach----" + filePath);
                     if (attach != null) {   //该文件已添加过
                         mNoteEditFragment.addAttach(attach, null);
                     } else {
@@ -918,7 +919,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                         mNoteEditFragment.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
                     }
-                    Log.d(TAG, "handleShowAttach----" + filePath);
                 }
             }
         });
@@ -1030,7 +1030,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         editable.delete(start, end);
                     } else {
                         addRedo = false;
-                        Log.d(TAG, "----addRedo---false---not--able---to---delete---");
+                        KLog.d(TAG, "----addRedo---false---not--able---to---delete---");
                     }
                 } else {    //之前的操作是删除文字，则此时的操作是插入文字String sid = mEtContent.getAttachSid(content);
                     String sid = SystemUtil.getAttachSid(content);
@@ -1043,7 +1043,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
             } catch (Exception e) {
                 addRedo = false;
-                Log.e(TAG, "----undo--error---" + e.getMessage());
+                KLog.e(TAG, "----undo--error---" + e.getMessage());
             }
             setdo(false);
             if (addRedo) {
@@ -1092,11 +1092,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     editable.delete(start, end);
                 } else {
                     addUndo = false;
-                    Log.d(TAG, "----addUndo---false---not--able---to---delete---");
+                    KLog.d(TAG, "----addUndo---false---not--able---to---delete---");
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "---redo---error-----" + e.getMessage());
+            KLog.e(TAG, "---redo---error-----" + e.getMessage());
             addUndo = false;
         }
         if (addUndo) {
@@ -1182,7 +1182,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mAttachCache = new HashMap<>();
         }
         if (attach == null) {
-            Log.d(TAG, "---handleAddAttach---added---not--need--add---");
+            KLog.d(TAG, "---handleAddAttach---added---not--need--add---");
             return;
         }
         doInbackground(new Runnable() {
@@ -1200,7 +1200,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
                 AttachManager.getInstance().addAttach(attach);
                 mAttachCache.put(attach.getSId(), attach);
-                Log.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
+                KLog.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
             }
         });
     }
@@ -1214,7 +1214,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mAttachCache = new HashMap<>();
         }
         if (attach == null) {
-            Log.d(TAG, "---handleAddAttach---added---not--need--add---");
+            KLog.d(TAG, "---handleAddAttach---added---not--need--add---");
             return;
         }
         doInbackground(new Runnable() {
@@ -1242,9 +1242,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                     AttachManager.getInstance().updateAttach(tmpAttach);
                     mAttachCache.put(tmpAttach.getSId(), tmpAttach);
-                    Log.d(TAG, "---handleUpdateAttach--mAttachCache--has---uri--update--");
+                    KLog.d(TAG, "---handleUpdateAttach--mAttachCache--has---uri--update--");
                 } else {
-                    Log.d(TAG, "--handleUpdateAttach--filePath--is---null--");
+                    KLog.d(TAG, "--handleUpdateAttach--filePath--is---null--");
                 }
             }
         });
@@ -1260,7 +1260,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mAttachCache != null && mAttachCache.size() > 0) {
             for (Attach a : mAttachCache.values()) {
                 if (filePath.equals(a.getLocalPath())) {    //与本地路径一样
-                    Log.d(TAG, "---handleAddAttach--mAttachCache--has---uri--");
+                    KLog.d(TAG, "---handleAddAttach--mAttachCache--has---uri--");
                     return a;
                 }
             }
@@ -1353,19 +1353,19 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     try {
                         mAttachFile = SystemUtil.getAttachFile(sid, Attach.VOICE);
                     } catch (IOException e) {
-                        Log.e(TAG, "getAttachFile error：" + e.getMessage());
+                        KLog.e(TAG, "getAttachFile error：" + e.getMessage());
                         e.printStackTrace();
                     }
                     if (mAttachFile == null) {
                         SystemUtil.makeShortToast(R.string.record_error);
-                        Log.e(TAG, "getAttachFile error");
+                        KLog.e(TAG, "getAttachFile error");
                     }
                 }
                 mAudioRecorder.setFilePath(mAttachFile.getAbsolutePath());
                 mAudioRecorder.setRecordListener(new AudioRecorder.OnRecordListener() {
                     @Override
                     public void onBeforeRecord(String filePath) {
-                        Log.d(TAG, "----onBeforeRecord--");
+                        KLog.d(TAG, "----onBeforeRecord--");
                         showRecordView();
                     }
 
@@ -1391,7 +1391,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                     @Override
                     public void onRecordError(String filePath, String errorMsg) {
-                        Log.d(TAG, "----onRecordError--");
+                        KLog.d(TAG, "----onRecordError--");
                         hideRecordView();
                         SystemUtil.makeShortToast(R.string.record_error);
                     }
@@ -1435,7 +1435,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 public void run() {
                     mAudioRecorder.releaseRecorder();
                     mAudioRecorder = null;
-                    Log.d(TAG, "----stopRecorder---record---file---" + mAttachFile);
+                    KLog.d(TAG, "----stopRecorder---record---file---" + mAttachFile);
                 }
             });
             /*mAudioRecorder.releaseRecorder();
@@ -1443,7 +1443,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
             hideRecordView();*/
             
-            Log.d(TAG, "----stopRecorder---record---file---" + mAttachFile);
+            KLog.d(TAG, "----stopRecorder---record---file---" + mAttachFile);
         }
     }
 
@@ -1606,7 +1606,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         }
                     } catch (IOException e) {
                         SystemUtil.makeShortToast(R.string.tip_camera_error);
-                        Log.e(TAG, "----OnPopMenuItemClickListener---onMenuItemClick----openCamera---error--" + e.getMessage());
+                        KLog.e(TAG, "----OnPopMenuItemClickListener---onMenuItemClick----openCamera---error--" + e.getMessage());
                     }
                     break;
                 case R.id.action_voice: //添加语音
@@ -1615,7 +1615,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         startRecorder();
                     } catch (Exception e) {
                         SystemUtil.makeShortToast(R.string.record_error);
-                        Log.e(TAG, "---startRecorder--error--" + e.getMessage());
+                        KLog.e(TAG, "---startRecorder--error--" + e.getMessage());
                         e.printStackTrace();
                     }
                     break;

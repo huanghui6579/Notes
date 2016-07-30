@@ -17,8 +17,10 @@ import android.widget.EditText;
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
+import net.ibaixin.notes.listener.OnAddSpanCompleteListener;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.richtext.NoteRichSpan;
@@ -93,12 +95,16 @@ public class NoteEditText extends EditText implements NoteRichSpan {
             @Override
             public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
                 ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
-                CharSequence text = attachSpan.getText();
-                addSpan(text, attachSpan, imageSpan);
+                final CharSequence text = attachSpan.getText();
+                addSpan(text, attachSpan, imageSpan, new OnAddSpanCompleteListener() {
+                    @Override
+                    public void onAddSpanComplete() {
+                        if (listener != null) {
+                            listener.onAddComplete(filePath, text, attach);
+                        }
+                    }
+                });
                 
-                if (listener != null) {
-                    listener.onAddComplete(filePath, text, attach);
-                }
             }
 
             @Override
@@ -115,23 +121,27 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param attach
      * @param listener
      */
-    public void addAttach(Attach attach, final AttachAddCompleteListener listener) {
+    public void addAttach(final Attach attach, final AttachAddCompleteListener listener) {
         int attachType = attach.getType();
         if (attachType == Attach.IMAGE || attachType == Attach.PAINT) { //图片
             addImage(attach, listener);
             return;
         }
 
-        String filePath = attach.getLocalPath();
+        final String filePath = attach.getLocalPath();
         FileSpan fileSpan = new FileSpan(getContext(), attach, getWidth());
         
         AttachSpan attachSpan = getAttachSpan(attach);
-        CharSequence text = attachSpan.getText();
-        addSpan(text, attachSpan, fileSpan);
-
-        if (listener != null) {
-            listener.onAddComplete(filePath, text, attach);
-        }
+        final CharSequence text = attachSpan.getText();
+        addSpan(text, attachSpan, fileSpan, new OnAddSpanCompleteListener() {
+            @Override
+            public void onAddSpanComplete() {
+                if (listener != null) {
+                    listener.onAddComplete(filePath, text, attach);
+                }
+            }
+        });
+        
     }
 
     /**
@@ -161,10 +171,10 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param clickSpan 可点击的Span              
      * @param replaceSpan 附件显示的span
      */
-    private CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan) {
+    private CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final OnAddSpanCompleteListener listener) {
         final int selStart = getSelectionStart();
         final int selEnd = getSelectionEnd();
-        return addSpan(text, clickSpan, replaceSpan, selStart, selEnd);
+        return addSpan(text, clickSpan, replaceSpan, selStart, selEnd, listener);
     }
 
     @Override
@@ -184,7 +194,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @param replaceSpan 附件显示的span
      */
     @Override
-    public CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
+    public CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd, final OnAddSpanCompleteListener listener) {
 
         /*AttachSpan attachSpan = new AttachSpan();
         attachSpan.setAttachId(fileId);
@@ -195,16 +205,21 @@ public class NoteEditText extends EditText implements NoteRichSpan {
         builder.append(text);
         builder.setSpan(replaceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 //        builder.setSpan(clickSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
         post(new Runnable() {
             @Override
             public void run() {
                 try {
                     Editable editable = getEditableText();
                     if (selStart < 0 || getText() == null || selStart >= getText().length()) {
-                        editable.append(builder).append(Constants.TAG_ENTER);
+                        builder.append(Constants.TAG_NEXT_LINE);
+                        editable.append(builder);
+                        KLog.d(TAG, "-----addSpan----append--");
                     } else {
                         editable.replace(selStart, selEnd, builder);
+                        KLog.d(TAG, "-----addSpan----replace--");
+                    }
+                    if (listener != null) {
+                        listener.onAddSpanComplete();
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "---note---edit--addSpan---error--" + e.getMessage());
@@ -345,18 +360,21 @@ public class NoteEditText extends EditText implements NoteRichSpan {
 
             ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
 
-            addSpan(text, attachSpan, imageSpan, selStart, selEnd);
-            
-            if (listener != null) {
-                
-                Attach attach = new Attach();
-                attach.setNoteId(attachSpec.noteSid);
-                attach.setSId(attachSpec.sid);
-                attach.setLocalPath(attachSpec.filePath);
-                attach.setType(attachSpec.attachType);
-                
-                listener.onAddComplete(null, null, attach);
-            }
+            addSpan(text, attachSpan, imageSpan, selStart, selEnd, new OnAddSpanCompleteListener() {
+                @Override
+                public void onAddSpanComplete() {
+                    if (listener != null) {
+
+                        Attach attach = new Attach();
+                        attach.setNoteId(attachSpec.noteSid);
+                        attach.setSId(attachSpec.sid);
+                        attach.setLocalPath(attachSpec.filePath);
+                        attach.setType(attachSpec.attachType);
+
+                        listener.onAddComplete(null, null, attach);
+                    }
+                }
+            });
         }
     }
 

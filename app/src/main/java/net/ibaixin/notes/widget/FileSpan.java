@@ -57,22 +57,35 @@ public class FileSpan extends DynamicDrawableSpan {
         
         int fileType = SystemUtil.guessFileType(file);
         int optIcon = 0;
+        int icon = 0;
         switch (fileType) {
             case Attach.VOICE:  //语音
                 optIcon = R.drawable.ic_play_circle;
+                icon = R.drawable.ic_library_music;
                 break;
             case Attach.FILE:
+                optIcon = R.drawable.ic_file_open;
+                icon = R.drawable.ic_library_archive;
+                break;
             case Attach.ARCHIVE:
+                optIcon = R.drawable.ic_file_open;
+                icon = R.drawable.ic_library_archive;
+                break;
             case Attach.IMAGE:
+                optIcon = R.drawable.ic_file_open;
+                icon = R.drawable.ic_library_music;
+                break;
             case Attach.VIDEO:
                 optIcon = R.drawable.ic_file_open;
+                icon = R.drawable.ic_library_music;
                 break;
             default:
                 optIcon = R.drawable.ic_file_open;
+                icon = R.drawable.ic_library_music;
                 break;
         }
 
-        ivIcon.setImageResource(R.drawable.ic_library_music);
+        ivIcon.setImageResource(icon);
         ivPlay.setImageResource(optIcon);
         
         titleView.setWidth((int) (viewWidth * 0.6));

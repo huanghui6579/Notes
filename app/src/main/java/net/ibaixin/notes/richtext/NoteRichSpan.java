@@ -5,6 +5,7 @@ import android.text.method.MovementMethod;
 import android.text.style.ReplacementSpan;
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
+import net.ibaixin.notes.listener.OnAddSpanCompleteListener;
 import net.ibaixin.notes.widget.AttachSpan;
 
 /**
@@ -29,7 +30,7 @@ public interface NoteRichSpan {
     /**
      *  添加Span
      */
-    CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd);
+    CharSequence addSpan(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, final int selStart, final int selEnd, OnAddSpanCompleteListener listener);
 
     /**
      * 显示图片、绘画

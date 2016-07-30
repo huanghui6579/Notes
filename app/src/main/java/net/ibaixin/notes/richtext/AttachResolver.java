@@ -8,12 +8,12 @@ import android.text.style.ReplacementSpan;
 import android.util.SparseArray;
 
 import com.nostra13.universalimageloader.core.assist.ImageSize;
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.listener.RichTextClickListener;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.util.ImageUtil;
 import net.ibaixin.notes.util.SystemUtil;
-import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.AttachSpan;
 import net.ibaixin.notes.widget.FileSpan;
 
@@ -98,12 +98,12 @@ public class AttachResolver implements Resolver {
             String sid = spec.sid;
             Attach attach = map.get(sid);
             if (attach != null) {
-                String text = spec.text.toString();
+                final String text = spec.text.toString();
                 final int selStart = spec.start;
                 final int selEnd = spec.end;
                 
                 String filePath = attach.getLocalPath();
-                AttachSpan attachSpan = new AttachSpan();
+                final AttachSpan attachSpan = new AttachSpan();
                 attachSpan.setAttachId(sid);
                 attachSpan.setAttachType(attach.getType());
                 attachSpan.setFilePath(filePath);
@@ -132,16 +132,13 @@ public class AttachResolver implements Resolver {
                         }
                         replacementSpan = new ImageSpan(context, bitmap);
                         break;
-                    case Attach.VOICE:  //录音文件
+                    default:  //录音文件
                         size = richSpan.getSize();
                         replacementSpan = new FileSpan(context, attach, size[0]);
                         break;
                 }
-                if (replacementSpan != null) {
-                    richSpan.addSpan(text, attachSpan, replacementSpan, selStart, selEnd);
-                } else {
-                    Log.d(TAG, "---ResolverAttachTask--replacementSpan--is---null--");
-                }
+                KLog.d(TAG, "---ResolverAttachTask----addSpan-----replacementSpan----");
+                richSpan.addSpan(text, attachSpan, replacementSpan, selStart, selEnd, null);
             }
         }
     }

@@ -7,6 +7,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import com.socks.library.KLog;
+
 import net.ibaixin.notes.NoteApplication;
 import net.ibaixin.notes.cache.FolderCache;
 import net.ibaixin.notes.db.DBHelper;
@@ -20,7 +22,6 @@ import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.model.User;
 import net.ibaixin.notes.util.Constants;
-import net.ibaixin.notes.util.log.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -161,7 +162,7 @@ public class NoteManager extends Observable<Observer> {
             updateFolderCount(note, false);
             db.setTransactionSuccessful();
         } catch (Exception e) {
-            Log.e(TAG, "--deleteNote---error---" + e.getMessage());
+            KLog.e(TAG, "--deleteNote---error---" + e.getMessage());
         } finally {
             db.endTransaction();
         }
@@ -170,7 +171,7 @@ public class NoteManager extends Observable<Observer> {
             return true;
         } else {
             notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, null);
-            Log.w(TAG, "-------deleteNote---failed----");
+            KLog.w(TAG, "-------deleteNote---failed----");
             return false;
         }
     }
@@ -182,7 +183,7 @@ public class NoteManager extends Observable<Observer> {
      */
     public boolean deleteNote(List<NoteInfo> noteList) {
         if (noteList == null || noteList.size() == 0) {
-            Log.d(TAG, "----deleteNote---list--size--0--success---");
+            KLog.d(TAG, "----deleteNote---list--size--0--success---");
             return true;
         }
         if (noteList.size() == 1) { //只有一条
@@ -209,7 +210,7 @@ public class NoteManager extends Observable<Observer> {
                 row = db.update(Provider.NoteColumns.TABLE_NAME, values, builder.toString(), selectionArgs);
                 db.setTransactionSuccessful();
             } catch (Exception e) {
-                Log.e("TAG", "--deleteNote--list--error--" + e.getMessage());
+                KLog.e("TAG", "--deleteNote--list--error--" + e.getMessage());
             } finally {
                 db.endTransaction();
             }
@@ -217,7 +218,7 @@ public class NoteManager extends Observable<Observer> {
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, noteList);
                 return true;
             } else {
-                Log.w(TAG, "-------deleteNote--list--failed----");
+                KLog.w(TAG, "-------deleteNote--list--failed----");
                 return false;
             }
         }
@@ -315,7 +316,7 @@ public class NoteManager extends Observable<Observer> {
             
             db.setTransactionSuccessful();
         } catch (Exception e) {
-            Log.e(TAG, "--addNote--error--" + e.getMessage());
+            KLog.e(TAG, "--addNote--error--" + e.getMessage());
         } finally {
             db.endTransaction();
         }
@@ -568,23 +569,23 @@ public class NoteManager extends Observable<Observer> {
         if (attachList != null && attachList.size() > 0) {  //有附件，则与缓存中比较
             if (updateUpdate) {
                 //更新附件的noteid
-                Log.d(TAG, "--updateAttachNote--list---" + attachList);
+                KLog.d(TAG, "--updateAttachNote--list---" + attachList);
                 updateAttachNote(db, attachList, note.getSId());
             } else {
-                Log.d(TAG, "--updateTextAttach---not--updateUpdate---attach---note---");
+                KLog.d(TAG, "--updateTextAttach---not--updateUpdate---attach---note---");
             }
             if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
                 //删除多余的附件
                 cacheList.removeAll(attachList);
                 if (cacheList.size() > 0) { //删除了还有多余的附件
-                    Log.d(TAG, "--deleteAttaches--list---" + cacheList);
+                    KLog.d(TAG, "--deleteAttaches--list---" + cacheList);
                     deleteAttaches(db, cacheList);
                 }
             }
         } else {    //笔记中实际没有附件
             if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
                 //删除多余的附件
-                Log.d(TAG, "--deleteAttaches--list---" + cacheList);
+                KLog.d(TAG, "--deleteAttaches--list---" + cacheList);
                 deleteAttaches(db, cacheList);
             }
         }
@@ -696,12 +697,12 @@ public class NoteManager extends Observable<Observer> {
                     notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.MOVE, noteList);
                 }
             } else {
-                Log.d(TAG, "--move2Folder----result----list---0----not---notifyObservers---");
+                KLog.d(TAG, "--move2Folder----result----list---0----not---notifyObservers---");
             }
             db.setTransactionSuccessful();
             return true;
         } catch (SQLException e) {
-            Log.e(TAG, "---move2Folder---list---error----" + e.getMessage());
+            KLog.e(TAG, "---move2Folder---list---error----" + e.getMessage());
         } finally {
             db.endTransaction();
         }

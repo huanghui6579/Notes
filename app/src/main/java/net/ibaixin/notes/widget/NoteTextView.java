@@ -15,13 +15,14 @@ import android.widget.TextView;
 
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
+import net.ibaixin.notes.listener.OnAddSpanCompleteListener;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.richtext.AttachSpec;
 import net.ibaixin.notes.richtext.NoteRichSpan;
 import net.ibaixin.notes.util.ImageUtil;
-import net.ibaixin.notes.util.log.Log;
 
 /**
  * @author tiger
@@ -47,7 +48,7 @@ public class NoteTextView extends TextView implements NoteRichSpan {
     public boolean onTouchEvent(MotionEvent event) {
         final int action = event.getActionMasked();
         final boolean touchIsFinished = (action == MotionEvent.ACTION_UP) && isFocused();
-        Log.d(TAG, "---touchIsFinished--" + touchIsFinished);
+        KLog.d(TAG, "---touchIsFinished--" + touchIsFinished);
         MovementMethod mMovement = getMovementMethod();
         CharSequence text = getText();
         if (touchIsFinished && text != null && (mMovement != null && mMovement instanceof LinkMovementMethod) && isEnabled()
@@ -71,7 +72,7 @@ public class NoteTextView extends TextView implements NoteRichSpan {
     }
 
     @Override
-    public CharSequence addSpan(final CharSequence text, final AttachSpan clickSpan, final ReplacementSpan replaceSpan, final int selStart, final int selEnd) {
+    public CharSequence addSpan(final CharSequence text, final AttachSpan clickSpan, final ReplacementSpan replaceSpan, final int selStart, final int selEnd, final OnAddSpanCompleteListener listener) {
 
         post(new Runnable() {
             @Override
@@ -82,8 +83,13 @@ public class NoteTextView extends TextView implements NoteRichSpan {
                     spannableString.setSpan(clickSpan, selStart, selEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
                     setText(spannableString);
+                    
+                    if (listener != null) {
+                        listener.onAddSpanComplete();
+                    }
+                    
                 } catch (Exception e) {
-                    Log.e(TAG, "---note---edit--addSpane---error--" + e.getMessage());
+                    KLog.e(TAG, "---note---edit--addSpane---error--" + e.getMessage());
                 }
             }
         });
@@ -131,7 +137,7 @@ public class NoteTextView extends TextView implements NoteRichSpan {
 
     @Override
     public void setTextMovementMethod(MovementMethod movement) {
-        Log.d(TAG, "----setTextMovementMethod----");
+        KLog.d(TAG, "----setTextMovementMethod----");
         setMovementMethod(movement);
     }
 
@@ -166,18 +172,22 @@ public class NoteTextView extends TextView implements NoteRichSpan {
 
             ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
 
-            addSpan(text, attachSpan, imageSpan, selStart, selEnd);
-            
-            if (listener != null) {
+            addSpan(text, attachSpan, imageSpan, selStart, selEnd, new OnAddSpanCompleteListener() {
+                @Override
+                public void onAddSpanComplete() {
+                    if (listener != null) {
 
-                Attach attach = new Attach();
-                attach.setNoteId(attachSpec.noteSid);
-                attach.setSId(attachSpec.sid);
-                attach.setLocalPath(attachSpec.filePath);
-                attach.setType(attachSpec.attachType);
-                
-                listener.onAddComplete(attachSpec.filePath, null, attach);
-            }
+                        Attach attach = new Attach();
+                        attach.setNoteId(attachSpec.noteSid);
+                        attach.setSId(attachSpec.sid);
+                        attach.setLocalPath(attachSpec.filePath);
+                        attach.setType(attachSpec.attachType);
+
+                        listener.onAddComplete(attachSpec.filePath, null, attach);
+                    }
+                }
+            });
+            
         }
     }
 }

@@ -107,6 +107,7 @@
     <string name="action_eraser">橡皮檫</string>
     <string name="action_undo">撤销</string>
     <string name="action_redo">重做</string>
+    <string name="action_open">打开</string>
 
     <string name="stroke_tip_type">画笔类型</string>
     <string name="stroke_tip_size">画笔大小</string>

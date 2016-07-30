@@ -17,6 +17,7 @@ import android.preference.PreferenceManager;
 import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.Window;
@@ -943,8 +944,9 @@ public class SystemUtil {
      * @param context
      * @param filePath
      * @param attachType 文件的类型，参考Attach#Image
+     * @param mimeType 文件的mime类型                  
      */
-    public static void openFile(Context context, String filePath, int attachType) {
+    public static void openFile(Context context, String filePath, int attachType, String mimeType) {
         Uri uri = Uri.fromFile(new File(filePath));
         Intent intent = new Intent(Intent.ACTION_VIEW);
 
@@ -957,7 +959,11 @@ public class SystemUtil {
                 type = "audio/*";
                 break;
             default:
-                type = "*/*";
+                if (TextUtils.isEmpty(mimeType)) {
+                    type = "*/*";
+                } else {
+                    type = mimeType;
+                }
                 break;
         }
 
@@ -975,8 +981,9 @@ public class SystemUtil {
      * @param context
      * @param filePath
      * @param attachType 文件的类型如图片：image/*
+     * @param mimeType 文件的mime类型                  
      */
-    public static void shareFile(Context context, String filePath, int attachType) {
+    public static void shareFile(Context context, String filePath, int attachType, String mimeType) {
         Intent sendIntent = new Intent();
         sendIntent.setAction(Intent.ACTION_SEND);
         sendIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(filePath)));
@@ -989,7 +996,11 @@ public class SystemUtil {
                 type = "audio/*";
                 break;
             default:
-                type = "*/*";
+                if (TextUtils.isEmpty(mimeType)) {
+                    type = "*/*";
+                } else {
+                    type = mimeType;
+                }
                 break;
         }
         sendIntent.setType(type);

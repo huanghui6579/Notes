@@ -11,6 +11,7 @@ import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.model.User;
 import net.ibaixin.notes.util.Constants;
@@ -82,6 +83,10 @@ public class NoteApplication extends Application {
             Log.e(TAG, "---initLog---error---" + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    private void initKLog() {
+        KLog.init(BuildConfig.LOG_ENABLE, Constants.APP_ROOT_NAME);
     }
 
     public String getDefaultFolderSid() {

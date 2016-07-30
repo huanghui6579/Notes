@@ -4,13 +4,14 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.text.TextUtils;
 
+import com.socks.library.KLog;
+
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.AttachManager;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.SystemUtil;
-import net.ibaixin.notes.util.log.Log;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -77,10 +78,10 @@ public class CoreService extends IntentService {
                                     dir.delete();
                                 }
                             } catch (Exception e) {
-                                Log.d(TAG, "---opt_remove_note_attach---delete--parent---dir----error----" + parentDir + ":" + e.getMessage());
+                                KLog.d(TAG, "---opt_remove_note_attach---delete--parent---dir----error----" + parentDir + ":" + e.getMessage());
                                 e.printStackTrace();
                             }
-                            Log.d(TAG, "---opt_remove_note_attach---delete--parent---dir--" + parentDir);
+                            KLog.d(TAG, "---opt_remove_note_attach---delete--parent---dir--" + parentDir);
                         }
                     }
                     break;
@@ -98,7 +99,7 @@ public class CoreService extends IntentService {
         String sid = note.getSId();
         note = mNoteManager.addNote(note, attSidList, attachSids);
         boolean success = note != null;
-        Log.d(TAG, "---onHandleIntent---addNote----result---" + success + "---note---" + sid);
+        KLog.d(TAG, "---onHandleIntent---addNote----result---" + success + "---note---" + sid);
     }
 
     /**
@@ -122,6 +123,6 @@ public class CoreService extends IntentService {
             mNoteManager.updateTextAttach(null, note, attSidList, attachSids, false);
             success = true;
         }
-        Log.d(TAG, "---onHandleIntent---updateNote----result---" + success + "---note---" + sid);
+        KLog.d(TAG, "---onHandleIntent---updateNote----result---" + success + "---note---" + sid);
     }
 }
