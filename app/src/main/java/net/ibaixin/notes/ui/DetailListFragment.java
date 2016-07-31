@@ -44,6 +44,9 @@ public class DetailListFragment extends Fragment {
     //笔记的标题
     private CharSequence mTitle;
 
+    //笔记的标题
+    private NoteEditText mEtTitle;
+
     public DetailListFragment() {
         // Required empty public constructor
     }
@@ -82,6 +85,9 @@ public class DetailListFragment extends Fragment {
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        mEtTitle = (NoteEditText) view.findViewById(R.id.et_title);
+        mEtTitle.requestFocus();
+
         RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.detail_list_view);
         LayoutManagerFactory factory = new LayoutManagerFactory();
         RecyclerView.LayoutManager layoutManager = factory.getLayoutManager(getContext(), false);
@@ -90,12 +96,11 @@ public class DetailListFragment extends Fragment {
 
         recyclerView.setLayoutManager(layoutManager);
 
-        DetailListAdapter adapter = new DetailListAdapter(getContext(), mDetailLists, mTitle);
+        DetailListAdapter adapter = new DetailListAdapter(getContext(), mDetailLists);
         recyclerView.setAdapter(adapter);
     }
 
     private void intData() {
-        mTitle = "发动机疯狂的减肥";
         mDetailLists = new ArrayList<>();
         for (int i = 0; i < 15; i++) {
             DetailList detail = new DetailList();
@@ -129,67 +134,31 @@ public class DetailListFragment extends Fragment {
 
         private List<DetailList> list;
 
-        //笔记的标题
-        private CharSequence mTitle;
-
         private LayoutInflater inflater;
 
-        public DetailListAdapter(Context context, List<DetailList> list, CharSequence title) {
+        public DetailListAdapter(Context context, List<DetailList> list) {
             this.context = context;
             this.list = list;
-            this.mTitle = title;
             inflater = LayoutInflater.from(context);
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = null;
-            RecyclerView.ViewHolder holder = null;
-            switch (viewType) {
-                case 0: //编辑
-                    view = inflater.inflate(R.layout.layout_content_edit, parent, false);
-                    holder = new NoteEditViewHolder(view);
-                    break;
-                case 1: //订单列表
-                    view = inflater.inflate(R.layout.item_detail_list, parent, false);
-                    holder = new DetailListViewHolder(view);
-                    break;
-            }
-            return holder;
+            View view = inflater.inflate(R.layout.item_detail_list, parent, false);
+            return new DetailListViewHolder(view);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            int viewType = getItemViewType(position);
-            if (viewType == 0) {    //编辑
-                if (holder instanceof NoteEditViewHolder) {
-                    NoteEditViewHolder editHolder = (NoteEditViewHolder) holder;
-                    editHolder.editText.setText(mTitle);
-                }
-            } else {
-                if (holder instanceof DetailListViewHolder) {
-                    DetailList detail = list.get(position - 1);
-                    DetailListViewHolder detailHolder = (DetailListViewHolder) holder;
-                    detailHolder.checkBox.setChecked(detail.isChecked());
-                    detailHolder.tvTitle.setText(detail.getTitle());
-                }
-            }
-//            holder.checkBox.setChecked(detail.isChecked());
-//            holder.tvTitle.setText(detail.getTitle());
+            DetailList detail = list.get(position);
+            DetailListViewHolder detailHolder = (DetailListViewHolder) holder;
+            detailHolder.checkBox.setChecked(detail.isChecked());
+            detailHolder.tvTitle.setText(detail.getTitle());
         }
 
         @Override
         public int getItemCount() {
             return list == null ? 0 : list.size();
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position == 0) {
-                return 0;
-            } else {
-                return 1;
-            }
         }
 
         /**
