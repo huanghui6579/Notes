@@ -5,6 +5,8 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="note_edit_hint">输入文本内容</string>
+    <string name="note_title_edit_hint">输入清单标题</string>
+    <string name="detail_edit_hint">按回车键添加更多</string>
 
     <string name="main_empty_tip">设置同步账号，笔记备份到云端可永不丢失</string>
     <string name="main_empty_tip_login">立即登录</string>

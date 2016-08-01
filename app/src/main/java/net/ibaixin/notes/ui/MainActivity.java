@@ -40,6 +40,7 @@ import android.widget.Toast;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
@@ -58,7 +59,6 @@ import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.util.NoteUtil;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.TimeUtil;
-import net.ibaixin.notes.util.log.Log;
 import net.ibaixin.notes.widget.DividerItemDecoration;
 import net.ibaixin.notes.widget.LayoutManagerFactory;
 
@@ -342,7 +342,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
             @Override
             public void onGranted() {
-                Log.d(TAG, "---requestPermission---onGranted---");
+                KLog.d(TAG, "---requestPermission---onGranted---");
 //                Toast.makeText(mContext,"onGranted",Toast.LENGTH_SHORT).show();
             }
 
@@ -367,7 +367,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        Log.i(TAG, "Activity-onRequestPermissionsResult() PermissionsManager.notifyPermissionsChange()");
+        KLog.i(TAG, "Activity-onRequestPermissionsResult() PermissionsManager.notifyPermissionsChange()");
         PermissionsManager.getInstance().notifyPermissionsChange(permissions, grantResults);
     }
 
@@ -479,10 +479,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         //更新子标题
         updateSubTitle(subTitle);
         
-        Log.d(TAG, "------initFolder----SelectedFolderId-----" + mSelectedFolderId);
+        KLog.d(TAG, "------initFolder----SelectedFolderId-----" + mSelectedFolderId);
         
         if (!isShowFolderAll()) {  //“所有文件夹”没有显示
-            Log.d(TAG, "---initFolder-----folder all is hide---");
+            KLog.d(TAG, "---initFolder-----folder all is hide---");
             return;
         }
 
@@ -1253,7 +1253,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                                             if (actualList.size() == 0) {
                                                 success = true;
                                                 mHandler.sendEmptyMessage(MSG_MOVE_SUCCESS);
-                                                Log.d(TAG, "--moveNotes--actualList---size---0---success--");
+                                                KLog.d(TAG, "--moveNotes--actualList---size---0---success--");
                                             } else {
                                                 success = mNoteManager.move2Folder(actualList, oldFolder, newFolder);
                                             }
@@ -2154,19 +2154,19 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     }
                     switch (notifyType) {
                         case ADD:   //添加
-                            Log.d(TAG, "------addNote----" + noteInfo);
+                            KLog.d(TAG, "------addNote----" + noteInfo);
                             if (noteInfo != null) {
                                 addNote(noteInfo);
                             }
                             break;
                         case UPDATE:    //修改笔记
-                            Log.d(TAG, "------updateNote----" + noteInfo);
+                            KLog.d(TAG, "------updateNote----" + noteInfo);
                             if (noteInfo != null) {
                                 updateNote(noteInfo);
                             }
                             break;
                         case DELETE:    //删除、移到回收站
-                            Log.d(TAG, "------deleteNote----" + noteInfo);
+                            KLog.d(TAG, "------deleteNote----" + noteInfo);
                             if (noteInfo != null) {
                                 deleteNote(noteInfo, false);
                             } else if (data instanceof List) {  //删除了多个笔记
@@ -2176,7 +2176,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             saveDeleteOpt();
                             break;
                         case MOVE:    //移动到其他文件夹
-                            Log.d(TAG, "------moveNote----" + noteInfo);
+                            KLog.d(TAG, "------moveNote----" + noteInfo);
                             boolean isFolderAll = TextUtils.isEmpty(mSelectedFolderId);
                             if (noteInfo != null) {
                                 deleteNote(noteInfo, isFolderAll);
@@ -2199,13 +2199,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     switch (notifyType) {
                         case ADD:   //添加文件夹
                             folder = (Folder) data;
-                            Log.d(TAG, "------addFolder----" + folder);
+                            KLog.d(TAG, "------addFolder----" + folder);
                             addFolder(folder);
                             break;
                         case UPDATE:   //更新文件夹
                             if (data instanceof Folder) {
                                 folder = (Folder) data;
-                                Log.d(TAG, "------updateFolder----" + folder);
+                                KLog.d(TAG, "------updateFolder----" + folder);
                                 updateFolder(folder);
                             } else if (data instanceof Map) {   //文件夹排序
                                 Map<String, Object> map = (Map) data;
@@ -2216,7 +2216,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             break;
                         case DELETE:   //删除文件夹
                             folder = (Folder) data;
-                            Log.d(TAG, "------deleteFolder----" + folder);
+                            KLog.d(TAG, "------deleteFolder----" + folder);
                             deleteFolder(folder);
                             break;
                     }

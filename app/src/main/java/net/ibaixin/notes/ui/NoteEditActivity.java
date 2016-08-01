@@ -45,7 +45,6 @@ import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.edit.recorder.AudioRecorder;
 import net.ibaixin.notes.listener.SimpleAttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
-import net.ibaixin.notes.model.DetailList;
 import net.ibaixin.notes.model.EditStep;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
@@ -67,7 +66,6 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -1655,17 +1653,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
     }
     
-    private List<DetailList> initDetailList() {
-        List<DetailList> list = new ArrayList<>();
-        for (int i = 0; i < 15; i++) {
-            DetailList detail = new DetailList();
-            detail.setTitle("比啊提升人" + i);
-
-            list.add(detail);
-        }
-        return list;
-    }
-
     /**
      * 笔记的更新状态监听器
      */

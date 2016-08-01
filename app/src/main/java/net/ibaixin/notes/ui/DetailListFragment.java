@@ -2,14 +2,21 @@ package net.ibaixin.notes.ui;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.TextView;
+
+import com.socks.library.KLog;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.DetailList;
@@ -27,11 +34,13 @@ import java.util.List;
  * Use the {@link DetailListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class DetailListFragment extends Fragment {
+public class DetailListFragment extends Fragment implements TextView.OnEditorActionListener {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
+    
+    private static final String TAG = "DetailListFragment";
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -46,6 +55,10 @@ public class DetailListFragment extends Fragment {
 
     //笔记的标题
     private NoteEditText mEtTitle;
+    
+    private RecyclerView mRecyclerView;
+    
+    private Handler mHandler = new Handler();
 
     public DetailListFragment() {
         // Required empty public constructor
@@ -88,24 +101,57 @@ public class DetailListFragment extends Fragment {
         mEtTitle = (NoteEditText) view.findViewById(R.id.et_title);
         mEtTitle.requestFocus();
 
-        RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.detail_list_view);
+        mEtTitle.setOnEditorActionListener(this);
+
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.detail_list_view);
+        
         LayoutManagerFactory factory = new LayoutManagerFactory();
         RecyclerView.LayoutManager layoutManager = factory.getLayoutManager(getContext(), false);
 
-        intData();
+        initData();
 
-        recyclerView.setLayoutManager(layoutManager);
+        mRecyclerView.setLayoutManager(layoutManager);
 
         DetailListAdapter adapter = new DetailListAdapter(getContext(), mDetailLists);
-        recyclerView.setAdapter(adapter);
+        mRecyclerView.setAdapter(adapter);
     }
 
-    private void intData() {
+    /**
+     * 初始化数据
+     */
+    private void initData() {
         mDetailLists = new ArrayList<>();
-        for (int i = 0; i < 15; i++) {
-            DetailList detail = new DetailList();
-            detail.setTitle("发动机看风景个" + i);
-            mDetailLists.add(detail);
+        DetailList detail = new DetailList();
+        mDetailLists.add(detail);
+    }
+
+    /**
+     * 清单第一项是否为空
+     * @return
+     */
+    private boolean isFirstDetailEmpty() {
+        DetailList detail = mDetailLists.get(0);
+        return detail == null || detail.isEmptyText();
+    }
+
+    /**
+     * 获取指定位置的清单列表的holder
+     * @param position 数据的位置
+     * @return
+     */
+    private DetailListAdapter.DetailListViewHolder getDetailHolder(int position) {
+        return (DetailListAdapter.DetailListViewHolder) mRecyclerView.findViewHolderForAdapterPosition(position);
+    }
+
+    /**
+     * 将清单的标题获取焦点
+     * @param position
+     */
+    private void focusItem(int position) {
+        DetailListAdapter.DetailListViewHolder holder = getDetailHolder(position);
+        if (holder != null) {
+            mRecyclerView.scrollToPosition(0);
+            holder.etTitle.requestFocus();
         }
     }
 
@@ -123,19 +169,47 @@ public class DetailListFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
+        KLog.d(TAG, "--list--" + mDetailLists);
         mListener = null;
+    }
+
+    @Override
+    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
+            switch (v.getId()) {
+                case R.id.et_title: //笔记的标题，则移到第一个清单或者在第一位添加一项清单
+                    if (isFirstDetailEmpty()) { //第一项为空，则第一项将获取焦点
+                        focusItem(0);
+                    } else {    //第一项不为空，则在第一项之前再插入一项
+                        DetailList detail = new DetailList();
+                        mDetailLists.add(0, detail);
+                        mRecyclerView.getAdapter().notifyItemInserted(0);
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                focusItem(0);
+                            }
+                        });
+                        
+                    }
+                    return true;
+                case R.id.et_detail_title:  //编辑的是清单的标题，则在临近的后面追加一项
+                    break;
+            }
+        }
+        return false;
     }
 
     /**
      * 清单列表的适配器
      */
-    class DetailListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    class DetailListAdapter extends RecyclerView.Adapter<DetailListAdapter.DetailListViewHolder> {
         private Context context;
 
         private List<DetailList> list;
 
         private LayoutInflater inflater;
-
+        
         public DetailListAdapter(Context context, List<DetailList> list) {
             this.context = context;
             this.list = list;
@@ -143,17 +217,20 @@ public class DetailListFragment extends Fragment {
         }
 
         @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public DetailListAdapter.DetailListViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = inflater.inflate(R.layout.item_detail_list, parent, false);
-            return new DetailListViewHolder(view);
+            DetailListViewHolder holder = new DetailListViewHolder(view);
+            holder.etTitle.addTextChangedListener(new DetailTextWatcher(0));
+            holder.etTitle.setOnEditorActionListener(DetailListFragment.this);
+            return holder;
         }
 
         @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        public void onBindViewHolder(DetailListViewHolder holder, int position) {
+            
             DetailList detail = list.get(position);
-            DetailListViewHolder detailHolder = (DetailListViewHolder) holder;
-            detailHolder.checkBox.setChecked(detail.isChecked());
-            detailHolder.tvTitle.setText(detail.getTitle());
+            holder.checkBox.setChecked(detail.isChecked());
+            holder.etTitle.setText(detail.getTitle());
         }
 
         @Override
@@ -166,26 +243,43 @@ public class DetailListFragment extends Fragment {
          */
         class DetailListViewHolder extends RecyclerView.ViewHolder {
             CheckBox checkBox;
+            EditText etTitle;
 
-            EditText tvTitle;
             public DetailListViewHolder(View itemView) {
                 super(itemView);
 
-                checkBox = (CheckBox) itemView.findViewById(R.id.cb_check);
-                tvTitle = (EditText) itemView.findViewById(R.id.tv_title);
+                checkBox = (CheckBox) itemView.findViewById(R.id.detail_check);
+                etTitle = (EditText) itemView.findViewById(R.id.et_detail_title);
+                
             }
         }
+        
+        class DetailTextWatcher implements TextWatcher {
+            private int position;
 
-        /**
-         * 笔记编辑的holder
-         */
-        class NoteEditViewHolder extends RecyclerView.ViewHolder {
-            NoteEditText editText;
+            public DetailTextWatcher(int position) {
+                this.position = position;
+            }
 
-            public NoteEditViewHolder(View itemView) {
-                super(itemView);
+            public void setPosition(int position) {
+                this.position = position;
+            }
 
-                editText = (NoteEditText) itemView.findViewById(R.id.et_content);
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                DetailList detail = mDetailLists.get(position);
+                detail.setTitle(s.toString());
+                KLog.d(TAG, "--position---" + position + "---title---" + detail.getTitle());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
             }
         }
     }

@@ -11,11 +11,12 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.socks.library.KLog;
+
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.TimeUtil;
-import net.ibaixin.notes.util.log.Log;
 
 import java.io.File;
 
@@ -36,7 +37,7 @@ public class FileSpan extends DynamicDrawableSpan {
         this.mAttach = attach;
         this.mContext = context;
 
-        Log.d(TAG, "--FileSpan---width---" + width);
+        KLog.d(TAG, "--FileSpan---width---" + width);
 
         LayoutInflater inflater = LayoutInflater.from(mContext);
         View view  = inflater.inflate(R.layout.layout_voice, null);

@@ -1,5 +1,7 @@
 package net.ibaixin.notes.model;
 
+import android.text.TextUtils;
+
 import java.util.Comparator;
 
 /**
@@ -124,6 +126,29 @@ public class DetailList implements Comparator<DetailList> {
 
     public void setModifyTime(long modifyTime) {
         this.modifyTime = modifyTime;
+    }
+
+    /**
+     * 清单内容是否为空
+     * @return
+     */
+    public boolean isEmptyText() {
+        return TextUtils.isEmpty(title);
+    }
+
+    @Override
+    public String toString() {
+        return "DetailList{" +
+                "id=" + id +
+                ", sId='" + sId + '\'' +
+                ", title='" + title + '\'' +
+                ", oldTitle='" + oldTitle + '\'' +
+                ", noteId='" + noteId + '\'' +
+                ", sort=" + sort +
+                ", checked=" + checked +
+                ", createTime=" + createTime +
+                ", modifyTime=" + modifyTime +
+                '}';
     }
 
     @Override

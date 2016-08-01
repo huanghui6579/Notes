@@ -11,7 +11,7 @@
         android:autoLink="all"
         android:background="@null"
         android:gravity="start|top"
-        android:hint="@string/note_edit_hint"
+        android:hint="@string/note_title_edit_hint"
         android:padding="@dimen/content_padding" />
     <android.support.v7.widget.RecyclerView
         android:id="@+id/detail_list_view"
