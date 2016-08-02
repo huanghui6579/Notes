@@ -10,6 +10,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -150,8 +151,11 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     private void focusItem(int position) {
         DetailListAdapter.DetailListViewHolder holder = getDetailHolder(position);
         if (holder != null) {
-            mRecyclerView.scrollToPosition(0);
-            holder.etTitle.requestFocus();
+            holder.mDetailTextWatcher.setPosition(position);
+            if (!holder.etTitle.hasFocus()) {
+                mRecyclerView.scrollToPosition(position);
+                holder.etTitle.requestFocus();
+            }
         }
     }
 
@@ -184,6 +188,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                         DetailList detail = new DetailList();
                         mDetailLists.add(0, detail);
                         mRecyclerView.getAdapter().notifyItemInserted(0);
+                        mRecyclerView.getAdapter().notifyItemRangeChanged(1, mRecyclerView.getAdapter().getItemCount() - 1);
                         mHandler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -209,6 +214,8 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         private List<DetailList> list;
 
         private LayoutInflater inflater;
+
+        private int mSelectPosition;
         
         public DetailListAdapter(Context context, List<DetailList> list) {
             this.context = context;
@@ -219,18 +226,19 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         @Override
         public DetailListAdapter.DetailListViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = inflater.inflate(R.layout.item_detail_list, parent, false);
-            DetailListViewHolder holder = new DetailListViewHolder(view);
-            holder.etTitle.addTextChangedListener(new DetailTextWatcher(0));
+            DetailListViewHolder holder = new DetailListViewHolder(view, new DetailTextWatcher());
             holder.etTitle.setOnEditorActionListener(DetailListFragment.this);
             return holder;
         }
 
         @Override
         public void onBindViewHolder(DetailListViewHolder holder, int position) {
-            
+            holder.mDetailTextWatcher.setPosition(holder.getAdapterPosition());
             DetailList detail = list.get(position);
             holder.checkBox.setChecked(detail.isChecked());
             holder.etTitle.setText(detail.getTitle());
+
+            holder.etTitle.setOnTouchListener(new DetailOnTouchListener(holder.getAdapterPosition()));
         }
 
         @Override
@@ -245,21 +253,40 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
             CheckBox checkBox;
             EditText etTitle;
 
-            public DetailListViewHolder(View itemView) {
+            private DetailTextWatcher mDetailTextWatcher;
+
+            public DetailListViewHolder(View itemView, DetailTextWatcher detailTextWatcher) {
                 super(itemView);
 
                 checkBox = (CheckBox) itemView.findViewById(R.id.detail_check);
                 etTitle = (EditText) itemView.findViewById(R.id.et_detail_title);
+
+                this.mDetailTextWatcher = detailTextWatcher;
+
+                etTitle.addTextChangedListener(detailTextWatcher);
                 
+            }
+        }
+
+        class DetailOnTouchListener implements View.OnTouchListener {
+            private int position;
+
+            public DetailOnTouchListener(int position) {
+                this.position = position;
+            }
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_UP) {
+                    mSelectPosition = position;
+                    focusItem(position);
+                }
+                return false;
             }
         }
         
         class DetailTextWatcher implements TextWatcher {
             private int position;
-
-            public DetailTextWatcher(int position) {
-                this.position = position;
-            }
 
             public void setPosition(int position) {
                 this.position = position;
