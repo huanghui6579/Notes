@@ -52,5 +52,14 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/stroke_color_group"
         android:layout_marginTop="@dimen/activity_vertical_margin"/>
+    
+    <EditText
+        android:id="@+id/tv_test"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_do"
+        android:layout_marginTop="@dimen/activity_vertical_margin"
+        android:background="@null"
+        android:text="房间看的风景开发阶段"/>
 
 </RelativeLayout>

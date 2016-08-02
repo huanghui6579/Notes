@@ -331,6 +331,11 @@ public final class Provider {
         public static final String SORT = "sort";
 
         /**
+         * 上一次的排序
+         */
+        public static final String OLD_SORT = "old_sort";
+
+        /**
          * 是否选中
          */
         public static final String CHECKED = "checked";

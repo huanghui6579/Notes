@@ -62,6 +62,7 @@ public class SystemUtil {
     private static final String PREFIX_FOLDER = "F";
     private static final String PREFIX_ATTACH = "A";
     private static final String PREFIX_PAINT = "P";
+    private static final String PREFIX_DETAIL = "D";
 
     private static ExecutorService cachedThreadPool = null;//可缓存的线程池
 
@@ -102,6 +103,16 @@ public class SystemUtil {
      */
     public static String generateNoteSid() {
         return PREFIX_NOTE + generateSid();
+    }
+    
+    /**
+     * 生成清单的sid
+     * @author huanghui1
+     * @update 2016/8/2 21:04
+     * @version: 1.0.0
+     */
+    public static String generateDetailSid() {
+        return PREFIX_DETAIL + generateSid();
     }
     
     /**

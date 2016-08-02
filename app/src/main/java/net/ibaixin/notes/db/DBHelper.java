@@ -105,6 +105,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.DetailedListColumns.TITLE).append(" TEXT, ")
                 .append(Provider.DetailedListColumns.CHECKED).append(" INTEGER, ")
                 .append(Provider.DetailedListColumns.SORT).append(" INTEGER, ")
+                .append(Provider.DetailedListColumns.OLD_SORT).append(" INTEGER, ")
                 .append(Provider.DetailedListColumns.SYNC_STATE).append(" INTEGER, ")
                 .append(Provider.DetailedListColumns.DELETE_STATE).append(" INTEGER, ")
                 .append(Provider.DetailedListColumns.TITLE_OLD).append(" TEXT, ")

@@ -2,6 +2,8 @@ package net.ibaixin.notes.model;
 
 import android.text.TextUtils;
 
+import net.ibaixin.notes.util.SystemUtil;
+
 import java.util.Comparator;
 
 /**
@@ -40,6 +42,11 @@ public class DetailList implements Comparator<DetailList> {
      * 排序
      */
     private int sort;
+
+    /**
+     * 上一次的排序
+     */
+    private int oldSort;
 
     /**
      * 是否选中，true：选中
@@ -128,6 +135,34 @@ public class DetailList implements Comparator<DetailList> {
         this.modifyTime = modifyTime;
     }
 
+    public int getOldSort() {
+        return oldSort;
+    }
+
+    public void setOldSort(int oldSort) {
+        this.oldSort = oldSort;
+    }
+    
+    public DetailList() {
+        this.sId = SystemUtil.generateDetailSid();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DetailList that = (DetailList) o;
+
+        return sId.equals(that.sId);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return sId.hashCode();
+    }
+
     /**
      * 清单内容是否为空
      * @return
@@ -139,15 +174,9 @@ public class DetailList implements Comparator<DetailList> {
     @Override
     public String toString() {
         return "DetailList{" +
-                "id=" + id +
-                ", sId='" + sId + '\'' +
+                "sort=" + sort +
+                ", oldSort=" + oldSort +
                 ", title='" + title + '\'' +
-                ", oldTitle='" + oldTitle + '\'' +
-                ", noteId='" + noteId + '\'' +
-                ", sort=" + sort +
-                ", checked=" + checked +
-                ", createTime=" + createTime +
-                ", modifyTime=" + modifyTime +
                 '}';
     }
 

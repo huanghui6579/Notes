@@ -2,11 +2,13 @@ package net.ibaixin.notes.ui;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
@@ -36,6 +38,10 @@ public class TestActivity extends BaseActivity {
         Drawable drawable = getResources().getDrawable(R.drawable.ic_action_trash);
         
         int color = getResources().getColor(R.color.colorPrimary);
+
+        EditText textView = (EditText) findViewById(R.id.tv_test);
+
+        textView.getPaint().setFlags(Paint.STRIKE_THRU_TEXT_FLAG); //中划线
         
         getTintDrawable(drawable, color);
 
