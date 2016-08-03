@@ -66,15 +66,11 @@ public class FileSpan extends DynamicDrawableSpan {
                 break;
             case Attach.FILE:
                 optIcon = R.drawable.ic_file_open;
-                icon = R.drawable.ic_library_archive;
+                icon = R.drawable.ic_library_file;
                 break;
             case Attach.ARCHIVE:
                 optIcon = R.drawable.ic_file_open;
                 icon = R.drawable.ic_library_archive;
-                break;
-            case Attach.IMAGE:
-                optIcon = R.drawable.ic_file_open;
-                icon = R.drawable.ic_library_music;
                 break;
             case Attach.VIDEO:
                 optIcon = R.drawable.ic_file_open;
@@ -82,7 +78,7 @@ public class FileSpan extends DynamicDrawableSpan {
                 break;
             default:
                 optIcon = R.drawable.ic_file_open;
-                icon = R.drawable.ic_library_music;
+                icon = R.drawable.ic_library_file;
                 break;
         }
 
