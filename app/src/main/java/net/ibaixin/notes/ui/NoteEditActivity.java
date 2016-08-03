@@ -12,6 +12,7 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
@@ -23,10 +24,10 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
-import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -150,7 +151,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private CharSequence mTitle;
 
+    //笔记编辑的界面
     private NoteEditFragment mNoteEditFragment;
+    //清单的界面
+    private DetailListFragment mDetailListFragment;
     
     private FrameLayout mContentContainer;
     
@@ -206,6 +210,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     protected void initData() {
+        KLog.d(TAG, "-------initData-----");
         mNoteManager = NoteManager.getInstance();
         registContentObserver();
         Intent intent = getIntent();
@@ -217,24 +222,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 mNote = new NoteInfo();
                 mNote.setId(noteId);
                 setViewMode(true);
-//                initNoteMode(mEtContent, true);
                 loadNoteInfo(noteId);
             } else {    //编辑模式
-//                initNoteMode(mEtContent, false);
                 setViewMode(false);
             }
-        }
-    }
-
-    /**
-     * 是否显示键盘，初始化时
-     * @param show
-     */
-    private void initSoftInputMode(boolean show) {
-        if (show) {
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        } else {
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+            setupNoteStyle(true, false);
         }
     }
 
@@ -247,11 +239,63 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             if (isViewMode()) {
                 mOverflowViewPopu = null;
             }
-//            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
             if (mBottomBar != null) {
                 return;
             }
             mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
+        }
+    }
+
+    /**
+     * 将编辑界面在笔记的文本界面和清单界面之间切换
+     * @param isTextStyle
+     * @param updateMenu 是否更新菜单
+     */
+    private void setupNoteStyle(boolean isTextStyle, boolean updateMenu) {
+        Fragment fragment = null;
+        if (isTextStyle) {  //切换到文本编辑模式
+            if (mNoteEditFragment == null) {
+                mNoteEditFragment = NoteEditFragment.newInstance();
+            }
+            fragment = mNoteEditFragment;
+            
+        } else {    //清单模式
+            if (mDetailListFragment == null) {
+                mDetailListFragment = DetailListFragment.newInstance();
+            }
+            fragment = mDetailListFragment;
+        }
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.content_container, fragment, fragment.getClass().getSimpleName());
+        transaction.commit();
+
+        if (updateMenu) {
+            setupMenuStyle(isTextStyle);
+        }
+    }
+
+    /**
+     * 根据笔记的模式来切换菜单
+     * @param isTextStyle
+     */
+    private void setupMenuStyle(boolean isTextStyle) {
+        if (mToolBar != null) {
+            Menu menu = mToolBar.getMenu();
+            if (menu == null) {
+                return;
+            }
+            
+            MenuItem photoItem = menu.findItem(R.id.action_photo);
+            
+            if (photoItem != null) {
+                photoItem.setVisible(isTextStyle);
+            }
+            
+            MenuItem attachItem = menu.findItem(R.id.action_attach);
+//
+            if (attachItem != null) {
+                attachItem.setVisible(isTextStyle);
+            }
         }
     }
 
@@ -362,7 +406,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mNoteEditFragment == null) {
             return;
         }
-//        String content = TextUtils.isEmpty(mEtContent.getText()) ? "" : mEtContent.getText().toString();
         String content = mNoteEditFragment.getText().toString();
         if (TextUtils.isEmpty(content) && removeAttach) {
             if (mNote == null || mNote.isEmpty()) {
@@ -444,11 +487,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     protected void initView() {
         mContentContainer = (FrameLayout) findViewById(R.id.content_container);
-        
-        mNoteEditFragment = NoteEditFragment.newInstance();
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.content_container, mNoteEditFragment, NoteEditFragment.class.getSimpleName());
-        transaction.commit();
     }
 
     /**
@@ -466,11 +504,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         //显示菜单
         setMenuVisible(null, true);
 
-//        initEditText(editText);
-
         showNote(mNote);
-
-//        editText.setSelection(editText.getText().length());
 
         setSoftInputVisibility(true);
 
@@ -504,11 +538,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         MenuItem item = menu.findItem(R.id.action_more);
         MenuItem viewItem = menu.findItem(R.id.action_view_more);
         setMenuOverFlowTint(item, viewItem);
-        
         if (isViewMode()) {
             setMenuVisible(menu, false);
         } else {
             setMenuVisible(menu, true);
+            setupMenuStyle(true);
         }
         return super.onCreateOptionsMenu(menu);
     }
@@ -1643,10 +1677,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case R.id.action_detailed_list: //清单与文本之间的切换
-                    DetailListFragment detailListFragment = DetailListFragment.newInstance();
-                    FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                    fragmentTransaction.replace(R.id.content_container, detailListFragment, DetailListFragment.class.getSimpleName());
-                    fragmentTransaction.commit();
+                    setupNoteStyle(false, true);
                     break;
             }
             return false;

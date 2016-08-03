@@ -2,11 +2,16 @@ package net.ibaixin.notes.ui;
 
 import android.content.Context;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -18,16 +23,22 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.helper.ItemTouchHelperAdapter;
+import net.ibaixin.notes.helper.ItemTouchHelperViewHolder;
+import net.ibaixin.notes.helper.OnStartDragListener;
+import net.ibaixin.notes.helper.SimpleItemTouchHelperCallback;
 import net.ibaixin.notes.model.DetailList;
 import net.ibaixin.notes.widget.LayoutManagerFactory;
 import net.ibaixin.notes.widget.NoteEditText;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -39,7 +50,7 @@ import java.util.List;
  * Use the {@link DetailListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class DetailListFragment extends Fragment implements TextView.OnEditorActionListener {
+public class DetailListFragment extends Fragment implements TextView.OnEditorActionListener, OnStartDragListener {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -55,7 +66,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
     private List<DetailList> mDetailLists;
     //已经完成的清单
-    private List<DetailList> mDoenDetails;
+    private List<DetailList> mDoneDetails;
 
     //笔记的标题
     private CharSequence mTitle;
@@ -64,6 +75,9 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     private NoteEditText mEtTitle;
     
     private RecyclerView mRecyclerView;
+
+    //拖拽的帮助器
+    private ItemTouchHelper mItemTouchHelper;
     
     private Handler mHandler = new Handler();
 
@@ -119,8 +133,12 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
         mRecyclerView.setLayoutManager(layoutManager);
 
-        DetailListAdapter adapter = new DetailListAdapter(getContext(), mDetailLists);
+        DetailListAdapter adapter = new DetailListAdapter(getContext(), mDetailLists, this);
         mRecyclerView.setAdapter(adapter);
+
+        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
+        mItemTouchHelper = new ItemTouchHelper(callback);
+        mItemTouchHelper.attachToRecyclerView(mRecyclerView);
     }
 
     /**
@@ -233,10 +251,10 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         } else {    //中间的某个
             mDetailLists.add(position, detail);
         }
-        mRecyclerView.getAdapter().notifyItemInserted(position);
+        adapter.notifyItemInserted(position);
         count = adapter.getItemCount();
         if (position < count - 1) { //不是最后一个元素
-            mRecyclerView.getAdapter().notifyItemRangeChanged(position + 1, count - position - 1);
+            adapter.notifyItemRangeChanged(position + 1, count - position - 1);
         }
         final int addPosition = position;
         focusItem(addPosition);
@@ -245,19 +263,59 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     }
 
     /**
+     * 移除一项清单
+     * @return
+     */
+    private boolean removeItem() {
+        DetailListAdapter adapter = (DetailListAdapter) mRecyclerView.getAdapter();
+        int position = adapter.getSelectPosition();
+        if (position == 0 || adapter.getItemCount() == 1) {
+            KLog.d(TAG, "---position---" + position + "--or--size--1--can---not---remove---");
+            return false;
+        }
+        
+        mDetailLists.remove(position);
+        removeDoneDetail(position);
+        
+        adapter.notifyItemRemoved(position);
+
+        int count = adapter.getItemCount();
+
+        resetSort(0, count);
+        
+        KLog.d(TAG, "--removeItem--mDetailLists---" + mDetailLists);
+        
+        adapter.notifyItemRangeChanged(position, count - 1);
+
+        position = position >= count ? count - 1 : position; 
+        
+        focusItem(position);
+        return true;
+    }
+
+    /**
      * 为文本删除中划线
      * @param isDone 该清单是否已完成，完成，则添加中划线
      */
-    private void styleDetailView(TextView textView, boolean isDone) {
+    private void styleDetailView(DetailListAdapter.DetailListViewHolder holder, boolean isDone) {
         if (isDone) {   //添加中划线
-            if (textView.isEnabled()) {
-                textView.getPaint().setFlags(Paint.STRIKE_THRU_TEXT_FLAG); //中划线
-                textView.setEnabled(false);
+            if (holder.etTitle.isEnabled()) {
+                holder.etTitle.getPaint().setFlags(Paint.STRIKE_THRU_TEXT_FLAG); //中划线
+                holder.etTitle.setEnabled(false);
+            }
+            if (holder.etTitle.hasFocus()) {
+                mEtTitle.requestFocus();
+            }
+            if (holder.ivSort.getVisibility() == View.VISIBLE) {
+                holder.ivSort.setVisibility(View.GONE);
             }
         } else {
-            if (!textView.isEnabled()) {
-                textView.getPaint().setFlags(0); //删除中划线
-                textView.setEnabled(true);
+            if (!holder.etTitle.isEnabled()) {
+                holder.etTitle.getPaint().setFlags(0); //删除中划线
+                holder.etTitle.setEnabled(true);
+            }
+            if (holder.ivSort.getVisibility() != View.VISIBLE) {
+                holder.ivSort.setVisibility(View.VISIBLE);
             }
         }
     }
@@ -266,11 +324,11 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
      * 添加已完成的清单项
      * @param detail
      */
-    private void putDownDetail(DetailList detail) {
-        if (mDoenDetails == null) {
-            mDoenDetails = new LinkedList<>();
+    private void putDoneDetail(DetailList detail) {
+        if (mDoneDetails == null) {
+            mDoneDetails = new LinkedList<>();
         }
-        mDoenDetails.add(detail);
+        mDoneDetails.add(detail);
     }
     
 
@@ -278,25 +336,59 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
      * 移除已完成的清单项
      * @param detail
      */
-    private void removeDownDetail(DetailList detail) {
-        if (mDoenDetails != null) {
-            mDoenDetails.remove(detail);
+    private void removeDoneDetail(DetailList detail) {
+        if (mDoneDetails != null) {
+            mDoneDetails.remove(detail);
         }
     }
 
     /**
+     * 移除已完成的清单项
+     * @param position
+     */
+    private void removeDoneDetail(int position) {
+        if (mDoneDetails != null && mDoneDetails.size() > position) {
+            mDoneDetails.remove(position);
+        }
+    }
+    
+    /**
      * 清单是否全部完成
      */
     private boolean isAllDone() {
-        return mDoenDetails != null && mDoenDetails.size() == mDetailLists.size();
+        return mDoneDetails != null && mDoneDetails.size() == mDetailLists.size();
+    }
+
+    /**
+     * 重置指定区域的排序
+     * @param fromPosition 开始区间，包含该边界
+     * @param toPosition 结束区间，不包含该边界
+     */
+    private void resetSort(int fromPosition, int toPosition) {
+        for (int i = fromPosition; i < toPosition; i++) {
+            DetailList d = mDetailLists.get(i);
+            d.setSort(i);
+            d.setOldSort(i);
+        }
+    }
+
+    /**
+     * 更新排序
+     * @param fromDetail
+     * @param toDetail
+     */
+    private void updateSort(DetailList fromDetail, DetailList toDetail) {
+        int fromSort = fromDetail.getSort();
+        int toSort = toDetail.getSort();
+        fromDetail.setSort(toSort);
+        toDetail.setSort(fromSort);
     }
 
     /**
      * 改变清单的状态
      * @param detail
      */
-    private void changeDetail(DetailList detail, int position) {
-        KLog.d(TAG, "--changeDetail--detail--" + detail + "--position---" +position);
+    private void finishDetail(DetailList detail, int position) {
         DetailListAdapter.DetailListViewHolder holder = getDetailHolder(position);
         
         if (holder == null) {
@@ -307,15 +399,16 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         RecyclerView.Adapter adapter = mRecyclerView.getAdapter();
         int count = adapter.getItemCount();
         if (detail.isChecked()) {
-            putDownDetail(detail);
-            styleDetailView(holder.etTitle, true);
+            putDoneDetail(detail);
+            styleDetailView(holder, true);
             boolean isAllDone = isAllDone();
             if (count > 1) {
                 int toPosition = count - 1;
-
-                if (!isAllDone) {
-                    detail.setOldSort(position);
-                    detail.setSort(toPosition);
+                
+                detail.setOldSort(position);
+                detail.setSort(toPosition);
+                
+                if (!isAllDone) {   //还有清单没有完成
 
                     for (int i = count - 1; i > position; i--) {
                         DetailList d = mDetailLists.get(i);
@@ -325,24 +418,24 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                             d.setSort(sort - 1);
                         }
                     }
-                } else {
-                    for (DetailList d : mDetailLists) {
-                        d.setOldSort(d.getSort());
-                    }
-                }
-                mDetailLists.remove(position);
-                mDetailLists.add(detail);
 
-                adapter.notifyItemMoved(position, toPosition);  //移到最后
-                adapter.notifyItemRangeChanged(position - 1, toPosition - position);
-            } else {
-                if (isAllDone) {
-                    detail.setOldSort(detail.getSort());
+                    mDetailLists.remove(position);
+                    mDetailLists.add(detail);
+
+                } else {    //所有的清单都完成了，则重置清单的排序
+
+                    mDetailLists.remove(position);
+                    mDetailLists.add(detail);
+
+                    resetSort(0, count);
                 }
+                KLog.d(TAG, "---changeDetail---check--fromPosition--" + position + "---toPosition--" + toPosition);
+                adapter.notifyItemMoved(position, toPosition);  //移到最后
+                adapter.notifyItemRangeChanged(position, toPosition - position + 1);
             }
         } else {
-            removeDownDetail(detail);
-            styleDetailView(holder.etTitle, false);
+            removeDoneDetail(detail);
+            styleDetailView(holder, false);
 
             if (count > 1) {
                 int fromPosition = detail.getSort();
@@ -359,20 +452,31 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                         d.setSort(sort + 1);
                     }
                 }
-                mDetailLists.remove(fromPosition);
-                mDetailLists.add(toPosition, detail);
-
-                adapter.notifyItemMoved(fromPosition, toPosition);  //移到之前的位置
-                adapter.notifyItemRangeChanged(fromPosition - 1, toPosition - fromPosition);
+                if (fromPosition != toPosition) {
+                    mDetailLists.remove(fromPosition);
+                    mDetailLists.add(toPosition, detail);
+                    KLog.d(TAG, "---changeDetail--fromPosition--" + fromPosition + "---toPosition--" + toPosition);
+                    adapter.notifyItemMoved(fromPosition, toPosition);  //移到之前的位置
+                    adapter.notifyItemRangeChanged(fromPosition, toPosition - fromPosition + 1);
+                }
             }
         }
         KLog.d(TAG, "--changeDetail---mDetailLists--" + mDetailLists);
     }
 
+    @Override
+    public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
+        if (viewHolder != null) {
+            mItemTouchHelper.startDrag(viewHolder);
+        } else {
+            KLog.d(TAG, "---onStartDrag----viewHolder--is--null---");
+        }
+    }
+
     /**
      * 清单列表的适配器
      */
-    class DetailListAdapter extends RecyclerView.Adapter<DetailListAdapter.DetailListViewHolder> {
+    class DetailListAdapter extends RecyclerView.Adapter<DetailListAdapter.DetailListViewHolder> implements ItemTouchHelperAdapter {
         private Context context;
 
         private List<DetailList> list;
@@ -380,10 +484,16 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         private LayoutInflater inflater;
 
         private int mSelectPosition;
+
+        private final OnStartDragListener mDragStartListener;
         
-        public DetailListAdapter(Context context, List<DetailList> list) {
+        //清除图标
+        private Drawable mClearDrawable;
+        
+        public DetailListAdapter(Context context, List<DetailList> list, OnStartDragListener dragStartListener) {
             this.context = context;
             this.list = list;
+            this.mDragStartListener = dragStartListener;
             inflater = LayoutInflater.from(context);
         }
 
@@ -392,22 +502,32 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
             View view = inflater.inflate(R.layout.item_detail_list, parent, false);
             DetailListViewHolder holder = new DetailListViewHolder(view, new DetailTextWatcher());
             holder.etTitle.setOnEditorActionListener(new DetailEditorActionListener());
+            holder.etTitle.setOnKeyListener(new DetailKeyListener());
+            holder.etTitle.setOnFocusChangeListener(new DetailOnFocusChangeListener());
+            DetailOnTouchListener touchListener = new DetailOnTouchListener();
+            holder.etTitle.setOnTouchListener(touchListener);
+            holder.ivSort.setOnTouchListener(touchListener);
             return holder;
         }
 
         @Override
         public void onBindViewHolder(DetailListViewHolder holder, int position) {
-            holder.mDetailTextWatcher.setPosition(holder.getAdapterPosition());
+            int adapterPosition = holder.getAdapterPosition();
+            holder.mDetailTextWatcher.setPosition(adapterPosition);
+            holder.etTitle.setTag(adapterPosition);
+            holder.ivSort.setTag(adapterPosition);
+            
             DetailList detail = list.get(position);
+            
+            KLog.d(TAG, "-onBindViewHolder--adapterPosition---" + adapterPosition);
 
             holder.checkBox.setOnCheckedChangeListener(null);
             
             holder.checkBox.setChecked(detail.isChecked());
 
-            styleDetailView(holder.etTitle, detail.isChecked());
-            
+            styleDetailView(holder, detail.isChecked());
+
             holder.etTitle.setText(detail.getTitle());
-            holder.etTitle.setOnTouchListener(new DetailOnTouchListener(holder.getAdapterPosition()));
             
             holder.checkBox.setOnCheckedChangeListener(new DetailOnCheckedChangeListener(holder.getAdapterPosition()));
         }
@@ -425,12 +545,62 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
             this.mSelectPosition = selectPosition;
         }
 
+        public Drawable getClearDrawable() {
+            return mClearDrawable;
+        }
+
+        public void setClearDrawable(Drawable clearDrawable) {
+            this.mClearDrawable = clearDrawable;
+        }
+
+        /**
+         * 是否可以排序
+         * @param position
+         * @return true:可以排序
+         */
+        public boolean canSort(int position) {
+            DetailList detail = list.get(position);
+            return !detail.isChecked();
+        }
+
+        @Override
+        public boolean onItemMove(int fromPosition, int toPosition) {
+            if (!canSort(toPosition)) { //目的行不可排序
+                KLog.d(TAG, "---drag---can--not----move---toPosition--" + toPosition);
+                return false;
+            }
+            
+            DetailList fromDetail = list.get(fromPosition);
+            DetailList toDetail = list.get(toPosition);
+
+            updateSort(fromDetail, toDetail);
+            
+            Collections.swap(list, fromPosition, toPosition);
+
+            mEtTitle.requestFocus();
+
+            notifyItemMoved(fromPosition, toPosition);
+            
+            notifyItemChanged(toPosition);
+            notifyItemChanged(fromPosition);
+            
+            KLog.d(TAG, "---DetailLists----" + mDetailLists);
+            
+            return true;
+        }
+
+        @Override
+        public void onItemDismiss(int position) {
+
+        }
+
         /**
          * 清单列表的holder
          */
-        class DetailListViewHolder extends RecyclerView.ViewHolder {
+        class DetailListViewHolder extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
             CheckBox checkBox;
             EditText etTitle;
+            ImageView ivSort;
 
             private DetailTextWatcher mDetailTextWatcher;
 
@@ -439,11 +609,22 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
                 checkBox = (CheckBox) itemView.findViewById(R.id.detail_check);
                 etTitle = (EditText) itemView.findViewById(R.id.et_detail_title);
+                ivSort = (ImageView) itemView.findViewById(R.id.iv_sort);
 
                 this.mDetailTextWatcher = detailTextWatcher;
 
                 etTitle.addTextChangedListener(detailTextWatcher);
                 
+            }
+
+            @Override
+            public void onItemSelected() {
+                itemView.setBackgroundResource(R.drawable.drag_shadow);
+            }
+
+            @Override
+            public void onItemClear() {
+                itemView.setBackgroundResource(0);
             }
         }
         
@@ -466,7 +647,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                 DetailList detail = mDetailLists.get(position);
                 if (detail != null) {
                     detail.setChecked(isChecked);
-                    changeDetail(detail, position);
+                    finishDetail(detail, position);
                 } else {
                     KLog.d(TAG, "---DetailOnCheckedChangeListener---onCheckedChanged----detail---is---null---position--" + position);
                 }
@@ -480,18 +661,65 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
          * @version: 1.0.0
          */
         class DetailOnTouchListener implements View.OnTouchListener {
-            private int position;
-
-            public DetailOnTouchListener(int position) {
-                this.position = position;
-            }
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_UP) {
-                    focusItem(position);
+                Integer position = (Integer) v.getTag();
+                if (position == null) {
+                    return false;
                 }
+                switch (v.getId()) {
+                    case R.id.et_detail_title:  //文本编辑框
+                        if (event.getAction() == MotionEvent.ACTION_UP) {
+                            focusItem(position);
+                        }
+                        break;
+                    case R.id.iv_sort:  //排序按钮
+                        if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+                            KLog.d(TAG, "-drag--position---" + position);
+                            DetailListViewHolder viewHolder = getDetailHolder(position);
+                            mDragStartListener.onStartDrag(viewHolder);
+                        }
+                        break;
+                }
+                
                 return false;
+            }
+        }
+        
+        /**
+         * 清单的焦点监听器
+         * @author huanghui1
+         * @update 2016/8/3 15:33
+         * @version: 1.0.0
+         */
+        class DetailOnFocusChangeListener implements View.OnFocusChangeListener {
+
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                Integer position = (Integer) v.getTag();
+                KLog.d(TAG, "---DetailOnFocusChangeListener---hasFocus---" + hasFocus + "--position----" + position);
+                if (position == null || position == 0) {
+                    return;
+                }
+                DetailListAdapter.DetailListViewHolder holder = getDetailHolder(position);
+                if (holder != null) {
+                    ImageView imageView = holder.ivSort;
+                    if (hasFocus) {
+                        DetailListAdapter adapter = (DetailListAdapter) mRecyclerView.getAdapter();
+                        Drawable drawable = adapter.getClearDrawable();
+                        if (drawable == null) {
+                            int color = ResourcesCompat.getColor(getResources(), R.color.text_content_color, getContext().getTheme());
+                            drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.abc_ic_clear_mtrl_alpha, getContext().getTheme());
+                            drawable = DrawableCompat.wrap(drawable); //Wrap the drawable so that it can be tinted pre Lollipop
+                            DrawableCompat.setTint(drawable, color);
+                            adapter.setClearDrawable(drawable);
+                        }
+                        imageView.setImageDrawable(drawable);
+                    } else {
+                        imageView.setImageResource(R.drawable.ic_reorder_grey);
+                    }
+                }
             }
         }
         
@@ -536,9 +764,32 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
+                if (event == null) {
+                    return false;
+                }
+                if (event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER) { //回车换行
                     addItem(-1, null);
                     return true;
+                }
+                return false;
+            }
+        }
+        
+        /**
+         * 清单列表项标题的键盘监听
+         * @author huanghui1
+         * @update 2016/8/3 10:11
+         * @version: 1.0.0
+         */
+        class DetailKeyListener implements View.OnKeyListener {
+
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (event == null) {
+                    return false;
+                }
+                if(event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_DEL) {   //删除
+                    return removeItem();
                 }
                 return false;
             }

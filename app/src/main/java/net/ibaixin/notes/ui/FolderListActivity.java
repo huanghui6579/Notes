@@ -21,6 +21,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.socks.library.KLog;
+
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.ContentObserver;
@@ -478,11 +480,12 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             view.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    Boolean isUnPreFolder = (Boolean) v.getTag(R.integer.item_tag_data);
-                    if (isUnPreFolder == null) {
+                    Integer pos = (Integer) v.getTag(R.integer.item_tag_data);
+                    if (pos == null) {
                         return false;
                     }
-                    if (!isUnPreFolder) {
+                    Folder folder = mList.get(pos);
+                    if (folder != null && !folder.isEmpty()) {
                         if (mOnItemLongClickListener != null) {
                             return mOnItemLongClickListener.onItemLongClick(v);
                         }
@@ -545,38 +548,42 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         @Override
         public void onBindViewHolder(final FolderViewHolder holder, int position) {
             final Folder folder = mList.get(position);
+            
+            if (folder == null) {
+                return;
+            }
+
+            KLog.d(TAG, "---onBindViewHolder---position--" + position);
+            
             holder.itemView.setTag(holder);
             holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
-            if (folder != null) {
-                //是否是保存在数据库的文件夹，false：没有保存，如比“所有文件夹”
-                final boolean isUnPersistentFolder = folder.isEmpty();
-                holder.mIvState.setTag(R.integer.item_tag_data, isUnPersistentFolder);
-                if (mTextColor == 0) {
-                    mTextColor = holder.mTvName.getCurrentTextColor();
-                }
-                String defaultFoldersId = getDefaultFolderSid();
-
-                
-                if (isUnPersistentFolder) { //“所有文件夹”
-                    final boolean isShowAll = isShowFolderAll();
-                    if (isShowAll) {    //显示“所有文件夹项”
-                        holder.mIvState.setImageResource(R.drawable.ic_visibility);
-                    } else {
-                        holder.mIvState.setImageResource(R.drawable.ic_visibility_off);
-                    }
-                    
-                } else {    //其他文件夹
-                    holder.mIvState.setImageResource(R.drawable.ic_reorder_grey);
-                    
+            //是否是保存在数据库的文件夹，false：没有保存，如比“所有文件夹”
+            final boolean isUnPersistentFolder = folder.isEmpty();
+            holder.mIvState.setTag(R.integer.item_tag_data, isUnPersistentFolder);
+            if (mTextColor == 0) {
+                mTextColor = holder.mTvName.getCurrentTextColor();
+            }
+            String defaultFoldersId = getDefaultFolderSid();
+            
+            if (isUnPersistentFolder) { //“所有文件夹”
+                final boolean isShowAll = isShowFolderAll();
+                if (isShowAll) {    //显示“所有文件夹项”
+                    holder.mIvState.setImageResource(R.drawable.ic_visibility);
+                } else {
+                    holder.mIvState.setImageResource(R.drawable.ic_visibility_off);
                 }
                 
-                holder.mTvName.setText(folder.getName());
-                holder.mTvCount.setText(String.valueOf(folder.getCount()));
-                if (!TextUtils.isEmpty(defaultFoldersId) && defaultFoldersId.equals(folder.getSId())) {   //默认的文件夹
-                    holder.mTvName.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
-                } else if (mTextColor != 0) {
-                    holder.mTvName.setTextColor(mTextColor);
-                }
+            } else {    //其他文件夹
+                holder.mIvState.setImageResource(R.drawable.ic_reorder_grey);
+                
+            }
+            
+            holder.mTvName.setText(folder.getName());
+            holder.mTvCount.setText(String.valueOf(folder.getCount()));
+            if (!TextUtils.isEmpty(defaultFoldersId) && defaultFoldersId.equals(folder.getSId())) {   //默认的文件夹
+                holder.mTvName.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+            } else if (mTextColor != 0) {
+                holder.mTvName.setTextColor(mTextColor);
             }
         }
 
@@ -595,6 +602,8 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                 Collections.swap(mList, fromPosition, toPosition);
                 notifyItemMoved(fromPosition, toPosition);
                 updateSort(fromFolder, toFolder);
+                notifyItemChanged(fromPosition);
+                notifyItemChanged(toPosition);
                 return true;
             }
         }

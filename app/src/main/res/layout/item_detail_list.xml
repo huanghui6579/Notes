@@ -1,14 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="@dimen/content_padding"
-    android:orientation="horizontal">
+    android:padding="@dimen/content_padding">
 
     <CheckBox
         android:id="@+id/detail_check"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"/>
+
+    <ImageView
+        android:id="@+id/iv_sort"
+        android:layout_width="@dimen/list_item_icon_size"
+        android:layout_height="@dimen/list_item_icon_size"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginLeft="@dimen/content_padding"
+        android:layout_marginStart="@dimen/content_padding"
+        android:clickable="true"
+        android:src="@drawable/ic_reorder_grey"
+        android:contentDescription="@null"/>
 
     <net.ibaixin.notes.widget.NoteEditText
         android:id="@+id/et_detail_title"
@@ -18,9 +32,14 @@
         android:autoLink="all"
         android:background="@null"
         android:gravity="start|top"
+        android:layout_centerVertical="true"
         android:hint="@string/detail_edit_hint"
+        android:layout_toRightOf="@id/detail_check"
+        android:layout_toEndOf="@id/detail_check"
+        android:layout_toLeftOf="@id/iv_sort"
+        android:layout_toStartOf="@id/iv_sort"
         android:layout_marginLeft="@dimen/content_padding"
         android:layout_marginStart="@dimen/content_padding"
         android:imeOptions="actionDone"/>
 
-</LinearLayout>
+</RelativeLayout>

@@ -108,7 +108,7 @@ public class SystemUtil {
     /**
      * 生成清单的sid
      * @author huanghui1
-     * @update 2016/8/2 21:04
+     * @update 2016/8/3 14:27
      * @version: 1.0.0
      */
     public static String generateDetailSid() {
