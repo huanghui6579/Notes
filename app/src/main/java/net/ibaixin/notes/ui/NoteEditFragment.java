@@ -95,6 +95,9 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      * 是查看模式或者编辑模式
      */
     private boolean mIsViewMode = true;
+    
+    //笔记的文本内容
+    private CharSequence mText;
 
     public NoteEditFragment() {
         // Required empty public constructor
@@ -190,6 +193,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      */
     public void showNote(NoteInfo note, Map<String, Attach> map) {
         CharSequence s = note.getContent();
+        mText = s;
         mRichTextWrapper.setText(s, map);
         if (mRichTextWrapper.getRichSpan() instanceof NoteTextView) {
             autoLink(s);
@@ -202,9 +206,17 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     public void initEditInfo() {
         KLog.d(TAG, "--NoteEditFragment---initEditInfo--");
         if (mContentLayout != null) {
-            mContentLayout.changeToEditMode();
             mRichTextWrapper.setRichSpan(mEtContent);
+            mContentLayout.changeToEditMode();
         }
+    }
+    
+    /**
+     * 设置文本
+     * @param text
+     */
+    public void setText(CharSequence text) {
+        this.mText = text;
     }
 
     /**
@@ -531,32 +543,39 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     @Override
     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-        mListener.beforeNoteTextChanged(s, start, count, after);
+        if (mListener != null) {
+            mListener.beforeNoteTextChanged(s, start, count, after);
+        }
     }
 
     @Override
     public void onTextChanged(CharSequence s, int start, int before, int count) {
-        if (s != null) {
-            autoLink(s);
+        if (mListener != null) {
+            if (s != null) {
+                autoLink(s);
+            }
+            mListener.onNoteTextChanged(s, start, before, count);
         }
-        mListener.onNoteTextChanged(s, start, before, count);
     }
 
     @Override
     public void afterTextChanged(Editable s) {
-        KLog.d(TAG, "--afterTextChanged--");
-        if (mIsEnterLine) {  //手动按的回车键
-            mIsEnterLine = false;
-            int selectionStart = mEtContent.getSelectionStart();
+        mText = s;
+        KLog.d(TAG, "--afterTextChanged-----" + s);
+        if (mListener != null) {
+            if (mIsEnterLine) {  //手动按的回车键
+                mIsEnterLine = false;
+                int selectionStart = mEtContent.getSelectionStart();
 
-            //回车前的光标索引
-            int previousIndex = selectionStart - 1;
-            String lineBeforeText = getSelectionLineBeforeText(s.toString(), previousIndex);
-            if (lineBeforeText.startsWith(Constants.TAG_FORMAT_LIST)) {   //上一行有“- ”，则本行继续添加
-                s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
+                //回车前的光标索引
+                int previousIndex = selectionStart - 1;
+                String lineBeforeText = getSelectionLineBeforeText(s.toString(), previousIndex);
+                if (lineBeforeText.startsWith(Constants.TAG_FORMAT_LIST)) {   //上一行有“- ”，则本行继续添加
+                    s.insert(selectionStart, Constants.TAG_FORMAT_LIST);
+                }
             }
+            mListener.afterNoteTextChanged(s);
         }
-        mListener.afterNoteTextChanged(s);
     }
 
     @Override

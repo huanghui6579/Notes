@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
 import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.SystemUtil;
 import net.ibaixin.notes.util.TimeUtil;
 
 import java.util.Comparator;
@@ -97,7 +98,9 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
      */
     private Map<String, Attach> attaches;
     
-    public NoteInfo() {}
+    public NoteInfo() {
+        sId = SystemUtil.generateNoteSid();
+    }
 
     public NoteInfo(Parcel in) {
         id = in.readInt();

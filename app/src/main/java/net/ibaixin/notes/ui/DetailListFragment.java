@@ -34,6 +34,8 @@ import net.ibaixin.notes.helper.ItemTouchHelperViewHolder;
 import net.ibaixin.notes.helper.OnStartDragListener;
 import net.ibaixin.notes.helper.SimpleItemTouchHelperCallback;
 import net.ibaixin.notes.model.DetailList;
+import net.ibaixin.notes.model.NoteInfo;
+import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.widget.LayoutManagerFactory;
 import net.ibaixin.notes.widget.NoteEditText;
 
@@ -41,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -50,7 +53,7 @@ import java.util.List;
  * Use the {@link DetailListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class DetailListFragment extends Fragment implements TextView.OnEditorActionListener, OnStartDragListener {
+public class DetailListFragment extends Fragment implements TextView.OnEditorActionListener, OnStartDragListener, TextWatcher {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -78,6 +81,9 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
     //拖拽的帮助器
     private ItemTouchHelper mItemTouchHelper;
+    
+    //笔记
+    private NoteInfo mNote;
     
     private Handler mHandler = new Handler();
 
@@ -123,13 +129,14 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         mEtTitle.requestFocus();
 
         mEtTitle.setOnEditorActionListener(this);
+        mEtTitle.addTextChangedListener(this);
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.detail_list_view);
         
         LayoutManagerFactory factory = new LayoutManagerFactory();
         RecyclerView.LayoutManager layoutManager = factory.getLayoutManager(getContext(), false);
 
-        initData();
+        initData(null);
 
         mRecyclerView.setLayoutManager(layoutManager);
 
@@ -139,15 +146,30 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
         mItemTouchHelper.attachToRecyclerView(mRecyclerView);
+        
+        if (!TextUtils.isEmpty(mTitle)) {
+            mEtTitle.setText(mTitle);
+        }
     }
 
     /**
      * 初始化数据
+     * @param list 已有的数据
      */
-    private void initData() {
-        mDetailLists = new ArrayList<>();
-        DetailList detail = new DetailList();
-        mDetailLists.add(detail);
+    private void initData(List<DetailList> list) {
+        if (mDetailLists == null || mDetailLists.size() == 0) {
+            mDetailLists = new ArrayList<>();
+            if (list != null && list.size() > 0) {
+                mDetailLists.addAll(list);
+            } else {
+                DetailList detail = new DetailList();
+                mDetailLists.add(detail);
+            }
+        } else {
+            if (list != null && list.size() > 0) {
+                mDetailLists.addAll(list);
+            }
+        }
     }
 
     /**
@@ -385,6 +407,71 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     }
 
     /**
+     * 设置文本
+     * @param text
+     */
+    public void setText(CharSequence text) {
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        List<DetailList> list = analysisText(text.toString());
+        if (list != null && list.size() > 0) {
+            initData(list);
+        }
+    }
+
+    /**
+     * 获取纯文本
+     * @return
+     */
+    public String getText() {
+        String title = "";
+        if (mTitle != null) {
+            title = mTitle.toString();
+        }
+        StringBuilder builder = new StringBuilder();
+        builder.append(title).append(Constants.TAG_NEXT_LINE);
+        if (mDetailLists != null && mDetailLists.size() > 0) {
+            for (DetailList detail : mDetailLists) {
+                title = detail.getTitle();
+                title = title == null ? "" : title;
+                builder.append(title).append(Constants.TAG_NEXT_LINE);
+            }
+        }
+        builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_NEXT_LINE));
+        return builder.toString();
+    }
+
+    /**
+     * 将文本解析成清单
+     * @param text
+     * @return
+     */
+    public List<DetailList> analysisText(String text) {
+        int i = 0;
+        StringTokenizer tokenizer = new StringTokenizer(text);
+        String title = null;
+        List<DetailList> list = new ArrayList<>();
+        while (tokenizer.hasMoreTokens()) {
+            String line = tokenizer.nextToken();
+            if (i == 0) {
+                title = line;
+            } else {
+                DetailList detail = new DetailList();
+                detail.setTitle(line);
+                list.add(detail);
+            }
+            i ++;
+        }
+        if (title == null) {
+            mTitle = text;
+        } else {
+            mTitle = title;
+        }
+        return list;
+    }
+
+    /**
      * 改变清单的状态
      * @param detail
      */
@@ -471,6 +558,21 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         } else {
             KLog.d(TAG, "---onStartDrag----viewHolder--is--null---");
         }
+    }
+
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        
+    }
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+        mTitle = s;
     }
 
     /**

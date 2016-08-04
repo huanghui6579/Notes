@@ -24,7 +24,6 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
@@ -81,13 +80,20 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public static final String ARG_FOLDER_ID = "folderId";
     public static final String ARG_OPT_DELETE = "opt_delete";
     
-    private static final int MSG_INIT_BOOTOM_TOOL_BAR = 3;
+    private static final int MSG_INIT_BOTTOM_TOOL_BAR = 3;
     
     public static final int REQ_PICK_IMAGE = 10;
     public static final int REQ_TAKE_PIC = 11;
     public static final int REQ_PAINT = 12;
     public static final int REQ_PICK_FILE = 13;
     public static final int REQ_EDIT_PAINT = 14;
+    
+    //笔记的阅读模式
+    public static final int NOTE_MODE_VIEW = 0;
+    //笔记的文本编辑模式
+    public static final int NOTE_MODE_TEXT = 1;
+    //笔记的清单编辑模式
+    public static final int NOTE_MODE_DETAIL_LIST = 2;
 
     private PopupMenu mAttachPopu;
     private PopupMenu mOverflowPopu;
@@ -119,9 +125,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private String mFolderId;
 
     /**
-     * 是否是阅读模式
+     * 笔记的模式，默认是阅读模式：0（不可编辑），文本编辑模式：1，清单编辑模式2
      */
-    private boolean mIsViewMode = true;
+    private int mNoteMode;
     
     private View mBottomBar;
 
@@ -221,12 +227,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             if (noteId > 0) {   //查看模式
                 mNote = new NoteInfo();
                 mNote.setId(noteId);
-                setViewMode(true);
+                setNoteMode(NOTE_MODE_VIEW);
                 loadNoteInfo(noteId);
             } else {    //编辑模式
-                setViewMode(false);
+                setNoteMode(NOTE_MODE_TEXT);
             }
-            setupNoteStyle(true, false);
         }
     }
 
@@ -242,7 +247,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             if (mBottomBar != null) {
                 return;
             }
-            mHandler.sendEmptyMessage(MSG_INIT_BOOTOM_TOOL_BAR);
+            mHandler.sendEmptyMessage(MSG_INIT_BOTTOM_TOOL_BAR);
         }
     }
 
@@ -254,19 +259,34 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void setupNoteStyle(boolean isTextStyle, boolean updateMenu) {
         Fragment fragment = null;
         if (isTextStyle) {  //切换到文本编辑模式
-            if (mNoteEditFragment == null) {
-                mNoteEditFragment = NoteEditFragment.newInstance();
+            mNoteEditFragment = NoteEditFragment.newInstance();
+
+            String text = null;
+            if (mDetailListFragment != null) {
+                text = mDetailListFragment.getText();
+            }
+            if (text != null) {
+                mNoteEditFragment.setText(text);
             }
             fragment = mNoteEditFragment;
             
         } else {    //清单模式
-            if (mDetailListFragment == null) {
-                mDetailListFragment = DetailListFragment.newInstance();
+            mDetailListFragment = DetailListFragment.newInstance();
+            
+            CharSequence text = null;
+            if (mDetailListFragment != null) {
+                text = mNoteEditFragment.getText();
+            }
+            if (text != null) {
+
+                mDetailListFragment.setText(text);
             }
             fragment = mDetailListFragment;
         }
+        
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.content_container, fragment, fragment.getClass().getSimpleName());
+        transaction.replace(R.id.content_container, fragment, fragment.getClass().getSimpleName())
+                    .addToBackStack(null);
         transaction.commit();
 
         if (updateMenu) {
@@ -304,18 +324,39 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @return 是否是阅读模式
      */
     private boolean isViewMode() {
-        return mIsViewMode;
+        return mNoteMode == NOTE_MODE_VIEW;
     }
 
     /**
      * 设置模式
-     * @param isViewMode
+     * @param noteMode
      */
-    public void setViewMode(boolean isViewMode) {
-        this.mIsViewMode = isViewMode;
-        if (mNoteEditFragment != null) {
-            mNoteEditFragment.setViewMode(isViewMode);
+    public void setNoteMode(int noteMode) {
+        this.mNoteMode = noteMode;
+        if (mNoteMode == NOTE_MODE_DETAIL_LIST) {   //变更为清单编辑模式
+            /*if (mDetailListFragment != null) {
+                mDetailListFragment.
+            }*/
+        } else {
+            if (mNoteEditFragment != null) {
+                mNoteEditFragment.setViewMode(mNoteMode == NOTE_MODE_VIEW);
+            }
         }
+    }
+
+    /**
+     * 在笔记的文本编辑模式和清单编辑模式中切换
+     * @return 是否是文本编辑模式
+     */
+    public boolean toggleNoteText() {
+        boolean isTextStyle = true;
+        if (mNoteMode == NOTE_MODE_TEXT) {  //之前是文本编辑模式
+            mNoteMode = NOTE_MODE_DETAIL_LIST;  //切换为清单模式 
+            isTextStyle = false;
+        } else if (mNoteMode == NOTE_MODE_DETAIL_LIST) {    //之前为清单编辑模式，
+            mNoteMode = NOTE_MODE_TEXT;  //切换为文本编辑模式
+        }
+        return isTextStyle;
     }
 
     /**
@@ -487,6 +528,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     protected void initView() {
         mContentContainer = (FrameLayout) findViewById(R.id.content_container);
+
+        setupNoteStyle(true, false);
     }
 
     /**
@@ -496,8 +539,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mNoteEditFragment == null) {
             return;
         }
-        
-        setViewMode(false);
+
+        setNoteMode(NOTE_MODE_TEXT);
         
         mNoteEditFragment.setupEditMode();
 
@@ -1677,7 +1720,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case R.id.action_detailed_list: //清单与文本之间的切换
-                    setupNoteStyle(false, true);
+                    setupNoteStyle(toggleNoteText(), true);
                     break;
             }
             return false;
@@ -1737,7 +1780,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         public void handleMessage(Message msg) {
             NoteEditActivity activity = mTarget.get();
             switch (msg.what) {
-                case MSG_INIT_BOOTOM_TOOL_BAR:
+                case MSG_INIT_BOTTOM_TOOL_BAR:
                     activity.initBottomToolBar();
                     break;
                 case Constants.MSG_SUCCESS:

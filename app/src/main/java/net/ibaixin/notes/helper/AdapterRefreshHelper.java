@@ -29,15 +29,18 @@ public class AdapterRefreshHelper {
         switch (type) {
             case AdapterRefreshHelper.TYPE_ADD:
                 adapter.notifyItemInserted(position);
+                adapter.notifyItemRangeChanged(position, adapter.getItemCount() - position);
                 break;
             case AdapterRefreshHelper.TYPE_UPDATE:
                 adapter.notifyItemChanged(position);
                 break;
             case AdapterRefreshHelper.TYPE_DELETE:
                 adapter.notifyItemRemoved(position);
+                adapter.notifyItemRangeChanged(position, adapter.getItemCount() - position);
                 break;
             case AdapterRefreshHelper.TYPE_SWAP:
                 adapter.notifyItemMoved(fromPosition, toPosition);
+                adapter.notifyItemRangeChanged(fromPosition, toPosition - fromPosition + 1);
                 break;
             default:
                 adapter.notifyDataSetChanged();

@@ -142,7 +142,10 @@ public class DetailList implements Comparator<DetailList> {
     public void setOldSort(int oldSort) {
         this.oldSort = oldSort;
     }
-    
+
+    /**
+     * 会自动生成sid
+     */
     public DetailList() {
         this.sId = SystemUtil.generateDetailSid();
     }

@@ -600,10 +600,13 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                 Folder fromFolder = mList.get(fromPosition);
                 Folder toFolder = mList.get(toPosition);
                 Collections.swap(mList, fromPosition, toPosition);
-                notifyItemMoved(fromPosition, toPosition);
                 updateSort(fromFolder, toFolder);
-                notifyItemChanged(fromPosition);
-                notifyItemChanged(toPosition);
+
+                AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+                refreshHelper.type = AdapterRefreshHelper.TYPE_SWAP;
+                refreshHelper.fromPosition = fromPosition;
+                refreshHelper.toPosition = toPosition;
+                refreshUI(mList, refreshHelper);
                 return true;
             }
         }
