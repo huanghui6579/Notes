@@ -33,6 +33,7 @@ import net.ibaixin.notes.helper.ItemTouchHelperAdapter;
 import net.ibaixin.notes.helper.ItemTouchHelperViewHolder;
 import net.ibaixin.notes.helper.OnStartDragListener;
 import net.ibaixin.notes.helper.SimpleItemTouchHelperCallback;
+import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.DetailList;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.util.Constants;
@@ -43,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
@@ -53,7 +55,7 @@ import java.util.StringTokenizer;
  * Use the {@link DetailListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class DetailListFragment extends Fragment implements TextView.OnEditorActionListener, OnStartDragListener, TextWatcher {
+public class DetailListFragment extends Fragment implements TextView.OnEditorActionListener, OnStartDragListener, TextWatcher, ActionFragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -170,6 +172,31 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                 mDetailLists.addAll(list);
             }
         }
+    }
+
+    /**
+     * 获取清单项
+     * @return
+     */
+    public List<DetailList> getDetailLists() {
+        return mDetailLists;
+    }
+
+    /**
+     * 是否有清单项，只要有一项有内容，都算有
+     * @return
+     */
+    public boolean hasDetailList() {
+        boolean hasDetail = false;
+        if (mDetailLists != null && mDetailLists.size() > 0) {
+            for (DetailList detail : mDetailLists) {
+                hasDetail = !TextUtils.isEmpty(detail.getTitle());
+                if (hasDetail) {
+                    break;
+                }
+            }
+        }
+        return hasDetail;
     }
 
     /**
@@ -422,26 +449,45 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
     /**
      * 获取纯文本
+     * @param hasDetail 是否包含清单内容
      * @return
      */
-    public String getText() {
-        String title = "";
+    public CharSequence getText(boolean hasDetail) {
+        CharSequence title = "";
         if (mTitle != null) {
-            title = mTitle.toString();
+            title = mTitle;
         }
-        StringBuilder builder = new StringBuilder();
-        builder.append(title).append(Constants.TAG_NEXT_LINE);
-        if (mDetailLists != null && mDetailLists.size() > 0) {
-            for (DetailList detail : mDetailLists) {
-                title = detail.getTitle();
-                title = title == null ? "" : title;
-                builder.append(title).append(Constants.TAG_NEXT_LINE);
+        if (hasDetail) {
+            StringBuilder builder = new StringBuilder();
+            builder.append(title).append(Constants.TAG_NEXT_LINE);
+            if (mDetailLists != null && mDetailLists.size() > 0) {
+                for (DetailList detail : mDetailLists) {
+                    title = detail.getTitle();
+                    title = title == null ? "" : title;
+                    builder.append(title).append(Constants.TAG_NEXT_LINE);
+                }
             }
+            builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_NEXT_LINE));
+            return builder;
+        } else {
+            return title;
         }
-        builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_NEXT_LINE));
-        return builder.toString();
     }
 
+    /**
+     * 获取纯文本,不包含清单的内容，只有标题
+     * @return
+     */
+    @Override
+    public CharSequence getText() {
+        return getText(false);
+    }
+
+    @Override
+    public NoteInfo.NoteKind getNoteType() {
+        return NoteInfo.NoteKind.DETAILED_LIST;
+    }
+    
     /**
      * 将文本解析成清单
      * @param text
@@ -573,6 +619,21 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     @Override
     public void afterTextChanged(Editable s) {
         mTitle = s;
+    }
+
+    @Override
+    public void showNote(NoteInfo note, Map<String, Attach> map) {
+        KLog.d(TAG, "-----showNote---note--" + note);
+        String text = note.getContent();
+        if (!TextUtils.isEmpty(text)) {
+            setText(text);
+            if (mEtTitle != null) {
+                mEtTitle.setText(mTitle);
+            }
+            if (mRecyclerView != null) {
+                mRecyclerView.getAdapter().notifyDataSetChanged();
+            }
+        }
     }
 
     /**

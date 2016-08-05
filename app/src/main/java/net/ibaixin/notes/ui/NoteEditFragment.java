@@ -56,7 +56,7 @@ import java.util.Map;
  * Use the {@link NoteEditFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class NoteEditFragment extends Fragment implements TextWatcher, View.OnClickListener {
+public class NoteEditFragment extends Fragment implements TextWatcher, View.OnClickListener, ActionFragment {
     private static final int MSG_AUTO_LINK = 2;
     
     // TODO: Rename parameter arguments, choose names that match
@@ -172,6 +172,10 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
         //初始化编辑框
         initEditText(mEtContent);
+
+        if (mText != null) {
+            mEtContent.setText(mText);
+        }
         
         if (mListener != null) {
             mListener.onInitCompleted(mIsViewMode);
@@ -186,12 +190,9 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         this.mIsViewMode = isViewMode;
     }
 
-    /**
-     * 显示笔记
-     * @param note 笔记信息
-     * @param map 附件的缓存
-     */
+    @Override
     public void showNote(NoteInfo note, Map<String, Attach> map) {
+        KLog.d(TAG, "-----showNote---note--" + note);
         CharSequence s = note.getContent();
         mText = s;
         mRichTextWrapper.setText(s, map);
@@ -219,16 +220,18 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         this.mText = text;
     }
 
-    /**
-     * 获取文本的内容
-     * @return
-     */
+    @Override
     public CharSequence getText() {
         CharSequence text = mEtContent.getText();
         text = text == null ? "" : text;
         return text;
     }
-    
+
+    @Override
+    public NoteInfo.NoteKind getNoteType() {
+        return NoteInfo.NoteKind.TEXT;
+    }
+
     public NoteEditText getEditTextView() {
         return mEtContent;
     }

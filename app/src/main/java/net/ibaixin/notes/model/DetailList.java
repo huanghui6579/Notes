@@ -71,11 +71,11 @@ public class DetailList implements Comparator<DetailList> {
         this.id = id;
     }
 
-    public String getsId() {
+    public String getSId() {
         return sId;
     }
 
-    public void setsId(String sId) {
+    public void setSId(String sId) {
         this.sId = sId;
     }
 

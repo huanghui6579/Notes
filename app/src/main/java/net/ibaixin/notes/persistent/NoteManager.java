@@ -17,6 +17,8 @@ import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.db.observer.Observer;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.DeleteState;
+import net.ibaixin.notes.model.DetailList;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
@@ -451,6 +453,62 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
+     * 根据笔记的sid查询对应的清单
+     * @param noteSid 笔记的sid
+     * @return
+     */
+    public List<DetailList> getDetailList(SQLiteDatabase db, String noteSid) {
+        if (db == null) {
+            db = mDBHelper.getReadableDatabase();
+        }
+        List<DetailList> list = null;
+        Cursor cursor = db.query(Provider.DetailedListColumns.TABLE_NAME, null, Provider.DetailedListColumns.NOTE_ID + " = ?", new String[] {noteSid}, null, null, null);
+        if (cursor != null) {
+            list = new ArrayList<>();
+            while (cursor.moveToNext()) {
+                DetailList detail = cursor2Detail(cursor);
+                list.add(detail);
+            }
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return list;
+    }
+    
+    private DetailList cursor2Detail(Cursor cursor) {
+        DetailList detail = new DetailList();
+        detail.setId(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns._ID)));
+        detail.setSId(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.SID)));
+        detail.setTitle(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.TITLE)));
+        detail.setSort(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.SORT)));
+        detail.setOldSort(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.OLD_SORT)));
+        detail.setChecked(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.CHECKED)) == 1);
+        detail.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.DetailedListColumns.CREATE_TIME)));
+        detail.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.DetailedListColumns.MODIFY_TIME)));
+        detail.setNoteId(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.NOTE_ID)));
+        detail.setOldTitle(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.OLD_TITLE)));
+        return detail;
+    }
+
+    /**
+     * 获取清单笔记的信息
+     * @param noteId 笔记的id
+     * @return
+     */
+    public DetailNoteInfo getDetailNote(int noteId) {
+        NoteInfo note = getNote(noteId);
+        if (note == null) {
+            return null;
+        }
+        List<DetailList> list = getDetailList(null, note.getSId());
+        DetailNoteInfo detailNote = new DetailNoteInfo();
+        detailNote.setDetailList(list);
+        detailNote.setNoteInfo(note);
+        return detailNote;
+    }
+
+    /**
      * 获取笔记中的附件列表
      * @param note 笔记
      * @return 返回笔记中的附件列表
@@ -716,8 +774,7 @@ public class NoteManager extends Observable<Observer> {
      * @version: 1.0.0  
      */
     public NoteInfo getNote(int noteId) {
-        NoteInfo info = new NoteInfo();
-        info.setId(noteId);
+        NoteInfo info = new NoteInfo(noteId);
         return getNote(info);
     }
     

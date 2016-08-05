@@ -323,7 +323,7 @@ public final class Provider {
         /**
          * 历史标题
          */
-        public static final String TITLE_OLD = "title_old";
+        public static final String OLD_TITLE = "old_title";
 
         /**
          * 排序

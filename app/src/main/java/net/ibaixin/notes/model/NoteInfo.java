@@ -101,6 +101,14 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     public NoteInfo() {
         sId = SystemUtil.generateNoteSid();
     }
+    
+    public NoteInfo(String sid) {
+        this.sId = sid;
+    }
+    
+    public NoteInfo(int id) {
+        this.id = id;
+    }
 
     public NoteInfo(Parcel in) {
         id = in.readInt();

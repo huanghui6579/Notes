@@ -108,7 +108,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.DetailedListColumns.OLD_SORT).append(" INTEGER, ")
                 .append(Provider.DetailedListColumns.SYNC_STATE).append(" INTEGER, ")
                 .append(Provider.DetailedListColumns.DELETE_STATE).append(" INTEGER, ")
-                .append(Provider.DetailedListColumns.TITLE_OLD).append(" TEXT, ")
+                .append(Provider.DetailedListColumns.OLD_TITLE).append(" TEXT, ")
                 .append(Provider.DetailedListColumns.CREATE_TIME).append(" INTEGER, ")
                 .append(Provider.DetailedListColumns.MODIFY_TIME).append(" INTEGER); ");
         db.execSQL(builder.toString());

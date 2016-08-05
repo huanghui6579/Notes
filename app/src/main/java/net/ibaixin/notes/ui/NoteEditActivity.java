@@ -45,6 +45,8 @@ import net.ibaixin.notes.db.observer.Observable;
 import net.ibaixin.notes.edit.recorder.AudioRecorder;
 import net.ibaixin.notes.listener.SimpleAttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.model.DetailList;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.EditStep;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
@@ -66,6 +68,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -75,7 +78,10 @@ import java.util.Stack;
  * @update 2016/3/2 10:13
  * @version: 1.0.0
  */
-public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher, NoteEditFragment.OnFragmentInteractionListener, DetailListFragment.OnDetailInteractionListener {
+public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher, 
+        NoteEditFragment.OnFragmentInteractionListener, 
+        DetailListFragment.OnDetailInteractionListener {
+    
     public static final String ARG_NOTE_ID = "noteId";
     public static final String ARG_FOLDER_ID = "folderId";
     public static final String ARG_OPT_DELETE = "opt_delete";
@@ -118,6 +124,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private NoteManager mNoteManager;
     
     private NoteInfo mNote;
+    
+    //包含清单的笔记
+    private DetailNoteInfo mDetailNote;
 
     private Handler mHandler = new MyHandler(this);
     
@@ -163,6 +172,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private DetailListFragment mDetailListFragment;
     
     private FrameLayout mContentContainer;
+    
+    //fragment的包装器
+    private FragmentWrapper mFragmentWrapper;
     
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -215,6 +227,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     @Override
+    protected void initView() {
+        mContentContainer = (FrameLayout) findViewById(R.id.content_container);
+        mFragmentWrapper = new FragmentWrapper();
+        setupNoteStyle(true, false);
+    }
+
+    @Override
     protected void initData() {
         KLog.d(TAG, "-------initData-----");
         mNoteManager = NoteManager.getInstance();
@@ -256,24 +275,26 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @param isTextStyle
      * @param updateMenu 是否更新菜单
      */
-    private void setupNoteStyle(boolean isTextStyle, boolean updateMenu) {
+    private CharSequence setupNoteStyle(boolean isTextStyle, boolean updateMenu) {
         Fragment fragment = null;
+        ActionFragment actionFragment = null;
+        CharSequence text = null;
         if (isTextStyle) {  //切换到文本编辑模式
             mNoteEditFragment = NoteEditFragment.newInstance();
+            mNoteEditFragment.setViewMode(false);
 
-            String text = null;
             if (mDetailListFragment != null) {
-                text = mDetailListFragment.getText();
+                text = mDetailListFragment.getText(true);
             }
             if (text != null) {
                 mNoteEditFragment.setText(text);
             }
             fragment = mNoteEditFragment;
+            actionFragment = mNoteEditFragment;
             
         } else {    //清单模式
             mDetailListFragment = DetailListFragment.newInstance();
             
-            CharSequence text = null;
             if (mDetailListFragment != null) {
                 text = mNoteEditFragment.getText();
             }
@@ -282,16 +303,19 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 mDetailListFragment.setText(text);
             }
             fragment = mDetailListFragment;
+            actionFragment = mDetailListFragment;
         }
+
+        mFragmentWrapper.setmFragment(actionFragment);
         
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.content_container, fragment, fragment.getClass().getSimpleName())
-                    .addToBackStack(null);
+        transaction.replace(R.id.content_container, fragment, fragment.getClass().getSimpleName());
         transaction.commit();
 
         if (updateMenu) {
             setupMenuStyle(isTextStyle);
         }
+        return text;
     }
 
     /**
@@ -333,11 +357,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     public void setNoteMode(int noteMode) {
         this.mNoteMode = noteMode;
-        if (mNoteMode == NOTE_MODE_DETAIL_LIST) {   //变更为清单编辑模式
-            /*if (mDetailListFragment != null) {
-                mDetailListFragment.
-            }*/
-        } else {
+        if (mNoteMode != NOTE_MODE_DETAIL_LIST) {   //切换文本的模式
             if (mNoteEditFragment != null) {
                 mNoteEditFragment.setViewMode(mNoteMode == NOTE_MODE_VIEW);
             }
@@ -398,9 +418,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @param note
      */
     private void showNote(NoteInfo note) {
-        if (mNoteEditFragment != null) {
-            mNoteEditFragment.showNote(note, mAttachCache);
+        if (mFragmentWrapper != null && mFragmentWrapper.getFragment() != null) {
+            ActionFragment actionFragment = mFragmentWrapper.getFragment();
+            actionFragment.showNote(note, mAttachCache);
         }
+        /*if (mNoteEditFragment != null) {
+            mNoteEditFragment.showNote(note, mAttachCache);
+        }*/
     }
     
     /**
@@ -413,11 +437,32 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         doInbackground(new Runnable() {
             @Override
             public void run() {
-                mNote = mNoteManager.getNote(noteId);
+//                mNote = mNoteManager.getNote(noteId);
+                mDetailNote = mNoteManager.getDetailNote(noteId);
+                if (mDetailNote != null) {
+                    mNote = mDetailNote.getNoteInfo();
+                }
                 if (mNote != null) {
                     mAttachCache = mNote.getAttaches();
                     mHandler.sendEmptyMessage(Constants.MSG_SUCCESS);
                 }
+            }
+        });
+    }
+
+    /**
+     * 设置笔记的内容
+     * @param text
+     */
+    private void setNoteInfo(final CharSequence text) {
+        if (mNote == null) {
+            mNote = new NoteInfo();
+        }
+        doInbackground(new Runnable() {
+            @Override
+            public void run() {
+                mNote.setContent(text.toString());
+                mHandler.sendEmptyMessage(Constants.MSG_SUCCESS);
             }
         });
     }
@@ -430,11 +475,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         String sid = null;
         if (mNote == null) {
             mNote = new NoteInfo();
-            sid = SystemUtil.generateNoteSid();
-            mNote.setSId(sid);
-        } else {
-            sid = mNote.getSId(); 
         }
+        sid = mNote.getSId(); 
         return sid;
     }
 
@@ -444,10 +486,30 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @return
      */
     private void saveNote(boolean removeAttach) {
-        if (mNoteEditFragment == null) {
+        if (mFragmentWrapper == null) {
             return;
         }
-        String content = mNoteEditFragment.getText().toString();
+        ActionFragment actionFragment = mFragmentWrapper.getFragment();
+        NoteInfo.NoteKind noteKind = actionFragment.getNoteType();
+
+        String content = null;
+        String title = null;
+        boolean hasDetailList = false;
+        List<DetailList> detailLists = null;
+        boolean isTextNote = true;
+        if (noteKind == NoteInfo.NoteKind.TEXT) {   //文本笔记
+            content = actionFragment.getText().toString();
+            title = content;
+        } else if (noteKind == NoteInfo.NoteKind.DETAILED_LIST) {   //清单类型
+            isTextNote = false;
+            content = mDetailListFragment.getText(true).toString();
+            title = mDetailListFragment.getText().toString();
+            hasDetailList = mDetailListFragment.hasDetailList();
+            if (hasDetailList) {    //有清单
+                detailLists = mDetailListFragment.getDetailLists();
+            }
+        }
+        
         if (TextUtils.isEmpty(content) && removeAttach) {
             if (mNote == null || mNote.isEmpty()) {
                 removeCacheAttach(true);    //移除缓存中的附件，彻底删除数据库记录
@@ -456,15 +518,31 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             }
             return;
         }
+        
+        if (TextUtils.isEmpty(content)) {
+            return;
+        }
 
         Intent intent = null;
         if (mNote != null && !mNote.isEmpty()) {    //更新笔记
             intent = new Intent(mContext, CoreService.class);
-            if (content.equals(mNote.getContent())) {   //内容相同，没有修改
-                //则只检测是否有多余的附件记录，有，则删除
-                intent.putExtra(Constants.ARG_SUB_OBJ, false);
+            if (mNote.getKind() == NoteInfo.NoteKind.TEXT) {    //之前保存的模式的是文本笔记，则比较内容
+                if (content.equals(mNote.getContent())) {   //内容相同，没有修改
+                    //则只检测是否有多余的附件记录，有，则删除
+                    intent.putExtra(Constants.ARG_SUB_OBJ, false);
+                }
+            } else {    //之前保存的模式是清单笔记
+                //获取清单的内容
+                
+                CharSequence noteText = mDetailNote.getNoteText();
+                if (content.equals(noteText)) {
+                    //则只检测是否有多余的附件记录，有，则删除
+                    intent.putExtra(Constants.ARG_SUB_OBJ, false);
+                }
             }
-            mNote.setContent(content);
+            
+            mNote.setKind(noteKind);
+            mNote.setContent(title);
             mNote.setModifyTime(System.currentTimeMillis());
             mNote.setSyncState(SyncState.SYNC_UP);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
@@ -475,12 +553,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             intent = new Intent(mContext, CoreService.class);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_ADD_NOTE);
             long time = System.currentTimeMillis();
-            mNote.setContent(content);
+            mNote.setContent(title);
             mNote.setModifyTime(time);
             mNote.setCreateTime(time);
             mNote.setFolderId(mFolderId);
-            mNote.setHash(DigestUtil.md5Digest(content));
-            mNote.setKind(NoteInfo.NoteKind.TEXT);
+            mNote.setHash(DigestUtil.md5Digest(title));
+            mNote.setKind(noteKind);
             if (mNote.getSId() == null) {
                 mNote.setSId(SystemUtil.generateNoteSid());
             }
@@ -523,13 +601,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             startService(intent);
             mAttachCache.clear();
         }
-    }
-
-    @Override
-    protected void initView() {
-        mContentContainer = (FrameLayout) findViewById(R.id.content_container);
-
-        setupNoteStyle(true, false);
     }
 
     /**
@@ -1720,7 +1791,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case R.id.action_detailed_list: //清单与文本之间的切换
-                    setupNoteStyle(toggleNoteText(), true);
+                    CharSequence text = setupNoteStyle(toggleNoteText(), true);
+                    if (!TextUtils.isEmpty(text)) {
+                        setNoteInfo(text);
+                    }
                     break;
             }
             return false;
