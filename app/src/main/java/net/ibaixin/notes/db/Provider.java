@@ -349,6 +349,11 @@ public final class Provider {
          * 修改时间
          */
         public static final String MODIFY_TIME = "modify_time";
+
+        /**
+         * 清单的hash
+         */
+        public static final String HASH = "hash";
     }
 
     /**

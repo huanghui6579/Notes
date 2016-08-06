@@ -39,6 +39,7 @@ import com.socks.library.KLog;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
+import net.ibaixin.notes.cache.NoteCache;
 import net.ibaixin.notes.db.Provider;
 import net.ibaixin.notes.db.observer.ContentObserver;
 import net.ibaixin.notes.db.observer.Observable;
@@ -496,12 +497,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         String title = null;
         boolean hasDetailList = false;
         List<DetailList> detailLists = null;
-        boolean isTextNote = true;
         if (noteKind == NoteInfo.NoteKind.TEXT) {   //文本笔记
             content = actionFragment.getText().toString();
             title = content;
         } else if (noteKind == NoteInfo.NoteKind.DETAILED_LIST) {   //清单类型
-            isTextNote = false;
             content = mDetailListFragment.getText(true).toString();
             title = mDetailListFragment.getText().toString();
             hasDetailList = mDetailListFragment.hasDetailList();
@@ -526,14 +525,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         Intent intent = null;
         if (mNote != null && !mNote.isEmpty()) {    //更新笔记
             intent = new Intent(mContext, CoreService.class);
-            if (mNote.getKind() == NoteInfo.NoteKind.TEXT) {    //之前保存的模式的是文本笔记，则比较内容
+            if (!mNote.isDetailNote()) {    //之前保存的模式的是文本笔记，则比较内容
                 if (content.equals(mNote.getContent())) {   //内容相同，没有修改
                     //则只检测是否有多余的附件记录，有，则删除
                     intent.putExtra(Constants.ARG_SUB_OBJ, false);
                 }
             } else {    //之前保存的模式是清单笔记
                 //获取清单的内容
-                
                 CharSequence noteText = mDetailNote.getNoteText();
                 if (content.equals(noteText)) {
                     //则只检测是否有多余的附件记录，有，则删除
@@ -569,7 +567,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mNote.setSyncState(SyncState.SYNC_UP);
         }
         
-        intent.putExtra(Constants.ARG_CORE_OBJ, mNote);
+        //加入到缓存
+        DetailNoteInfo detailNoteInfo = new DetailNoteInfo();
+        detailNoteInfo.setNoteInfo(mNote);
+        detailNoteInfo.setDetailList(detailLists);
+        NoteCache.getInstance().set(detailNoteInfo);
+        //仅仅传sid
+        intent.putExtra(Constants.ARG_CORE_OBJ, mNote.getSId());
         if (mAttachCache != null && mAttachCache.size() > 0) {
             ArrayList<String> list = new ArrayList<>();
             list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
@@ -1820,9 +1824,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                             addInfoMenu(mOverflowPopu);
                             boolean success = data != null;
                             saveResult(success);
-                            if (success && data instanceof NoteInfo) {
-                                NoteInfo note = (NoteInfo) data;
-                                mNote.setId(note.getId());
+                            if (success) {
+                                NoteInfo note = null;
+                                if (data instanceof NoteInfo) {
+                                    note = (NoteInfo) data;
+                                } else if (data instanceof DetailNoteInfo) {
+                                    note = ((DetailNoteInfo) data).getNoteInfo();
+                                }
+                                if (note != null) {
+                                    mNote.setId(note.getId());
+                                }
+                            } else {
+                                KLog.d(TAG, "---note----add---failed--data:---" + data);
                             }
                             break;
                         case UPDATE: //更新、保存笔记

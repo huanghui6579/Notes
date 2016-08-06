@@ -291,6 +291,14 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     }
 
     /**
+     * 是否是清单笔记
+     * @return
+     */
+    public boolean isDetailNote() {
+        return kind != null && kind == NoteKind.DETAILED_LIST;
+    }
+
+    /**
      * 判断该笔记是否为空
      * @return
      */

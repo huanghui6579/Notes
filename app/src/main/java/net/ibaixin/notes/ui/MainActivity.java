@@ -51,6 +51,7 @@ import net.ibaixin.notes.helper.AdapterRefreshHelper;
 import net.ibaixin.notes.listener.OnCheckedChangeListener;
 import net.ibaixin.notes.listener.OnItemClickListener;
 import net.ibaixin.notes.listener.OnItemLongClickListener;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.Folder;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.FolderManager;
@@ -2149,8 +2150,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             switch (notifyFlag) {
                 case Provider.NoteColumns.NOTIFY_FLAG:  //笔记的通知
                     NoteInfo noteInfo = null;
-                    if (data != null && data instanceof NoteInfo) {
-                        noteInfo = (NoteInfo) data;
+                    if (data != null) {
+                        if (data instanceof NoteInfo) {
+                            noteInfo = (NoteInfo) data;
+                        } else if (data instanceof DetailNoteInfo) {
+                            noteInfo = ((DetailNoteInfo) data).getNoteInfo();
+                        }
                     }
                     switch (notifyType) {
                         case ADD:   //添加

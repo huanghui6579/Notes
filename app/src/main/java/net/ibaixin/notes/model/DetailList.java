@@ -63,6 +63,21 @@ public class DetailList implements Comparator<DetailList> {
      */
     private long modifyTime;
 
+    /**
+     * 删除的状态
+     */
+    private DeleteState deleteState = DeleteState.DELETE_NONE;
+
+    /**
+     * 同步的状态
+     */
+    private SyncState syncState;
+
+    /**
+     * 该清单的hash，主要用来检测更新
+     */
+    private String hash;
+
     public int getId() {
         return id;
     }
@@ -141,6 +156,30 @@ public class DetailList implements Comparator<DetailList> {
 
     public void setOldSort(int oldSort) {
         this.oldSort = oldSort;
+    }
+
+    public DeleteState getDeleteState() {
+        return deleteState;
+    }
+
+    public void setDeleteState(DeleteState deleteState) {
+        this.deleteState = deleteState;
+    }
+
+    public SyncState getSyncState() {
+        return syncState;
+    }
+
+    public void setSyncState(SyncState syncState) {
+        this.syncState = syncState;
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
     }
 
     /**

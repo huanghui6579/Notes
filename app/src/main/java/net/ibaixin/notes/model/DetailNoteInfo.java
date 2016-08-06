@@ -57,4 +57,12 @@ public class DetailNoteInfo {
         builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_NEXT_LINE));
         return builder;
     }
+
+    /**
+     * 是否具有清单
+     * @return
+     */
+    public boolean hasDetailList() {
+        return detailList != null && detailList.size() > 0;
+    }
 }

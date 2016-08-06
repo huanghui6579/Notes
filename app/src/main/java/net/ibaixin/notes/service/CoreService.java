@@ -6,7 +6,9 @@ import android.text.TextUtils;
 
 import com.socks.library.KLog;
 
+import net.ibaixin.notes.cache.NoteCache;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.AttachManager;
 import net.ibaixin.notes.persistent.NoteManager;
@@ -41,23 +43,38 @@ public class CoreService extends IntentService {
             int opt = intent.getIntExtra(Constants.ARG_CORE_OPT, 0);
             NoteInfo note = null;
             List<String> list = null;
+            String sid = null;
+            NoteCache noteCache = null;
+            DetailNoteInfo detailNote = null;
             switch (opt) {
                 case Constants.OPT_ADD_NOTE:    //添加笔记
-                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
-                    if (note != null) {
-
-                        list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
-                        addNote(note, list);
+                    sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+                    noteCache = NoteCache.getInstance();
+                    note = noteCache.getNote();
+                    if (!checkNoteInfo(note, sid)) {
+                        KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
+                        return;
                     }
+                    detailNote = noteCache.get();
+//                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
+                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
+                    addNote(detailNote, list);
+                    noteCache.clear();
                     break;
                 case Constants.OPT_UPDATE_NOTE: //更新笔记
-                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
-                    if (note != null) {
-                        list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
-                        //是否更新内容
-                        boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
-                        updateNote(note, list, updateContent);
+                    sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+                    noteCache = NoteCache.getInstance();
+                    note = noteCache.getNote();
+                    if (!checkNoteInfo(note, sid)) {
+                        KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
+                        return;
                     }
+                    detailNote = noteCache.get();
+                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
+                    //是否更新内容
+                    boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
+                    updateNote(detailNote, list, updateContent);
+                    noteCache.clear();
                     break;
                 case Constants.OPT_REMOVE_NOTE_ATTACH:  //移除笔记中的附件数据库记录，彻底删除
                     List<Attach> attachList = intent.getParcelableArrayListExtra(Constants.ARG_CORE_LIST);
@@ -90,29 +107,55 @@ public class CoreService extends IntentService {
     }
 
     /**
-     * 添加笔记
+     * 检查笔记的一致性
      * @param note
+     * @param sid 传过来的sid
+     * @return
+     */
+    private boolean checkNoteInfo(NoteInfo note, String sid) {
+        if (note == null || TextUtils.isEmpty(sid)) {
+            KLog.d(TAG, "-----opt_add_note--sid--is---null---or--note----is--null--note:---" + note + "---sid:--" + sid);
+            return false;
+        }
+        if (!sid.equals(note.getSId())) {
+            KLog.d(TAG, "-----opt_add_note--sid----does---not--equals---sid---note.sid:---" + note.getSId() + "---sid:---" + sid);
+            return false;
+        }
+        return true;
+    }
+    
+    /**
+     * 添加笔记
+     * @param detailNote 笔记的包装类
      * @param attSidList
      */
-    private void addNote(NoteInfo note, List<String> attSidList) {
+    private void addNote(DetailNoteInfo detailNote, List<String> attSidList) {
+        NoteInfo note = detailNote.getNoteInfo();
         List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
         String sid = note.getSId();
         note = mNoteManager.addNote(note, attSidList, attachSids);
+        
+        //如果有保存清单
+        if (note.isDetailNote() && detailNote.hasDetailList()) {  //清单笔记
+            
+        }
+        
         boolean success = note != null;
         KLog.d(TAG, "---onHandleIntent---addNote----result---" + success + "---note---" + sid);
     }
 
     /**
      * 更新笔记
-     * @param note
+     * @param detailNote 笔记的包装类
      * @param attSidList
      * @param updateContent 是否更新内容
      */
-    private void updateNote(NoteInfo note, List<String> attSidList, boolean updateContent) {
+    private void updateNote(DetailNoteInfo detailNote, List<String> attSidList, boolean updateContent) {
         if (!updateContent && (attSidList == null || attSidList.size() == 0)) {
             //缓存中没有附件，也不做处理
             return;
         }
+        NoteInfo note = detailNote.getNoteInfo();
         List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
         String sid = note.getSId();
         boolean success = false;
