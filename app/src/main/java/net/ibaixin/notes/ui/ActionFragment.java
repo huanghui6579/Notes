@@ -1,6 +1,7 @@
 package net.ibaixin.notes.ui;
 
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.NoteInfo;
 
 import java.util.Map;
@@ -14,16 +15,22 @@ import java.util.Map;
 public interface ActionFragment {
     /**
      * 显示笔记
-     * @param note 笔记信息
+     * @param detailNote 笔记信息
      * @param map 笔记附件的缓存
      */
-    void showNote(NoteInfo note, Map<String, Attach> map);
+    void showNote(DetailNoteInfo detailNote, Map<String, Attach> map);
 
     /**
-     * 获取文本的内容
+     * 获取笔记的内容
      */
     CharSequence getText();
 
+    /**
+     * 获取笔记的标题
+     * @return
+     */
+    CharSequence getTitle();
+    
     /**
      * 获取笔记的类型，主要分为{@link net.ibaixin.notes.model.NoteInfo.NoteKind#TEXT}和{@link net.ibaixin.notes.model.NoteInfo.NoteKind#DETAILED_LIST}
      * @return

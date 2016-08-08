@@ -34,6 +34,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.NoteColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
                 .append(Provider.NoteColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
                 .append(Provider.NoteColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
+                .append(Provider.NoteColumns.TITLE).append(" TEXT, ")
                 .append(Provider.NoteColumns.CONTENT).append(" TEXT, ")
                 .append(Provider.NoteColumns.REMIND_ID).append(" INTEGER, ")
                 .append(Provider.NoteColumns.REMIND_TIME).append(" INTEGER, ")

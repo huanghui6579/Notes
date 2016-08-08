@@ -76,6 +76,11 @@ public final class Provider {
         public static final String FOLDER_ID = "folder_id";
 
         /**
+         * 笔记标题
+         */
+        public static final String TITLE = "title";
+
+        /**
          * 笔记内容
          */
         public static final String CONTENT = "content";

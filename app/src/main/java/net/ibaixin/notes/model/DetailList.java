@@ -216,9 +216,19 @@ public class DetailList implements Comparator<DetailList> {
     @Override
     public String toString() {
         return "DetailList{" +
-                "sort=" + sort +
-                ", oldSort=" + oldSort +
+                "id=" + id +
+                ", sId='" + sId + '\'' +
                 ", title='" + title + '\'' +
+                ", oldTitle='" + oldTitle + '\'' +
+                ", noteId='" + noteId + '\'' +
+                ", sort=" + sort +
+                ", oldSort=" + oldSort +
+                ", checked=" + checked +
+                ", createTime=" + createTime +
+                ", modifyTime=" + modifyTime +
+                ", deleteState=" + deleteState +
+                ", syncState=" + syncState +
+                ", hash='" + hash + '\'' +
                 '}';
     }
 

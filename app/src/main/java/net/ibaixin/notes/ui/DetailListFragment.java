@@ -35,6 +35,7 @@ import net.ibaixin.notes.helper.OnStartDragListener;
 import net.ibaixin.notes.helper.SimpleItemTouchHelperCallback;
 import net.ibaixin.notes.model.Attach;
 import net.ibaixin.notes.model.DetailList;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.util.Constants;
 import net.ibaixin.notes.widget.LayoutManagerFactory;
@@ -138,7 +139,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         LayoutManagerFactory factory = new LayoutManagerFactory();
         RecyclerView.LayoutManager layoutManager = factory.getLayoutManager(getContext(), false);
 
-        initData(null);
+        initData(null, mNote);
 
         mRecyclerView.setLayoutManager(layoutManager);
 
@@ -158,17 +159,21 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
      * 初始化数据
      * @param list 已有的数据
      */
-    private void initData(List<DetailList> list) {
+    private void initData(List<DetailList> list, NoteInfo note) {
         if (mDetailLists == null || mDetailLists.size() == 0) {
             mDetailLists = new ArrayList<>();
             if (list != null && list.size() > 0) {
                 mDetailLists.addAll(list);
             } else {
                 DetailList detail = new DetailList();
+                if (note != null) {
+                    detail.setNoteId(note.getSId());
+                }
                 mDetailLists.add(detail);
             }
         } else {
             if (list != null && list.size() > 0) {
+                mDetailLists.clear();
                 mDetailLists.addAll(list);
             }
         }
@@ -254,9 +259,10 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
     @Override
     public void onDetach() {
-        super.onDetach();
-        KLog.d(TAG, "--list--" + mDetailLists);
+        mNote = null;
         mListener = null;
+        KLog.d(TAG, "--list--" + mDetailLists);
+        super.onDetach();
     }
 
     @Override
@@ -290,6 +296,9 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         }
         int count = adapter.getItemCount();
         DetailList detail = new DetailList();
+        if (mNote != null) {
+            detail.setSId(mNote.getSId());
+        }
         if (!TextUtils.isEmpty(text)) {
             detail.setTitle(text.toString());
         }
@@ -434,21 +443,30 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     }
 
     /**
+     * 设置当前编辑的笔记
+     * @param note
+     */
+    public void setNoteInfo(NoteInfo note) {
+        this.mNote = note;
+    }
+
+    /**
      * 设置文本
      * @param text
      */
-    public void setText(CharSequence text) {
+    public void setText(CharSequence text, NoteInfo note) {
         if (TextUtils.isEmpty(text)) {
             return;
         }
-        List<DetailList> list = analysisText(text.toString());
+        String sid = note == null ? null : note.getSId();
+        List<DetailList> list = analysisText(text.toString(), sid);
         if (list != null && list.size() > 0) {
-            initData(list);
+            initData(list, note);
         }
     }
 
     /**
-     * 获取纯文本
+     * 获取纯文本，包含标题和清单各项内容
      * @param hasDetail 是否包含清单内容
      * @return
      */
@@ -480,7 +498,21 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
      */
     @Override
     public CharSequence getText() {
-        return getText(false);
+        StringBuilder builder = new StringBuilder();
+        if (mDetailLists != null && mDetailLists.size() > 0) {
+            for (DetailList detail : mDetailLists) {
+                String title = detail.getTitle();
+                title = title == null ? "" : title;
+                builder.append(title).append(Constants.TAG_NEXT_LINE);
+            }
+        }
+        builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_NEXT_LINE));
+        return builder;
+    }
+
+    @Override
+    public CharSequence getTitle() {
+        return mTitle;
     }
 
     @Override
@@ -491,9 +523,10 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     /**
      * 将文本解析成清单
      * @param text
+     * @param noteSid 笔记的id
      * @return
      */
-    public List<DetailList> analysisText(String text) {
+    public List<DetailList> analysisText(String text, String noteSid) {
         int i = 0;
         StringTokenizer tokenizer = new StringTokenizer(text);
         String title = null;
@@ -505,6 +538,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
             } else {
                 DetailList detail = new DetailList();
                 detail.setTitle(line);
+                detail.setNoteId(noteSid);
                 list.add(detail);
             }
             i ++;
@@ -622,11 +656,22 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     }
 
     @Override
-    public void showNote(NoteInfo note, Map<String, Attach> map) {
-        KLog.d(TAG, "-----showNote---note--" + note);
+    public void showNote(DetailNoteInfo detailNote, Map<String, Attach> map) {
+        KLog.d(TAG, "-----showNote---detailNote--" + detailNote);
+        NoteInfo note = detailNote.getNoteInfo();
         String text = note.getContent();
+        
         if (!TextUtils.isEmpty(text)) {
-            setText(text);
+            if (detailNote.hasDetailList()) {   //已经有清单了
+                initData(detailNote.getDetailList(), note);
+            } else {
+                setText(text, note);
+            }
+            
+            if (mTitle == null) {
+                mTitle = note.getNoteTitle();
+            }
+            
             if (mEtTitle != null) {
                 mEtTitle.setText(mTitle);
             }

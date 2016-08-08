@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import net.ibaixin.notes.util.Constants;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -12,7 +13,7 @@ import java.util.List;
  * @update 2016/8/5 16:35
  * @version: 0.0.1
  */
-public class DetailNoteInfo {
+public class DetailNoteInfo implements Comparator<DetailNoteInfo> {
     
     private NoteInfo noteInfo;
     /**
@@ -40,13 +41,15 @@ public class DetailNoteInfo {
      * 获取笔记的标题和清单的内容
      * @return
      */
-    public CharSequence getNoteText() {
-        CharSequence title = "";
+    public CharSequence getNoteText(CharSequence title) {
+        /*CharSequence title = "";
         if (noteInfo != null && !TextUtils.isEmpty(noteInfo.getContent())) {
             title = noteInfo.getContent();
-        }
+        }*/
         StringBuilder builder = new StringBuilder();
-        builder.append(title).append(Constants.TAG_NEXT_LINE);
+        if (!TextUtils.isEmpty(title)) {
+            builder.append(title).append(Constants.TAG_NEXT_LINE);
+        }
         if (detailList != null && detailList.size() > 0) {
             for (DetailList detail : detailList) {
                 title = detail.getTitle();
@@ -64,5 +67,38 @@ public class DetailNoteInfo {
      */
     public boolean hasDetailList() {
         return detailList != null && detailList.size() > 0;
+    }
+
+    @Override
+    public String toString() {
+        return "DetailNoteInfo{" +
+                "noteInfo=" + noteInfo +
+                ", detailList=" + detailList +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DetailNoteInfo that = (DetailNoteInfo) o;
+
+        return noteInfo != null ? noteInfo.equals(that.noteInfo) : that.noteInfo == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return noteInfo != null ? noteInfo.hashCode() : 0;
+    }
+
+    @Override
+    public int compare(DetailNoteInfo lhs, DetailNoteInfo rhs) {
+        if (rhs == null) {
+            return 1;
+        } else {
+            return lhs.getNoteInfo().compare(lhs.getNoteInfo(), rhs.getNoteInfo());
+        }
     }
 }

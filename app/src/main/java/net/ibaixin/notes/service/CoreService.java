@@ -13,6 +13,7 @@ import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.AttachManager;
 import net.ibaixin.notes.persistent.NoteManager;
 import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.DigestUtil;
 import net.ibaixin.notes.util.SystemUtil;
 
 import java.io.File;
@@ -55,6 +56,9 @@ public class CoreService extends IntentService {
                         KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
                         return;
                     }
+
+                    note.setHash(DigestUtil.md5Digest(note.getRealContent().toString()));
+                    
                     detailNote = noteCache.get();
 //                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
                     list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
@@ -73,6 +77,9 @@ public class CoreService extends IntentService {
                     list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
                     //是否更新内容
                     boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
+                    if (updateContent) {
+                        note.setHash(DigestUtil.md5Digest(note.getRealContent().toString()));
+                    }
                     updateNote(detailNote, list, updateContent);
                     noteCache.clear();
                     break;
@@ -133,14 +140,8 @@ public class CoreService extends IntentService {
         NoteInfo note = detailNote.getNoteInfo();
         List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
         String sid = note.getSId();
-        note = mNoteManager.addNote(note, attSidList, attachSids);
-        
-        //如果有保存清单
-        if (note.isDetailNote() && detailNote.hasDetailList()) {  //清单笔记
-            
-        }
-        
-        boolean success = note != null;
+        detailNote = mNoteManager.addDetailNote(detailNote, attSidList, attachSids);
+        boolean success = detailNote != null;
         KLog.d(TAG, "---onHandleIntent---addNote----result---" + success + "---note---" + sid);
     }
 
@@ -155,12 +156,15 @@ public class CoreService extends IntentService {
             //缓存中没有附件，也不做处理
             return;
         }
+        
+        KLog.d(TAG, "----updateNote---updateContent-----" + updateContent);
+        
         NoteInfo note = detailNote.getNoteInfo();
         List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
         String sid = note.getSId();
         boolean success = false;
         if (updateContent) {
-            success = mNoteManager.updateNote(note, attSidList, attachSids);
+            success = mNoteManager.updateDetailNote(detailNote, attSidList, attachSids);
         } else {
             //不需要更新内容
             mNoteManager.updateTextAttach(null, note, attSidList, attachSids, false);

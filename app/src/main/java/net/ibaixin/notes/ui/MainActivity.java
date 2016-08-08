@@ -93,7 +93,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private NoteListAdapter mNoteListAdapter;
     private NoteGridAdapter mNoteGridAdapter;
 
-    private List<NoteInfo> mNotes;
+    private List<DetailNoteInfo> mNotes;
     
     private SwipeRefreshLayout.OnRefreshListener mOnRefreshListener;
 
@@ -151,7 +151,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private ActionMode mActionMode;
     
     //选择的笔记集合
-    private List<NoteInfo> mSelectedList;
+    private List<DetailNoteInfo> mSelectedList;
 
     /**
      * 新建按钮
@@ -456,7 +456,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         if (!TextUtils.isEmpty(folderId)) {
             args.putString("folderId", folderId);
         }
-        List<NoteInfo> list = noteManager.getAllNotes(getCurrentUser(), args);
+        List<DetailNoteInfo> list = noteManager.getAllDetailNotes(getCurrentUser(), args);
         Message msg = mHandler.obtainMessage();
         msg.what = Constants.MSG_SUCCESS2;
         msg.obj = list;
@@ -751,8 +751,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 mRecyclerView.removeItemDecoration(mItemDecoration);
             }*/
             if (mNoteGridAdapter == null) {
-                initNoteAdapter(isGridStyle);
-                mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, isGridStyle));
+                initNoteAdapter(true);
+                mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, true));
                 resetAdapter = true;
             }
             if (resetAdapter) {
@@ -769,8 +769,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         } else {    //列表样式
 //            mRecyclerView.addItemDecoration(getItemDecoration(mContext));
             if (mNoteListAdapter == null) {
-                initNoteAdapter(isGridStyle);
-                mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, isGridStyle));
+                initNoteAdapter(false);
+                mRecyclerView.setLayoutManager(mLayoutManagerFactory.getLayoutManager(this, false));
                 resetAdapter = true;
             }
             if (resetAdapter) {
@@ -834,7 +834,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * @update 2016/3/9 17:29
      * @version: 1.0.0
      */
-    private void addNote(NoteInfo note) {
+    private void addNote(DetailNoteInfo note) {
         mNotes.add(0, note);
         AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
         refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
@@ -844,14 +844,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     /**
      * 删除笔记
-     * @param note 笔记
+     * @param detailNote 笔记
      * @param isMove 是指只是移动笔记到其他文件文件，如果是指移动，那么在"所有文件夹"中就不需要删除了
      */
-    private void deleteNote(NoteInfo note, boolean isMove) {
-        int index = mNotes.indexOf(note);
+    private void deleteNote(DetailNoteInfo detailNote, boolean isMove) {
+        int index = mNotes.indexOf(detailNote);
         if (index != -1) {  //列表中存在
             if (isMove) {
-                setupUpdateNote(mNotes.get(index), note);
+                NoteInfo note = detailNote.getNoteInfo();
+                setupUpdateNote(mNotes.get(index).getNoteInfo(), note);
             } else {
                 mNotes.remove(index);
                 AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
@@ -873,7 +874,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 for (NoteInfo note : list) {
                     int index = mNotes.indexOf(note);
                     if (index != -1) {
-                        setupUpdateNote(mNotes.get(index), note);
+                        setupUpdateNote(mNotes.get(index).getNoteInfo(), note);
                     }
                 }
             } else {
@@ -885,14 +886,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     
     /**
      * 删除单条笔记
-     * @param note 笔记
+     * @param detailNote 笔记
      * @author huanghui1
      * @update 2016/6/29 19:37
      * @version: 1.0.0
      */
-    private void handleDeleteNote(final NoteInfo note) {
-        List<NoteInfo> list = new ArrayList<>(1);
-        list.add(note);
+    private void handleDeleteNote(final DetailNoteInfo detailNote) {
+        List<DetailNoteInfo> list = new ArrayList<>(1);
+        list.add(detailNote);
         NoteUtil.handleDeleteNote(mContext, list, mHasDeleteOpt);
     }
 
@@ -921,6 +922,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private void showNoteInfo(NoteInfo note) {
         Intent intent = new Intent(mContext, NoteEditActivity.class);
         intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
+        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSId());
+        intent.putExtra(NoteEditActivity.ARG_IS_NOTE_TEXT, !note.isDetailNote());
         intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
         intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
         startActivity(intent);
@@ -932,10 +935,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * @update 2016/3/9 17:33
      * @version: 1.0.0
      */
-    private void updateNote(NoteInfo note) {
-        int index = mNotes.indexOf(note);
+    private void updateNote(DetailNoteInfo detailNote) {
+        int index = mNotes.indexOf(detailNote);
+        NoteInfo note = detailNote.getNoteInfo();
         if (index != -1) {  //列表中存在
-            NoteInfo info = mNotes.get(index);
+            NoteInfo info = mNotes.get(index).getNoteInfo();
             setupUpdateNote(info, note);
 
             AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
@@ -1133,10 +1137,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     //更新子标题
                     updateSubTitle(getSubTitle(mSelectedFolderId));
                 } else if (TextUtils.isEmpty(mSelectedFolderId)) {  //之前选中的是第一项“所有文件夹”，移除所删除文件夹中的笔记
-                    List<NoteInfo> deleteList = new ArrayList<>();
-                    for (NoteInfo note : mNotes) {
+                    List<DetailNoteInfo> deleteList = new ArrayList<>();
+                    for (DetailNoteInfo detailNote : mNotes) {
+                        NoteInfo note = detailNote.getNoteInfo();
                         if (deleteId.equals(note.getFolderId())) {
-                            deleteList.add(note);
+                            deleteList.add(detailNote);
                         }
                     }
                     if (deleteList.size() > 0) {
@@ -1159,7 +1164,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * @update 2016/3/10 9:10
      * @version: 1.0.0
      */
-    private void refreshUI(List<NoteInfo> list, AdapterRefreshHelper refreshHelper) {
+    private void refreshUI(List<DetailNoteInfo> list, AdapterRefreshHelper refreshHelper) {
         if (!SystemUtil.isEmpty(list)) {  //有数据
             setShowContentStyle(mIsGridStyle, false, refreshHelper);
             //显示recycleView
@@ -1191,11 +1196,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     /**
      * 移动笔记到其他文件夹
-     * @param note
+     * @param detailNote
      */
-    private void moveNote(final NoteInfo note) {
-        List<NoteInfo> list = new ArrayList<>(1);
-        list.add(note);
+    private void moveNote(final DetailNoteInfo detailNote) {
+        List<DetailNoteInfo> list = new ArrayList<>(1);
+        list.add(detailNote);
 
         moveNotes(list);
     }
@@ -1204,14 +1209,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * 移动笔记到其他文件夹
      * @param noteList
      */
-    private void moveNotes(List<NoteInfo> noteList) {
+    private void moveNotes(List<DetailNoteInfo> noteList) {
         if (noteList == null || noteList.size() == 0) {
             return;
         }
         final List<Folder> list = FolderCache.getInstance().getSortFolders();
         String currentFolderId = null;
         if (noteList.size() == 1) { //只有一个笔记
-            currentFolderId = noteList.get(0).getFolderId();
+            currentFolderId = noteList.get(0).getNoteInfo().getFolderId();
         } else {    //多个笔记
             currentFolderId = mSelectedFolderId;
         }
@@ -1229,7 +1234,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     selectedFolder = folder;
                 }
             }
-            final List<NoteInfo> selects = new ArrayList<>(noteList);
+            final List<DetailNoteInfo> selects = new ArrayList<>(noteList);
             final int defaultItem = checkedItem;
             final Folder oldFolder = selectedFolder;
             final AlertDialog dialog = builder.setTitle(R.string.move_to)
@@ -1245,10 +1250,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                                             success = mNoteManager.move2Folder(selects, oldFolder, list.get(which));
                                         } else {    //多条记录
                                             Folder newFolder = list.get(which);
-                                            List<NoteInfo> actualList = new ArrayList<>();
-                                            for (NoteInfo note : selects) {
+                                            List<DetailNoteInfo> actualList = new ArrayList<>();
+                                            for (DetailNoteInfo detailNote : selects) {
+                                                NoteInfo note = detailNote.getNoteInfo();
                                                 if (!newFolder.getSId().equals(note.getFolderId())) {
-                                                    actualList.add(note);
+                                                    actualList.add(detailNote);
                                                 }
                                             }
                                             if (actualList.size() == 0) {
@@ -1338,7 +1344,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         if (pos == null) {
                             return;
                         }
-                        showNoteInfo(mNotes.get(pos));
+                        showNoteInfo(mNotes.get(pos).getNoteInfo());
                     }
                 }
             });
@@ -1383,7 +1389,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         if (pos == null) {
                             return;
                         }
-                        showNoteInfo(mNotes.get(pos));
+                        showNoteInfo(mNotes.get(pos).getNoteInfo());
                     }
                 }
             });
@@ -1399,7 +1405,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             if (mSelectedList == null) {
                 mSelectedList = new LinkedList<>();
             }
-            NoteInfo note = mNotes.get(position);
+            DetailNoteInfo note = mNotes.get(position);
             if (mSelectedList.contains(note)) {
                 return;
             }
@@ -1423,7 +1429,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             if (mSelectedList == null) {
                 mSelectedList = new LinkedList<>();
             }
-            NoteInfo note = mNotes.get(position);
+            DetailNoteInfo note = mNotes.get(position);
             mSelectedList.remove(note);
             mActionMode.setTitle(getSelectedTitle(mSelectedList.size(), mNotes.size()));
             
@@ -1588,7 +1594,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 case R.id.action_share:    //分享
                     break;
                 case R.id.action_info:    //详情
-                    NoteUtil.showInfo(mContext, mSelectedList.get(0));
+                    NoteUtil.showInfo(mContext, mSelectedList.get(0).getNoteInfo());
                     break;
             }
             outActionMode(true);
@@ -1777,7 +1783,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
         private final LayoutInflater mLayoutInflater;
         private final Context mContext;
-        private List<NoteInfo> mList;
+        private List<DetailNoteInfo> mList;
 
         private OnItemLongClickListener mOnItemLongClickListener;
         
@@ -1785,7 +1791,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         
         private OnCheckedChangeListener mOnCheckedChangeListener;
 
-        public NoteListAdapter(Context context, List<NoteInfo> list) {
+        public NoteListAdapter(Context context, List<DetailNoteInfo> list) {
             this.mContext = context;
             this.mList = list;
             mLayoutInflater = LayoutInflater.from(context);
@@ -1832,7 +1838,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
         @Override
         public void onBindViewHolder(final NoteListViewHolder holder, int position) {
-            NoteInfo note = mList.get(position);
+            DetailNoteInfo detailNote = mList.get(position);
+            NoteInfo note = detailNote.getNoteInfo();
             holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
             holder.mCbCheck.setTag(holder.getAdapterPosition());
             if (note != null) {
@@ -1910,7 +1917,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     class NoteGridAdapter extends RecyclerView.Adapter<NoteGridViewHolder> {
         private final LayoutInflater mLayoutInflater;
         private final Context mContext;
-        private List<NoteInfo> mList;
+        private List<DetailNoteInfo> mList;
 
         private OnItemLongClickListener mOnItemLongClickListener;
         
@@ -1918,7 +1925,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
         private OnCheckedChangeListener mOnCheckedChangeListener;
 
-        public NoteGridAdapter(Context context, List<NoteInfo> list) {
+        public NoteGridAdapter(Context context, List<DetailNoteInfo> list) {
             this.mContext = context;
             this.mList = list;
             mLayoutInflater = LayoutInflater.from(context);
@@ -1964,10 +1971,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
         @Override
         public void onBindViewHolder(final NoteGridViewHolder holder, int position) {
-            NoteInfo note = mList.get(position);
+            DetailNoteInfo detailNote = mList.get(position);
             holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
             holder.mCbCheck.setTag(holder.getAdapterPosition());
-            if (note != null) {
+            if (detailNote != null) {
                 
                 if (mIsChooseMode) {
                     SystemUtil.hideView(holder.mIvOverflow);
@@ -1975,7 +1982,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
                     holder.mCbCheck.setOnCheckedChangeListener(null);
 
-                    boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(note);
+                    boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(detailNote);
                     holder.mCbCheck.setChecked(checked);
 
                     holder.mCbCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -1989,12 +1996,19 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 } else {
                     SystemUtil.showView(holder.mIvOverflow);
                     SystemUtil.hideView(holder.mCbCheck);
-                    holder.mIvOverflow.setOnClickListener(new GridItemClickListener(note));
+                    holder.mIvOverflow.setOnClickListener(new GridItemClickListener(detailNote));
                 }
                 
-                holder.mTvTitle.setText(note.getTitle());
+                NoteInfo note = detailNote.getNoteInfo();
+                
+                CharSequence title = note.getNoteTitle();
+                if (TextUtils.isEmpty(title)) {
+                    title = getResources().getString(R.string.no_title);
+                }
+                
+                holder.mTvTitle.setText(title);
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
-                holder.mTvSumary.setText(note.getContent());
+                holder.mTvSumary.setText(note.getStyleContent());
                 
             }
         }
@@ -2011,17 +2025,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
          * @version: 1.0.0
          */
         class GridItemClickListener implements View.OnClickListener {
-            private NoteInfo note;
+            private DetailNoteInfo detailNote;
 
-            public GridItemClickListener(NoteInfo note) {
-                this.note = note;
+            public GridItemClickListener(DetailNoteInfo detailNote) {
+                this.detailNote = detailNote;
             }
 
             @Override
             public void onClick(View v) {
                 switch (v.getId()) {
                     case R.id.iv_overflow:
-                        PopupMenu itemMenu = createPopMenu(v, R.menu.grid_item_opt, false, new ItemMenuClickListener(note));
+                        PopupMenu itemMenu = createPopMenu(v, R.menu.grid_item_opt, false, new ItemMenuClickListener(detailNote));
                         boolean hasMoreFolder = FolderCache.getInstance().hasMoreFolder();
                         if (!hasMoreFolder) {   //删除“移动”菜单项
                             Menu menu = itemMenu.getMenu();
@@ -2042,23 +2056,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
          * @version: 1.0.0
          */
         class ItemMenuClickListener implements PopupMenu.OnMenuItemClickListener {
-            private NoteInfo note;
+            private DetailNoteInfo detailNote;
 
-            public ItemMenuClickListener(NoteInfo note) {
-                this.note = note;
+            public ItemMenuClickListener(DetailNoteInfo detailNote) {
+                this.detailNote = detailNote;
             }
 
             @Override
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.action_delete:    //删除
-                        handleDeleteNote(note);
+                        handleDeleteNote(detailNote);
                         break;
                     case R.id.action_info:  //详情
-                        NoteUtil.showInfo(mContext, note);
+                        NoteUtil.showInfo(mContext, detailNote.getNoteInfo());
                         break;
                     case R.id.action_move:  //移动
-                        moveNote(note);
+                        moveNote(detailNote);
                         break;
                 }
                 return false;
@@ -2102,7 +2116,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         break;
                     case Constants.MSG_SUCCESS2:    //笔记内容加载成功
                         target.mRefresher.setRefreshing(false);
-                        List<NoteInfo> list = (List<NoteInfo>) msg.obj;
+                        List<DetailNoteInfo> list = (List<DetailNoteInfo>) msg.obj;
                         if (!SystemUtil.isEmpty(list)) {  //有数据
                             if (!target.mNotes.isEmpty()) {
                                 target.mNotes.clear();
@@ -2149,31 +2163,33 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data) {
             switch (notifyFlag) {
                 case Provider.NoteColumns.NOTIFY_FLAG:  //笔记的通知
-                    NoteInfo noteInfo = null;
+                    DetailNoteInfo detailNote = null;
                     if (data != null) {
                         if (data instanceof NoteInfo) {
-                            noteInfo = (NoteInfo) data;
+                            NoteInfo noteInfo = (NoteInfo) data;
+                            detailNote = new DetailNoteInfo();
+                            detailNote.setNoteInfo(noteInfo);
                         } else if (data instanceof DetailNoteInfo) {
-                            noteInfo = ((DetailNoteInfo) data).getNoteInfo();
+                            detailNote = ((DetailNoteInfo) data);
                         }
                     }
                     switch (notifyType) {
                         case ADD:   //添加
-                            KLog.d(TAG, "------addNote----" + noteInfo);
-                            if (noteInfo != null) {
-                                addNote(noteInfo);
+                            KLog.d(TAG, "------addNote----" + detailNote);
+                            if (detailNote != null) {
+                                addNote(detailNote);
                             }
                             break;
                         case UPDATE:    //修改笔记
-                            KLog.d(TAG, "------updateNote----" + noteInfo);
-                            if (noteInfo != null) {
-                                updateNote(noteInfo);
+                            KLog.d(TAG, "------updateNote----" + detailNote);
+                            if (detailNote != null) {
+                                updateNote(detailNote);
                             }
                             break;
                         case DELETE:    //删除、移到回收站
-                            KLog.d(TAG, "------deleteNote----" + noteInfo);
-                            if (noteInfo != null) {
-                                deleteNote(noteInfo, false);
+                            KLog.d(TAG, "------deleteNote----" + detailNote);
+                            if (detailNote != null) {
+                                deleteNote(detailNote, false);
                             } else if (data instanceof List) {  //删除了多个笔记
                                 List<NoteInfo> noteList = (List<NoteInfo>) data;
                                 deleteNotes(noteList, false);
@@ -2181,10 +2197,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             saveDeleteOpt();
                             break;
                         case MOVE:    //移动到其他文件夹
-                            KLog.d(TAG, "------moveNote----" + noteInfo);
+                            KLog.d(TAG, "------moveNote----" + detailNote);
                             boolean isFolderAll = TextUtils.isEmpty(mSelectedFolderId);
-                            if (noteInfo != null) {
-                                deleteNote(noteInfo, isFolderAll);
+                            if (detailNote != null) {
+                                deleteNote(detailNote, isFolderAll);
                             } else if (data instanceof List) {  //移动了多个笔记
                                 List<NoteInfo> noteList = (List<NoteInfo>) data;
                                 deleteNotes(noteList, isFolderAll);

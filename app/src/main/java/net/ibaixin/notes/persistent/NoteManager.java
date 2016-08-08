@@ -24,6 +24,7 @@ import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.model.SyncState;
 import net.ibaixin.notes.model.User;
 import net.ibaixin.notes.util.Constants;
+import net.ibaixin.notes.util.DigestUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,13 +66,14 @@ public class NoteManager extends Observable<Observer> {
     }
     
     /**
-     * 获取当前用户下所有的笔记,默认按时间降序排列
+     * 获取当前用户下所有的笔记,默认按时间降序排列,<i>已废弃</i>，使用{@link #getAllDetailNotes(User, Bundle)}方法
      * @param user 对应的用户
      * @param args 额外的参数            
      * @author huanghui1
      * @update 2016/3/7 17:41
      * @version: 1.0.0
      */
+    @Deprecated
     public List<NoteInfo> getAllNotes(User user, Bundle args) {
         SQLiteDatabase db = mDBHelper.getReadableDatabase();
         String selection = null;
@@ -129,7 +131,77 @@ public class NoteManager extends Observable<Observer> {
         }
         return list;
     }
-
+    
+    /**
+     * 获取所有的清单护着笔记的列表
+     * @author huanghui1
+     * @update 2016/8/8 9:50
+     * @version: 1.0.0
+     */
+    public List<DetailNoteInfo> getAllDetailNotes(User user, Bundle args) {
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String selection = null;
+        String[] selectionArgs = null;
+        String folder = null;
+        boolean isRecycle = false;
+        if (args != null) {
+            folder = args.getString("folderId", null);
+            isRecycle = args.getBoolean("isRecycle", false);
+        }
+        int deleteState = isRecycle ? 1 : 0;
+        //是否加载回收站里的笔记
+        int userId = 0;
+        if (user != null) { //当前用户有登录
+            userId = user.getId();
+            if (deleteState == 0) {
+                selection = Provider.NoteColumns.USER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
+            } else {
+                selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+            }
+            
+            if (!TextUtils.isEmpty(folder)) {
+                selection += " AND " + Provider.NoteColumns.FOLDER_ID + " = ?";
+                selectionArgs = new String[] {String.valueOf(userId), folder};
+            } else {
+                selectionArgs = new String[] {String.valueOf(userId)};
+            }
+        } else {    //当前用户没有登录
+            if (!TextUtils.isEmpty(folder)) {
+                if (deleteState == 0) {
+                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
+                } else {
+                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+                }
+                selectionArgs = new String[] {folder};
+            } else {
+                if (deleteState == 0) {
+                    selection = Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = ?";
+                } else {
+                    selection = Provider.NoteColumns.DELETE_STATE + " = ?";
+                }
+                selectionArgs = new String[] {String.valueOf(deleteState)};
+            }
+        }
+        List<DetailNoteInfo> list = null;
+        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.NoteColumns.DEFAULT_SORT);
+        if (cursor != null) {
+            list = new ArrayList<>();
+            while (cursor.moveToNext()) {
+                NoteInfo note = cursor2Note(cursor);
+                DetailNoteInfo detailNote = new DetailNoteInfo();
+                detailNote.setNoteInfo(note);
+                if (note.isDetailNote()) {
+                    List<DetailList> details = getDetailList(db, note.getSId());
+                    detailNote.setDetailList(details);
+                }
+                
+                list.add(detailNote);
+            }
+            cursor.close();
+        }
+        return list;
+    }
+    
     /**
      * 返回移动笔记到垃圾桶的数据
      * @param note 笔记
@@ -183,25 +255,26 @@ public class NoteManager extends Observable<Observer> {
      * @param noteList 要删除的笔记的集合
      * @return 返回是否删除成功
      */
-    public boolean deleteNote(List<NoteInfo> noteList) {
+    public boolean deleteNote(List<DetailNoteInfo> noteList) {
         if (noteList == null || noteList.size() == 0) {
             KLog.d(TAG, "----deleteNote---list--size--0--success---");
             return true;
         }
         if (noteList.size() == 1) { //只有一条
-            return deleteNote(noteList.get(0));
+            return deleteNote(noteList.get(0).getNoteInfo());
         } else {
             int row = 0;
             SQLiteDatabase db = mDBHelper.getWritableDatabase();
             try {
-                ContentValues values = initTrashValues(noteList.get(0));
+                ContentValues values = initTrashValues(noteList.get(0).getNoteInfo());
                 //拼凑sql语句
                 StringBuilder builder = new StringBuilder(Provider.NoteColumns._ID);
                 builder.append(" in (");
                 int size = noteList.size();
                 String[] selectionArgs = new String[size];
                 for (int i = 0; i < size; i++) {
-                    NoteInfo note = noteList.get(i);
+                    DetailNoteInfo detailNote = noteList.get(i);
+                    NoteInfo note = detailNote.getNoteInfo();
                     builder.append("?").append(Constants.TAG_COMMA);
                     selectionArgs[i] = String.valueOf(note.getId());
                 }
@@ -234,6 +307,7 @@ public class NoteManager extends Observable<Observer> {
      */
     private ContentValues initNoteValues(NoteInfo note) {
         ContentValues values = new ContentValues();
+        values.put(Provider.NoteColumns.TITLE, note.getTitle());
         values.put(Provider.NoteColumns.CONTENT, note.getContent());
         values.put(Provider.NoteColumns.CREATE_TIME, note.getCreateTime());
         values.put(Provider.NoteColumns.FOLDER_ID, note.getFolderId());
@@ -261,6 +335,7 @@ public class NoteManager extends Observable<Observer> {
         note.setId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns._ID)));
         note.setSId(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.SID)));
         note.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.USER_ID)));
+        note.setTitle(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.TITLE)));
         note.setContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.CONTENT)));
         note.setRemindId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.REMIND_ID)));
         note.setRemindTime(cursor.getLong(cursor.getColumnIndex(Provider.NoteColumns.REMIND_TIME)));
@@ -275,6 +350,44 @@ public class NoteManager extends Observable<Observer> {
         note.setOldContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.OLD_CONTENT)));
         return note;
     }
+    
+    /*private NoteInfo cursor2DetailNote(Cursor cursor) {
+        DetailNoteInfo detailNote = new DetailNoteInfo();
+        NoteInfo note = new NoteInfo();
+        note.setId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns._ID)));
+        note.setSId(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.SID)));
+        note.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.USER_ID)));
+        note.setContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.CONTENT)));
+        note.setRemindId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.REMIND_ID)));
+        note.setRemindTime(cursor.getLong(cursor.getColumnIndex(Provider.NoteColumns.REMIND_TIME)));
+        note.setFolderId(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.FOLDER_ID)));
+        note.setKind(NoteInfo.NoteKind.valueOf(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.KIND))));
+        note.setSyncState(SyncState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.SYNC_STATE))));
+        note.setDeleteState(DeleteState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.DELETE_STATE))));
+        note.setHasAttach(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.HAS_ATTACH)) == 1);
+        note.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.NoteColumns.CREATE_TIME)));
+        note.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.NoteColumns.MODIFY_TIME)));
+        note.setHash(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.HASH)));
+        note.setOldContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.OLD_CONTENT)));
+        detailNote.setNoteInfo(note);
+        if (note.isDetailNote()) {  //清单笔记
+            DetailList detail = new DetailList();
+            detail.setNoteId(note.getSId());
+            detail.setId(cursor.getInt(cursor.getColumnIndex("did")));
+            detail.setSId(cursor.getString(cursor.getColumnIndex("dsid")));
+            detail.setTitle(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.TITLE)));
+            detail.setOldTitle(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.OLD_TITLE)));
+            detail.setChecked(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.CHECKED)) == 1);
+            detail.setSort(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.SORT)));
+            detail.setOldSort(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.OLD_SORT)));
+            detail.setSyncState(SyncState.valueOf(cursor.getInt(cursor.getColumnIndex("dsync"))));
+            detail.setDeleteState(DeleteState.valueOf(cursor.getInt(cursor.getColumnIndex("ddelete"))));
+            detail.setCreateTime(cursor.getLong(cursor.getColumnIndex("dctime")));
+            detail.setModifyTime(cursor.getLong(cursor.getColumnIndex("dmtime")));
+            detailNote.setDetailList();
+        }
+        return note;
+    }*/
     
     private Attach cursor2Attach(Cursor cursor) {
         Attach attach = new Attach();
@@ -490,6 +603,8 @@ public class NoteManager extends Observable<Observer> {
                 KLog.d(TAG, "-----addDetailNote--hasDetailList--");
                 //批量添加清单项
                 for (DetailList detail : detailNote.getDetailList()) {
+                    //设置hash
+                    detail.setHash(DigestUtil.md5Digest(detail.getTitle()));
                     values = initDetailValues(detail);
                     rowId = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
                 }
@@ -517,14 +632,14 @@ public class NoteManager extends Observable<Observer> {
      * @param attachList
      * @return
      */
-    public boolean updateDetailList(DetailNoteInfo detailNote, List<String> cacheList, List<String> attachList) {
+    public boolean updateDetailNote(DetailNoteInfo detailNote, List<String> cacheList, List<String> attachList) {
         
         NoteInfo note = detailNote.getNoteInfo();
         
         ContentValues values = initUpdateNoteValues(note);
         if (values.size() > 0) {
             SQLiteDatabase db = mDBHelper.getWritableDatabase();
-            int row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
+            long row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
             if (row > 0) {
                 updateFolder(note);
 
@@ -534,15 +649,18 @@ public class NoteManager extends Observable<Observer> {
                 if (detailNote.hasDetailList()) {
                     KLog.d(TAG, "-----updateDetailList--hasDetailList--");
                     for (DetailList detail : detailNote.getDetailList()) {
-                        
+                        //设置hash
+                        detail.setHash(DigestUtil.md5Digest(detail.getTitle()));
                         int id = detail.getId();
                         
                         if (id > 0) {   //已有，则更新
                             values = initUpdateDetailValues(detail);
                             row = db.update(Provider.DetailedListColumns.TABLE_NAME, values, Provider.DetailedListColumns._ID + " = ?", new String[] {String.valueOf(id)});
                         } else {    //添加清单
+                            KLog.d(TAG, "--insert---detail---" + detail);
                             values = initDetailValues(detail);
-                            db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
+                            row = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
+                            KLog.d(TAG, "-----insert--detail---row---:" + row);
                         }
                         
                     }
@@ -741,7 +859,7 @@ public class NoteManager extends Observable<Observer> {
         DetailNoteInfo detailNote = new DetailNoteInfo();
         detailNote.setNoteInfo(note);
         
-        return updateDetailList(detailNote, cacheList, attachList);
+        return updateDetailNote(detailNote, cacheList, attachList);
     }
 
     /**
@@ -871,13 +989,14 @@ public class NoteManager extends Observable<Observer> {
      * @update 2016/6/30 11:52
      * @version: 1.0.0
      */
-    public boolean move2Folder(List<NoteInfo> notes, Folder oldFolder, Folder newFolder) {
+    public boolean move2Folder(List<DetailNoteInfo> notes, Folder oldFolder, Folder newFolder) {
         long time = System.currentTimeMillis();
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         db.beginTransaction();
         try {
             List<NoteInfo> noteList = new ArrayList<>();
-            for (NoteInfo note : notes) {
+            for (DetailNoteInfo detailNote : notes) {
+                NoteInfo note = detailNote.getNoteInfo();
                 if (newFolder.getSId().equals(note.getFolderId())) {
                     continue;
                 }

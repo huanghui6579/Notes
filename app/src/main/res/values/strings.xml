@@ -12,6 +12,7 @@
     <string name="main_empty_tip_login">立即登录</string>
 
     <string name="no_data">无数据</string>
+    <string name="no_title">无标题</string>
     <string name="prompt">提示</string>
 
     <string name="colon">：</string>

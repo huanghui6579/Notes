@@ -3,7 +3,11 @@ package net.ibaixin.notes.model;
 import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.BulletSpan;
 
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.cache.FolderCache;
@@ -13,6 +17,7 @@ import net.ibaixin.notes.util.TimeUtil;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 /**
  * 记事本的基本信息实体
@@ -32,6 +37,11 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
      * 对应的用户id
      */
     private int userId;
+
+    /**
+     * 笔记的标题
+     */
+    private String title;
 
     /**
      * 文本内容
@@ -114,6 +124,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         id = in.readInt();
         sId = in.readString();
         userId = in.readInt();
+        title = in.readString();
         content = in.readString();
         remindId = in.readInt();
         remindTime = in.readLong();
@@ -130,6 +141,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         dest.writeInt(id);
         dest.writeString(sId);
         dest.writeInt(userId);
+        dest.writeString(title);
         dest.writeString(content);
         dest.writeInt(remindId);
         dest.writeLong(remindTime);
@@ -201,6 +213,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                 "id=" + id +
                 ", sId='" + sId + '\'' +
                 ", userId=" + userId +
+                ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
                 ", remindId=" + remindId +
                 ", remindTime=" + remindTime +
@@ -213,6 +226,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                 ", modifyTime=" + modifyTime +
                 ", hash='" + hash + '\'' +
                 ", oldContent='" + oldContent + '\'' +
+                ", attaches=" + attaches +
                 '}';
     }
 
@@ -276,17 +290,61 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
      * 根据内容获取标题，只取内容的第一行
      * @return
      */
-    public CharSequence getTitle() {
-        if (content == null) {
-            return null;
-        }
-        //去掉开头和结尾的空格
-        String tContent = content.trim();
-        int index = tContent.indexOf(Constants.TAG_NEXT_LINE);
-        if (index != -1) {  //有换行
-            return tContent.substring(0, index);
+    public CharSequence getNoteTitle() {
+        if (title == null && !isDetailNote()) {
+            if (content == null) {
+                return null;
+            }
+            //去掉开头和结尾的空格
+            String tContent = content.trim();
+            int index = tContent.indexOf(Constants.TAG_NEXT_LINE);
+            if (index != -1) {  //有换行
+                return tContent.substring(0, index);
+            } else {
+                return tContent;
+            }
         } else {
-            return tContent;
+            return title;
+        }
+    }
+
+    /**
+     * 根据笔记类型来获取笔记真实的内容，如果是清单笔记，则内容为：title+各清单的内容，用"\n"拼接，如果是文本笔记，则直接返回content
+     * @return
+     */
+    public CharSequence getRealContent() {
+        if (isDetailNote() && !TextUtils.isEmpty(title)) {   //清单笔记
+            return title + Constants.TAG_NEXT_LINE + content;
+        } else {
+            return content;
+        }
+    }
+    
+    public CharSequence getStyleContent() {
+        if (isDetailNote()) {   //清单笔记
+            String tContent = content.trim();
+            StringTokenizer tokenizer = new StringTokenizer(tContent, Constants.TAG_NEXT_LINE);
+            SpannableStringBuilder builder = new SpannableStringBuilder();
+            int i = 0;
+            
+            while (tokenizer.hasMoreTokens()) {
+                if (i > 10) {
+                    break; 
+                }
+                String line = tokenizer.nextToken();
+                
+                SpannableString spannableString = new SpannableString(line);
+
+                BulletSpan bulletSpan = new BulletSpan(12);
+
+                spannableString.setSpan(bulletSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                builder.append(spannableString).append(Constants.TAG_NEXT_LINE);
+                i++;
+            }
+            return builder;
+        } else {
+            return getContent();
         }
     }
 
@@ -424,5 +482,13 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
 
     public void setOldContent(String oldContent) {
         this.oldContent = oldContent;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getTitle() {
+        return title;
     }
 }

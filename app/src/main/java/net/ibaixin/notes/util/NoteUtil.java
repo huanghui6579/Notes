@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
 
 import net.ibaixin.notes.R;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.NoteManager;
 
@@ -23,9 +24,7 @@ public class NoteUtil {
      * 删除多条笔记
      * @param noteList 要删除的笔记的集合
      */
-    public static void handleDeleteNote(Context context, List<NoteInfo> noteList, boolean hasDeleteOpt) {
-        final List<NoteInfo> list = new ArrayList<>();
-        list.addAll(noteList);
+    public static void handleDeleteNote(Context context, final List<DetailNoteInfo> noteList, boolean hasDeleteOpt) {
         if (!hasDeleteOpt) {   //之前是否有删除操作，如果没有，则需弹窗           
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setTitle(R.string.prompt)
@@ -33,13 +32,13 @@ public class NoteUtil {
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            doDeleteNote(list);
+                            doDeleteNote(noteList);
                         }
                     })
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
         } else {    //直接删除
-            doDeleteNote(list);
+            doDeleteNote(noteList);
         }
     }
 
@@ -48,36 +47,23 @@ public class NoteUtil {
      * @param note 要删除的笔记
      */
     public static void handleDeleteNote(Context context, NoteInfo note, boolean hasDeleteOpt) {
-        final List<NoteInfo> list = new ArrayList<>();
-        list.add(note);
-        if (!hasDeleteOpt) {   //之前是否有删除操作，如果没有，则需弹窗           
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
-            builder.setTitle(R.string.prompt)
-                    .setMessage(R.string.confirm_to_trash)
-                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            doDeleteNote(list);
-                        }
-                    })
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show();
-        } else {    //直接删除
-            doDeleteNote(list);
-        }
+        final List<DetailNoteInfo> list = new ArrayList<>();
+        DetailNoteInfo detailNote = new DetailNoteInfo();
+        detailNote.setNoteInfo(note);
+        list.add(detailNote);
+        handleDeleteNote(context, list, hasDeleteOpt);
     }
 
     /**
      * 删除多条笔记
      * @param noteList 要删除的笔记的集合
      */
-    private static void doDeleteNote(final List<NoteInfo> noteList) {
-
-        SystemUtil.getThreadPool().execute(new Runnable() {
+    private static void doDeleteNote(final List<DetailNoteInfo> noteList) {
+        final List<DetailNoteInfo> list = new ArrayList<>(noteList);
+        SystemUtil.getThreadPool().execute(new NoteTask(list) {
             @Override
             public void run() {
-
-                NoteManager.getInstance().deleteNote(noteList);
+                NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0]);
             }
         });
     }
@@ -90,7 +76,7 @@ public class NoteUtil {
     public static void showInfo(Context context, final NoteInfo note) {
         String info = note.getNoteInfo(context);
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(note.getTitle())
+        builder.setTitle(note.getNoteTitle())
                 .setMessage(info)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();

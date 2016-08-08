@@ -29,6 +29,7 @@ import com.socks.library.KLog;
 import net.ibaixin.notes.R;
 import net.ibaixin.notes.listener.AttachAddCompleteListener;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.EditStep;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.richtext.AttachResolver;
@@ -191,8 +192,9 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     }
 
     @Override
-    public void showNote(NoteInfo note, Map<String, Attach> map) {
-        KLog.d(TAG, "-----showNote---note--" + note);
+    public void showNote(DetailNoteInfo detailNote, Map<String, Attach> map) {
+        KLog.d(TAG, "-----showNote---note--" + detailNote);
+        NoteInfo note = detailNote.getNoteInfo();
         CharSequence s = note.getContent();
         mText = s;
         mRichTextWrapper.setText(s, map);
@@ -225,6 +227,11 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         CharSequence text = mEtContent.getText();
         text = text == null ? "" : text;
         return text;
+    }
+
+    @Override
+    public CharSequence getTitle() {
+        return null;
     }
 
     @Override
