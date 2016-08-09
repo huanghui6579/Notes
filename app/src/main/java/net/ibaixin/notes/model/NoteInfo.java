@@ -291,7 +291,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
      * @return
      */
     public CharSequence getNoteTitle() {
-        if (title == null && !isDetailNote()) {
+        if (TextUtils.isEmpty(title) && !isDetailNote()) {
             if (content == null) {
                 return null;
             }
@@ -319,12 +319,30 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
             return content;
         }
     }
-    
+
+    /**
+     * 获取笔记的全内容
+     * @return
+     */
     public CharSequence getStyleContent() {
+        return getStyleContent(false);
+    }
+
+    /**
+     * 获取笔记的全内容
+     * @param hasTitle 是否包含标题，仅对清单有效
+     * @return
+     */
+    public CharSequence getStyleContent(boolean hasTitle) {
         if (isDetailNote()) {   //清单笔记
             String tContent = content.trim();
             StringTokenizer tokenizer = new StringTokenizer(tContent, Constants.TAG_NEXT_LINE);
             SpannableStringBuilder builder = new SpannableStringBuilder();
+            
+            if (hasTitle && !TextUtils.isEmpty(title)) {
+                builder.append(title).append(Constants.TAG_NEXT_LINE);
+            }
+            
             int i = 0;
             
             while (tokenizer.hasMoreTokens()) {

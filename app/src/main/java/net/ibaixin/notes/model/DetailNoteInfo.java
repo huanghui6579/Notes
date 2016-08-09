@@ -41,11 +41,11 @@ public class DetailNoteInfo implements Comparator<DetailNoteInfo> {
      * 获取笔记的标题和清单的内容
      * @return
      */
-    public CharSequence getNoteText(CharSequence title) {
-        /*CharSequence title = "";
-        if (noteInfo != null && !TextUtils.isEmpty(noteInfo.getContent())) {
-            title = noteInfo.getContent();
-        }*/
+    public CharSequence getNoteText() {
+        CharSequence title = null;
+        if (noteInfo != null && !TextUtils.isEmpty(noteInfo.getTitle())) {
+            title = noteInfo.getTitle();
+        }
         StringBuilder builder = new StringBuilder();
         if (!TextUtils.isEmpty(title)) {
             builder.append(title).append(Constants.TAG_NEXT_LINE);

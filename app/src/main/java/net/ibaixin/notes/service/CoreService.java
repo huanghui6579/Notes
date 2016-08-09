@@ -8,6 +8,7 @@ import com.socks.library.KLog;
 
 import net.ibaixin.notes.cache.NoteCache;
 import net.ibaixin.notes.model.Attach;
+import net.ibaixin.notes.model.DetailList;
 import net.ibaixin.notes.model.DetailNoteInfo;
 import net.ibaixin.notes.model.NoteInfo;
 import net.ibaixin.notes.persistent.AttachManager;
@@ -80,7 +81,15 @@ public class CoreService extends IntentService {
                     if (updateContent) {
                         note.setHash(DigestUtil.md5Digest(note.getRealContent().toString()));
                     }
-                    updateNote(detailNote, list, updateContent);
+                    if (!note.isDetailNote()) { //非清单，则将标题设为""
+                        note.setTitle("");
+                    }
+                    List<DetailList> srcDetails = null;
+                    Object extraObj = noteCache.getExtraData();
+                    if (extraObj != null && extraObj instanceof List) {
+                        srcDetails = (List<DetailList>) extraObj;
+                    }
+                    updateNote(detailNote, list, updateContent, srcDetails);
                     noteCache.clear();
                     break;
                 case Constants.OPT_REMOVE_NOTE_ATTACH:  //移除笔记中的附件数据库记录，彻底删除
@@ -150,8 +159,9 @@ public class CoreService extends IntentService {
      * @param detailNote 笔记的包装类
      * @param attSidList
      * @param updateContent 是否更新内容
+     * @param detailLists 原始笔记中的清单，更新笔记时，需与原始笔记对比                     
      */
-    private void updateNote(DetailNoteInfo detailNote, List<String> attSidList, boolean updateContent) {
+    private void updateNote(DetailNoteInfo detailNote, List<String> attSidList, boolean updateContent, List<DetailList> detailLists) {
         if (!updateContent && (attSidList == null || attSidList.size() == 0)) {
             //缓存中没有附件，也不做处理
             return;
@@ -164,7 +174,7 @@ public class CoreService extends IntentService {
         String sid = note.getSId();
         boolean success = false;
         if (updateContent) {
-            success = mNoteManager.updateDetailNote(detailNote, attSidList, attachSids);
+            success = mNoteManager.updateDetailNote(detailNote, attSidList, attachSids, detailLists);
         } else {
             //不需要更新内容
             mNoteManager.updateTextAttach(null, note, attSidList, attachSids, false);

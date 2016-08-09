@@ -595,6 +595,7 @@ public class NoteManager extends Observable<Observer> {
         long rowId = 0;
         try {
             rowId = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
+            note.setId((int) rowId);
             updateFolderCount(note, true);
 
             updateTextAttach(db, note, cacheList, attachList);
@@ -607,6 +608,7 @@ public class NoteManager extends Observable<Observer> {
                     detail.setHash(DigestUtil.md5Digest(detail.getTitle()));
                     values = initDetailValues(detail);
                     rowId = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
+                    detail.setId((int) rowId);
                 }
             }
 
@@ -617,7 +619,6 @@ public class NoteManager extends Observable<Observer> {
             db.endTransaction();
         }
         if (rowId > 0) {
-            note.setId((int) rowId);
             notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, detailNote);
             return detailNote;
         } else {
@@ -630,9 +631,10 @@ public class NoteManager extends Observable<Observer> {
      * @param detailNote
      * @param cacheList
      * @param attachList
+     * @param detailLists 
      * @return
      */
-    public boolean updateDetailNote(DetailNoteInfo detailNote, List<String> cacheList, List<String> attachList) {
+    public boolean updateDetailNote(DetailNoteInfo detailNote, List<String> cacheList, List<String> attachList, List<DetailList> detailLists) {
         
         NoteInfo note = detailNote.getNoteInfo();
         
@@ -646,13 +648,21 @@ public class NoteManager extends Observable<Observer> {
                 updateTextAttach(db, note, cacheList, attachList);
                 
                 //如果有清单，则更新清单列表
-                if (detailNote.hasDetailList()) {
+                if (note.isDetailNote() && detailNote.hasDetailList()) {  //清单笔记且有清单
+                    
+                    List<DetailList> detailListList = detailNote.getDetailList();
+                    
+                    if (detailLists != null && detailLists.size() > 0) {
+                        //取差集，如有剩余的，则删除
+                        detailLists.removeAll(detailListList);
+                    }
+                    
                     KLog.d(TAG, "-----updateDetailList--hasDetailList--");
-                    for (DetailList detail : detailNote.getDetailList()) {
+                    for (DetailList detail : detailListList) {
                         //设置hash
                         detail.setHash(DigestUtil.md5Digest(detail.getTitle()));
                         int id = detail.getId();
-                        
+
                         if (id > 0) {   //已有，则更新
                             values = initUpdateDetailValues(detail);
                             row = db.update(Provider.DetailedListColumns.TABLE_NAME, values, Provider.DetailedListColumns._ID + " = ?", new String[] {String.valueOf(id)});
@@ -662,9 +672,13 @@ public class NoteManager extends Observable<Observer> {
                             row = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
                             KLog.d(TAG, "-----insert--detail---row---:" + row);
                         }
-                        
+
                     }
+                    
                 }
+
+                //如果有多余的清单，则删除
+                deleteDetailList(detailLists, db);
 
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, detailNote);
                 return true;
@@ -684,6 +698,12 @@ public class NoteManager extends Observable<Observer> {
     private ContentValues initUpdateNoteValues(NoteInfo note) {
         ContentValues values = new ContentValues();
         String content = note.getContent();
+        
+        String title = note.getTitle();
+        if (title != null) {
+            values.put(Provider.NoteColumns.TITLE, title);
+        }
+        
         if (!TextUtils.isEmpty(content)) {
             values.put(Provider.NoteColumns.CONTENT, content);
         }
@@ -761,6 +781,45 @@ public class NoteManager extends Observable<Observer> {
         }
         values.put(Provider.DetailedListColumns.CHECKED, detail.isChecked() ? 1 : 0);
         return values;
+    }
+
+    /**
+     * 删除清单，直接在本地数据库删除
+     * @param list
+     * @return
+     */
+    public boolean deleteDetailList(List<DetailList> list, SQLiteDatabase db) {
+        if (list != null && list.size() > 0) {
+            if (db == null) {
+                db = mDBHelper.getWritableDatabase();
+            }
+            int size = list.size();
+            String[] args = new String[size];
+            StringBuilder builder = new StringBuilder();
+            builder.append(Provider.DetailedListColumns._ID);
+            if (size == 1) {    //只有一个清单
+                builder.append(" = ?");
+                args[0] = String.valueOf(list.get(0).getId());
+            } else {
+                builder.append(" in (");
+                for (int i = 0; i < size; i++) {
+                    builder.append("?").append(Constants.TAG_COMMA);
+                    args[i] = String.valueOf(list.get(i).getId());
+                }
+                builder.deleteCharAt(builder.length() - 1);
+                builder.append(")");
+            }
+            int row = 0;
+            try {
+                row = db.delete(Provider.DetailedListColumns.TABLE_NAME, builder.toString(), args);
+                KLog.d(TAG, "--deleteDetailList--list---" + list);
+            } catch (Exception e) {
+                KLog.e(TAG, "--deleteDetailList--error--" + e.getMessage());
+            }
+            return row > 0;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -855,11 +914,11 @@ public class NoteManager extends Observable<Observer> {
      * @update 2016/6/18 16:46
      * @version: 1.0.0
      */
-    public boolean updateNote(NoteInfo note, List<String> cacheList, List<String> attachList) {
+    public boolean updateNote(NoteInfo note, List<String> cacheList, List<String> attachList, List<DetailList> detailLists) {
         DetailNoteInfo detailNote = new DetailNoteInfo();
         detailNote.setNoteInfo(note);
         
-        return updateDetailNote(detailNote, cacheList, attachList);
+        return updateDetailNote(detailNote, cacheList, attachList, detailLists);
     }
 
     /**

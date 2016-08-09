@@ -297,7 +297,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         int count = adapter.getItemCount();
         DetailList detail = new DetailList();
         if (mNote != null) {
-            detail.setSId(mNote.getSId());
+            detail.setNoteId(mNote.getSId());
         }
         if (!TextUtils.isEmpty(text)) {
             detail.setTitle(text.toString());
@@ -883,10 +883,17 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                         }
                         break;
                     case R.id.iv_sort:  //排序按钮
+                        DetailListAdapter adapter = (DetailListAdapter) mRecyclerView.getAdapter();
+                        DetailListViewHolder holder = getDetailHolder(position);
                         if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
-                            KLog.d(TAG, "-drag--position---" + position);
-                            DetailListViewHolder viewHolder = getDetailHolder(position);
-                            mDragStartListener.onStartDrag(viewHolder);
+
+                            if (holder != null && holder.etTitle.hasFocus() && adapter.getSelectPosition() == position) {  //当前行选中,是删除模式，则删除当前行
+                                removeItem();
+                            } else {
+                                KLog.d(TAG, "-drag--position---" + position);
+                                DetailListViewHolder viewHolder = getDetailHolder(position);
+                                mDragStartListener.onStartDrag(viewHolder);
+                            }
                         }
                         break;
                 }

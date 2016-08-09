@@ -101,7 +101,7 @@ public class DBHelper extends SQLiteOpenHelper {
         builder.append("CREATE TABLE ").append(Provider.DetailedListColumns.TABLE_NAME).append(" (")
                 .append(Provider.DetailedListColumns._ID).append(" INTEGER PRIMARY KEY AUTOINCREMENT, ")
                 .append(Provider.DetailedListColumns.SID).append(" TEXT UNIQUE NOT NULL, ")
-                .append(Provider.DetailedListColumns.NOTE_ID).append(" TEXT UNIQUE NOT NULL, ")
+                .append(Provider.DetailedListColumns.NOTE_ID).append(" TEXT NOT NULL, ")
                 .append(Provider.DetailedListColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
                 .append(Provider.DetailedListColumns.TITLE).append(" TEXT, ")
                 .append(Provider.DetailedListColumns.CHECKED).append(" INTEGER, ")

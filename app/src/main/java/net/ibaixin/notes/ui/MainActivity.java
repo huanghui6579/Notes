@@ -764,8 +764,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     refreshHelper.refresh(mNoteGridAdapter);
                 }
             }
-            int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
-            mRecyclerView.setPadding(padding, 0, padding, 0);
+            if (mRecyclerView.getPaddingLeft() == 0) {
+                int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
+                mRecyclerView.setPadding(padding, 0, padding, 0);
+            }
         } else {    //列表样式
 //            mRecyclerView.addItemDecoration(getItemDecoration(mContext));
             if (mNoteListAdapter == null) {
@@ -782,7 +784,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     refreshHelper.refresh(mNoteListAdapter);
                 }
             }
-            mRecyclerView.setPadding(0, 0, 0, 0);
+            if (mRecyclerView.getPaddingLeft() != 0) {
+                mRecyclerView.setPadding(0, 0, 0, 0);
+            }
         }
     }
 
@@ -964,6 +968,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         oldNote.setRemindId(newNote.getRemindId());
         oldNote.setSyncState(newNote.getSyncState());
         oldNote.setFolderId(newNote.getFolderId());
+        oldNote.setTitle(newNote.getTitle());
     }
     
     /**
@@ -1854,8 +1859,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         holder.mCbCheck.setChecked(false);
                     }
                 }
-                
-                holder.mTvContent.setText(note.getContent());
+
+                holder.mTvContent.setText(note.getStyleContent(true));
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
 
                 holder.mCbCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

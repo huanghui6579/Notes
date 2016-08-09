@@ -19,6 +19,11 @@ public class NoteCache {
      * 包含清单的笔记
      */
     private ThreadLocal<DetailNoteInfo> mThreadLocal;
+
+    /**
+     * 额外数据缓存
+     */
+    private Object mExtraData;
     
     private NoteCache() {
         mThreadLocal = new InheritableThreadLocal<>();
@@ -41,6 +46,14 @@ public class NoteCache {
 
     public void set(DetailNoteInfo detailNote) {
         mThreadLocal.set(detailNote);
+    }
+
+    public Object getExtraData() {
+        return mExtraData;
+    }
+
+    public void setExtraData(Object extraData) {
+        this.mExtraData = extraData;
     }
 
     /**
@@ -72,5 +85,6 @@ public class NoteCache {
      */
     public void clear() {
         mThreadLocal.remove();
+        mExtraData = null;
     }
 }
