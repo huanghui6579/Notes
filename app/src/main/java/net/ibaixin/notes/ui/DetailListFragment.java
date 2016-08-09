@@ -194,12 +194,13 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     public boolean hasDetailList() {
         boolean hasDetail = false;
         if (mDetailLists != null && mDetailLists.size() > 0) {
-            for (DetailList detail : mDetailLists) {
+            hasDetail = true;
+            /*for (DetailList detail : mDetailLists) {
                 hasDetail = !TextUtils.isEmpty(detail.getTitle());
                 if (hasDetail) {
                     break;
                 }
-            }
+            }*/
         }
         return hasDetail;
     }
@@ -660,6 +661,14 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         KLog.d(TAG, "-----showNote---detailNote--" + detailNote);
         NoteInfo note = detailNote.getNoteInfo();
         String text = note.getContent();
+
+        if (mTitle == null) {
+            mTitle = note.getNoteTitle();
+        }
+
+        if (mEtTitle != null) {
+            mEtTitle.setText(mTitle);
+        }
         
         if (!TextUtils.isEmpty(text)) {
             if (detailNote.hasDetailList()) {   //已经有清单了
@@ -668,13 +677,6 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                 setText(text, note);
             }
             
-            if (mTitle == null) {
-                mTitle = note.getNoteTitle();
-            }
-            
-            if (mEtTitle != null) {
-                mEtTitle.setText(mTitle);
-            }
             if (mRecyclerView != null) {
                 mRecyclerView.getAdapter().notifyDataSetChanged();
             }

@@ -335,7 +335,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
      */
     public CharSequence getStyleContent(boolean hasTitle) {
         if (isDetailNote()) {   //清单笔记
-            String tContent = content.trim();
+            String tContent = content;
             StringTokenizer tokenizer = new StringTokenizer(tContent, Constants.TAG_NEXT_LINE);
             SpannableStringBuilder builder = new SpannableStringBuilder();
             
