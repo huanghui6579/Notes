@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
-import net.ibaixin.notes.util.log.Log;
+import com.yunxinlink.notes.util.log.Log;
 
 import me.imid.swipebacklayout.SwipeBackLayout;
 import me.imid.swipebacklayout.Utils;

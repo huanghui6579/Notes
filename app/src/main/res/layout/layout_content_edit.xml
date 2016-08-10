@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<net.ibaixin.notes.widget.NoteEditText xmlns:android="http://schemas.android.com/apk/res/android"
+<com.yunxinlink.notes.widget.NoteEditText xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@id/et_content"
     style="?attr/editTextStyle"
     android:layout_width="match_parent"

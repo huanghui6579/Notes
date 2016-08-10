@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_alignParentTop="true"
-    tools:context="net.ibaixin.notes.ui.NoteEditFragment">
+    tools:context=".ui.NoteEditFragment">
 
-    <net.ibaixin.notes.widget.NoteFrameLayout
+    <com.yunxinlink.notes.widget.NoteFrameLayout
         android:id="@id/content_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <net.ibaixin.notes.widget.NoteTextView
+        <com.yunxinlink.notes.widget.NoteTextView
             android:id="@id/tv_content"
             style="?attr/editTextStyle"
             android:layout_width="match_parent"
@@ -23,6 +23,6 @@
 
         <include layout="@layout/layout_content_edit"
             android:visibility="gone"/>
-    </net.ibaixin.notes.widget.NoteFrameLayout>
+    </com.yunxinlink.notes.widget.NoteFrameLayout>
 
 </ScrollView>

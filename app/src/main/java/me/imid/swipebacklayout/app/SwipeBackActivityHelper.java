@@ -6,7 +6,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 
-import net.ibaixin.notes.R;
+import com.yunxinlink.notes.R;
 
 import me.imid.swipebacklayout.SwipeBackLayout;
 import me.imid.swipebacklayout.Utils;

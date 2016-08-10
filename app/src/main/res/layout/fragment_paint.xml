@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/white"
-    tools:context="net.ibaixin.notes.paint.ui.PaintFragment">
+    tools:context=".paint.ui.PaintFragment">
 
-    <net.ibaixin.notes.paint.widget.PaintView
+    <com.yunxinlink.notes.paint.widget.PaintView
         android:id="@+id/paint_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

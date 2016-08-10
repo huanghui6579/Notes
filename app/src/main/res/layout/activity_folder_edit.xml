@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="net.ibaixin.notes.ui.FolderEditActivity">
+    tools:context=".ui.FolderEditActivity">
 
     <include
         layout="@layout/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
     
-    <net.ibaixin.notes.widget.ClearableEditText
+    <com.yunxinlink.notes.widget.ClearableEditText
         android:id="@+id/et_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
