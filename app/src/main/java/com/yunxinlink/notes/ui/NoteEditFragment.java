@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.LinkMovementMethod;
@@ -38,6 +39,7 @@ import com.yunxinlink.notes.richtext.RichTextWrapper;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteLinkify;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.widget.AttachSpan;
 import com.yunxinlink.notes.widget.MessageBundleSpan;
@@ -294,11 +296,20 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      * @update 2016/3/13 10:27
      * @version 1.0.0
      */
-    public void insertTime() {
+    @Override
+    public String insertTime() {
         String time = SystemUtil.getFormatTime();
-        int selectionStart = mEtContent.getSelectionStart();
-        Editable editable = mEtContent.getEditableText();
-        editable.insert(selectionStart, time);
+        NoteUtil.insertText(mEtContent, time);
+        return time;
+    }
+
+    @Override
+    public CharSequence insertContact(String[] info) {
+        CharSequence text = NoteUtil.formatContactInfo(info);
+        if (!TextUtils.isEmpty(text)) {
+            NoteUtil.insertText(mEtContent, text);
+        }
+        return text;
     }
 
     /**
@@ -570,9 +581,9 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
     @Override
     public void afterTextChanged(Editable s) {
-        mText = s;
-        KLog.d(TAG, "--afterTextChanged-----" + s);
         if (mListener != null) {
+            mText = s;
+            KLog.d(TAG, "--afterTextChanged-----" + s);
             if (mIsEnterLine) {  //手动按的回车键
                 mIsEnterLine = false;
                 int selectionStart = mEtContent.getSelectionStart();

@@ -16,7 +16,11 @@
         <item name="android:windowIsTranslucent">true</item>
     </style>
 
-    <style name="AppTheme.NoActionBar.Main">
+    <style name="AppTheme.NoActionBar.Default">
+        
+    </style>
+
+    <style name="AppTheme.NoActionBar.Default.Main">
         <item name="android:windowIsTranslucent">false</item>
     </style>
 

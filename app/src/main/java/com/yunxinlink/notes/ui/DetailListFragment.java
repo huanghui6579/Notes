@@ -38,6 +38,8 @@ import com.yunxinlink.notes.model.DetailList;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteUtil;
+import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.widget.LayoutManagerFactory;
 import com.yunxinlink.notes.widget.NoteEditText;
 
@@ -530,7 +532,47 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     public NoteInfo.NoteKind getNoteType() {
         return NoteInfo.NoteKind.DETAILED_LIST;
     }
-    
+
+    @Override
+    public String insertTime() {
+        String time = SystemUtil.getFormatTime();
+        EditText editText = getFocusEditText();
+        if (editText != null) {
+            int selectionStart = editText.getSelectionStart();
+            Editable editable = editText.getEditableText();
+            editable.insert(selectionStart, time);
+        } else {
+            KLog.d(TAG, "--insertTime--getFocusEditText--is--null--");
+        }
+        return time;
+    }
+
+    @Override
+    public CharSequence insertContact(String[] info) {
+        CharSequence text = NoteUtil.formatContactInfo(info);
+        if (!TextUtils.isEmpty(text)) {
+            EditText editText = getFocusEditText();
+            if (editText != null) {
+                NoteUtil.insertText(editText, text);
+            } else {
+                KLog.d(TAG, "--insertContact--getFocusEditText--is--null--");
+            }
+        }
+        return text;
+    }
+
+    /**
+     * 获取当前有焦点的文本框
+     * @return
+     */
+    public EditText getFocusEditText() {
+        View focusView = getActivity().getWindow().getCurrentFocus();
+        if (focusView != null && focusView instanceof EditText) {
+            return (EditText) focusView;
+        }
+        return null;
+    }
+
     /**
      * 将文本解析成清单
      * @param text

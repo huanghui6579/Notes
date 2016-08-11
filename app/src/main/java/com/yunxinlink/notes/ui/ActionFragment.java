@@ -36,4 +36,17 @@ public interface ActionFragment {
      * @return
      */
     NoteInfo.NoteKind getNoteType();
+
+    /**
+     * 插入当前时间
+     * @return 返回当前时间
+     */
+    String insertTime();
+
+    /**
+     * 插入联系人信息，仅包含姓名和号码
+     * @param info 联系人信息的数据[0]:姓名，[1]:号码
+     * @return 返回插入的联系人信息
+     */
+    CharSequence insertContact(String[] info);
 }

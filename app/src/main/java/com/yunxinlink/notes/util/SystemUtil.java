@@ -1220,4 +1220,26 @@ public class SystemUtil {
         }
         return type;
     }
+
+    /**
+     * 设置控件的可视状态
+     * @param view
+     * @param visibility
+     */
+    public static void setViewVisibility(View view, int visibility) {
+        if (view.getVisibility() != visibility) {
+            view.setVisibility(visibility);
+        }
+    }
+
+    /**
+     * 设置控件是否可用
+     * @param view
+     * @param enable
+     */
+    public static void setViewEnable(View view, boolean enable) {
+        if (view.isEnabled() != enable) {
+            view.setEnabled(enable);
+        }
+    }
 }

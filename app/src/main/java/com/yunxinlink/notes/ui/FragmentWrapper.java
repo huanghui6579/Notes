@@ -13,7 +13,7 @@ public class FragmentWrapper {
         return mFragment;
     }
 
-    public void setmFragment(ActionFragment mFragment) {
-        this.mFragment = mFragment;
+    public void setFragment(ActionFragment fragment) {
+        this.mFragment = fragment;
     }
 }

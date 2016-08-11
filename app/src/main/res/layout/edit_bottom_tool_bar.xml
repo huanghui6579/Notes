@@ -19,7 +19,7 @@
     <ImageButton
         android:id="@+id/iv_list"
         style="@style/EditBottomToolBarStyle"
-        android:src="@drawable/ic_content_format_list"/>
+        android:src="@drawable/ic_content_list"/>
 
     <ImageButton
         android:id="@+id/iv_time"

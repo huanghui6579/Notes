@@ -6,13 +6,13 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.preference.PreferenceManager;
 
+import com.jiongbull.jlog.JLog;
 import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -89,6 +89,11 @@ public class NoteApplication extends Application {
     
     private void initKLog() {
         KLog.init(BuildConfig.LOG_ENABLE, Constants.APP_ROOT_NAME);
+    }
+    
+    private void initJLog() {
+        JLog.init(this).setDebug(BuildConfig.DEBUG);;
+//        KLog.init(BuildConfig.LOG_ENABLE, Constants.APP_ROOT_NAME);
     }
 
     public String getDefaultFolderSid() {

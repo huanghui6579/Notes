@@ -11,7 +11,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
@@ -34,7 +33,7 @@ import android.widget.TextView;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
-
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.paint.PaintData;
 import com.yunxinlink.notes.paint.PaintRecord;
@@ -43,6 +42,7 @@ import com.yunxinlink.notes.paint.ui.PaintFragment;
 import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.Log;
 import com.yunxinlink.notes.widget.NotePopupWindow;
@@ -879,18 +879,9 @@ public class HandWritingActivity extends BaseActivity implements PaintFragment.O
 
             @Override
             public void onDenied(String permission) {
+                KLog.d(TAG, "-----onDenied---permission----" + permission);
                 //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
-                if (ActivityCompat.shouldShowRequestPermissionRationale(HandWritingActivity.this,
-                        permission)) {
-                    SystemUtil.makeShortToast(R.string.paint_save_error_reason);
-                } else {
-                    SystemUtil.makeShortToast(R.string.paint_save_error);
-                    Log.d(TAG, "---savePaintImage----permissions--onDenied----" + permission);
-                    //进行权限请求
-                    /*ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            EXTERNAL_STORAGE_REQ_CODE);*/
-                }
+                NoteUtil.onPermissionDenied(HandWritingActivity.this, permission, R.string.paint_save_error_reason, R.string.paint_save_error);
                 setResult(RESULT_CANCELED);
                 finish();
             }

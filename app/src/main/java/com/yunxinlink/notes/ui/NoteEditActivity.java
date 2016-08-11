@@ -5,14 +5,15 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
@@ -33,12 +34,10 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.cache.NoteCache;
@@ -61,9 +60,11 @@ import com.yunxinlink.notes.service.CoreService;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.ImageUtil;
+import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
+import com.yunxinlink.notes.widget.NoteSearchLayout;
 
 import java.io.File;
 import java.io.IOException;
@@ -91,12 +92,15 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public static final String ARG_OPT_DELETE = "opt_delete";
     
     private static final int MSG_INIT_BOTTOM_TOOL_BAR = 3;
+    private static final int MSG_READ_CONTACT_SUCCESS = 4;
+    private static final int MSG_READ_CONTACT_FAILED = 5;
     
     public static final int REQ_PICK_IMAGE = 10;
     public static final int REQ_TAKE_PIC = 11;
     public static final int REQ_PAINT = 12;
     public static final int REQ_PICK_FILE = 13;
     public static final int REQ_EDIT_PAINT = 14;
+    public static final int REQ_CHOOSE_CONTACT = 15;
     
     //笔记的阅读模式
     public static final int NOTE_MODE_VIEW = 0;
@@ -179,6 +183,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     
     //fragment的包装器
     private FragmentWrapper mFragmentWrapper;
+    //搜索菜单的容器
+    private RelativeLayout mSearchViewContainer;
     
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -339,7 +345,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             
         }
 
-        mFragmentWrapper.setmFragment(actionFragment);
+        mFragmentWrapper.setFragment(actionFragment);
         
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.content_container, fragment, fragment.getClass().getSimpleName());
@@ -357,6 +363,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             setupMenuStyle(isTextStyle);
             //根据文本类型修改菜单项
             setupOverMenuStyle(isTextStyle);
+            
+            //设置底部栏的状态
+            setupBottomBarStyle(isTextStyle);
         }
         return text;
     }
@@ -412,6 +421,28 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 修改底部栏的样式
+     * @param isTextStyle
+     */
+    private void setupBottomBarStyle(boolean isTextStyle) {
+        if (mBottomBar != null) {
+            View unDo = mBottomBar.findViewById(R.id.iv_undo);
+            View reDo = mBottomBar.findViewById(R.id.iv_redo);
+            View order = mBottomBar.findViewById(R.id.iv_list);
+            boolean enable = true;
+            if (!isTextStyle) { //清单笔记
+                enable = false;
+                SystemUtil.setViewEnable(unDo, false);
+                SystemUtil.setViewEnable(reDo, false);
+            } else {
+                SystemUtil.setViewEnable(unDo, hasUndo());
+                SystemUtil.setViewEnable(reDo, hasRedo());
+            }
+            SystemUtil.setViewEnable(order, enable);
+        }
+    }
+
+    /**
      * 是否是阅读模式
      * @return 是否是阅读模式
      */
@@ -425,6 +456,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private boolean isTextMode() {
         return mNoteMode == NOTE_MODE_TEXT;
+    }
+
+    /**
+     * 是否是清单模式
+     * @return
+     */
+    private boolean isDetailListMode() {
+        return mNoteMode == NOTE_MODE_DETAIL_LIST;
     }
 
     /**
@@ -852,6 +891,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 if (tempPopu != null) {
                     Menu menu = tempPopu.getMenu();
 
+                    MenuItem searchItem = menu.findItem(R.id.action_find);
+                    setMenuTint(searchItem, 0);
+
                     MenuItem shareItem = menu.findItem(R.id.action_share);
                     setMenuTint(shareItem, 0);
 
@@ -927,6 +969,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             }
             child.setOnClickListener(this);
         }
+        
+        if (isDetailListMode()) {   //清单模式
+            setupBottomBarStyle(false);
+        }
 
     }
 
@@ -944,6 +990,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 break;
             case R.id.iv_time:  //当前的时间
                 insertTime();
+                break;
+            case R.id.iv_contact:   //选择联系人
+                chooseContact();
                 break;
             case R.id.iv_down:  //隐藏/显示软键盘
                 if (mBottomBar.getVisibility() == View.VISIBLE) {   //隐藏软键盘
@@ -1060,10 +1109,123 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         KLog.d(TAG, "---onActivityResult---req_pick_file---data---is----null--");
                     }
                     break;
+                case REQ_CHOOSE_CONTACT:    //选择联系人的结果
+                    if (data != null) {
+                        Uri uri = data.getData();
+                        readContactInfo(uri);
+                    }
+                    break;
             }
         }
         
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    /**
+     * 进入选择联系人的界面
+     */
+    private void chooseContact() {
+        Intent intent = new Intent(Intent.ACTION_PICK,
+                ContactsContract.Contacts.CONTENT_URI);
+        intent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
+        startActivityForResult(intent, REQ_CHOOSE_CONTACT);
+    }
+
+    /**
+     * 获取联系人的信息，仅仅是名字和号码
+     *
+     * @param uri
+     * @return
+     */
+    public void readContactInfo(final Uri uri) {
+        final String[] permissions = {Manifest.permission.READ_CONTACTS};
+        PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissions, new PermissionsResultAction() {
+            @Override
+            public void onGranted() {
+                doReadContact(uri);
+            }
+
+            @Override
+            public void onDenied(String permission) {
+                KLog.d(TAG, "-----onDenied---permission----" + permission);
+                if (permissions[0].equals(permission)) {
+                    //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
+                    NoteUtil.onPermissionDenied(NoteEditActivity.this, permission, R.string.tip_read_contact_permission_need, R.string.tip_read_permission_failed);
+                }
+            }
+        });
+    }
+
+    /**
+     * 读取联系人
+     * @param uri
+     */
+    private void doReadContact(Uri uri) {
+        doInbackground(new NoteTask(uri) {
+            @Override
+            public void run() {
+                String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME};
+                Cursor cursor = null;
+                try {
+                    cursor = getContentResolver().query((Uri) params[0], projection,
+                            null, null, null);
+                    if (cursor != null && cursor.moveToFirst()) {
+
+                        String number = cursor.getString(cursor.getColumnIndex(projection[0]));
+
+                        String name = cursor.getString(cursor.getColumnIndex(projection[1]));
+
+                        //联系人信息的数据，0:姓名，1：号码
+                        String[] array = new String[2];
+
+                        array[0] = name;
+                        array[1] = number;
+
+                        Message msg = mHandler.obtainMessage();
+                        msg.what = MSG_READ_CONTACT_SUCCESS;
+                        msg.obj = array;
+                        mHandler.sendMessage(msg);
+                    } else {
+                        mHandler.sendEmptyMessage(MSG_READ_CONTACT_FAILED);
+                        KLog.e(TAG, "--readContactInfo--failed----permission--error--");
+                    }
+                } catch (Exception e) {
+                    mHandler.sendEmptyMessage(MSG_READ_CONTACT_FAILED);
+                    KLog.e(TAG, "--readContactInfo--error--" + e.getMessage());
+                } finally {
+                    if (cursor != null) {
+                        cursor.close();
+                    }
+                }
+
+            }
+        });
+    }
+
+    /**
+     * 插入联系人信息，仅包含姓名和号码
+     * @param info 联系人信息的数据[0]:姓名，[1]:号码
+     * @return 返回插入的联系人信息
+     */
+    public void insertContact(String[] info) {
+        if (info != null && info.length > 0) {
+            String name = info[0];
+            String number = info[1];
+            String text = "";
+            if (!TextUtils.isEmpty(name)) {
+                text += name;
+            }
+            if (!TextUtils.isEmpty(number)) {
+                text += number;
+            }
+            if (TextUtils.isEmpty(text)) {
+                SystemUtil.makeShortToast(R.string.read_empty_contact);
+                return;
+            }
+            if (mFragmentWrapper != null) {
+                mFragmentWrapper.getFragment().insertContact(info);
+            }
+        }
     }
 
     /**
@@ -1231,6 +1393,22 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (!mIvUndo.isEnabled()) {
             mIvUndo.setEnabled(true);
         }
+    }
+
+    /**
+     * 是否有回撤操作
+     * @return
+     */
+    private boolean hasUndo() {
+        return mUndoStack.size() > 0;
+    }
+
+    /**
+     * 是否有前进操作
+     * @return
+     */
+    private boolean hasRedo() {
+        return mRedoStack.size() > 0;
     }
 
     /**
@@ -1415,8 +1593,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @version 1.0.0
      */
     private void insertTime() {
-        if (mNoteEditFragment != null) {
-            mNoteEditFragment.insertTime();
+        if (mFragmentWrapper != null) {
+            mFragmentWrapper.getFragment().insertTime();
         }
     }
 
@@ -1659,16 +1837,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             @Override
             public void onDenied(String permission) {
                 //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
-                if (ActivityCompat.shouldShowRequestPermissionRationale(NoteEditActivity.this,
-                        permission)) {
-                    Toast.makeText(mContext,"please give me the permission",Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(mContext,"onDenied--request--",Toast.LENGTH_SHORT).show();
-                    //进行权限请求
-                    /*ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            EXTERNAL_STORAGE_REQ_CODE);*/
-                }
+                NoteUtil.onPermissionDenied(NoteEditActivity.this, permission, R.string.tip_record_permission_need, R.string.tip_record_permission_failed);
             }
         });
 
@@ -1677,8 +1846,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         PermissionsManager.getInstance().notifyPermissionsChange(permissions, grantResults);
+        KLog.d(TAG, "Activity-onRequestPermissionsResult() PermissionsManager.notifyPermissionsChange()");
     }
 
     /**
@@ -1907,6 +2076,22 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         setNoteInfo(text);
                     }
                     break;
+                case R.id.action_find:  //搜索
+                    if (mSearchViewContainer == null) {
+                        mSearchViewContainer = new NoteSearchLayout(mContext);
+                        /*LayoutInflater inflater = LayoutInflater.from(mContext);
+                        View view = inflater.inflate(R.layout.layout_menu_search, null);
+                        mSearchViewContainer = (RelativeLayout) view.findViewById(R.id.search_container);
+                        SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
+                        searchView.setQueryHint(getString(R.string.find_hint));
+                        searchView.onActionViewExpanded();*/
+                    }
+                    int count = mToolBar.getChildCount();
+                    mToolBar.removeViews(1, count - 1);
+                    ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    mSearchViewContainer.setLayoutParams(params);
+                    mToolBar.addView(mSearchViewContainer, params);
+                    break;
             }
             return false;
         }
@@ -1981,6 +2166,13 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     if (activity.mDetailNote != null) {
                         activity.showNote(activity.mDetailNote);
                     }
+                    break;
+                case MSG_READ_CONTACT_SUCCESS:  //读取联系人成功
+                    String[] info = (String[]) msg.obj;
+                    activity.insertContact(info);
+                    break;
+                case MSG_READ_CONTACT_FAILED:   //读取联系人失败，没有权限
+                    SystemUtil.makeShortToast(R.string.read_contact_failed);
                     break;
             }
             super.handleMessage(msg);

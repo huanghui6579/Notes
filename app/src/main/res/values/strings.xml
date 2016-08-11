@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">云信笔记</string>
 
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
+    <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
 
     <string name="note_edit_hint">输入文本内容</string>
     <string name="note_title_edit_hint">输入清单标题</string>
@@ -30,8 +30,10 @@
     <string name="delete_result_error">删除失败</string>
     <string name="move_result_error">移动失败</string>
     <string name="record_error">录音失败，请检查是否有录音的权限</string>
-    <string name="paint_save_error_reason">画图保存失败，由于画图需要保存文件到SD卡中，所以请授予该应用SD卡的读写权限</string>
+    <string name="paint_save_error_reason">画图保存失败，由于画图需要保存文件到SD卡中，所以请授予SD卡的读写权限</string>
     <string name="paint_save_error">画图保存失败，请检查是否授予应用SD卡读写权限</string>
+    <string name="read_empty_contact">联系人数据为空</string>
+    <string name="read_contact_failed">选择联系人失败，请允许读取联系人数据</string>
 
     <string name="init">初始化中…</string>
 
@@ -40,6 +42,11 @@
     <string name="tip_no_text">没有内容</string>
     <string name="tip_camera_error">打开相机失败</string>
     <string name="tip_mkfile_error">没有创建文件的权限，请允许创建文件</string>
+    <string name="tip_record_permission_need">录音需要录音权限，请允许该权限</string>
+    <string name="tip_record_permission_failed">录音失败，录音需要录音权限</string>
+    <string name="tip_read_contact_permission_need">插入联系人需要读取联系人的权限，请允许该权限</string>
+    <string name="tip_read_permission_failed">插入联系人失败，需要读取联系人的权限</string>
+    <string name="tip_grant_write_storage_failed">初始化数据写入SD卡失败，没有写入权限</string>
 
     <string name="result_success">操作成功</string>
 
@@ -75,6 +82,7 @@
     <string name="action_folder">文件夹</string>
     <string name="action_trash">回收站</string>
     <string name="action_search">搜索</string>
+    <string name="action_find">查找</string>
     <string name="action_more">更多</string>
     <string name="action_show_grid">表格</string>
     <string name="action_show_list">列表</string>
@@ -119,6 +127,8 @@
     <string name="erase_tip_size">橡皮檫大小</string>
     <string name="erase_tip_clear">清除整页</string>
 
+    <string name="find_hint">"查找…"</string>
+    
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

@@ -2,19 +2,15 @@ package com.yunxinlink.notes.ui;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
-import android.widget.EditText;
+import android.support.v7.widget.SearchView;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.util.Constants;
-import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.lang.reflect.Method;
@@ -23,7 +19,7 @@ public class TestActivity extends BaseActivity {
 
     @Override
     protected int getContentView() {
-        return R.layout.activity_test;
+        return R.layout.layout_menu_search;
     }
 
     @Override
@@ -33,7 +29,15 @@ public class TestActivity extends BaseActivity {
 
     @Override
     protected void initView() {
-        ImageView imageView = (ImageView) findViewById(R.id.icon);
+
+        SearchView searchView = (SearchView) findViewById(R.id.search_view);
+
+        if (searchView != null) {
+//            searchView.setIconifiedByDefault(true);
+            searchView.setIconified(false);
+        }
+        
+        /*ImageView imageView = (ImageView) findViewById(R.id.icon);
 
         Drawable drawable = getResources().getDrawable(R.drawable.ic_action_trash);
         
@@ -54,7 +58,7 @@ public class TestActivity extends BaseActivity {
         
         int resId = R.drawable.ic_action_undo;
         
-        tintDoMenuIcon(btnDo, resId, disableColor);
+        tintDoMenuIcon(btnDo, resId, disableColor);*/
     }
 
     private void tintDoMenuIcon(ImageButton imageButton, int resId, int disableColor) {

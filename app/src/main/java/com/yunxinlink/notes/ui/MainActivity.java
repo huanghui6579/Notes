@@ -12,7 +12,6 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -36,12 +35,10 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.db.Provider;
@@ -343,22 +340,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
             @Override
             public void onGranted() {
-                KLog.d(TAG, "---requestPermission---onGranted---");
+                KLog.d(TAG, "---requestPermission---onGranted----permission--" + permissions[0]);
 //                Toast.makeText(mContext,"onGranted",Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onDenied(String permission) {
-                //如果App的权限申请曾经被用户拒绝过，就需要在这里跟用户做出解释
-                if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
-                        permissions[0])) {
-                    Toast.makeText(mContext,"please give me the permission",Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(mContext,"onDenied--request--",Toast.LENGTH_SHORT).show();
-                    //进行权限请求
-                    /*ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            EXTERNAL_STORAGE_REQ_CODE);*/
+                KLog.d(TAG, "-----onDenied---permission----" + permission);
+                if (permissions[0].equals(permission)) {
+                    NoteUtil.onPermissionDenied(MainActivity.this, permission, R.string.tip_mkfile_error, R.string.tip_grant_write_storage_failed);
                 }
             }
         });

@@ -54,4 +54,5 @@ dependencies {
     compile 'com.googlecode.libphonenumber:libphonenumber:7.4.5'
     compile 'com.anthonycr.grant:permissions:1.0'
     compile 'com.github.zhaokaiqiang.klog:library:1.5.0'
+    compile 'com.jiongbull:jlog:1.0.5'
 }
