@@ -123,6 +123,7 @@ public class AttachSpan extends ClickableSpan {
             case Attach.IMAGE:  //图片
                 menuItem.menuRes = R.array.image_menu_items;
                 handleAttach(context, menuItem, filePath);
+                break;
             case Attach.PAINT:  //绘画
                 menuItem.menuRes = R.array.paint_menu_items;
                 handlePaint(context, menuItem, filePath);

@@ -49,4 +49,25 @@ public interface ActionFragment {
      * @return 返回插入的联系人信息
      */
     CharSequence insertContact(String[] info);
+
+    /**
+     * 搜索
+     * @param keyword 关键字
+     */
+    void doSearch(String keyword);
+
+    /**
+     * 取消搜索
+     */
+    void cancelSearch();
+
+    /**
+     * 查看搜索前面的结果
+     */
+    void onFindPrevious();
+
+    /**
+     * 查看搜索后面的结果
+     */
+    void onFindNext();
 }

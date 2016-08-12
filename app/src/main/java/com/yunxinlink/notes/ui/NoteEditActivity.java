@@ -20,6 +20,7 @@ import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -71,6 +72,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -184,7 +186,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     //fragment的包装器
     private FragmentWrapper mFragmentWrapper;
     //搜索菜单的容器
-    private RelativeLayout mSearchViewContainer;
+    private NoteSearchLayout mSearchViewContainer;
+    //菜单控件的缓存
+    private List<View> mMenuItems;
     
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
@@ -418,6 +422,134 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 detailItem.setTitle(textTes);
             }
         }
+    }
+
+    /**
+     * 退出搜索模式
+     * @return
+     */
+    private boolean outSearchMode() {
+        if (isSearchMode()) {
+            setupSearchMode(false);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 进行搜索操作
+     * @param keyword
+     */
+    private void doSearch(String keyword) {
+        if (mFragmentWrapper != null) {
+            mFragmentWrapper.getFragment().doSearch(keyword);
+        }
+    }
+
+    /**
+     * 取消搜索
+     */
+    private void cancelSearch() {
+        if (mFragmentWrapper != null) {
+            mFragmentWrapper.getFragment().cancelSearch();
+        }
+    }
+
+    /**
+     * 查看搜索前面的结果
+     */
+    private void onFindPrevious() {
+        if (mFragmentWrapper != null) {
+            mFragmentWrapper.getFragment().onFindPrevious();
+        }
+    }
+
+    /**
+     * 查看搜索后面的结果
+     */
+    private void onFindNext() {
+        if (mFragmentWrapper != null) {
+            mFragmentWrapper.getFragment().onFindNext();
+        }
+    }
+
+    /**
+     * 搜索模式的切换
+     * @param searchMode 是否要切换到搜索模式
+     */
+    private void setupSearchMode(boolean searchMode) {
+        if (searchMode) {  //切换到搜索模式
+            if (mSearchViewContainer == null) {
+                mSearchViewContainer = new NoteSearchLayout(mContext);
+            } else {
+                mSearchViewContainer.setOnQueryTextListener(null);
+                mSearchViewContainer.clearText();
+            }
+            mSearchViewContainer.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    return false;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    doSearch(newText);
+                    return true;
+                }
+            });
+            mSearchViewContainer.setOnSearchActionListener(new NoteSearchLayout.OnSearchActionListener() {
+                @Override
+                public void onPrevious() {
+                    onFindPrevious();
+                }
+
+                @Override
+                public void onNext() {
+                    onFindNext();
+                }
+            });
+            int count = mToolBar.getChildCount();
+            if (mMenuItems == null) {
+                mMenuItems = new LinkedList<>();
+                for (int i = 0; i < count; i++) {
+                    if (i != 0) {   //第一位不移除
+                        View view = mToolBar.getChildAt(i);
+                        if (view != null) {
+                            mMenuItems.add(view);
+                        }
+                    }
+                }
+                mToolBar.removeViews(1, count - 1);
+                ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                mSearchViewContainer.setLayoutParams(params);
+                mToolBar.addView(mSearchViewContainer, params);
+            } else {
+                KLog.d(TAG, "-----setupSearchMode--searchMode---true---but--is----already---searchMode--");
+            }
+            mSearchViewContainer.inSearch();
+        } else {    //退出搜索模式
+            cancelSearch();
+            if (mSearchViewContainer != null) {
+                mSearchViewContainer.outSearch();
+                mToolBar.removeView(mSearchViewContainer);
+            }
+            int count = mToolBar.getChildCount();
+            if (count <= 1 && mMenuItems != null && mMenuItems.size() > 0) {   //菜单只有一个
+                for (int i = 0; i < mMenuItems.size(); i++) {
+                    mToolBar.addView(mMenuItems.get(i));
+                }
+                mMenuItems.clear();
+                mMenuItems = null;
+            }
+        }
+    }
+
+    /**
+     * 判断是否是搜索模式
+     * @return
+     */
+    public boolean isSearchMode() {
+        return mMenuItems != null && mMenuItems.size() > 0;
     }
 
     /**
@@ -866,7 +998,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     MenuItem shareItem = menu.findItem(R.id.action_share);
                     setMenuTint(shareItem, 0);
 
-                    MenuItem searchItem = menu.findItem(R.id.action_search);
+                    MenuItem searchItem = menu.findItem(R.id.action_find);
                     setMenuTint(searchItem, 0);
 
                     MenuItem deleteItem = menu.findItem(R.id.action_delete);
@@ -1052,10 +1184,23 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
     @Override
     public void onBackPressed() {
+
+        if (outSearchMode()) {
+            return;
+        }
+        
         if (mNoteEditFragment != null) {
             KLog.d(TAG, "*****content***" + mNoteEditFragment.getText());
         }
         super.onBackPressed();
+    }
+
+    @Override
+    protected void onBack() {
+        if (outSearchMode()) {
+            return;
+        }
+        super.onBack();
     }
 
     @Override
@@ -1449,7 +1594,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private void undo() {
         EditStep editStep = mUndoStack.pop();
         if (!editStep.isEmpty() && mNoteEditFragment != null) {
-            CharSequence content = editStep.getContent().toString();
+            CharSequence content = editStep.getContent();
             Editable editable = mNoteEditFragment.getEditTextView().getEditableText();
             int start = editStep.getStart();
             int end = editStep.getEnd();
@@ -2077,20 +2222,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case R.id.action_find:  //搜索
-                    if (mSearchViewContainer == null) {
-                        mSearchViewContainer = new NoteSearchLayout(mContext);
-                        /*LayoutInflater inflater = LayoutInflater.from(mContext);
-                        View view = inflater.inflate(R.layout.layout_menu_search, null);
-                        mSearchViewContainer = (RelativeLayout) view.findViewById(R.id.search_container);
-                        SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
-                        searchView.setQueryHint(getString(R.string.find_hint));
-                        searchView.onActionViewExpanded();*/
-                    }
-                    int count = mToolBar.getChildCount();
-                    mToolBar.removeViews(1, count - 1);
-                    ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    mSearchViewContainer.setLayoutParams(params);
-                    mToolBar.addView(mSearchViewContainer, params);
+                    setupSearchMode(true);
                     break;
             }
             return false;

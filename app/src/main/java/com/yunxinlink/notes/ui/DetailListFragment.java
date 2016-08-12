@@ -561,6 +561,26 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         return text;
     }
 
+    @Override
+    public void doSearch(String keyword) {
+        
+    }
+
+    @Override
+    public void cancelSearch() {
+        
+    }
+
+    @Override
+    public void onFindPrevious() {
+        
+    }
+
+    @Override
+    public void onFindNext() {
+
+    }
+
     /**
      * 获取当前有焦点的文本框
      * @return

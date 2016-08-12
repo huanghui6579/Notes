@@ -8,13 +8,16 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
 import android.text.style.ImageSpan;
 import android.view.KeyEvent;
@@ -26,7 +29,6 @@ import android.widget.TextView;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.listener.AttachAddCompleteListener;
 import com.yunxinlink.notes.model.Attach;
@@ -49,7 +51,15 @@ import com.yunxinlink.notes.widget.NoteLinkMovementMethod;
 import com.yunxinlink.notes.widget.NoteTextView;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -101,6 +111,15 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     
     //笔记的文本内容
     private CharSequence mText;
+    
+    //搜索关键字的span集合
+    private List<SearchResult> mKeywordResults;
+    
+    //搜索结果的下一个聚焦索引
+    private int mNextPosition = 0;
+    
+    //搜索结果每行的集合，不重复
+    private List<Integer> mSearchLines;
 
     public NoteEditFragment() {
         // Required empty public constructor
@@ -223,10 +242,13 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     public void setText(CharSequence text) {
         this.mText = text;
     }
-
+    
     @Override
     public CharSequence getText() {
-        CharSequence text = mEtContent.getText();
+        CharSequence text = null;
+        if (mRichTextWrapper != null) {
+            text = mRichTextWrapper.getRichSpan().getTextContent();
+        }
         text = text == null ? "" : text;
         return text;
     }
@@ -291,6 +313,17 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     }
 
     /**
+     * 根据不同的模式获取对应的显示控件
+     * @return
+     */
+    public TextView getShowView() {
+        if (mRichTextWrapper != null) {
+            return mRichTextWrapper.getgetRichSpanView();
+        }
+        return null;
+    }
+
+    /**
      * 在光标处插入当前时间
      * @author tiger
      * @update 2016/3/13 10:27
@@ -310,6 +343,143 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
             NoteUtil.insertText(mEtContent, text);
         }
         return text;
+    }
+
+    /**
+     * 移除搜索的span
+     * @param text 笔记的文本
+     */
+    private void removeSearchSpan(Spannable text) {
+        if (mKeywordResults != null && mKeywordResults.size() > 0) {
+            for (SearchResult result : mKeywordResults) {
+                BackgroundColorSpan colorSpan = result.colorSpan;
+                text.removeSpan(colorSpan);
+            }
+            mNextPosition = 0;
+            mKeywordResults.clear();
+            if (mSearchLines != null) {
+                mSearchLines.clear();
+            }
+        }
+    }
+
+    @Override
+    public void doSearch(String keyword) {
+        CharSequence noteText = getText();
+        if (noteText == null || !(noteText instanceof Spannable)) {
+            return;
+        }
+        Spannable spannable = (Spannable) noteText;
+        boolean noText = TextUtils.isEmpty(noteText);
+        if (!noText) {
+            removeSearchSpan(spannable);
+        } else {
+            KLog.d(TAG, "----doSearch--text--is---empty---");
+            return;
+        }
+        if (TextUtils.isEmpty(keyword)) {
+            KLog.d(TAG, "----doSearch--keyword--is---empty---");
+            return;
+        }
+        
+        String text = noteText.toString();
+        int color = ((BaseActivity) getActivity()).getPrimaryColor();
+        if (mKeywordResults == null) {
+            mKeywordResults = new LinkedList<>();
+        }
+        if (mSearchLines == null) {
+            mSearchLines = new ArrayList<>();
+        }
+        
+        TextView textView = getShowView();
+        Layout textViewLayout = textView.getLayout();
+        
+        Pattern pattern = Pattern.compile(keyword);
+        Matcher matcher = pattern.matcher(text);
+        Set<Integer> set = new HashSet<>();
+        while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+            
+            SearchResult searchResult = new SearchResult();
+            BackgroundColorSpan colorSpan = new BackgroundColorSpan(color);
+            spannable.setSpan(colorSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            searchResult.colorSpan = colorSpan;
+
+            // Get the rectangle of the clicked text
+            searchResult.line = textViewLayout.getLineForOffset(start);
+
+            set.add(searchResult.line);
+            
+            mKeywordResults.add(searchResult);
+        }
+        if (set.size() > 0) {
+            mSearchLines.addAll(set);
+            Collections.sort(mSearchLines);
+        }
+    }
+
+    @Override
+    public void cancelSearch() {
+        CharSequence text = getText();
+        if (TextUtils.isEmpty(text)) {
+            KLog.d(TAG, "----matchWord--text--is---empty---");
+            return;
+        }
+        setFindScroll(false, true);
+        if (text instanceof Spannable) {
+            Spannable spannable = (Spannable) text;
+            removeSearchSpan(spannable);
+        }
+    }
+
+    /**
+     * 设置查找的滚动位置
+     * @param next 是否是下一个
+     * @param outSearch 是否退出搜索模式
+     */
+    private void setFindScroll(boolean next, boolean outSearch) {
+        TextView textView = getShowView();
+        if (textView != null) {
+            int x = textView.getScrollX();
+            boolean scroll = true;
+            int line = 0;
+            if (outSearch) {
+                mNextPosition = 0;
+            } else {
+                if (mSearchLines != null && mSearchLines.size() > 0) {
+                    if (next) {
+                        mNextPosition++;
+                        if (mNextPosition > mSearchLines.size() - 1) {   //下一个的索引大于总数，则从0开始
+                            mNextPosition = 0;
+                        }
+                    } else {
+                        mNextPosition--;
+                        if (mNextPosition < 0) {
+                            mNextPosition = mSearchLines.size() - 1; //上一个搜索，到最后
+                        }
+                    }
+                    line = mSearchLines.get(mNextPosition);
+                } else {
+                    scroll = false;
+                }
+            }
+            if (scroll) {
+                int y = textView.getLayout().getLineTop(line); // e.g. I want to scroll to line 40
+                KLog.d(TAG, "----onFindPrevious:" + mNextPosition + "---line:" + line);
+                textView.scrollTo(x, y);
+            }
+        }
+    }
+
+    @Override
+    public void onFindPrevious() {
+        setFindScroll(false, false);
+    }
+
+    @Override
+    public void onFindNext() {
+        setFindScroll(true, false);
     }
 
     /**
@@ -687,5 +857,19 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         void beforeInsertText();
 
         void afterInsertText();
+    }
+
+    /**
+     * 搜索的结果
+     */
+    class SearchResult {
+        /**
+         * 关键字突出显示
+         */
+        BackgroundColorSpan colorSpan;
+        /**
+         * 改关键字所在的行
+         */
+        int line;
     }
 }

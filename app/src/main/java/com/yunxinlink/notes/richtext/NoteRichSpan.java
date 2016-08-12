@@ -3,6 +3,7 @@ package com.yunxinlink.notes.richtext;
 import android.content.Context;
 import android.text.method.MovementMethod;
 import android.text.style.ReplacementSpan;
+import android.widget.TextView;
 
 import com.yunxinlink.notes.listener.AttachAddCompleteListener;
 import com.yunxinlink.notes.listener.OnAddSpanCompleteListener;
@@ -56,4 +57,9 @@ public interface NoteRichSpan {
      * @param movement
      */
     void setTextMovementMethod(MovementMethod movement);
+
+    /**
+     * 获取原始的view
+     */
+    TextView getOriginalView();
 }

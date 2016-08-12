@@ -13,6 +13,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
@@ -279,6 +280,11 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     @Override
     public void setTextMovementMethod(MovementMethod movement) {
         setMovementMethod(movement);
+    }
+
+    @Override
+    public TextView getOriginalView() {
+        return this;
     }
 
     /**

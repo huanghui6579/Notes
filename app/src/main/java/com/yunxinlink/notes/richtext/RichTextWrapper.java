@@ -72,6 +72,14 @@ public class RichTextWrapper {
     }
 
     /**
+     * 获取原始的view
+     * @return
+     */
+    public TextView getgetRichSpanView() {
+        return mRichSpan.getOriginalView();
+    }
+
+    /**
      * Sets the movement method (arrow key handler) to be used for
      * this TextView.  This can be null to disallow using the arrow keys
      * to move the cursor or scroll the view.

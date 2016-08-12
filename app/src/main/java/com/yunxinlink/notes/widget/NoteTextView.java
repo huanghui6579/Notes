@@ -78,7 +78,13 @@ public class NoteTextView extends TextView implements NoteRichSpan {
             @Override
             public void run() {
                 try {
-                    SpannableString spannableString = new SpannableString(getText());
+                    CharSequence text = getText();
+                    SpannableString spannableString = null;
+                    if (text instanceof SpannableString) {
+                        spannableString = (SpannableString) text;
+                    } else {
+                        spannableString = new SpannableString(text);
+                    }
                     spannableString.setSpan(replaceSpan, selStart, selEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     spannableString.setSpan(clickSpan, selStart, selEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
@@ -139,6 +145,11 @@ public class NoteTextView extends TextView implements NoteRichSpan {
     public void setTextMovementMethod(MovementMethod movement) {
         KLog.d(TAG, "----setTextMovementMethod----");
         setMovementMethod(movement);
+    }
+
+    @Override
+    public TextView getOriginalView() {
+        return this;
     }
 
     /**
