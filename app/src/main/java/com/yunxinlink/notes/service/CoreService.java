@@ -20,6 +20,7 @@ import com.yunxinlink.notes.util.SystemUtil;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author huanghui1
@@ -62,8 +63,8 @@ public class CoreService extends IntentService {
                     
                     detailNote = noteCache.get();
 //                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
-                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
-                    addNote(detailNote, list);
+//                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
+                    addNote(detailNote);
                     noteCache.clear();
                     break;
                 case Constants.OPT_UPDATE_NOTE: //更新笔记
@@ -75,7 +76,7 @@ public class CoreService extends IntentService {
                         return;
                     }
                     detailNote = noteCache.get();
-                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
+//                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
                     //是否更新内容
                     boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
                     if (updateContent) {
@@ -89,7 +90,7 @@ public class CoreService extends IntentService {
                     if (extraObj != null && extraObj instanceof List) {
                         srcDetails = (List<DetailList>) extraObj;
                     }
-                    updateNote(detailNote, list, updateContent, srcDetails);
+                    updateNote(detailNote, /*list, */updateContent, srcDetails);
                     noteCache.clear();
                     break;
                 case Constants.OPT_REMOVE_NOTE_ATTACH:  //移除笔记中的附件数据库记录，彻底删除
@@ -139,16 +140,43 @@ public class CoreService extends IntentService {
         }
         return true;
     }
+
+    /**
+     * 获取笔记的最后一个附件
+     * @param detailNote 笔记
+     * @param attachSids 文本中的笔记sid集合
+     * @return
+     */
+    private List<String> getCacheAttachList(DetailNoteInfo detailNote, List<String> attachSids) {
+        Object obj = detailNote.getExtraObj();
+        List<String> cacheList = null;
+        Map<String, Attach> attachMap = null;
+        if (obj != null && obj instanceof Map) {
+            attachMap = (Map<String, Attach>) obj;
+            cacheList = new ArrayList<>(attachMap.keySet());
+        }
+        NoteInfo note = detailNote.getNoteInfo();
+        note.setHasAttach(true);
+        String lastSid = attachSids.get(attachSids.size() - 1);
+        if (attachMap != null) {
+            Attach lastAttach = attachMap.get(lastSid);
+            detailNote.setLastAttach(lastAttach);
+        }
+        return cacheList;
+    }
     
     /**
      * 添加笔记
      * @param detailNote 笔记的包装类
-     * @param attSidList
      */
-    private void addNote(DetailNoteInfo detailNote, List<String> attSidList) {
+    private void addNote(DetailNoteInfo detailNote) {
         NoteInfo note = detailNote.getNoteInfo();
         List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
         String sid = note.getSId();
+        List<String> attSidList = null;
+        if (attachSids != null && attachSids.size() > 0) {
+            attSidList = getCacheAttachList(detailNote, attachSids);
+        }
         detailNote = mNoteManager.addDetailNote(detailNote, attSidList, attachSids);
         boolean success = detailNote != null;
         KLog.d(TAG, "---onHandleIntent---addNote----result---" + success + "---note---" + sid);
@@ -157,12 +185,11 @@ public class CoreService extends IntentService {
     /**
      * 更新笔记
      * @param detailNote 笔记的包装类
-     * @param attSidList
      * @param updateContent 是否更新内容
      * @param detailLists 原始笔记中的清单，更新笔记时，需与原始笔记对比                     
      */
-    private void updateNote(DetailNoteInfo detailNote, List<String> attSidList, boolean updateContent, List<DetailList> detailLists) {
-        if (!updateContent && (attSidList == null || attSidList.size() == 0)) {
+    private void updateNote(DetailNoteInfo detailNote, boolean updateContent, List<DetailList> detailLists) {
+        if (!updateContent) {
             //缓存中没有附件，也不做处理
             return;
         }
@@ -172,6 +199,12 @@ public class CoreService extends IntentService {
         NoteInfo note = detailNote.getNoteInfo();
         List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
         String sid = note.getSId();
+
+        List<String> attSidList = null;
+        if (attachSids != null && attachSids.size() > 0) {
+            attSidList = getCacheAttachList(detailNote, attachSids);
+        }
+        
         boolean success = false;
         if (updateContent) {
             success = mNoteManager.updateDetailNote(detailNote, attSidList, attachSids, detailLists);

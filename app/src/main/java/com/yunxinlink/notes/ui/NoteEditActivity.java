@@ -843,15 +843,17 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             List<DetailList> srcDetailList = new ArrayList<>(mDetailNote.getDetailList());
             noteCache.setExtraData(srcDetailList);
         }
-
-        noteCache.set(detailNoteInfo);
+        
         //仅仅传sid
         intent.putExtra(Constants.ARG_CORE_OBJ, mNote.getSId());
         if (mAttachCache != null && mAttachCache.size() > 0) {
-            ArrayList<String> list = new ArrayList<>();
-            list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
-            intent.putStringArrayListExtra(Constants.ARG_CORE_LIST, list);
+            detailNoteInfo.setExtraObj(mAttachCache);
+//            ArrayList<String> list = new ArrayList<>();
+//            list.addAll(mAttachCache.keySet()); //将附件的sid传入，不论附件是否在笔记中
+//            intent.putStringArrayListExtra(Constants.ARG_CORE_LIST, list);
         }
+
+        noteCache.set(detailNoteInfo);
         startService(intent);
     }
 
@@ -2115,6 +2117,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (s == null) {
             return;
         }
+        KLog.d(TAG, "----onNoteTextChanged--mIsDo--" + mIsDo + "----mUndoStack----" + mUndoStack);
         if (!mIsDo) {
             EditStep editStep = getUndo();
             if (editStep != null && editStep.isAppend()) {  //添加文字

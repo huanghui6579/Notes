@@ -21,6 +21,16 @@ public class DetailNoteInfo implements Comparator<DetailNoteInfo> {
      */
     private List<DetailList> detailList;
 
+    /**
+     * 最后一个图片的附件，主要用来显示背景
+     */
+    private Attach mLastAttach;
+
+    /**
+     * 额外的参数
+     */
+    private Object mExtraObj;
+
     public List<DetailList> getDetailList() {
         return detailList;
     }
@@ -35,6 +45,22 @@ public class DetailNoteInfo implements Comparator<DetailNoteInfo> {
 
     public void setNoteInfo(NoteInfo noteInfo) {
         this.noteInfo = noteInfo;
+    }
+
+    public Attach getLastAttach() {
+        return mLastAttach;
+    }
+
+    public void setLastAttach(Attach lastAttach) {
+        this.mLastAttach = lastAttach;
+    }
+
+    public Object getExtraObj() {
+        return mExtraObj;
+    }
+
+    public void setExtraObj(Object extraObj) {
+        this.mExtraObj = extraObj;
     }
 
     /**

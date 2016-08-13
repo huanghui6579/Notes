@@ -190,9 +190,16 @@ public class NoteManager extends Observable<Observer> {
                 NoteInfo note = cursor2Note(cursor);
                 DetailNoteInfo detailNote = new DetailNoteInfo();
                 detailNote.setNoteInfo(note);
+                
+                String noteSid = note.getSId();
+                
                 if (note.isDetailNote()) {
-                    List<DetailList> details = getDetailList(db, note.getSId());
+                    List<DetailList> details = getDetailList(db, noteSid);
                     detailNote.setDetailList(details);
+                }
+                if (note.hasAttach()) { //有附件
+                    Attach attach = getLastAttach(db, noteSid);
+                    detailNote.setLastAttach(attach);
                 }
                 
                 list.add(detailNote);
@@ -200,6 +207,29 @@ public class NoteManager extends Observable<Observer> {
             cursor.close();
         }
         return list;
+    }
+
+    /**
+     * 获取笔记的最新的附件
+     * @param noteSid
+     * @return
+     */
+    public Attach getLastAttach(SQLiteDatabase db, String noteSid) {
+        if (db == null) {
+            db = mDBHelper.getReadableDatabase();
+        }
+        Attach attach = null;
+        String selection = Provider.AttachmentColumns.NOTE_ID + " = ?";
+        String[] selectionArgs = {noteSid};
+        String order = Provider.AttachmentColumns.MODIFY_TIME + " DESC ";
+        Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, order, "1");
+        if (cursor != null && cursor.moveToNext()) {
+            attach = cursor2Attach(cursor);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return attach;
     }
     
     /**
@@ -589,6 +619,11 @@ public class NoteManager extends Observable<Observer> {
      */
     public DetailNoteInfo addDetailNote(DetailNoteInfo detailNote, List<String> cacheList, List<String> attachList) {
         NoteInfo note = detailNote.getNoteInfo();
+        if (attachList != null && attachList.size() > 0) {
+            note.setHasAttach(true);
+        } else {
+            note.setHasAttach(false);
+        }
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         ContentValues values = initNoteValues(note);
         db.beginTransaction();
@@ -637,7 +672,11 @@ public class NoteManager extends Observable<Observer> {
     public boolean updateDetailNote(DetailNoteInfo detailNote, List<String> cacheList, List<String> attachList, List<DetailList> detailLists) {
         
         NoteInfo note = detailNote.getNoteInfo();
-        
+        if (attachList != null && attachList.size() > 0) {
+            note.setHasAttach(true);
+        } else {
+            note.setHasAttach(false);
+        }
         ContentValues values = initUpdateNoteValues(note);
         if (values.size() > 0) {
             SQLiteDatabase db = mDBHelper.getWritableDatabase();
@@ -703,7 +742,7 @@ public class NoteManager extends Observable<Observer> {
         if (title != null) {
             values.put(Provider.NoteColumns.TITLE, title);
         }
-        
+        values.put(Provider.NoteColumns.HAS_ATTACH, note.hasAttach() ? 1 : 0);
         if (!TextUtils.isEmpty(content)) {
             values.put(Provider.NoteColumns.CONTENT, content);
         }

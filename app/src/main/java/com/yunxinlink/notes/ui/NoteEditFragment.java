@@ -37,6 +37,7 @@ import com.yunxinlink.notes.model.EditStep;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.richtext.AttachResolver;
 import com.yunxinlink.notes.richtext.AttachSpec;
+import com.yunxinlink.notes.richtext.NoteRichSpan;
 import com.yunxinlink.notes.richtext.RichTextWrapper;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
@@ -192,12 +193,13 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         //初始化文本显示控件
         initTextView();
 
-        //初始化编辑框
-        initEditText(mEtContent);
 
         if (mText != null) {
             mEtContent.setText(mText);
         }
+        
+        //初始化编辑框
+//        initEditText(mEtContent);
         
         if (mListener != null) {
             mListener.onInitCompleted(mIsViewMode);
@@ -219,8 +221,11 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         CharSequence s = note.getContent();
         mText = s;
         mRichTextWrapper.setText(s, map);
-        if (mRichTextWrapper.getRichSpan() instanceof NoteTextView) {
+        NoteRichSpan richSpan = mRichTextWrapper.getRichSpan();
+        if (richSpan instanceof NoteTextView) {
             autoLink(s);
+        } else {
+            initEditText((NoteEditText) richSpan);
         }
     }
 
@@ -557,7 +562,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      * 初始化编辑框
      * @param editText
      */
-    private void initEditText(final NoteEditText editText) {
+    public void initEditText(final NoteEditText editText) {
         editText.addTextChangedListener(this);
 
         editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {

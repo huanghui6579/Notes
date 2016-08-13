@@ -1,7 +1,10 @@
 package com.yunxinlink.notes.util;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.text.TextUtils;
 
@@ -334,5 +337,14 @@ public class ImageUtil {
             MemoryCacheUtils.removeFromCache(fileUri, ImageLoader.getInstance().getMemoryCache());
         }
     }
-    
+
+    /**
+     * 将bitmap转换成drawable
+     * @param context
+     * @param bitmap
+     * @return
+     */
+    public static Drawable bitmap2Drawable(Context context, Bitmap bitmap) {
+        return new BitmapDrawable(context.getResources(), bitmap);
+    }
 }

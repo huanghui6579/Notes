@@ -1723,9 +1723,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 public void onClick(View v) {
                     if (mItemClickListener != null) {
                         String folderId = (String) v.getTag(R.integer.item_tag_data);
-                        Folder pForder = new Folder();
-                        pForder.setSId(mSelectedItem);
-                        int preSelectIndex = mFolders.indexOf(pForder);
+                        Folder pFolder = new Folder();
+                        pFolder.setSId(mSelectedItem);
+                        int preSelectIndex = mFolders.indexOf(pFolder);
                         mSelectedItem = folderId;
                         if (preSelectIndex != -1) {
                             notifyItemChanged(preSelectIndex);
@@ -1897,16 +1897,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     class NoteGridViewHolder extends RecyclerView.ViewHolder {
         ImageView mIvOverflow;
         TextView mTvTitle;
-        TextView mTvSumary;
+        TextView mTvSummary;
         TextView mTvTime;
         CheckBox mCbCheck;
 
-        public NoteGridViewHolder(View itemView) {
+        public NoteGridViewHolder(final View itemView) {
             super(itemView);
 
             mIvOverflow = (ImageView) itemView.findViewById(R.id.iv_overflow);
             mTvTitle = (TextView) itemView.findViewById(R.id.tv_title);
-            mTvSumary = (TextView) itemView.findViewById(R.id.tv_summary);
+            mTvSummary = (TextView) itemView.findViewById(R.id.tv_summary);
             mTvTime = (TextView) itemView.findViewById(R.id.tv_time);
             mCbCheck = (CheckBox) itemView.findViewById(R.id.cb_check);
         }
@@ -2006,8 +2006,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 
                 holder.mTvTitle.setText(title);
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
-                holder.mTvSumary.setText(note.getStyleContent(detailNote.getDetailList()));
-                
+                holder.mTvSummary.setText(note.getStyleContent(detailNote.getDetailList()));
+
+                /*if (note.hasAttach() && detailNote.getLastAttach() != null) {
+                    Attach attach = detailNote.getLastAttach();
+                    ImageUtil.generateThumbImageAsync(attach.getLocalPath(), null, new SimpleImageLoadingListener() {
+                        @Override
+                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                            if (loadedImage != null) {
+                                Drawable drawable = ImageUtil.bitmap2Drawable(mContext, loadedImage);
+                                holder.itemView.setBackgroundDrawable(drawable);
+                            }
+                        }
+                    });
+                }*/
             }
         }
 
