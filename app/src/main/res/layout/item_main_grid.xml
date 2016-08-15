@@ -8,6 +8,7 @@
     android:clickable="true"
     app:cardElevation="@dimen/design_appbar_elevation">
     <com.yunxinlink.notes.widget.SquareRelativeLayout
+        android:id="@+id/item_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <FrameLayout

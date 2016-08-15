@@ -12,7 +12,7 @@
         android:id="@+id/slide_layout"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_main_item_height"
-        android:padding="@dimen/activity_horizontal_margin">
+        android:padding="@dimen/grid_item_padding">
         
         <CheckBox
             android:id="@id/cb_check"
@@ -25,7 +25,7 @@
             android:layout_marginStart="@dimen/activity_horizontal_margin"
             android:visibility="gone"/>
 
-        <ImageView
+        <com.yunxinlink.notes.widget.SquareImageView
             android:id="@id/iv_icon"
             android:layout_width="@dimen/list_main_item_img_size"
             android:layout_height="wrap_content"
@@ -36,7 +36,9 @@
             android:contentDescription="@null"
             android:layout_toLeftOf="@id/cb_check"
             android:layout_toStartOf="@id/cb_check"
-            android:layout_alignWithParentIfMissing="true"/>
+            android:layout_alignWithParentIfMissing="true"
+            android:scaleType="centerCrop"
+            android:visibility="gone"/>
 
         <TextView
             android:id="@id/tv_time"

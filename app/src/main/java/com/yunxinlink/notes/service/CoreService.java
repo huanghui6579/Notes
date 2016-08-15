@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailList;
@@ -13,6 +12,7 @@ import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.AttachManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.richtext.AttachText;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -161,6 +161,7 @@ public class CoreService extends IntentService {
         if (attachMap != null) {
             Attach lastAttach = attachMap.get(lastSid);
             detailNote.setLastAttach(lastAttach);
+            KLog.d(TAG, "-----lastAttach-----" + lastAttach);
         }
         return cacheList;
     }
@@ -171,12 +172,14 @@ public class CoreService extends IntentService {
      */
     private void addNote(DetailNoteInfo detailNote) {
         NoteInfo note = detailNote.getNoteInfo();
-        List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
+        AttachText attachText = SystemUtil.getAttachSids(note.getContent());
+        List<String> attachSids = attachText.getAttachSids();
         String sid = note.getSId();
         List<String> attSidList = null;
         if (attachSids != null && attachSids.size() > 0) {
             attSidList = getCacheAttachList(detailNote, attachSids);
         }
+        note.setShowContent(attachText.getText());
         detailNote = mNoteManager.addDetailNote(detailNote, attSidList, attachSids);
         boolean success = detailNote != null;
         KLog.d(TAG, "---onHandleIntent---addNote----result---" + success + "---note---" + sid);
@@ -189,7 +192,13 @@ public class CoreService extends IntentService {
      * @param detailLists 原始笔记中的清单，更新笔记时，需与原始笔记对比                     
      */
     private void updateNote(DetailNoteInfo detailNote, boolean updateContent, List<DetailList> detailLists) {
-        if (!updateContent) {
+        Object obj = detailNote.getExtraObj();
+        List<String> cacheList = null;
+        if (obj != null && obj instanceof Map) {
+            Map<String, Attach> attachMap = (Map<String, Attach>) obj;
+            cacheList = new ArrayList<>(attachMap.keySet());
+        }
+        if (!updateContent && (cacheList == null || cacheList.size() == 0)) {
             //缓存中没有附件，也不做处理
             return;
         }
@@ -197,14 +206,15 @@ public class CoreService extends IntentService {
         KLog.d(TAG, "----updateNote---updateContent-----" + updateContent);
         
         NoteInfo note = detailNote.getNoteInfo();
-        List<String> attachSids = SystemUtil.getAttachSids(note.getContent());
+        AttachText attachText = SystemUtil.getAttachSids(note.getContent());
+        List<String> attachSids = attachText.getAttachSids();
         String sid = note.getSId();
 
         List<String> attSidList = null;
         if (attachSids != null && attachSids.size() > 0) {
             attSidList = getCacheAttachList(detailNote, attachSids);
         }
-        
+        note.setShowContent(attachText.getText());
         boolean success = false;
         if (updateContent) {
             success = mNoteManager.updateDetailNote(detailNote, attSidList, attachSids, detailLists);

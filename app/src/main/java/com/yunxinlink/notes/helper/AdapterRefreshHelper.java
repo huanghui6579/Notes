@@ -43,7 +43,8 @@ public class AdapterRefreshHelper {
                 adapter.notifyItemRangeChanged(fromPosition, toPosition - fromPosition + 1);
                 break;
             default:
-                adapter.notifyDataSetChanged();
+                adapter.notifyItemRangeChanged(0, adapter.getItemCount());
+//                adapter.notifyDataSetChanged();
                 break;
         }
     }

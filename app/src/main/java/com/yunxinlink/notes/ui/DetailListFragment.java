@@ -757,7 +757,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         String text = note.getContent();
 
         if (mTitle == null) {
-            mTitle = note.getNoteTitle();
+            mTitle = note.getNoteTitle(true);
         }
 
         if (mEtTitle != null) {

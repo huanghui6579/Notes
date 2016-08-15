@@ -1,16 +1,21 @@
 package com.yunxinlink.notes.ui;
 
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v7.widget.SearchView;
+import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
 
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.lang.reflect.Method;
@@ -19,7 +24,7 @@ public class TestActivity extends BaseActivity {
 
     @Override
     protected int getContentView() {
-        return R.layout.layout_menu_search;
+        return R.layout.activity_test;
     }
 
     @Override
@@ -30,12 +35,29 @@ public class TestActivity extends BaseActivity {
     @Override
     protected void initView() {
 
-        SearchView searchView = (SearchView) findViewById(R.id.search_view);
+        /*SearchView searchView = (SearchView) findViewById(R.id.search_view);
 
         if (searchView != null) {
 //            searchView.setIconifiedByDefault(true);
             searchView.setIconified(false);
-        }
+        }*/
+
+        final TextView textView = (TextView) findViewById(R.id.tv_content);
+        final ImageView imageView = (ImageView) findViewById(R.id.iv_img);
+
+        String filePath = "/sdcard/images/7dd98d1001e939011b6cf83f79ec54e736d19640.jpg";
+        ImageUtil.generateThumbImageAsync(filePath, null, new SimpleImageLoadingListener() {
+            @Override
+            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                if (loadedImage != null) {
+                    Drawable drawable = ImageUtil.bitmap2Drawable(mContext, loadedImage);
+                    textView.setBackgroundDrawable(drawable);
+
+                    imageView.setImageDrawable(drawable);
+                }
+            }
+        });
+        
         
         /*ImageView imageView = (ImageView) findViewById(R.id.icon);
 

@@ -86,6 +86,11 @@ public final class Provider {
         public static final String CONTENT = "content";
 
         /**
+         * 实际显示的内容，仅用于本地数据库
+         */
+        public static final String SHOW_CONTENT = "show_content";
+
+        /**
          * 笔记的种类，主要是文本和清单
          */
         public static final String KIND = "kind";

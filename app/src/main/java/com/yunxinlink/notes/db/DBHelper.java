@@ -36,6 +36,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.NoteColumns.USER_ID).append(" INTEGER DEFAULT 0, ")
                 .append(Provider.NoteColumns.TITLE).append(" TEXT, ")
                 .append(Provider.NoteColumns.CONTENT).append(" TEXT, ")
+                .append(Provider.NoteColumns.SHOW_CONTENT).append(" TEXT, ")
                 .append(Provider.NoteColumns.REMIND_ID).append(" INTEGER, ")
                 .append(Provider.NoteColumns.REMIND_TIME).append(" INTEGER, ")
                 .append(Provider.NoteColumns.FOLDER_ID).append(" TEXT, ")

@@ -5,6 +5,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -12,11 +16,13 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.graphics.Palette;
 import android.support.v7.view.ActionMode;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.LinearLayoutManager;
@@ -38,6 +44,9 @@ import android.widget.TextView;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
+import com.nostra13.universalimageloader.core.assist.FailReason;
+import com.nostra13.universalimageloader.core.imageaware.ImageViewAware;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.cache.FolderCache;
@@ -48,17 +57,20 @@ import com.yunxinlink.notes.helper.AdapterRefreshHelper;
 import com.yunxinlink.notes.listener.OnCheckedChangeListener;
 import com.yunxinlink.notes.listener.OnItemClickListener;
 import com.yunxinlink.notes.listener.OnItemLongClickListener;
+import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
 import com.yunxinlink.notes.widget.DividerItemDecoration;
 import com.yunxinlink.notes.widget.LayoutManagerFactory;
+import com.yunxinlink.notes.widget.NoteItemViewAware;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
@@ -80,6 +92,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     private static final int MSG_MOVE_FAILED = 4;
     private static final int MSG_MOVE_SUCCESS = 5;
+    private static final int MSG_PALETTE_COLOR = 6;
 
     private NavViewAdapter mNavAdapter;
     
@@ -243,35 +256,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 doInbackground(new Runnable() {
                     @Override
                     public void run() {
-                        //初始化文件夹
-                        initFolder();
-
-                        //初始化主界面的显示方式
-                        initShowStyle();
-
-                        if (isFolderAllDisable()) { //不能加载所有文件夹里的笔记，则加载第一个文件夹
-                            //加载文件夹
-                            List<Folder> folders = loadFolder(false);
-                            
-                            if (folders != null && folders.size() > 0) {
-                                reLoadFisrtFolder(folders.get(0));
-                            } else {
-                                //加载笔记
-                                loadNotes(mSelectedFolderId);
-                            }
-
-                        } else {
-                            //加载笔记
-                            loadNotes(mSelectedFolderId);
-
-                            doInbackground(new Runnable() {
-                                @Override
-                                public void run() {
-                                    //加载文件夹
-                                    loadFolder(isShowFolderAll());
-                                }
-                            });
-                        }
+                        doOnRefresh();
                     }
                 });
                 
@@ -283,6 +268,41 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
         //注册观察者
         registContentObserver();
+    }
+
+    /**
+     * 刷新数据
+     */
+    private void doOnRefresh() {
+        //初始化文件夹
+        initFolder();
+
+        //初始化主界面的显示方式
+        initShowStyle();
+
+        if (isFolderAllDisable()) { //不能加载所有文件夹里的笔记，则加载第一个文件夹
+            //加载文件夹
+            List<Folder> folders = loadFolder(false);
+
+            if (folders != null && folders.size() > 0) {
+                reLoadFisrtFolder(folders.get(0));
+            } else {
+                //加载笔记
+                loadNotes(mSelectedFolderId);
+            }
+
+        } else {
+            //加载笔记
+            loadNotes(mSelectedFolderId);
+
+            doInbackground(new Runnable() {
+                @Override
+                public void run() {
+                    //加载文件夹
+                    loadFolder(isShowFolderAll());
+                }
+            });
+        }
     }
     
     /**
@@ -478,7 +498,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
 
         final Folder archive = getFolderAll();
-        
+        mFolders.clear();
         mFolders.add(archive);
         
     }
@@ -936,7 +956,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             DetailNoteInfo oldDetail = mNotes.get(index);
             NoteInfo info = oldDetail.getNoteInfo();
             setupUpdateNote(info, note);
-            KLog.d(TAG, "-------mDetailLists---update--" + detailNote.getDetailList());
+            oldDetail.setLastAttach(detailNote.getLastAttach());
             oldDetail.setDetailList(detailNote.getDetailList());
 
             AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
@@ -956,6 +976,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         oldNote.setOldContent(oldNote.getContent());
         oldNote.setModifyTime(newNote.getModifyTime());
         oldNote.setContent(newNote.getContent());
+        oldNote.setShowContent(newNote.getShowContent());
         oldNote.setHasAttach(newNote.hasAttach());
         oldNote.setKind(newNote.getKind());
         oldNote.setRemindId(newNote.getRemindId());
@@ -1326,7 +1347,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     addSelectedItem(pos);
 
                     if (holder.mCbCheck.getVisibility() != View.VISIBLE) {
-                        mNoteGridAdapter.notifyDataSetChanged();
+                        AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+                        refreshHelper.refresh(mNoteGridAdapter);
+//                        mNoteGridAdapter.notifyDataSetChanged();
                     }
                     return true;
                 }
@@ -1554,6 +1577,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             actionMode.finish();
         }
     }
+
+    /**
+     * 根据位置获取对应的viewholder
+     * @param position
+     * @return
+     */
+    public RecyclerView.ViewHolder getViewHolder(int position) {
+        return mRecyclerView.findViewHolderForAdapterPosition(position);
+    }
     
     /**
      * 菜单的显示回调
@@ -1619,6 +1651,51 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     /**
+     * 切换显示模式
+     */
+    private void changeShowMode(final MenuItem item) {
+        mHandler.removeMessages(MSG_PALETTE_COLOR);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                outActionMode(false);
+                mIsGridStyle = !mIsGridStyle;
+                doInbackground(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateShowStyle(mIsGridStyle);
+                    }
+                });
+                RecyclerView.LayoutManager layoutManager = mLayoutManagerFactory.getLayoutManager(mContext, mIsGridStyle);
+                mRecyclerView.setLayoutManager(layoutManager);
+                if (mIsGridStyle) { //显示成网格样式
+                                /*if (mItemDecoration != null) {
+                                    mRecyclerView.removeItemDecoration(mItemDecoration);
+                                }*/
+                    if (mNoteGridAdapter == null) {
+                        initNoteAdapter(true);
+                    }
+                    int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
+                    mRecyclerView.setPadding(padding, 0, padding, 0);
+                    mRecyclerView.setAdapter(mNoteGridAdapter);
+                    item.setTitle(R.string.action_show_list);
+                    item.setIcon(R.drawable.ic_action_view_list);
+                } else {    //列表样式
+                    mRecyclerView.setPadding(0, 0, 0, 0);
+//                                mRecyclerView.addItemDecoration(getItemDecoration(mContext));
+                    if (mNoteListAdapter == null) {
+                        initNoteAdapter(false);
+                    }
+                    mRecyclerView.setAdapter(mNoteListAdapter);
+                    item.setTitle(R.string.action_show_grid);
+                    item.setIcon(R.drawable.ic_action_grid);
+                }
+
+            }
+        });
+    }
+
+    /**
      * popuMenu每一项点击的事件
      * @author huanghui1
      * @update 2016/3/2 15:05
@@ -1627,47 +1704,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     class OnPopuMenuItemClickListener implements PopupMenu.OnMenuItemClickListener {
 
         @Override
-        public boolean onMenuItemClick(final MenuItem item) {
+        public boolean onMenuItemClick(MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.nav_show_style:   //列表显示方式，有列表方式个网格方式
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            outActionMode(false);
-                            mIsGridStyle = !mIsGridStyle;
-                            doInbackground(new Runnable() {
-                                @Override
-                                public void run() {
-                                    updateShowStyle(mIsGridStyle);
-                                }
-                            });
-                            RecyclerView.LayoutManager layoutManager = mLayoutManagerFactory.getLayoutManager(mContext, mIsGridStyle);
-                            mRecyclerView.setLayoutManager(layoutManager);
-                            if (mIsGridStyle) { //显示成网格样式
-                                /*if (mItemDecoration != null) {
-                                    mRecyclerView.removeItemDecoration(mItemDecoration);
-                                }*/
-                                if (mNoteGridAdapter == null) {
-                                    initNoteAdapter(mIsGridStyle);
-                                }
-                                int padding = mContext.getResources().getDimensionPixelSize(R.dimen.grid_item_padding);
-                                mRecyclerView.setPadding(padding, 0, padding, 0);
-                                mRecyclerView.setAdapter(mNoteGridAdapter);
-                                item.setTitle(R.string.action_show_list);
-                                item.setIcon(R.drawable.ic_action_view_list);
-                            } else {    //列表样式
-                                mRecyclerView.setPadding(0, 0, 0, 0);
-//                                mRecyclerView.addItemDecoration(getItemDecoration(mContext));
-                                if (mNoteListAdapter == null) {
-                                    initNoteAdapter(mIsGridStyle);
-                                }
-                                mRecyclerView.setAdapter(mNoteListAdapter);
-                                item.setTitle(R.string.action_show_grid);
-                                item.setIcon(R.drawable.ic_action_grid);
-                            }
-
-                        }
-                    });
+                    changeShowMode(item);
 
                     break;
                 case R.id.nav_upload:   //同步
@@ -1788,11 +1828,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         private OnItemClickListener mOnItemClickListener;
         
         private OnCheckedChangeListener mOnCheckedChangeListener;
+        
+        //图片加载失败的图片
+        private Drawable mFailedDrawable;
 
         public NoteListAdapter(Context context, List<DetailNoteInfo> list) {
             this.mContext = context;
             this.mList = list;
             mLayoutInflater = LayoutInflater.from(context);
+
+            mFailedDrawable = initFailedImage();
         }
 
         public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
@@ -1853,6 +1898,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     }
                 }
 
+                //重置附件图标的各种状态
+                resetAttachView(holder);
+
                 holder.mTvContent.setText(note.getStyleContent(true, detailNote.getDetailList()));
                 holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
 
@@ -1865,7 +1913,55 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     }
                 });
                 
+                if (note.hasAttach() && detailNote.getLastAttach() != null) {
+                    SystemUtil.setViewVisibility(holder.mIvIcon, View.VISIBLE);
+                    Attach lastAttach = detailNote.getLastAttach();
+                    ImageUtil.displayImage(lastAttach.getLocalPath(), new ImageViewAware(holder.mIvIcon, false), new SimpleImageLoadingListener() {
+                        @Override
+                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                            if (loadedImage == null) {
+                                loadImageFailed((ImageView) view);
+                            }
+                        }
+
+                        @Override
+                        public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
+                            loadImageFailed((ImageView) view);
+                        }
+                    });
+                }
+                
             }
+        }
+
+        /**
+         * 重置附件图标的各种状态
+         * @param holder
+         */
+        private void resetAttachView(RecyclerView.ViewHolder holder) {
+            NoteListViewHolder listHolder = (NoteListViewHolder) holder;
+            listHolder.mIvIcon.setImageResource(0);
+            SystemUtil.setViewVisibility(listHolder.mIvIcon, View.GONE);
+        }
+
+        /**
+         * 初始化图片加载时候的图片
+         * @return
+         */
+        private Drawable initFailedImage() {
+            Resources resources = getResources();
+            Drawable drawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_broken_image, getTheme());
+            int tintColor = ResourcesCompat.getColor(resources, R.color.control_color_light, getTheme());
+            drawable = getTintDrawable(drawable, tintColor);
+            return drawable;
+        }
+
+        /**
+         * 图片加载失败
+         * @param imageView
+         */
+        private void loadImageFailed(ImageView imageView) {
+            imageView.setImageDrawable(mFailedDrawable);
         }
 
         /**
@@ -1900,6 +1996,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         TextView mTvSummary;
         TextView mTvTime;
         CheckBox mCbCheck;
+        View mItemContainer;
 
         public NoteGridViewHolder(final View itemView) {
             super(itemView);
@@ -1909,6 +2006,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mTvSummary = (TextView) itemView.findViewById(R.id.tv_summary);
             mTvTime = (TextView) itemView.findViewById(R.id.tv_time);
             mCbCheck = (CheckBox) itemView.findViewById(R.id.cb_check);
+            mItemContainer = itemView.findViewById(R.id.item_container);
         }
     }
 
@@ -1922,11 +2020,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         private OnItemClickListener mOnItemClickListener;
 
         private OnCheckedChangeListener mOnCheckedChangeListener;
+        
+        private ItemColor mItemColor;
 
         public NoteGridAdapter(Context context, List<DetailNoteInfo> list) {
             this.mContext = context;
             this.mList = list;
             mLayoutInflater = LayoutInflater.from(context);
+            
+            mItemColor = initItemColor();
         }
 
         public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
@@ -1970,62 +2072,154 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         @Override
         public void onBindViewHolder(final NoteGridViewHolder holder, int position) {
             DetailNoteInfo detailNote = mList.get(position);
+            
+            if (detailNote == null) {
+                return;
+            }
+            
             holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
             holder.mCbCheck.setTag(holder.getAdapterPosition());
-            if (detailNote != null) {
+
+            //重置文字的颜色
+            resetTextColor(holder, mItemColor);
                 
-                if (mIsChooseMode) {
-                    SystemUtil.hideView(holder.mIvOverflow);
-                    SystemUtil.showView(holder.mCbCheck);
+            if (mIsChooseMode) {
+                SystemUtil.hideView(holder.mIvOverflow);
+                SystemUtil.showView(holder.mCbCheck);
 
-                    holder.mCbCheck.setOnCheckedChangeListener(null);
+                holder.mCbCheck.setOnCheckedChangeListener(null);
 
-                    boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(detailNote);
-                    holder.mCbCheck.setChecked(checked);
+                boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(detailNote);
+                holder.mCbCheck.setChecked(checked);
 
-                    holder.mCbCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                        @Override
-                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                            if (mOnCheckedChangeListener != null) {
-                                mOnCheckedChangeListener.onCheckedChanged(buttonView, isChecked);
-                            }
+                holder.mCbCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        if (mOnCheckedChangeListener != null) {
+                            mOnCheckedChangeListener.onCheckedChanged(buttonView, isChecked);
                         }
-                    });
-                } else {
-                    SystemUtil.showView(holder.mIvOverflow);
-                    SystemUtil.hideView(holder.mCbCheck);
-                    holder.mIvOverflow.setOnClickListener(new GridItemClickListener(detailNote));
-                }
-                
-                NoteInfo note = detailNote.getNoteInfo();
-                
-                CharSequence title = note.getNoteTitle();
-                if (TextUtils.isEmpty(title)) {
-                    title = getResources().getString(R.string.no_title);
-                }
-                
-                holder.mTvTitle.setText(title);
-                holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
-                holder.mTvSummary.setText(note.getStyleContent(detailNote.getDetailList()));
+                    }
+                });
+            } else {
+                SystemUtil.showView(holder.mIvOverflow);
+                SystemUtil.hideView(holder.mCbCheck);
+                holder.mIvOverflow.setOnClickListener(new GridItemClickListener(detailNote));
+            }
+            
+            NoteInfo note = detailNote.getNoteInfo();
+            
+            CharSequence title = note.getNoteTitle(false);
+            if (note.isDetailNote() && TextUtils.isEmpty(title)) {
+                title = getResources().getString(R.string.no_title);
+            }
+            
+            holder.mTvTitle.setText(title);
+            holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
+            holder.mTvSummary.setText(note.getStyleContent(detailNote.getDetailList()));
 
-                /*if (note.hasAttach() && detailNote.getLastAttach() != null) {
-                    Attach attach = detailNote.getLastAttach();
-                    ImageUtil.generateThumbImageAsync(attach.getLocalPath(), null, new SimpleImageLoadingListener() {
-                        @Override
-                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                            if (loadedImage != null) {
-                                Drawable drawable = ImageUtil.bitmap2Drawable(mContext, loadedImage);
-                                holder.itemView.setBackgroundDrawable(drawable);
-                            }
+            if (note.hasAttach() && detailNote.getLastAttach() != null) {
+                Attach attach = detailNote.getLastAttach();
+                ImageUtil.displayImage(attach.getLocalPath(), new NoteItemViewAware(holder.mItemContainer), new SimpleImageLoadingListener() {
+                    @Override
+                    public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                        if (loadedImage != null) {
+                            doInbackground(new PaletteItemColorTask(holder.getAdapterPosition(), loadedImage));
                         }
-                    });
-                }*/
+                    }
+                });
             }
         }
 
         @Override
         public int getItemCount() {
             return mList == null ? 0 : mList.size();
+        }
+
+        /**
+         * 初始化各项的文字颜色
+         * @return
+         */
+        public ItemColor initItemColor() {
+            Resources resources = getResources();
+            int titleColor = ResourcesCompat.getColor(resources, R.color.text_title_color, getTheme());
+            int contentColor = ResourcesCompat.getColor(resources, R.color.text_content_color, getTheme());
+            int timeColor = ResourcesCompat.getColor(resources, R.color.text_time_color, getTheme());
+
+            ItemColor itemColor = new ItemColor();
+            itemColor.titleColor = titleColor;
+            itemColor.contentColor = contentColor;
+            itemColor.timeColor = timeColor;
+            
+            return itemColor;
+        }
+
+        /**
+         * 重置文字的颜色
+         * @param holder
+         * @param itemColor 每项的颜色
+         */
+        public void resetTextColor(RecyclerView.ViewHolder holder, ItemColor itemColor) {
+            NoteGridViewHolder gridHolder = (NoteGridViewHolder) holder;
+            gridHolder.mTvTitle.setTextColor(itemColor.titleColor);
+            gridHolder.mTvSummary.setTextColor(itemColor.contentColor);
+            gridHolder.mTvTime.setTextColor(itemColor.timeColor);
+
+            gridHolder.mIvOverflow.setImageResource(R.drawable.abc_ic_menu_moreoverflow_mtrl_alpha);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                gridHolder.mItemContainer.setBackground(null);
+            } else {
+                gridHolder.mItemContainer.setBackgroundDrawable(null);
+            }
+        }
+        
+        class ItemColor {
+            int titleColor;
+            int contentColor;
+            int timeColor;
+        }
+        
+        /**
+         * 给每一项文本着色的任务
+         * @author huanghui1
+         * @update 2016/8/15 16:33
+         * @version: 1.0.0
+         */
+        class PaletteItemColorTask implements Runnable {
+            private int position;
+            
+            private Bitmap bitmap;
+
+            public PaletteItemColorTask(int position, Bitmap bitmap) {
+                this.position = position;
+                this.bitmap = bitmap;
+            }
+
+            @Override
+            public void run() {
+                if (bitmap == null || bitmap.isRecycled() || !mIsGridStyle) {
+                    return;
+                }
+                
+                Palette.Builder builder = new Palette.Builder(bitmap);
+                Palette palette = builder.generate();
+                List<Palette.Swatch> swatches = palette.getSwatches();
+                if (swatches.size() == 0) {
+                    return;
+                }
+                Palette.Swatch swatch = swatches.get(swatches.size() - 1);
+                if (swatch == null) {
+                    return;
+                }
+                int titleColor = swatch.getTitleTextColor();
+                int bodyColor = swatch.getBodyTextColor();
+                Message msg = mHandler.obtainMessage();
+                msg.arg1 = titleColor;
+                msg.arg2 = bodyColor;
+                msg.obj = position;
+                msg.what = MSG_PALETTE_COLOR;
+                mHandler.sendMessage(msg);
+            }
         }
 
         /**
@@ -2151,6 +2345,29 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         break;
                     case MSG_MOVE_SUCCESS:   //移动文件夹成功
                         SystemUtil.makeShortToast(R.string.result_success);
+                        break;
+                    case MSG_PALETTE_COLOR: //给笔记的item着色，针对有背景图片的
+                        int titleColor = msg.arg1;
+                        int bodyColor = msg.arg2;
+                        Integer position = (Integer) msg.obj;
+                        if (position < 0) {
+                            return;
+                        }
+                        RecyclerView.ViewHolder holder = target.getViewHolder(position);
+                        if (holder != null && holder instanceof NoteGridViewHolder) {
+                            NoteGridViewHolder gridHolder = (NoteGridViewHolder) holder;
+                            
+                            Integer tagPos = (Integer) gridHolder.itemView.getTag(R.integer.item_tag_data);
+                            if (tagPos != null && tagPos.intValue() == position.intValue()) { //同一项，防止错位
+                                gridHolder.mTvTitle.setTextColor(titleColor);
+                                gridHolder.mTvSummary.setTextColor(bodyColor);
+                                gridHolder.mTvTime.setTextColor(bodyColor);
+
+                                Drawable drawable = gridHolder.mIvOverflow.getDrawable();
+                                drawable = target.getTintDrawable(drawable, titleColor);
+                                gridHolder.mIvOverflow.setImageDrawable(drawable);
+                            }
+                        }
                         break;
                 }
             }

@@ -256,8 +256,9 @@ public class NoteManager extends Observable<Observer> {
      * @update 2016/6/21 15:16
      * @version: 1.0.0
      */
-    public boolean deleteNote(NoteInfo note) {
+    public boolean deleteNote(DetailNoteInfo detailNote) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        NoteInfo note = detailNote.getNoteInfo();
         ContentValues values = initTrashValues(note);
         int row = 0;
         try {
@@ -271,7 +272,7 @@ public class NoteManager extends Observable<Observer> {
             db.endTransaction();
         }
         if (row > 0) {
-            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, note);
+            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, detailNote);
             return true;
         } else {
             notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, null);
@@ -291,7 +292,7 @@ public class NoteManager extends Observable<Observer> {
             return true;
         }
         if (noteList.size() == 1) { //只有一条
-            return deleteNote(noteList.get(0).getNoteInfo());
+            return deleteNote(noteList.get(0));
         } else {
             int row = 0;
             SQLiteDatabase db = mDBHelper.getWritableDatabase();
@@ -339,6 +340,7 @@ public class NoteManager extends Observable<Observer> {
         ContentValues values = new ContentValues();
         values.put(Provider.NoteColumns.TITLE, note.getTitle());
         values.put(Provider.NoteColumns.CONTENT, note.getContent());
+        values.put(Provider.NoteColumns.SHOW_CONTENT, note.getShowContent());
         values.put(Provider.NoteColumns.CREATE_TIME, note.getCreateTime());
         values.put(Provider.NoteColumns.FOLDER_ID, note.getFolderId());
         values.put(Provider.NoteColumns.HAS_ATTACH, (note.hasAttach() ? 1 : 0));
@@ -367,6 +369,7 @@ public class NoteManager extends Observable<Observer> {
         note.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.USER_ID)));
         note.setTitle(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.TITLE)));
         note.setContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.CONTENT)));
+        note.setShowContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.SHOW_CONTENT)));
         note.setRemindId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.REMIND_ID)));
         note.setRemindTime(cursor.getLong(cursor.getColumnIndex(Provider.NoteColumns.REMIND_TIME)));
         note.setFolderId(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.FOLDER_ID)));
@@ -494,26 +497,35 @@ public class NoteManager extends Observable<Observer> {
      * 彻底删除附件
      * @param db
      * @param list 附件的sid集合
+     * @param noteSid 笔记的sid，如果不为空，则删除所有属于该笔记的附件            
      */
-    private void deleteAttaches(SQLiteDatabase db, List<String> list) {
-        int size = list.size();
+    private void deleteAttaches(SQLiteDatabase db, List<String> list, String noteSid) {
         String selection = null;
-        String[] selectionArgs = new String[size];
-        if (size == 1) {    //只有一个附件
-            selection = Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID + " = ?";
-            selectionArgs[0] = list.get(0);
-        } else {    //多个附件
-            StringBuilder sb = new StringBuilder(Provider.AttachmentColumns.NOTE_ID + " IS NULL AND " + Provider.AttachmentColumns.SID).append(" in (");
-            for (int i = 0; i < size; i++) {
-                String sid = list.get(i);
-                selectionArgs[i] = sid;
-                sb.append("?").append(Constants.TAG_COMMA);
+        String[] selectionArgs = null;
+        if (!TextUtils.isEmpty(noteSid)) {
+            selection = Provider.AttachmentColumns.NOTE_ID + " IS NULL OR " + Provider.AttachmentColumns.NOTE_ID + " = ?";
+            selectionArgs = new String[1];
+            selectionArgs[0] = noteSid;
+        } else {
+            int size = list.size();
+            selectionArgs = new String[size];
+            if (size == 1) {    //只有一个附件
+                selection = Provider.AttachmentColumns.NOTE_ID + " IS NULL OR " + Provider.AttachmentColumns.SID + " = ?";
+                selectionArgs[0] = list.get(0);
+            } else {    //多个附件
+                StringBuilder sb = new StringBuilder(Provider.AttachmentColumns.NOTE_ID + " IS NULL OR " + Provider.AttachmentColumns.SID).append(" in (");
+                for (int i = 0; i < size; i++) {
+                    String sid = list.get(i);
+                    selectionArgs[i] = sid;
+                    sb.append("?").append(Constants.TAG_COMMA);
+                }
+                sb.deleteCharAt(sb.length() - 1);
+                sb.append(")");
+                selection = sb.toString();
             }
-            sb.deleteCharAt(sb.length() - 1);
-            sb.append(")");
-            selection = sb.toString();
         }
-        db.delete(Provider.AttachmentColumns.TABLE_NAME, selection, selectionArgs);
+        int row = db.delete(Provider.AttachmentColumns.TABLE_NAME, selection, selectionArgs);
+        KLog.d(TAG, "-----deleteAttaches--row---" + row);
     }
 
     /**
@@ -743,9 +755,12 @@ public class NoteManager extends Observable<Observer> {
             values.put(Provider.NoteColumns.TITLE, title);
         }
         values.put(Provider.NoteColumns.HAS_ATTACH, note.hasAttach() ? 1 : 0);
-        if (!TextUtils.isEmpty(content)) {
+        if (content != null) {
             values.put(Provider.NoteColumns.CONTENT, content);
         }
+        
+        values.put(Provider.NoteColumns.SHOW_CONTENT, note.getShowContent());
+        
         DeleteState deleteState = note.getDeleteState();
         if (deleteState != null) {
             values.put(Provider.NoteColumns.DELETE_STATE, deleteState.ordinal());
@@ -983,6 +998,7 @@ public class NoteManager extends Observable<Observer> {
         if (db == null) {
             db = mDBHelper.getWritableDatabase();
         }
+        String noteSid = note.hasAttach() ? null : note.getSId();
         if (attachList != null && attachList.size() > 0) {  //有附件，则与缓存中比较
             if (updateUpdate) {
                 //更新附件的noteid
@@ -996,15 +1012,13 @@ public class NoteManager extends Observable<Observer> {
                 cacheList.removeAll(attachList);
                 if (cacheList.size() > 0) { //删除了还有多余的附件
                     KLog.d(TAG, "--deleteAttaches--list---" + cacheList);
-                    deleteAttaches(db, cacheList);
+                    deleteAttaches(db, cacheList, noteSid);
                 }
             }
         } else {    //笔记中实际没有附件
-            if (cacheList != null && cacheList.size() > 0) {  //缓存中有附件sid
-                //删除多余的附件
-                KLog.d(TAG, "--deleteAttaches--list---" + cacheList);
-                deleteAttaches(db, cacheList);
-            }
+            //删除多余的附件
+            KLog.d(TAG, "--deleteAttaches--list---" + cacheList);
+            deleteAttaches(db, cacheList, noteSid);
         }
     }
 

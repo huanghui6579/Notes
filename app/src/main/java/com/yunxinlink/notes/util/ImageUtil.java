@@ -13,6 +13,7 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
+import com.nostra13.universalimageloader.core.imageaware.ImageAware;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
 
@@ -150,6 +151,22 @@ public class ImageUtil {
     }
 
     /**
+     * 将图片的全路径包装成uri的字符串，格式为:file://..
+     * @param filePath
+     * @return
+     */
+    private static String wrapImageUri(String filePath) {
+        String iconUri = null;
+        ImageDownloader.Scheme scheme = ImageDownloader.Scheme.ofUri(filePath);
+        if (ImageDownloader.Scheme.UNKNOWN == scheme) { //没有前缀，则添加file://
+            iconUri = ImageDownloader.Scheme.FILE.wrap(filePath);
+        } else {
+            iconUri = filePath;
+        }
+        return iconUri;
+    }
+
+    /**
      * 异步生成缩略图
      * @param imagePath 原始图片的文件的路径
      * @param imageSize 要生存缩略图的尺寸大小
@@ -157,16 +174,22 @@ public class ImageUtil {
      * @update 2015年7月27日 下午4:35:46
      */
     public static void generateThumbImageAsync(String imagePath, ImageSize imageSize, ImageLoadingListener loadingListener) {
-        String iconUri = null;
-        ImageDownloader.Scheme scheme = ImageDownloader.Scheme.ofUri(imagePath);
-        if (ImageDownloader.Scheme.UNKNOWN == scheme) { //没有前缀，则添加file://
-            iconUri = ImageDownloader.Scheme.FILE.wrap(imagePath);
-        } else {
-            iconUri = imagePath;
-        }
+        String iconUri = wrapImageUri(imagePath);
         ImageLoader imageLoader = ImageLoader.getInstance();
 //        MemoryCacheUtils.removeFromCache(iconUri, imageLoader.getMemoryCache());
         imageLoader.loadImage(iconUri, imageSize, getAlbumImageOptions(), loadingListener);
+    }
+
+    /**
+     * 显示图片
+     * @param imagePath
+     * @param imageAware 
+     * @param loadingListener
+     */
+    public static void displayImage(String imagePath, ImageAware imageAware, ImageLoadingListener loadingListener) {
+        String iconUri = wrapImageUri(imagePath);
+        ImageLoader imageLoader = ImageLoader.getInstance();
+        imageLoader.displayImage(iconUri, imageAware, getAlbumImageOptions(), loadingListener);
     }
 
     /**

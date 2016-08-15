@@ -27,11 +27,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
-
+import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.richtext.AttachSpec;
+import com.yunxinlink.notes.richtext.AttachText;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.File;
@@ -63,6 +64,9 @@ public class SystemUtil {
     private static final String PREFIX_ATTACH = "A";
     private static final String PREFIX_PAINT = "P";
     private static final String PREFIX_DETAIL = "D";
+    
+    //颜色进度度的阀值
+    private static final double COLOR_THRESHOLD = 180.0;
 
     private static ExecutorService cachedThreadPool = null;//可缓存的线程池
 
@@ -903,17 +907,27 @@ public class SystemUtil {
      * @param text
      * @return
      */
-    public static List<String> getAttachSids(CharSequence text) {
+    public static AttachText getAttachSids(CharSequence text) {
         if (mPattern == null) {
             mPattern = Pattern.compile(mAttachRegEx);
         }
         Matcher matcher = mPattern.matcher(text);
         List<String> list = new ArrayList<>();
+        boolean find = false;
         while (matcher.find()) {
+            find = true;
             String sid = matcher.group(1);
             list.add(sid);
         }
-        return list;
+        String s = null;
+        if (find) {
+            s = matcher.replaceAll("");
+        }
+        AttachText attachText = new AttachText();
+        attachText.setAttachSids(list);
+        attachText.setText(s);
+        KLog.d(TAG, "-----AttachText---s:" + s);
+        return attachText;
     }
 
     /**
@@ -1023,22 +1037,22 @@ public class SystemUtil {
     }
 
     /**
-     * 显示控件
-     * @param view
-     */
-    public static void showView(View view) {
-        if (view.getVisibility() != View.VISIBLE) {
-            view.setVisibility(View.VISIBLE);
-        }
-    }
-
-    /**
      * 隐藏控件
      * @param view
      */
     public static void hideView(View view) {
         if (view.getVisibility() == View.VISIBLE) {
             view.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * 显示控件
+     * @param view
+     */
+    public static void showView(View view) {
+        if (view.getVisibility() != View.VISIBLE) {
+            view.setVisibility(View.VISIBLE);
         }
     }
 
@@ -1241,5 +1255,45 @@ public class SystemUtil {
         if (view.isEnabled() != enable) {
             view.setEnabled(enable);
         }
+    }
+
+    /**
+     * 是否是相近的颜色
+     * @param baseColor 基准颜色，如Color.BLACK
+     * @param color 获取到的实际颜色
+     * @return 是否与基准颜色相近
+     */
+    public static boolean isColorSimilar(int baseColor, int color) {
+        int simpleBaseColor = baseColor | 0xff000000;
+        int simpleColor = color | 0xff000000;
+        
+        int baseRed = Color.red(simpleBaseColor) - Color.red(simpleColor);
+        int baseGreen = Color.green(simpleBaseColor) - Color.green(simpleColor);
+        int baseBlue = Color.blue(simpleBaseColor) - Color.blue(simpleColor);
+        
+        double value = Math.sqrt(baseRed * baseRed + baseGreen * baseGreen + baseBlue * baseBlue);
+        if (value < COLOR_THRESHOLD) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 颜色是否近似黑色
+     * @param color
+     * @return
+     */
+    public static boolean isColorSimilarBlack(int color) {
+        return isColorSimilar(Color.BLACK, color);
+    }
+
+    /**
+     * 颜色是否近似白色
+     * @param color
+     * @return
+     */
+    public static boolean isColorSimilarWhite(int color) {
+        return isColorSimilar(Color.WHITE, color);
     }
 }

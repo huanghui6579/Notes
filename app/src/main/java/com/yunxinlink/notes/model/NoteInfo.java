@@ -50,6 +50,11 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     private String content;
 
     /**
+     * 实际显示的文本，仅用于本地
+     */
+    private String showContent;
+
+    /**
      * 提醒的id
      */
     private int remindId;
@@ -216,6 +221,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                 ", userId=" + userId +
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
+                ", showContent='" + showContent + '\'' +
                 ", remindId=" + remindId +
                 ", remindTime=" + remindTime +
                 ", folderId='" + folderId + '\'' +
@@ -289,15 +295,23 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
 
     /**
      * 根据内容获取标题，只取内容的第一行
+     * @param showAttach 是否包含附件信息
      * @return
      */
-    public CharSequence getNoteTitle() {
+    public CharSequence getNoteTitle(boolean showAttach) {
         if (TextUtils.isEmpty(title) && !isDetailNote()) {
             if (content == null) {
                 return null;
             }
+            String tContent = null;
             //去掉开头和结尾的空格
-            String tContent = content.trim();
+            if (!showAttach) {
+                tContent = showContent == null ? null : showContent.trim();
+            }
+            if (tContent == null) {
+                tContent = content.trim();
+            }
+            
             int index = tContent.indexOf(Constants.TAG_NEXT_LINE);
             if (index != -1) {  //有换行
                 return tContent.substring(0, index);
@@ -371,29 +385,21 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                 int len = builder.length();
                 builder.delete(len - 1, len - 1);
             }
-
-            /*boolean deleteLast = false;
-            
-            int i = 0;
-            while (tokenizer.hasMoreTokens()) {
-                deleteLast = true;
-                if (i > 10) {
-                    break;
-                }
-                String line = tokenizer.nextToken();
-
-                SpannableString spannableString = bulletText(line);
-
-                builder.append(spannableString).append(Constants.TAG_NEXT_LINE);
-                i++;
-            }
-            if (deleteLast) {
-                int len = builder.length();
-                builder.delete(len - 1, len - 1);
-            }*/
             return builder;
         } else {
-            return getContent();
+            return getShowText();
+        }
+    }
+
+    /**
+     * 获取显示的文本内容
+     * @return
+     */
+    public String getShowText() {
+        if (showContent == null) {
+            return content;
+        } else {
+            return showContent;
         }
     }
 
@@ -559,5 +565,13 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
 
     public String getTitle() {
         return title;
+    }
+
+    public String getShowContent() {
+        return showContent;
+    }
+
+    public void setShowContent(String showContent) {
+        this.showContent = showContent;
     }
 }

@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.widget;
 
 import android.content.Context;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
@@ -30,7 +31,7 @@ public class LayoutManagerFactory {
         RecyclerView.LayoutManager layoutManager = null;
         if (isGrid) {
             if (mGridLayoutManager == null) {
-                mGridLayoutManager = new NoteGridLayoutManager(context, mSpanCount);
+                mGridLayoutManager = new GridLayoutManager(context, mSpanCount);
             }
             layoutManager = mGridLayoutManager;
         } else {

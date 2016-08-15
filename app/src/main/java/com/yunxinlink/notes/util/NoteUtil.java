@@ -81,7 +81,7 @@ public class NoteUtil {
     public static void showInfo(Context context, final NoteInfo note) {
         String info = note.getNoteInfo(context);
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(note.getNoteTitle())
+        builder.setTitle(note.getNoteTitle(false))
                 .setMessage(info)
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
