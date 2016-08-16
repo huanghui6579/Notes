@@ -399,7 +399,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         if (showContent == null) {
             return content;
         } else {
-            return showContent;
+            return showContent.trim();
         }
     }
 

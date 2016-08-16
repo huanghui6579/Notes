@@ -958,11 +958,19 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             setupUpdateNote(info, note);
             oldDetail.setLastAttach(detailNote.getLastAttach());
             oldDetail.setDetailList(detailNote.getDetailList());
+            
+            //先删除原来位置的
+            mNotes.remove(index);
+            //再添加到0位
+            mNotes.add(0, oldDetail);
 
             AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
-            refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
+            refreshHelper.type = AdapterRefreshHelper.TYPE_SWAP;
+            refreshHelper.fromPosition = index;
+            refreshHelper.toPosition = 0;
             refreshHelper.position = index;
             refreshUI(mNotes, refreshHelper);
+            mRecyclerView.scrollToPosition(0);
         }
     }
 
@@ -1187,16 +1195,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         if (!SystemUtil.isEmpty(list)) {  //有数据
             setShowContentStyle(mIsGridStyle, false, refreshHelper);
             //显示recycleView
-            if (mRefresher.getVisibility() != View.VISIBLE) {
-                mRefresher.setVisibility(View.VISIBLE);
-            }
+            SystemUtil.setViewVisibility(mRefresher, View.VISIBLE);
             clearEmptyView();
         } else {    //没有数据
             setShowContentStyle(mIsGridStyle, false, null);
             //隐藏recycleView
-            if (mRefresher.getVisibility() == View.VISIBLE) {
-                mRefresher.setVisibility(View.GONE);
-            }
+            SystemUtil.setViewVisibility(mRefresher, View.GONE);
             loadEmptyView();
         }
     }
@@ -1315,6 +1319,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             removeSelectedItem(pos);
         }
     }
+    
+//    private void 
     
     /**
      * 初始化note的适配器

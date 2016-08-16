@@ -40,7 +40,9 @@ public class AdapterRefreshHelper {
                 break;
             case AdapterRefreshHelper.TYPE_SWAP:
                 adapter.notifyItemMoved(fromPosition, toPosition);
-                adapter.notifyItemRangeChanged(fromPosition, toPosition - fromPosition + 1);
+                //取位置索引小的
+                int fromPos = fromPosition > toPosition ? toPosition : fromPosition;
+                adapter.notifyItemRangeChanged(fromPos, Math.abs(toPosition - fromPosition) + 1);
                 break;
             default:
                 adapter.notifyItemRangeChanged(0, adapter.getItemCount());

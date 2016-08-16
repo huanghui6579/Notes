@@ -61,7 +61,7 @@
             android:layout_toStartOf="@id/iv_icon"
             android:layout_alignParentTop="true"
             android:layout_above="@id/tv_time"
-            android:maxLines="2"
+            android:maxLines="3"
             android:ellipsize="end"/>
     </RelativeLayout>
 
