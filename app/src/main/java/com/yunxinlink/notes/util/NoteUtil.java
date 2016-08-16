@@ -3,6 +3,8 @@ package com.yunxinlink.notes.util;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.text.Editable;
@@ -31,7 +33,7 @@ public class NoteUtil {
      */
     public static void handleDeleteNote(Context context, final List<DetailNoteInfo> noteList, boolean hasDeleteOpt) {
         if (!hasDeleteOpt) {   //之前是否有删除操作，如果没有，则需弹窗           
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            AlertDialog.Builder builder = buildDialog(context);
             builder.setTitle(R.string.prompt)
                     .setMessage(R.string.confirm_to_trash)
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -80,7 +82,7 @@ public class NoteUtil {
      */
     public static void showInfo(Context context, final NoteInfo note) {
         String info = note.getNoteInfo(context);
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog.Builder builder = buildDialog(context);
         builder.setTitle(note.getNoteTitle(false))
                 .setMessage(info)
                 .setPositiveButton(android.R.string.ok, null)
@@ -151,5 +153,50 @@ public class NoteUtil {
             failedMsg = activity.getString(failedRes);
         }
         onPermissionDenied(activity, permission, rationale, failedMsg);
+    }
+
+    /**
+     * 创建一个对话框
+     * @param context
+     * @return
+     */
+    public static AlertDialog.Builder buildDialog(Context context) {
+        return new AlertDialog.Builder(context, R.style.NoteAlertDialogStyle);
+    }
+
+    /**
+     * 处理普通文本的分享处理
+     * @param  intent intent
+     * @return 返回文本内容
+     * @author tiger
+     * @update 2015/11/14 10:44
+     * @version 1.0.0
+     */
+    public static String handleSendText(Intent intent) {
+        return intent.getStringExtra(Intent.EXTRA_TEXT);
+    }
+
+    /**
+     * 处理分享过来的文件
+     * @param intent intent
+     * @return 文件的uri
+     * @author tiger
+     * @update 2015/11/15 10:41
+     * @version 1.0.0
+     */
+    public static Uri handleSendFile(Intent intent) {
+        return intent.getParcelableExtra(Intent.EXTRA_STREAM);
+    }
+
+    /**
+     * 处理多文件分享
+     * @param intent intent
+     * @return 返回多文件的uri集合
+     * @author tiger
+     * @update 2015/11/15 10:46
+     * @version 1.0.0
+     */
+    public static ArrayList<Uri> handleSendMultipleFiles(Intent intent) {
+        return intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
     }
 }

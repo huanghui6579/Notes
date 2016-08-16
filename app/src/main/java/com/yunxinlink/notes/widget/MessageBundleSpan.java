@@ -14,6 +14,7 @@ import android.view.View;
 
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.util.NoteLinkify;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.Log;
 
@@ -100,7 +101,7 @@ public class MessageBundleSpan extends URLSpan {
      * @param onClickListener 每一项的点击事件
      */
     private void showMenu(Context context, MenuItem menuItem, DialogInterface.OnClickListener onClickListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog.Builder builder = NoteUtil.buildDialog(context);
         builder.setTitle(menuItem.title)
                 .setItems(menuItem.menuRes, onClickListener)
                 .show();

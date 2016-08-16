@@ -2,6 +2,8 @@ package com.yunxinlink.notes.widget;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -19,7 +21,6 @@ import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.listener.AttachAddCompleteListener;
 import com.yunxinlink.notes.listener.OnAddSpanCompleteListener;
 import com.yunxinlink.notes.model.Attach;
@@ -27,6 +28,7 @@ import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.richtext.NoteRichSpan;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
+import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.Log;
 
 /**
@@ -38,19 +40,23 @@ import com.yunxinlink.notes.util.log.Log;
 public class NoteEditText extends EditText implements NoteRichSpan {
 
     private static final String TAG = "NoteEditText";
+    
+    private static final int MSG_ADD_SPAN = 1;
 
     protected SelectionChangedListener mSelectionChangedListener;
-
+    
+    private Handler mHandler = new MyHandler();
+    
     public void setOnSelectionChangedListener(SelectionChangedListener selectionChangedListener) {
         this.mSelectionChangedListener = selectionChangedListener;
     }
 
     public NoteEditText(Context context) {
-        super(context);
+        this(context, null);
     }
 
     public NoteEditText(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        this(context, attrs, 0);
     }
 
     public NoteEditText(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -83,7 +89,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
         return super.onTouchEvent(event);
 
     }
-    
+
     /**
      * 添加图片
      * @param attach 图片
@@ -130,10 +136,11 @@ public class NoteEditText extends EditText implements NoteRichSpan {
         }
 
         final String filePath = attach.getLocalPath();
-        FileSpan fileSpan = new FileSpan(getContext(), attach, getWidth());
+        FileSpan fileSpan = new FileSpan(getContext(), attach, getSize()[0]);
         
         AttachSpan attachSpan = getAttachSpan(attach);
         final CharSequence text = attachSpan.getText();
+        KLog.d(TAG, "---addAttach---attach-----" + attach + "---text--" + text);
         addSpan(text, attachSpan, fileSpan, new OnAddSpanCompleteListener() {
             @Override
             public void onAddSpanComplete() {
@@ -202,14 +209,24 @@ public class NoteEditText extends EditText implements NoteRichSpan {
         attachSpan.setAttachType(attach.getType());
         attachSpan.setFilePath(filePath);*/
 
-        final SpannableStringBuilder builder = new SpannableStringBuilder();
-        builder.append(text);
-        builder.setSpan(replaceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 //        builder.setSpan(clickSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        KLog.d(TAG, "-------addSpan---post--start---");
+        Message msg = mHandler.obtainMessage();
+        msg.what = MSG_ADD_SPAN;
+        
+        SpanInfo spanInfo = new SpanInfo(text, clickSpan, replaceSpan, selStart, selEnd, listener);
+        msg.obj = spanInfo;
+        mHandler.sendMessage(msg);
+
+        if (listener != null) {
+            listener.onAddSpanComplete();
+        }
+        /*
         post(new Runnable() {
             @Override
             public void run() {
                 try {
+                    KLog.d(TAG, "-------addSpan---post--ing---");
                     Editable editable = getEditableText();
                     if (selStart < 0 || getText() == null || selStart >= getText().length()) {
                         builder.append(Constants.TAG_NEXT_LINE);
@@ -219,14 +236,12 @@ public class NoteEditText extends EditText implements NoteRichSpan {
                         editable.replace(selStart, selEnd, builder);
                         KLog.d(TAG, "-----addSpan----replace--");
                     }
-                    if (listener != null) {
-                        listener.onAddSpanComplete();
-                    }
+                    
                 } catch (Exception e) {
                     Log.e(TAG, "---note---edit--addSpan---error--" + e.getMessage());
                 }
             }
-        });
+        });*/
         return text;
     }
 
@@ -255,7 +270,9 @@ public class NoteEditText extends EditText implements NoteRichSpan {
 
     @Override
     public int[] getSize() {
-        int width = getWidth();
+        
+//        KLog.d(TAG, "---getSize--width-----" + mWidth);
+        /*int width = getWidth();
         int height = getHeight();
         if (width == 0 || height == 0) {
             //计算尺寸
@@ -265,10 +282,15 @@ public class NoteEditText extends EditText implements NoteRichSpan {
             width = getMeasuredWidth();
 //            height = getMeasuredHeight();
             height = width;
-        }
+            KLog.d(TAG, "---getSize--width-----" + width);
+        }*/
         int[] size = new int[2];
+        int width = getWidth();
+        if (width == 0) {
+            width = SystemUtil.getScreenWidth(getContext());
+        }
         size[0] = width;
-        size[1] = height;
+        size[1] = width;
         return size;
     }
 
@@ -391,7 +413,62 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      * @version 1.0.0
      */
     public interface SelectionChangedListener {
-        public void onSelectionChanged(int selStart, int selEnd);
+        void onSelectionChanged(int selStart, int selEnd);
     }
     
+    class SpanInfo {
+        CharSequence text;
+        AttachSpan clickSpan;
+        ReplacementSpan replaceSpan;
+        int selStart;
+        int selEnd;
+        OnAddSpanCompleteListener listener;
+
+        public SpanInfo(CharSequence text, AttachSpan clickSpan, ReplacementSpan replaceSpan, int selStart, int selEnd, OnAddSpanCompleteListener listener) {
+            this.text = text;
+            this.clickSpan = clickSpan;
+            this.replaceSpan = replaceSpan;
+            this.selStart = selStart;
+            this.selEnd = selEnd;
+            this.listener = listener;
+        }
+    }
+    
+    private class MyHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_ADD_SPAN:  //添加span
+                    SpanInfo spanInfo = (SpanInfo) msg.obj;
+                    if (spanInfo == null) {
+                        return;
+                    }
+                    try {
+                        int selStart = spanInfo.selStart;
+                        int selEnd = spanInfo.selEnd;
+                        CharSequence text = spanInfo.text;
+                        ReplacementSpan replaceSpan = spanInfo.replaceSpan;
+                        
+                        SpannableStringBuilder builder = new SpannableStringBuilder();
+                        builder.append(text);
+                        builder.setSpan(replaceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        
+                        KLog.d(TAG, "-------addSpan---post--ing---");
+                        Editable editable = getEditableText();
+                        if (selStart < 0 || getText() == null || selStart >= getText().length()) {
+                            builder.append(Constants.TAG_NEXT_LINE);
+                            editable.append(builder);
+                            KLog.d(TAG, "-----addSpan----append--");
+                        } else {
+                            editable.replace(selStart, selEnd, builder);
+                            KLog.d(TAG, "-----addSpan----replace--");
+                        }
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "---note---edit--addSpan---error--" + e.getMessage());
+                    }
+                    break;
+            }
+        }
+    }
 }

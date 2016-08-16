@@ -37,6 +37,7 @@ import com.yunxinlink.notes.listener.OnItemLongClickListener;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.Log;
 import com.yunxinlink.notes.widget.DividerItemDecoration;
@@ -221,7 +222,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
      * @version: 1.0.0
      */
     private void sureDeleteFolder(final Folder folder) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
         builder.setTitle(R.string.prompt)
                 .setMessage(R.string.confirm_fodler_to_trash)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -245,7 +246,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
      */
     private void showFolderInfo(final Folder folder) {
         String info = folder.getInfo(mContext);
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
         builder.setTitle(folder.getName())
                 .setMessage(info)
                 .setPositiveButton(android.R.string.ok, null)
@@ -288,7 +289,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                 }
                 final Folder folder = mFolders.get(pos);
                 if (folder != null) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
                     builder.setTitle(folder.getName())
                             .setItems(R.array.menu_folder_list, new DialogInterface.OnClickListener() {
                                 @Override

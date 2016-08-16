@@ -144,9 +144,11 @@ public class NoteManager extends Observable<Observer> {
         String[] selectionArgs = null;
         String folder = null;
         boolean isRecycle = false;
+        int sort = 0;
         if (args != null) {
             folder = args.getString("folderId", null);
             isRecycle = args.getBoolean("isRecycle", false);
+            sort = args.getInt("sort", 0);
         }
         int deleteState = isRecycle ? 1 : 0;
         //是否加载回收站里的笔记
@@ -183,7 +185,8 @@ public class NoteManager extends Observable<Observer> {
             }
         }
         List<DetailNoteInfo> list = null;
-        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.NoteColumns.DEFAULT_SORT);
+        String orderBy = getNoteSort(sort);
+        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, selection, selectionArgs, null, null, orderBy);
         if (cursor != null) {
             list = new ArrayList<>();
             while (cursor.moveToNext()) {
@@ -207,6 +210,27 @@ public class NoteManager extends Observable<Observer> {
             cursor.close();
         }
         return list;
+    }
+
+    /**
+     * 获取笔记的排序方式
+     * @param sort
+     * @return
+     */
+    private String getNoteSort(int sort) {
+        String orderBy = null;
+        switch (sort) {
+            case NoteInfo.SORT_CREATE_TIME:
+                orderBy = Provider.NoteColumns.CREATE_TIME + " desc";
+                break;
+            case NoteInfo.SORT_TITLE:
+                orderBy = Provider.NoteColumns.CONTENT + " asc";
+                break;
+            default:
+                orderBy = Provider.NoteColumns.DEFAULT_SORT;
+                break;
+        }
+        return orderBy;
     }
 
     /**
@@ -1106,7 +1130,7 @@ public class NoteManager extends Observable<Observer> {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         db.beginTransaction();
         try {
-            List<NoteInfo> noteList = new ArrayList<>();
+            List<DetailNoteInfo> noteList = new ArrayList<>();
             for (DetailNoteInfo detailNote : notes) {
                 NoteInfo note = detailNote.getNoteInfo();
                 if (newFolder.getSId().equals(note.getFolderId())) {
@@ -1118,7 +1142,7 @@ public class NoteManager extends Observable<Observer> {
                 
                 if (row > 0) {
                     updateNoteMoteFolder(db, oldFolder, newFolder, time);
-                    noteList.add(note);
+                    noteList.add(detailNote);
                 }
                 
             }

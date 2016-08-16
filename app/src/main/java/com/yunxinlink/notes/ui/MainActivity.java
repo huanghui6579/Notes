@@ -65,6 +65,7 @@ import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
+import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
@@ -116,6 +117,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * 显示的是否是网格风格
      */
     private boolean mIsGridStyle = true;
+    /**
+     * 笔记的排序方式
+     */
+    private int mNoteSort;
 
     private LayoutManagerFactory mLayoutManagerFactory;
 
@@ -277,23 +282,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         //初始化文件夹
         initFolder();
 
-        //初始化主界面的显示方式
-        initShowStyle();
+        //初始化笔记的一些设置项
+        initNoteSettings();
 
         if (isFolderAllDisable()) { //不能加载所有文件夹里的笔记，则加载第一个文件夹
             //加载文件夹
             List<Folder> folders = loadFolder(false);
 
             if (folders != null && folders.size() > 0) {
-                reLoadFisrtFolder(folders.get(0));
+                reLoadFirstFolder(folders.get(0));
             } else {
                 //加载笔记
-                loadNotes(mSelectedFolderId);
+                loadNotes(mSelectedFolderId, mNoteSort);
             }
 
         } else {
             //加载笔记
-            loadNotes(mSelectedFolderId);
+            loadNotes(mSelectedFolderId, mNoteSort);
 
             doInbackground(new Runnable() {
                 @Override
@@ -311,9 +316,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * @update 2016/6/30 20:42
      * @version: 1.0.0
      */
-    private void initShowStyle() {
+    private void initNoteSettings() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         mIsGridStyle = sharedPreferences.getBoolean(Constants.PREF_IS_GRID_STYLE, true);
+        mNoteSort = sharedPreferences.getInt(Constants.PREF_NOTE_SORT, 0);
     }
     
     /**
@@ -330,6 +336,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         editor.apply();
     }
 
+    /**
+     * 修改笔记的排序方式
+     * @param sort
+     */
+    private void updateNoteSort(int sort) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(Constants.PREF_NOTE_SORT, sort);
+        editor.apply();
+    }
+
     @Override
     public boolean isSwipeBackEnabled() {
         return false;
@@ -340,6 +357,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         //初始化配置文件
         initProperties();
 
+        //下拉刷新
+        pullRefresh();
+
+        requestPermission();
+    }
+
+    /**
+     * 手动下拉刷新
+     */
+    private void pullRefresh() {
         mRefresher.post(new Runnable() {
             @Override
             public void run() {
@@ -347,8 +374,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 mOnRefreshListener.onRefresh();
             }
         });
-
-        requestPermission();
     }
 
     /**
@@ -398,7 +423,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             @Override
             public void run() {
 
-                reLoadFisrtFolder(folder);
+                reLoadFirstFolder(folder);
             }
         });
     }
@@ -430,7 +455,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     /**
      * 重新加载第一个文件夹的文件
      */
-    private void reLoadFisrtFolder(Folder folder) {
+    private void reLoadFirstFolder(Folder folder) {
         if (folder == null) {
             folder = new Folder();
         }
@@ -438,7 +463,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         SystemUtil.setSelectedFolder(mContext, mSelectedFolderId);
         
         //加载笔记
-        loadNotes(mSelectedFolderId);
+        loadNotes(mSelectedFolderId, mNoteSort);
     }
     
     /**
@@ -459,13 +484,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     /**
      * 加载笔记
+     * @param folderId 所属笔记本
+     * @param sort 排序方式                
      */
-    private void loadNotes(final String folderId) {
+    private void loadNotes(final String folderId, int sort) {
         NoteManager noteManager = NoteManager.getInstance();
         Bundle args = new Bundle();
         if (!TextUtils.isEmpty(folderId)) {
             args.putString("folderId", folderId);
         }
+        args.putInt("sort", sort);
         List<DetailNoteInfo> list = noteManager.getAllDetailNotes(getCurrentUser(), args);
         Message msg = mHandler.obtainMessage();
         msg.what = Constants.MSG_SUCCESS2;
@@ -882,12 +910,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
      * @param list 笔记列表
      * @param isMove 是指只是移动笔记到其他文件文件，如果是指移动，那么在"所有文件夹"中就不需要删除了
      */
-    private void deleteNotes(List<NoteInfo> list, boolean isMove) {
+    private void deleteNotes(List<DetailNoteInfo> list, boolean isMove) {
         if (list != null && list.size() > 0) {
             if (isMove) {   //移动到其他文件夹
-                for (NoteInfo note : list) {
-                    int index = mNotes.indexOf(note);
+                for (DetailNoteInfo detailNote : list) {
+                    int index = mNotes.indexOf(detailNote);
                     if (index != -1) {
+                        NoteInfo note = detailNote.getNoteInfo();
                         setupUpdateNote(mNotes.get(index).getNoteInfo(), note);
                     }
                 }
@@ -1042,7 +1071,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     @Override
                     public void run() {
                         //选中第一个文件夹
-                        reLoadFisrtFolder(mFolders.get(0));
+                        reLoadFirstFolder(mFolders.get(0));
                     }
                 });
             }
@@ -1149,7 +1178,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     doInbackground(new Runnable() {
                         @Override
                         public void run() {
-                            reLoadFisrtFolder(firstFolder);
+                            reLoadFirstFolder(firstFolder);
                         }
                     });
 
@@ -1244,7 +1273,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             currentFolderId = mSelectedFolderId;
         }
         if (list != null && list.size() > 0) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+            AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
             int checkedItem = -1;
             int size = list.size();
             Folder selectedFolder = null;
@@ -1702,6 +1731,43 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     /**
+     * 是否是修改时间排序
+     * @return
+     */
+    private boolean isModifyTimeSort() {
+        return mNoteSort != NoteInfo.SORT_CREATE_TIME;
+    }
+
+    /**
+     * 显示排序方式的对话框
+     * @param currentSort 当前的排序，默认勾选项
+     */
+    private void showSortStyle(final int currentSort) {
+        AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
+        builder.setTitle(R.string.sort_style)
+                .setSingleChoiceItems(R.array.sort_menu_items, currentSort, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, final int which) {
+                        dialog.dismiss();
+                        if (which != currentSort) {
+                            mNoteSort = which;
+                            //下拉刷新
+                            pullRefresh();
+
+                            //修改笔记的排序方式
+                            doInbackground(new NoteTask() {
+                                @Override
+                                public void run() {
+                                    updateNoteSort(which);
+                                }
+                            });
+                        }
+                    }
+                })
+                .show();
+    }
+
+    /**
      * popuMenu每一项点击的事件
      * @author huanghui1
      * @update 2016/3/2 15:05
@@ -1719,6 +1785,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 case R.id.nav_upload:   //同步
                     break;
                 case R.id.nav_sort: //排序
+                    showSortStyle(mNoteSort);
                     break;
             }
             return false;
@@ -1836,14 +1903,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         private OnCheckedChangeListener mOnCheckedChangeListener;
         
         //图片加载失败的图片
-        private Drawable mFailedDrawable;
+        private ItemAttachIcon mItemAttachIcon;
+        //着色的颜色
+        private int mTintColor;
 
         public NoteListAdapter(Context context, List<DetailNoteInfo> list) {
             this.mContext = context;
             this.mList = list;
             mLayoutInflater = LayoutInflater.from(context);
+            
+            mTintColor = initTintColor();
 
-            mFailedDrawable = initFailedImage();
+            mItemAttachIcon = new ItemAttachIcon();
         }
 
         public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
@@ -1894,7 +1965,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             if (note != null) {
                 holder.mCbCheck.setOnCheckedChangeListener(null);
                 if (mIsChooseMode) {    //选择模式
-                    boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(note);
+                    boolean checked = mSelectedList != null && mSelectedList.size() > 0 &&  mSelectedList.contains(detailNote);
                     showCheckbox(holder.mCbCheck);
                     holder.mCbCheck.setChecked(checked);
                 } else {
@@ -1908,7 +1979,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 resetAttachView(holder);
 
                 holder.mTvContent.setText(note.getStyleContent(true, detailNote.getDetailList()));
-                holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
+                holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getShowTime(isModifyTimeSort())));
 
                 holder.mCbCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     @Override
@@ -1921,20 +1992,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 
                 if (note.hasAttach() && detailNote.getLastAttach() != null) {
                     SystemUtil.setViewVisibility(holder.mIvIcon, View.VISIBLE);
-                    Attach lastAttach = detailNote.getLastAttach();
-                    ImageUtil.displayImage(lastAttach.getLocalPath(), new ImageViewAware(holder.mIvIcon, false), new SimpleImageLoadingListener() {
-                        @Override
-                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                            if (loadedImage == null) {
-                                loadImageFailed((ImageView) view);
-                            }
-                        }
-
-                        @Override
-                        public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
-                            loadImageFailed((ImageView) view);
-                        }
-                    });
+                    showAttachIcon(detailNote, holder);
                 }
                 
             }
@@ -1951,15 +2009,95 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
 
         /**
+         * 初始化着色的颜色
+         * @return
+         */
+        private int initTintColor() {
+            Resources resources = getResources();
+            return ResourcesCompat.getColor(resources, R.color.text_time_color, getTheme());
+        }
+
+        /**
          * 初始化图片加载时候的图片
          * @return
          */
-        private Drawable initFailedImage() {
+        private Drawable initFailedImage(int color) {
             Resources resources = getResources();
             Drawable drawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_broken_image, getTheme());
-            int tintColor = ResourcesCompat.getColor(resources, R.color.control_color_light, getTheme());
-            drawable = getTintDrawable(drawable, tintColor);
+            drawable = getTintDrawable(drawable, color);
             return drawable;
+        }
+
+        /**
+         * 初始化图片加载时候的图片
+         * @return
+         */
+        private Drawable initAttachIcon(int attachType, int color) {
+            Drawable drawable = null;
+            int resId = 0;
+            Resources resources = getResources();
+            switch (attachType) {
+                case Attach.VOICE:
+                    if (mItemAttachIcon.mMusicDrawable == null) {
+                        resId = R.drawable.ic_library_music;
+                        drawable = ResourcesCompat.getDrawable(resources, resId, getTheme());
+                        mItemAttachIcon.mMusicDrawable = getTintDrawable(drawable, color);
+                    }
+                    drawable = mItemAttachIcon.mMusicDrawable;
+                    break;
+                case Attach.VIDEO:
+                    if (mItemAttachIcon.mVideoDrawable == null) {
+                        resId = R.drawable.ic_library_music;
+                        drawable = ResourcesCompat.getDrawable(resources, resId, getTheme());
+                        mItemAttachIcon.mVideoDrawable = getTintDrawable(drawable, color);
+                    }
+                    drawable = mItemAttachIcon.mVideoDrawable;
+                    break;
+                case Attach.ARCHIVE:
+                    if (mItemAttachIcon.mArchiveDrawable == null) {
+                        resId = R.drawable.ic_library_archive;
+                        drawable = ResourcesCompat.getDrawable(resources, resId, getTheme());
+                        mItemAttachIcon.mArchiveDrawable = getTintDrawable(drawable, color);
+                    }
+                    drawable = mItemAttachIcon.mArchiveDrawable;
+                    break;
+                case Attach.FILE:
+                    if (mItemAttachIcon.mFileDrawable == null) {
+                        resId = R.drawable.ic_library_file;
+                        drawable = ResourcesCompat.getDrawable(resources, resId, getTheme());
+                        mItemAttachIcon.mFileDrawable = getTintDrawable(drawable, color);
+                    }
+                    drawable = mItemAttachIcon.mFileDrawable;
+                    break;
+            }
+            return drawable;
+        }
+
+        /**
+         * 显示附件的图标
+         * @param detailNote
+         * @param holder
+         */
+        private void showAttachIcon(DetailNoteInfo detailNote, NoteListViewHolder holder) {
+            Attach lastAttach = detailNote.getLastAttach();
+            if (lastAttach.isImage()) { //图片文件
+                ImageUtil.displayImage(lastAttach.getLocalPath(), new ImageViewAware(holder.mIvIcon, false), new SimpleImageLoadingListener() {
+                    @Override
+                    public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                        if (loadedImage == null) {
+                            loadImageFailed((ImageView) view);
+                        }
+                    }
+
+                    @Override
+                    public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
+                        loadImageFailed((ImageView) view);
+                    }
+                });
+            } else {
+                Drawable drawable = initAttachIcon(lastAttach.getType(), mTintColor);
+                holder.mIvIcon.setImageDrawable(drawable);
+            }
         }
 
         /**
@@ -1967,7 +2105,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
          * @param imageView
          */
         private void loadImageFailed(ImageView imageView) {
-            imageView.setImageDrawable(mFailedDrawable);
+            if (mItemAttachIcon.mFailedDrawable == null) {
+                mItemAttachIcon.mFailedDrawable = initFailedImage(mTintColor);
+            }
+            imageView.setImageDrawable(mItemAttachIcon.mFailedDrawable);
         }
 
         /**
@@ -1993,6 +2134,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         @Override
         public int getItemCount() {
             return mList == null ? 0 : mList.size();
+        }
+
+        /**
+         * 附件的类型的图标
+         */
+        class ItemAttachIcon {
+            //图片加载失败的图片
+            Drawable mFailedDrawable;
+            Drawable mMusicDrawable;
+            //压缩文件
+            Drawable mArchiveDrawable;
+            //视频文件
+            Drawable mVideoDrawable;
+            Drawable mFileDrawable;
+
         }
     }
 
@@ -2120,7 +2276,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             }
             
             holder.mTvTitle.setText(title);
-            holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getModifyTime()));
+            holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getShowTime(isModifyTimeSort())));
             holder.mTvSummary.setText(note.getStyleContent(detailNote.getDetailList()));
 
             if (note.hasAttach() && detailNote.getLastAttach() != null) {
@@ -2424,8 +2580,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             if (detailNote != null) {
                                 deleteNote(detailNote, false);
                             } else if (data instanceof List) {  //删除了多个笔记
-                                List<NoteInfo> noteList = (List<NoteInfo>) data;
-                                deleteNotes(noteList, false);
+                                List<DetailNoteInfo> detailNoteList = (List<DetailNoteInfo>) data;
+                                deleteNotes(detailNoteList, false);
                             }
                             saveDeleteOpt();
                             break;
@@ -2435,8 +2591,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             if (detailNote != null) {
                                 deleteNote(detailNote, isFolderAll);
                             } else if (data instanceof List) {  //移动了多个笔记
-                                List<NoteInfo> noteList = (List<NoteInfo>) data;
-                                deleteNotes(noteList, isFolderAll);
+                                List<DetailNoteInfo> detailNoteList = (List<DetailNoteInfo>) data;
+                                deleteNotes(detailNoteList, isFolderAll);
                             }
                             if (isFolderAll) {  //在所有文件中，则给个操作结果的提示
                                 mHandler.sendEmptyMessage(MSG_MOVE_SUCCESS);

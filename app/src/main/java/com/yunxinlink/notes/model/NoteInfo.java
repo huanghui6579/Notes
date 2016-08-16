@@ -27,6 +27,13 @@ import java.util.Map;
  * @version: 0.0.1
  */
 public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
+    //最后修改时间排序
+    public static final int SORT_MODIFY_TIME = 0;
+    //创建时间排序
+    public static final int SORT_CREATE_TIME = 1;
+    //标题排序
+    public static final int SORT_TITLE = 2;
+    
     private int id;
 
     /**
@@ -421,6 +428,19 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         }
         
         return spannableString;
+    }
+
+    /**
+     * 获取笔记的显示时间
+     * @param isModifyTime 是否显示修改时间
+     * @return
+     */
+    public long getShowTime(boolean isModifyTime) {
+        if (isModifyTime) {
+            return modifyTime;
+        } else {
+            return createTime;
+        }
     }
     
     /**

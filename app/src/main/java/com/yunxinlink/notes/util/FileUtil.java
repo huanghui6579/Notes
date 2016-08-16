@@ -21,6 +21,11 @@ import java.util.Locale;
  */
 public class FileUtil {
     private static final java.lang.String TAG = "FileUtil";
+
+    /**
+     * 文本的mime类型：text/plain
+     */
+    public static final String MIME_TYPE_TEXT = "text/plain";
     
     //压缩文件的格式集合
     public static List<String> suffixList = null;

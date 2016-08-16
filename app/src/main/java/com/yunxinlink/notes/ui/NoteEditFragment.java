@@ -220,6 +220,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         NoteInfo note = detailNote.getNoteInfo();
         CharSequence s = note.getContent();
         mText = s;
+        setText(s);
         mRichTextWrapper.setText(s, map);
         NoteRichSpan richSpan = mRichTextWrapper.getRichSpan();
         if (richSpan instanceof NoteTextView) {
@@ -626,6 +627,18 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 //            }
 //        });
     }
+
+    /**
+     * 重置editText,主要是清除一些监听器
+     * @param editText
+     */
+    public void resetEdittext(final NoteEditText editText) {
+        if (editText != null) {
+            editText.removeTextChangedListener(this);
+            editText.setOnEditorActionListener(null);
+            editText.setOnSelectionChangedListener(null);
+        }
+    }
     
     public void beginBatchEdit() {
         mEtContent.beginBatchEdit();
@@ -637,6 +650,12 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     
     public void addAttach(Attach attach, AttachAddCompleteListener listener) {
         mEtContent.addAttach(attach, listener);
+    }
+    
+    public void addAttach(List<Attach> attachs, AttachAddCompleteListener listener) {
+        for (Attach attach : attachs) {
+            addAttach(attach, listener);
+        }
     }
 
     /**
@@ -721,20 +740,22 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     @Override
     public void onAttach(Context context) {
         KLog.d(TAG, "--NoteEditFragment---onAttach----");
-        super.onAttach(context);
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
         }
+        super.onAttach(context);
     }
 
     @Override
     public void onDetach() {
         KLog.d(TAG, "--NoteEditFragment---onDetach----");
-        super.onDetach();
         mListener = null;
+        resetEdittext(mEtContent);
+        
+        super.onDetach();
     }
 
     @Override

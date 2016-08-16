@@ -317,6 +317,14 @@ public class Attach implements Parcelable {
         }
     }
 
+    /**
+     * 附件的文件类型是否是图片类型，包含图片文件和涂鸦
+     * @return
+     */
+    public boolean isImage() {
+        return type == IMAGE || type == PAINT;
+    }
+
     @Override
     public String toString() {
         return "Attach{" +

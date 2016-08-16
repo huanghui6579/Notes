@@ -97,7 +97,7 @@ public class AttachResolver implements Resolver {
         public void run() {
             String sid = spec.sid;
             Attach attach = map.get(sid);
-            if (attach != null) {
+            if (attach != null && richSpan != null) {
                 final String text = spec.text.toString();
                 final int selStart = spec.start;
                 final int selEnd = spec.end;

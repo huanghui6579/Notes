@@ -65,4 +65,10 @@
         <item>@string/action_forward</item>
         <item>@string/action_info</item>
     </string-array>
+
+    <string-array name="sort_menu_items">
+        <item>@string/sort_modify_time</item>
+        <item>@string/sort_create_time</item>
+        <item>@string/sort_title</item>
+    </string-array>
 </resources>

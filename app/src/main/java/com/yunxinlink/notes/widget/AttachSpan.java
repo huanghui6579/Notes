@@ -15,6 +15,7 @@ import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.ui.HandWritingActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
 import com.yunxinlink.notes.util.log.Log;
@@ -146,7 +147,7 @@ public class AttachSpan extends ClickableSpan {
      * @param onClickListener 每一项的点击事件
      */
     private void showMenu(Context context, MenuItem menuItem, DialogInterface.OnClickListener onClickListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog.Builder builder = NoteUtil.buildDialog(context);
         builder.setTitle(menuItem.title)
                 .setItems(menuItem.menuRes, onClickListener)
                 .show();
@@ -229,7 +230,7 @@ public class AttachSpan extends ClickableSpan {
         }
         sb.append(context.getString(R.string.size)).append(colon).append(Constants.TAG_INDENT).append(SystemUtil.formatFileSize(file.length())).append(Constants.TAG_NEXT_LINE)
                 .append(context.getString(R.string.modify_time)).append(colon).append(Constants.TAG_INDENT).append(TimeUtil.formatTime(file.lastModified(), TimeUtil.PATTERN_FILE_TIME));
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog.Builder builder = NoteUtil.buildDialog(context);
         builder.setTitle(R.string.action_info)
                 .setMessage(sb.toString())
                 .setPositiveButton(android.R.string.ok, null)

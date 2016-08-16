@@ -13,6 +13,7 @@
         <item name="windowNoTitle">true</item>
         <item name="windowActionModeOverlay">true</item>
         <item name="actionModeStyle">@style/AppTheme.ActionMode</item>
+        <item name="alertDialogTheme">@style/NoteAlertDialogStyle</item>
         <item name="android:windowIsTranslucent">true</item>
     </style>
 
@@ -87,5 +88,25 @@
         <item name="android:minWidth">@dimen/horizonal_space_large</item>
         <item name="android:minHeight">@dimen/horizonal_space_large</item>
     </style>
-    
+
+    <style name="NoteAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <!-- Used for the buttons -->
+        <item name="colorAccent">@color/colorAccent</item>
+        <!--<item name="buttonBarPositiveButtonStyle">@style/NoteButtonBarButtonStyle</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NoteButtonBarNegativeButtonStyle</item>
+        <item name="buttonBarNeutralButtonStyle">@style/NoteButtonBarNegativeButtonStyle</item>-->
+        <!--<item name="android:textColor">@color/colorPrimary</item>-->
+        <!-- Used for the title and text -->
+        <!--<item name="android:textColorPrimary">#FFFFFF</item>-->
+        <!-- Used for the background -->
+        <!--<item name="android:background">#4CAF50</item>-->
+    </style>
+
+    <style name="NoteButtonBarButtonStyle" parent="@style/Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">@color/colorPrimary</item>
+    </style>
+
+    <style name="NoteButtonBarNegativeButtonStyle" parent="@style/Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
 </resources>

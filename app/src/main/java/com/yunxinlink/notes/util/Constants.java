@@ -16,6 +16,11 @@ public class Constants {
     public static final String APP_PAINT_FOLDER_NAME = "Paint";
     public static final String DATA_MSG_ATT_FOLDER_NAME = "attach";
     public static final String APP_NOTES_FOLDER_NAME = "notes";
+
+    /**
+     * 最多只处理5个分享过来的附件
+     */
+    public static final int MAX_SHARE_ATTACH_SIZE = 5;
     
     //菜单各项的不可用的alpha颜色值
     public static final float MENU_ITEM_COLOR_ALPHA = 0.25F;
@@ -50,6 +55,10 @@ public class Constants {
      * 主界面是否显示网格，默认true
      */
     public static final String PREF_IS_GRID_STYLE = "is_grid_style";
+    /**
+     * 笔记的排序方式
+     */
+    public static final String PREF_NOTE_SORT = "note_sort";
     
     /**
      * 回车的标签

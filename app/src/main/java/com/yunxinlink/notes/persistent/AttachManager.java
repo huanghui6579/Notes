@@ -83,15 +83,11 @@ public class AttachManager extends Observable<Observer> {
     public Attach addAttach(Attach attach) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         ContentValues values = initAttachValues(attach);
-        db.beginTransaction();
         long rowId = 0;
         try {
             rowId = db.insert(Provider.AttachmentColumns.TABLE_NAME, null, values);
-            db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "---addAttach--error--" + e.getMessage());
-        } finally {
-            db.endTransaction();
         }
         if (rowId > 0) {
             if (rowId > 0) {

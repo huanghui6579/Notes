@@ -251,6 +251,67 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         KLog.d(TAG, "-------initData-----");
         mNoteManager = NoteManager.getInstance();
         registContentObserver();
+
+        //处理数据
+        handleIntent();
+    }
+
+    /**
+     * 处理分享过来的的数据
+     */
+    private void handleShareAction() {
+        Intent intent = getIntent();
+        if (intent == null) {
+            KLog.d(TAG, "-----handleShareAction--intent--is--null---");
+            return;
+        }
+        String action = intent.getAction();
+        String type = intent.getType();
+        if (type == null) {
+            KLog.d(TAG, "---handleShareAction---type----is--null---");
+        } else {
+            switch (action) {
+                case Intent.ACTION_SEND:    //单个文件分享
+                    boolean isSingleFile = false;
+                    if (FileUtil.MIME_TYPE_TEXT.equals(type)) { //文本
+                        String text = NoteUtil.handleSendText(intent);
+                        if (text == null) { //没有文本，则试图获取附件
+                            isSingleFile = true;
+                        } else {    //有文本内容
+                            mNote.setContent(text);
+                        }
+                    } else {    //文件
+                        isSingleFile = true;
+                    }
+                    if (isSingleFile) {
+                        Uri uri = NoteUtil.handleSendFile(intent);
+                        KLog.d(TAG, "--handleShareAction---isSingleFile---" + uri);
+                        if (uri != null) {
+                            handleShowAttach(uri);
+                        }
+                    }
+                    break;
+                case Intent.ACTION_SEND_MULTIPLE:   //多文件分享
+                    List<Uri> uris = NoteUtil.handleSendMultipleFiles(intent);
+                    if (uris != null && uris.size() > 0) {
+                        int size = uris.size();
+                        List<Uri> shareUris = null;
+                        if (size > Constants.MAX_SHARE_ATTACH_SIZE) {   //截取前5个
+                            shareUris = uris.subList(0, Constants.MAX_SHARE_ATTACH_SIZE - 1);
+                        } else {
+                            shareUris = uris;
+                        }
+                        handleShowAttach(shareUris);
+                    }
+                    break;
+            }
+        }
+    }
+
+    /**
+     * 处理Intent的数据
+     */
+    private void handleIntent() {
         Intent intent = getIntent();
         if (intent != null) {
             int noteId = intent.getIntExtra(ARG_NOTE_ID, 0);
@@ -259,16 +320,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mFolderId = intent.getStringExtra(ARG_FOLDER_ID);
             mHasDeleteOpt = intent.getBooleanExtra(ARG_OPT_DELETE, true);
 
+            //初始化笔记
             initNote();
-            
+
             if (!TextUtils.isEmpty(sid)) {
                 mNote.setSId(sid);
             }
-            
+
             mNote.setId(noteId);
-            
+
+            //设置笔记的模式，是编辑模式还是阅读模式
             setupNoteStyle(isTextStyle, false);
-            
+
             if (noteId > 0) {   //查看模式
                 if (isTextStyle) {
                     setNoteMode(NOTE_MODE_VIEW);
@@ -281,7 +344,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             }
         }
     }
-    
+
     //初始化笔记
     private void initNote() {
         if (mNote == null) {
@@ -638,6 +701,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         if (mNoteEditFragment != null) {
             mNoteEditFragment.initEditInfo();
+            
+            //处理分享过来的数据
+            handleShareAction();
+            
+            if (mNote.getId() <= 0) {   //没有内容，可能是新建笔记
+                showNote(mDetailNote);
+            }
+            
             changeNoteMode(true);
         }
     }
@@ -1465,26 +1536,40 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * 显示选择的附件
      * @param uri
      */
-    private void handleShowAttach(final Uri uri) {
-        doInbackground(new Runnable() {
+    private void handleShowAttach(Uri uri) {
+        List<Uri> list = new ArrayList<>(1);
+        list.add(uri);
+        handleShowAttach(list);
+    }
+
+    /**
+     * 同时添加多个附件
+     * @param uris
+     */
+    private void handleShowAttach(List<Uri> uris) {
+        doInbackground(new NoteTask(uris) {
             @Override
             public void run() {
-                String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
-                if (TextUtils.isEmpty(filePath)) {
-                    KLog.d(TAG, "--handleShowAttach---filePath--is---empty--");
-                    return;
-                }
-                File file = new File(filePath);
-                Attach attach = getAddedAttach(filePath);
-                if (mNoteEditFragment != null) {
-                    KLog.d(TAG, "handleShowAttach----" + filePath);
-                    if (attach != null) {   //该文件已添加过
-                        mNoteEditFragment.addAttach(attach, null);
-                    } else {
-                        attach = file2Attach(file, 0);
-
-                        mNoteEditFragment.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
+                List<Uri> list = (List<Uri>) params[0];
+                List<Attach> attachList = new ArrayList<>();
+                for (Uri uri : list) {
+                    String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
+                    if (TextUtils.isEmpty(filePath)) {
+                        KLog.d(TAG, "--handleShowAttach---filePath--is---empty--");
+                        continue;
                     }
+                    File file = new File(filePath);
+                    Attach attach = getAddedAttach(filePath);
+                    if (attach == null) {
+                        attach = file2Attach(file, 0);
+                        attachList.add(attach);
+                    } else if (mNoteEditFragment != null) {
+                        mNoteEditFragment.addAttach(attach, null);
+                    }
+                }
+                if (mNoteEditFragment != null && attachList.size() > 0) {
+                    KLog.d(TAG, "handleShowAttach--attachList--" + attachList);
+                    mNoteEditFragment.addAttach(attachList, new SimpleAttachAddCompleteListenerImpl(true));
                 }
             }
         });
@@ -1759,7 +1844,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * 添加附件
      * @param attach 附件
      */
-    private void handleAddAttach(final String filePath, final Object data, final Attach attach) {
+    private void handleAddAttach(String filePath, Object data, Attach attach) {
         if (mAttachCache == null) {
             mAttachCache = new HashMap<>();
         }
@@ -1767,21 +1852,26 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             KLog.d(TAG, "---handleAddAttach---added---not--need--add---");
             return;
         }
-        doInbackground(new Runnable() {
+        if (mAttachCache.containsKey(attach.getSId())) {
+            KLog.d(TAG, "---handleAddAttach---added---not--need--add----mAttachCache--has-----" + filePath);
+            return;
+        }
+        doInbackground(new NoteTask(filePath, attach) {
             @Override
             public void run() {
-                attach.setUri(filePath);
+                Attach att = (Attach) params[1];
+                att.setUri((String) params[0]);
 
                 long time = System.currentTimeMillis();
-                attach.setCreateTime(time);
-                attach.setModifyTime(time);
+                att.setCreateTime(time);
+                att.setModifyTime(time);
 
                 int userId = getCurrentUserId();
                 if (userId > 0) {
-                    attach.setUserId(userId);
+                    att.setUserId(userId);
                 }
-                AttachManager.getInstance().addAttach(attach);
-                mAttachCache.put(attach.getSId(), attach);
+                AttachManager.getInstance().addAttach(att);
+                mAttachCache.put(att.getSId(), att);
                 KLog.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
             }
         });
@@ -1862,7 +1952,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             return;
         }
         //给予清空内容非提示
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
         builder.setTitle(R.string.prompt)
                 .setMessage(R.string.confirm_clear_content)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {

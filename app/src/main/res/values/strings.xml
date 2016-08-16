@@ -77,9 +77,14 @@
     <string name="folder_move_no_more">没有可移动的文件夹</string>
 
     <string name="default_archive">所有</string>
+    
+    <string name="sort_style">排序方式</string>
+    <string name="sort_modify_time">最近更新</string>
+    <string name="sort_create_time">创建时间</string>
+    <string name="sort_title">标题</string>
 
     <string name="action_settings">设置</string>
-    <string name="action_folder">文件夹</string>
+    <string name="action_folder">笔记本</string>
     <string name="action_trash">回收站</string>
     <string name="action_search">搜索</string>
     <string name="action_find">查找</string>
