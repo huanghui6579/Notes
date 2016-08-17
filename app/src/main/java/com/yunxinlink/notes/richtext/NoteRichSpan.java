@@ -16,6 +16,8 @@ import com.yunxinlink.notes.widget.AttachSpan;
  */
 public interface NoteRichSpan {
 
+    int MSG_ADD_SPAN = 1;
+
     /**
      * 获取文本内容
      * @return

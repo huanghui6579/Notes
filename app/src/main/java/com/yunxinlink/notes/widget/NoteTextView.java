@@ -2,10 +2,13 @@ package com.yunxinlink.notes.widget;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
+import android.text.style.ClickableSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.AttributeSet;
@@ -16,12 +19,12 @@ import android.widget.TextView;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.listener.AttachAddCompleteListener;
 import com.yunxinlink.notes.listener.OnAddSpanCompleteListener;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.richtext.NoteRichSpan;
+import com.yunxinlink.notes.richtext.SpanInfo;
 import com.yunxinlink.notes.util.ImageUtil;
 
 /**
@@ -31,6 +34,8 @@ import com.yunxinlink.notes.util.ImageUtil;
  */
 public class NoteTextView extends TextView implements NoteRichSpan {
     private static final java.lang.String TAG = "NoteTextView";
+    
+    private Handler mHandler = new MyHandler();
 
     public NoteTextView(Context context) {
         super(context);
@@ -74,31 +79,15 @@ public class NoteTextView extends TextView implements NoteRichSpan {
     @Override
     public CharSequence addSpan(final CharSequence text, final AttachSpan clickSpan, final ReplacementSpan replaceSpan, final int selStart, final int selEnd, final OnAddSpanCompleteListener listener) {
 
-        post(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    CharSequence text = getText();
-                    SpannableString spannableString = null;
-                    if (text instanceof SpannableString) {
-                        spannableString = (SpannableString) text;
-                    } else {
-                        spannableString = new SpannableString(text);
-                    }
-                    spannableString.setSpan(replaceSpan, selStart, selEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    spannableString.setSpan(clickSpan, selStart, selEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Message msg = mHandler.obtainMessage();
+        msg.what = MSG_ADD_SPAN;
 
-                    setText(spannableString);
-                    
-                    if (listener != null) {
-                        listener.onAddSpanComplete();
-                    }
-                    
-                } catch (Exception e) {
-                    KLog.e(TAG, "---note---edit--addSpane---error--" + e.getMessage());
-                }
-            }
-        });
+        msg.obj = new SpanInfo(text, clickSpan, replaceSpan, selStart, selEnd, listener);
+        mHandler.sendMessage(msg);
+
+        if (listener != null) {
+            listener.onAddSpanComplete();
+        }
         return text;
     }
 
@@ -199,6 +188,42 @@ public class NoteTextView extends TextView implements NoteRichSpan {
                 }
             });
             
+        }
+    }
+
+    private class MyHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_ADD_SPAN:  //添加span
+                    SpanInfo spanInfo = (SpanInfo) msg.obj;
+                    if (spanInfo == null) {
+                        return;
+                    }
+                    try {
+
+                        int selStart = spanInfo.selStart;
+                        int selEnd = spanInfo.selEnd;
+                        ReplacementSpan replaceSpan = spanInfo.replaceSpan;
+                        CharSequence text = getText();
+                        ClickableSpan clickSpan = spanInfo.clickSpan;
+                        
+                        SpannableString spannableString = null;
+                        if (text instanceof SpannableString) {
+                            spannableString = (SpannableString) text;
+                        } else {
+                            spannableString = new SpannableString(text);
+                        }
+                        spannableString.setSpan(replaceSpan, selStart, selEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        spannableString.setSpan(clickSpan, selStart, selEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                        setText(spannableString);
+
+                    } catch (Exception e) {
+                        KLog.e(TAG, "--TextView---note---edit--addSpane---error--" + e.getMessage());
+                    }
+                    break;
+            }
         }
     }
 }
