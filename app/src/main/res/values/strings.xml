@@ -17,8 +17,9 @@
 
     <string name="colon">：</string>
 
-    <string name="lable_folder_list">笔记本列表</string>
-    <string name="lable_folder_edit">编辑笔记本</string>
+    <string name="label_folder_list">笔记本列表</string>
+    <string name="label_folder_edit">编辑笔记本</string>
+    <string name="label_note_share">保存到云信笔记</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -47,6 +48,7 @@
     <string name="tip_read_contact_permission_need">插入联系人需要读取联系人的权限，请允许该权限</string>
     <string name="tip_read_permission_failed">插入联系人失败，需要读取联系人的权限</string>
     <string name="tip_grant_write_storage_failed">初始化数据写入SD卡失败，没有写入权限</string>
+    <string name="tip_share_attach_max_size">一次最多分享%1$d个文件</string>
 
     <string name="result_success">操作成功</string>
 

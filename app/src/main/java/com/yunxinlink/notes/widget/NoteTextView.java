@@ -26,6 +26,7 @@ import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.richtext.NoteRichSpan;
 import com.yunxinlink.notes.richtext.SpanInfo;
 import com.yunxinlink.notes.util.ImageUtil;
+import com.yunxinlink.notes.util.SystemUtil;
 
 /**
  * @author tiger
@@ -117,6 +118,9 @@ public class NoteTextView extends TextView implements NoteRichSpan {
     @Override
     public int[] getSize() {
         int width = getWidth();
+        if (width == 0) {
+            width = SystemUtil.getScreenWidth(getContext());
+        }
 //        int height = getHeight();
         int height = width;
         int[] size = new int[2];

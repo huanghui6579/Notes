@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
+import com.yunxinlink.notes.R;
 
 /**
  * 附件
@@ -315,6 +316,29 @@ public class Attach implements Parcelable {
         } else {
             return null;
         }
+    }
+
+    /**
+     * 获取附件的图标，图片和涂鸦忽略
+     * @return 附件图标的资源id
+     */
+    public int getAttachIcon() {
+        int resId = 0;
+        switch (type) {
+            case VOICE:
+                resId = R.drawable.ic_audiotrack;
+                break;
+            case VIDEO:
+                resId = R.drawable.ic_videocam;
+                break;
+            case ARCHIVE:
+                resId = R.drawable.ic_archive;
+                break;
+            case FILE:
+                resId = R.drawable.ic_action_attach;
+                break;
+        }
+        return resId;
     }
 
     /**

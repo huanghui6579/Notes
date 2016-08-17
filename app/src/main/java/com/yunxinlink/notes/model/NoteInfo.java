@@ -409,6 +409,28 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
             return showContent.trim();
         }
     }
+    
+    /**
+     * 附件的文件类型是否是图片类型，包含图片文件和涂鸦
+     * @return
+     */
+    public boolean isImage(int attachType) {
+        return attachType == Attach.IMAGE || attachType == Attach.PAINT;
+    }
+
+    /**
+     * 获取附件的显示标题
+     * @param context
+     * @param attachType 附件内容
+     * @return
+     */
+    public CharSequence getAttachShowTitle(Context context, int attachType) {
+        CharSequence title = getNoteTitle(false);
+        if (TextUtils.isEmpty(title) && !isImage(attachType)) { //内容为空且附件类型不是图片
+            title = context.getResources().getString(R.string.no_title);
+        }
+        return title;
+    }
 
     /**
      * 给文本的前面加上"点"

@@ -71,6 +71,15 @@ public abstract class BaseActivity extends SwipeBackActivity {
             updateToolBar(mToolBar);
         }
     }
+
+    /**
+     * 获取app的名称
+     * @return
+     */
+    protected String getAppName() {
+        int resId = mContext.getApplicationInfo().labelRes;
+        return getString(resId);
+    }
     
     /**
      * 判断当前用户是否登录

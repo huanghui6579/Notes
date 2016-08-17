@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:padding="@dimen/content_padding"
     android:clickable="true"
-    android:background="@drawable/common_span_background_normal">
+    android:background="@drawable/common_span_background_normal"><!--@drawable/common_span_background_normal-->
     
     <ImageView
         android:id="@id/iv_icon"

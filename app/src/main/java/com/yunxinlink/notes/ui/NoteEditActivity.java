@@ -189,7 +189,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private NoteSearchLayout mSearchViewContainer;
     //菜单控件的缓存
     private List<View> mMenuItems;
-    
+
+    /**
+     * 设置自定义标题
+     * @param title
+     * @param iconResId
+     */
     private void setCustomTitle(CharSequence title, int iconResId) {
         if (!TextUtils.isEmpty(title)) {
             if (mToolbarTitleView == null) {
@@ -226,6 +231,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         mTitle = title;
         setTitle(null);
         setCustomTitle(title, 0);
+        
+        KLog.d(TAG, "---updateToolBar--");
     }
 
     /**
@@ -241,7 +248,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     @Override
-    protected void initView() {
+    protected void initView() { 
         mContentContainer = (FrameLayout) findViewById(R.id.content_container);
         mFragmentWrapper = new FragmentWrapper();
     }
@@ -270,8 +277,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (type == null) {
             KLog.d(TAG, "---handleShareAction---type----is--null---");
         } else {
+            boolean updateTitle = false;
             switch (action) {
                 case Intent.ACTION_SEND:    //单个文件分享
+                    updateTitle = true;
                     boolean isSingleFile = false;
                     if (FileUtil.MIME_TYPE_TEXT.equals(type)) { //文本
                         String text = NoteUtil.handleSendText(intent);
@@ -292,18 +301,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case Intent.ACTION_SEND_MULTIPLE:   //多文件分享
+                    updateTitle = true;
                     List<Uri> uris = NoteUtil.handleSendMultipleFiles(intent);
                     if (uris != null && uris.size() > 0) {
                         int size = uris.size();
                         List<Uri> shareUris = null;
                         if (size > Constants.MAX_SHARE_ATTACH_SIZE) {   //截取前5个
                             shareUris = uris.subList(0, Constants.MAX_SHARE_ATTACH_SIZE - 1);
+                            SystemUtil.makeShortToast(getString(R.string.tip_share_attach_max_size, Constants.MAX_SHARE_ATTACH_SIZE));
                         } else {
                             shareUris = uris;
                         }
                         handleShowAttach(shareUris);
                     }
                     break;
+            }
+            if (updateTitle) {  //需要更新标题
+                setTitle(getAppName());
+                updateToolBar(mToolBar);
             }
         }
     }
@@ -926,6 +941,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
         noteCache.set(detailNoteInfo);
         startService(intent);
+        
+        SystemUtil.makeShortToast(R.string.update_result_success);
     }
 
     /**

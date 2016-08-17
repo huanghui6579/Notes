@@ -79,6 +79,19 @@
             android:maxLines="6"
             android:ellipsize="end"/>
         
+        <ImageView
+            android:id="@+id/iv_attach_icon"
+            android:layout_width="@dimen/list_item_icon_attach_size"
+            android:layout_height="@dimen/list_item_icon_attach_size"
+            android:layout_toRightOf="@id/tv_time"
+            android:layout_toEndOf="@id/tv_time"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="@dimen/grid_item_padding"
+            android:layout_marginEnd="@dimen/grid_item_padding"
+            android:layout_marginBottom="@dimen/grid_content_spacing"
+            android:tint="?attr/colorPrimary"
+            android:contentDescription="@null"/>
+        
 
     </com.yunxinlink.notes.widget.SquareRelativeLayout>
 

@@ -33,7 +33,11 @@
         </activity>
         <activity
             android:name=".ui.NoteEditActivity"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity-alias android:name=".ui.ShareActivity"
+            android:targetActivity=".ui.NoteEditActivity"
+            android:label="@string/label_note_share">
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
 
@@ -48,10 +52,11 @@
 
                 <data android:mimeType="*/*"/>
             </intent-filter>
-        </activity>
+        </activity-alias>
+
         <activity
             android:name=".ui.FolderListActivity"
-            android:label="@string/lable_folder_list" />
+            android:label="@string/label_folder_list" />
 
         <service
             android:name=".service.CoreService"
@@ -59,7 +64,7 @@
 
         <activity
             android:name=".ui.FolderEditActivity"
-            android:label="@string/lable_folder_edit"
+            android:label="@string/label_folder_edit"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.HandWritingActivity" />
         <activity android:name=".ui.TestActivity"></activity>

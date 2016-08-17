@@ -2159,6 +2159,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         TextView mTvTime;
         CheckBox mCbCheck;
         View mItemContainer;
+        ImageView mIvAttachIcon;
 
         public NoteGridViewHolder(final View itemView) {
             super(itemView);
@@ -2169,6 +2170,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mTvTime = (TextView) itemView.findViewById(R.id.tv_time);
             mCbCheck = (CheckBox) itemView.findViewById(R.id.cb_check);
             mItemContainer = itemView.findViewById(R.id.item_container);
+            mIvAttachIcon = (ImageView) itemView.findViewById(R.id.iv_attach_icon);
         }
     }
 
@@ -2267,20 +2269,32 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 SystemUtil.hideView(holder.mCbCheck);
                 holder.mIvOverflow.setOnClickListener(new GridItemClickListener(detailNote));
             }
-            
+
             NoteInfo note = detailNote.getNoteInfo();
-            
-            CharSequence title = note.getNoteTitle(false);
-            if (note.isDetailNote() && TextUtils.isEmpty(title)) {
-                title = getResources().getString(R.string.no_title);
+
+            Attach attach = null;
+            int attachType = 0;
+            if (note.hasAttach() && detailNote.getLastAttach() != null) {
+                attach = detailNote.getLastAttach();
+                attachType = attach.getType();
             }
+            
+            
+            CharSequence title = note.getAttachShowTitle(mContext, attachType);
+            /*if (note.isDetailNote() && TextUtils.isEmpty(title)) {
+                title = getResources().getString(R.string.no_title);
+            }*/
             
             holder.mTvTitle.setText(title);
             holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getShowTime(isModifyTimeSort())));
             holder.mTvSummary.setText(note.getStyleContent(detailNote.getDetailList()));
 
-            if (note.hasAttach() && detailNote.getLastAttach() != null) {
-                Attach attach = detailNote.getLastAttach();
+            if (attach != null) {   //有附件
+                int attachIcon = attach.getAttachIcon();
+                if (attachIcon != 0) {
+                    SystemUtil.setViewVisibility(holder.mIvAttachIcon, View.VISIBLE);
+                    holder.mIvAttachIcon.setImageResource(attachIcon);
+                }
                 ImageUtil.displayImage(attach.getLocalPath(), new NoteItemViewAware(holder.mItemContainer), new SimpleImageLoadingListener() {
                     @Override
                     public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
@@ -2333,6 +2347,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             } else {
                 gridHolder.mItemContainer.setBackgroundDrawable(null);
             }
+            
+            SystemUtil.setViewVisibility(gridHolder.mIvAttachIcon, View.GONE);
         }
         
         class ItemColor {
