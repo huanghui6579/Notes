@@ -65,7 +65,7 @@
         AppKey="3688206360"
         AppSecret="6e493e980b7e8c35914f593052267ab4"
         RedirectUrl="http://www.yunxinlink.com/"
-        ShareByAppClient="false"
+        ShareByAppClient="true"
         Enable="true" />
 
     <TencentWeibo
