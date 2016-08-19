@@ -1037,6 +1037,27 @@ public class SystemUtil {
     }
 
     /**
+     * 分享文本内容
+     * @param context
+     * @param text 文本内容
+     */
+    public static void shareText(Context context, String text) {
+        if (TextUtils.isEmpty(text)) {
+            return;
+        }
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, text);
+        String type = FileUtil.MIME_TYPE_TEXT;
+        sendIntent.setType(type);
+        if (sendIntent.resolveActivity(context.getPackageManager()) != null) {
+            context.startActivity(sendIntent);
+        } else {
+            SystemUtil.makeShortToast(R.string.tip_no_app_handle);
+        }
+    }
+
+    /**
      * 隐藏控件
      * @param view
      */

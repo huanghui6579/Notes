@@ -12,12 +12,24 @@ import android.text.TextUtils;
 import android.widget.EditText;
 
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.adapter.ShareListAdapter;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.share.ShareInfo;
+import com.yunxinlink.notes.share.ShareItem;
+import com.yunxinlink.notes.share.SimplePlatformActionListener;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import cn.sharesdk.framework.Platform;
+import cn.sharesdk.framework.ShareSDK;
+import cn.sharesdk.sina.weibo.SinaWeibo;
+import cn.sharesdk.tencent.qq.QQ;
+import cn.sharesdk.tencent.qzone.QZone;
+import cn.sharesdk.wechat.friends.Wechat;
+import cn.sharesdk.wechat.moments.WechatMoments;
 
 /**
  * @author huanghui1
@@ -198,5 +210,110 @@ public class NoteUtil {
      */
     public static ArrayList<Uri> handleSendMultipleFiles(Intent intent) {
         return intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+    }
+
+    /**
+     * 显示分享对话框
+     * @param context
+     * @param shareInfo 分享的数据
+     * @param isWebPage 分享的类型是否是链接、网址类型，网址类型就加上QQ和微信分享，否则，不加
+     */
+    public static void showShare(final Context context, final ShareInfo shareInfo, boolean isWebPage) {
+
+        String[] titleArray = context.getResources().getStringArray(R.array.share_menu_items);
+        int[] resArray = {R.drawable.ic_classic_sinaweibo, R.drawable.ic_classic_wechat, R.drawable.ic_classic_wechatmoments,
+                R.drawable.ic_classic_qq, R.drawable.ic_classic_qzone, R.drawable.ic_more_horiz};
+        String[] platforms = {SinaWeibo.NAME, Wechat.NAME, WechatMoments.NAME, QQ.NAME, QZone.NAME, ""}; 
+        
+        int size = titleArray.length;
+        
+        List<ShareItem> list = new ArrayList<>(size);
+        
+        for (int i = 0; i < size; i++) {
+            ShareItem shareItem = new ShareItem(titleArray[i], resArray[i], platforms[i]);
+            list.add(shareItem);
+        }
+        
+        if (!isWebPage) {    //分享的不是是网址，则减去微信和QQ
+            ShareItem shareItem = new ShareItem(Wechat.NAME);
+            list.remove(shareItem);
+
+            shareItem = new ShareItem(QQ.NAME);
+            list.remove(shareItem);
+        }
+
+        final ShareListAdapter shareAdapter = new ShareListAdapter(list, context);
+
+        final SimplePlatformActionListener platformActionListener = new SimplePlatformActionListener();
+
+        AlertDialog.Builder builder = NoteUtil.buildDialog(context);
+        builder.setTitle(R.string.action_share)
+                .setAdapter(shareAdapter, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        
+                        ShareItem item = (ShareItem) shareAdapter.getItem(which);
+                        
+                        String text = shareInfo.getText();
+                        Platform.ShareParams sp = new Platform.ShareParams();
+                        //2、设置分享内容
+                        if (!TextUtils.isEmpty(shareInfo.getTitle())) { //分享标题
+                            sp.setTitle(shareInfo.getTitle());
+                        }
+                        if (!TextUtils.isEmpty(text)) {  //分享文本
+                            sp.setText(text);
+                        }
+                        if (!TextUtils.isEmpty(shareInfo.getImageUrl())) {  //网络图片rul
+                            sp.setImageUrl(shareInfo.getImageUrl());
+                        }
+                        if (!TextUtils.isEmpty(shareInfo.getImagePath())) { //本地图片的路径，如果:/sdcard/xxx.png
+                            sp.setImagePath(shareInfo.getImagePath());
+                        }
+                        boolean isMultiImage = false;
+                        String[] imageArray = shareInfo.getImagePathArray();
+                        if (imageArray != null && imageArray.length > 0) {
+                            isMultiImage = true;
+                            sp.setImageArray(imageArray);
+                        }
+                        if (!TextUtils.isEmpty(shareInfo.getTitleUrl())) {  //网友点进链接后，可以看到分享的详情,仅在人人网和QQ空间使用
+                            sp.setTitleUrl(shareInfo.getTitleUrl());
+                        }
+                        if (!TextUtils.isEmpty(shareInfo.getUrl())) {   //网友点进链接后，可以看到分享的详情,仅在微信（包括好友和朋友圈）中使用
+                            sp.setUrl(shareInfo.getUrl());
+                        }
+                        if (!TextUtils.isEmpty(shareInfo.getSiteUrl())) {   //siteUrl是分享此内容的网站地址，仅在QQ空间使用
+                            sp.setSiteUrl(shareInfo.getSiteUrl());
+                        }
+                        if (!TextUtils.isEmpty(shareInfo.getFilePath())) {
+                            sp.setFilePath(shareInfo.getFilePath());
+                        }
+                        String platformName = item.getPlatform();
+                        Platform platform = null;
+                        //3、非常重要：获取平台对象
+                        if (!TextUtils.isEmpty(platformName)) {
+                            platform = ShareSDK.getPlatform(platformName);
+                            sp.setShareType(shareInfo.getShareType());//非常重要：一定要设置分享属性
+                            sp.setSite(context.getString(R.string.app_name));   //site是分享此内容的网站名称，仅在QQ空间使用
+                        }
+                        
+                        if (platformName.equals(SinaWeibo.NAME)) {  //新浪微博，不支持多图片
+                            if (isMultiImage) { //多张图片，则取第一张
+                                sp.setImagePath(imageArray[0]);
+                            }
+                        }
+                        
+                        if (platform != null) {
+                            SystemUtil.makeShortToast(R.string.share_ing);
+                            platform.setPlatformActionListener(platformActionListener); // 设置分享事件回调
+                            // 执行分享
+                            platform.share(sp);
+                        } else {//更多，调用系统的分享
+                            SystemUtil.shareText(context, text);
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.share_cancel, null)
+                .show();
     }
 }

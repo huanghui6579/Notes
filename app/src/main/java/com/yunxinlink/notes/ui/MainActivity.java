@@ -63,6 +63,8 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.share.ShareInfo;
+import com.yunxinlink.notes.share.SimplePlatformActionListener;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteTask;
@@ -76,10 +78,15 @@ import com.yunxinlink.notes.widget.NoteItemViewAware;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import cn.sharesdk.framework.Platform;
+import cn.sharesdk.framework.ShareSDK;
+import cn.sharesdk.sina.weibo.SinaWeibo;
 
 /**
  * 主界面
@@ -186,14 +193,26 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             mFab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent = new Intent(mContext, NoteEditActivity.class);
+
+                    Platform weibo = ShareSDK.getPlatform(SinaWeibo.NAME);
+                    weibo.setPlatformActionListener(new SimplePlatformActionListener());
+
+                    boolean isAuthValid = weibo.isAuthValid();
+                    if (isAuthValid) {//移除授权
+                        weibo.removeAccount(true);
+                    } else {
+                        weibo.authorize();
+                    }
+
+                    
+                    /*Intent intent = new Intent(mContext, NoteEditActivity.class);
 //                    Intent intent = new Intent(mContext, TestActivity.class);
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                     intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
                     startActivity(intent);
 
                     //退出选择模式
-                    outActionMode(true);
+                    outActionMode(true);*/
                     
 //                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
 //                        .setAction("Action", null).show();
@@ -354,6 +373,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     @Override
     protected void initData() {
+
+        //初始化分享sdk
+        ShareSDK.initSDK(this);
+        
         //初始化配置文件
         initProperties();
 
@@ -712,6 +735,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     @Override
     protected void onDestroy() {
+        //注销分享的sdk
+        ShareSDK.stopSDK(this);
         //注销观察者
         unRegistContentObserver();
         mIsChooseMode = false;
@@ -1020,6 +1045,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         oldNote.setSyncState(newNote.getSyncState());
         oldNote.setFolderId(newNote.getFolderId());
         oldNote.setTitle(newNote.getTitle());
+        oldNote.setAttaches(newNote.getAttaches());
     }
     
     /**
@@ -1621,7 +1647,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     public RecyclerView.ViewHolder getViewHolder(int position) {
         return mRecyclerView.findViewHolderForAdapterPosition(position);
     }
-    
+
     /**
      * 菜单的显示回调
      * @author huanghui1
@@ -2455,6 +2481,54 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         break;
                     case R.id.action_move:  //移动
                         moveNote(detailNote);
+                        break;
+                    case R.id.action_share:
+                        NoteInfo note = detailNote.getNoteInfo();
+                        String text = note.getShowText();
+                        Attach lastAttach = detailNote.getLastAttach();
+                        ShareInfo shareInfo = new ShareInfo();
+                        int shareType = 0;
+                        if (!TextUtils.isEmpty(text)) {  //没有文本内容
+                            shareInfo.setText(text);
+                            shareType = Platform.SHARE_TEXT;
+                        }
+                        if (note.hasAttach() && note.getAttaches() != null && note.getAttaches().size() > 0) {
+                            Collection<Attach> attaches = note.getAttaches().values();
+                            List<String> images = new ArrayList<>();
+                            for (Attach att : attaches) {
+                                if (att.isImage()) {
+                                    images.add(att.getLocalPath());
+                                }
+                            }
+                            if (images.size() > 0) {    //有图片，则还添加图片
+                                if (images.size() == 1) {   //只有一张图片
+                                    shareInfo.setImagePath(images.get(0));
+                                } else {
+                                    String[] array = new String[images.size()];
+                                    shareInfo.setImagePathArray(images.toArray(array));
+                                }
+                                if (shareType == 0) {   //没有文本内容
+                                    shareType = Platform.SHARE_IMAGE;
+                                }
+                            } else if (lastAttach != null && !TextUtils.isEmpty(lastAttach.getLocalPath())) {
+                                if (shareType == 0) {   //没有文本内容
+                                    switch (lastAttach.getType()) {
+                                        case Attach.VOICE:
+                                            shareType = Platform.SHARE_MUSIC;
+                                            break;
+                                        case Attach.VIDEO:
+                                            shareType = Platform.SHARE_VIDEO;
+                                            break;
+                                        default:
+                                            shareType = Platform.SHARE_FILE;
+                                            break;
+                                    }
+                                }
+                                shareInfo.setFilePath(lastAttach.getLocalPath());
+                            }
+                        }
+                        shareInfo.setShareType(shareType);
+                        NoteUtil.showShare(mContext, shareInfo, true);
                         break;
                 }
                 return false;

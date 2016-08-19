@@ -14,6 +14,21 @@
     <!-- 读取联系人的权限 -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
+    <!-- 获取任务官不理的权限 -->
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <!-- 联网的权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 获取WiFi状态的权限 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- 获取网络状态的权限 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 改变WiFi状态的权限 -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- 管理账号的权限 -->
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>
+    <!-- 获取账号的权限 -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+
     <application
         android:name=".NoteApplication"
         android:allowBackup="true"
@@ -67,6 +82,38 @@
             android:label="@string/label_folder_edit"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.HandWritingActivity" />
+
+        <!-- ShareSDK的分享组件 -->
+        <activity
+            android:name="com.mob.tools.MobUIShell"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <!-- QQ和QQ空间分享 QQ登录的回调必须要配置的 -->
+            <intent-filter>
+                <data android:scheme="tencent1105624410" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- 新浪微博客户端分享回调必须配置 -->
+            <intent-filter>
+                <action android:name="com.sina.weibo.sdk.action.ACTION_SDK_REQ_ACTIVITY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!--微信分享回调 -->
+        <activity
+            android:name=".wxapi.WXEntryActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:screenOrientation="portrait" />
+
+
         <activity android:name=".ui.TestActivity"></activity>
     </application>
 

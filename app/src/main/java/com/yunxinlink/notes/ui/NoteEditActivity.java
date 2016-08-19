@@ -1889,6 +1889,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
                 AttachManager.getInstance().addAttach(att);
                 mAttachCache.put(att.getSId(), att);
+                mDetailNote.setLastAttach(att);
                 KLog.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
             }
         });
@@ -1931,6 +1932,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                     AttachManager.getInstance().updateAttach(tmpAttach);
                     mAttachCache.put(tmpAttach.getSId(), tmpAttach);
+                    mDetailNote.setLastAttach(tmpAttach);
                     KLog.d(TAG, "---handleUpdateAttach--mAttachCache--has---uri--update--");
                 } else {
                     KLog.d(TAG, "--handleUpdateAttach--filePath--is---null--");

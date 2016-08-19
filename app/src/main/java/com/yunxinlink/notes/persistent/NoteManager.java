@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.db.DBHelper;
@@ -27,7 +26,7 @@ import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -201,8 +200,13 @@ public class NoteManager extends Observable<Observer> {
                     detailNote.setDetailList(details);
                 }
                 if (note.hasAttach()) { //有附件
-                    Attach attach = getLastAttach(db, noteSid);
-                    detailNote.setLastAttach(attach);
+
+                    Map<String, Attach> attachMap = getAttaches(note, db);
+                    if (attachMap != null && attachMap.size() > 0) {
+                        Attach attach = attachMap.values().iterator().next();
+                        detailNote.setLastAttach(attach);
+                    }
+                    note.setAttaches(attachMap);
                 }
                 
                 list.add(detailNote);
@@ -965,17 +969,18 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
-     * 获取笔记中的附件列表
+     * 获取笔记中的附件列表，附件按时间倒序，也就是最新的时间排在最前面
      * @param note 笔记
      * @return 返回笔记中的附件列表
      */
     public Map<String, Attach> getAttaches(NoteInfo note, SQLiteDatabase db) {
         String selection = Provider.AttachmentColumns.NOTE_ID + " = ? AND (" + Provider.AttachmentColumns.DELETE_STATE + " IS NULL OR " + Provider.AttachmentColumns.DELETE_STATE + " = ?)";
         String[] selectionArgs = {note.getSId(), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
-        Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, null, null);
+        String order = Provider.AttachmentColumns.MODIFY_TIME + " DESC ";
+        Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, order, null);
         Map<String, Attach> map = null;
         if (cursor != null) {
-            map = new HashMap<>();
+            map = new LinkedHashMap<>();
             while (cursor.moveToNext()) {
                 Attach attach = cursor2Attach(cursor);
                 if (attach != null) {

@@ -19,6 +19,7 @@ import com.yunxinlink.notes.util.SystemUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -157,11 +158,27 @@ public class CoreService extends IntentService {
         }
         NoteInfo note = detailNote.getNoteInfo();
         note.setHasAttach(true);
-        String lastSid = attachSids.get(attachSids.size() - 1);
         if (attachMap != null) {
-            Attach lastAttach = attachMap.get(lastSid);
-            detailNote.setLastAttach(lastAttach);
+            Attach lastAttach = detailNote.getLastAttach();
+            if (lastAttach == null || !attachSids.contains(lastAttach.getSId())) {
+                String lastSid = attachSids.get(attachSids.size() - 1);
+                lastAttach = attachMap.get(lastSid);
+                detailNote.setLastAttach(lastAttach);
+            }
             KLog.d(TAG, "-----lastAttach-----" + lastAttach);
+            
+            //设置笔记所拥有的附件
+            Map<String, Attach> map = new HashMap<>();
+            for (String sid : attachSids) {
+                Attach attach = attachMap.get(sid);
+                if (attach == null) {
+                    continue;
+                }
+                map.put(sid, attach);
+            }
+            if (map.size() > 0) {
+                note.setAttaches(map);
+            }
         }
         return cacheList;
     }

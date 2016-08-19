@@ -71,4 +71,14 @@
         <item>@string/sort_create_time</item>
         <item>@string/sort_title</item>
     </string-array>
+    
+    <!-- 分享的菜单 -->
+    <string-array name="share_menu_items">
+        <item>@string/share_sina_weibo</item>
+        <item>@string/share_wechat</item>
+        <item>@string/share_wechat_moments</item>
+        <item>@string/share_qq</item>
+        <item>@string/share_qzone</item>
+        <item>@string/share_more</item>
+    </string-array>
 </resources>
