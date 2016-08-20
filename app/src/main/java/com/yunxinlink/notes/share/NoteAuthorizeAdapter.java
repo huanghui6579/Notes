@@ -3,14 +3,18 @@ package com.yunxinlink.notes.share;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.HashMap;
 
 import cn.sharesdk.framework.Platform;
 import cn.sharesdk.framework.PlatformActionListener;
+import cn.sharesdk.framework.ShareSDK;
 import cn.sharesdk.framework.TitleLayout;
 import cn.sharesdk.framework.authorize.AuthorizeAdapter;
 
@@ -22,26 +26,32 @@ import cn.sharesdk.framework.authorize.AuthorizeAdapter;
  */
 public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnClickListener, PlatformActionListener {
 
+    private PlatformActionListener backListener;
+
     @Override
     public void onCreate() {
         super.onCreate();
+
+        String platName = getPlatformName();
 
         //隐藏右上角ShareSDK Logo
         hideShareSDKLogo();
         //禁止动画
         disablePopUpAnimation();
 
-        initTitleView();
+        initTitleView(platName);
+
+        interceptPlatformActionListener(platName);
     }
-    
-    private void initTitleView() {
+
+    private void initTitleView(String platName) {
         
         getActivity().setTheme(R.style.AppTheme_NoActionBar);
         
         TitleLayout titleLayout = getTitleLayout();
 //        titleLayout.removeAllViews();
         TextView textView = titleLayout.getTvTitle();
-        
+
         CharSequence title = textView.getText();
 
         titleLayout.removeAllViews();
@@ -53,10 +63,30 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
 
         toolbar.setTitle(title);
 
-        titleLayout.addView(toolbar);
-        
-        
-        
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        view.setLayoutParams(params);
+
+        int homeRes = SystemUtil.getResourceId(getActivity(), R.attr.homeAsUpIndicator);
+
+        toolbar.setNavigationIcon(homeRes);
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getActivity().onBackPressed();
+            }
+        });
+
+        titleLayout.addView(view, params);
+
+    }
+
+    private void interceptPlatformActionListener(String platName) {
+        Platform plat = ShareSDK.getPlatform(platName);
+        // 备份此前设置的事件监听器
+        backListener = plat.getPlatformActionListener();
+        // 设置新的监听器，实现事件拦截
+        plat.setPlatformActionListener(this);
     }
 
     /*private void initUi(String platName) {
@@ -108,21 +138,33 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
 
     @Override
     public void onClick(View v) {
-        
     }
 
     @Override
-    public void onComplete(Platform platform, int i, HashMap<String, Object> hashMap) {
-        
+    public void onComplete(Platform platform, int action, HashMap<String, Object> hashMap) {
+        KLog.d("---onComplete--platform---" + platform.getName() + "----action:" + action);
     }
 
     @Override
-    public void onError(Platform platform, int i, Throwable throwable) {
-
+    public void onError(Platform platform, int action, Throwable throwable) {
+        KLog.d("---onError--platform---" + platform.getName() + "----action:" + action + "----error:" + throwable);
     }
 
     @Override
-    public void onCancel(Platform platform, int i) {
+    public void onCancel(Platform platform, int action) {
+        KLog.d("---onCancel--platform---" + platform.getName() + "----action:" + action);
+        platform.setPlatformActionListener(backListener);
+        if (action == Platform.ACTION_AUTHORIZING) {
+            // 授权前取消
+            if (backListener != null) {
+                backListener.onCancel(platform, action);
+            }
+        } else {
+            // 当作授权以后不做任何事情
+            if (backListener != null) {
+                backListener.onComplete(platform, Platform.ACTION_AUTHORIZING, null);
+            }
 
+        }
     }
 }
