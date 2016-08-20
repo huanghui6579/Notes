@@ -148,6 +148,8 @@
     
     <string name="find_hint">"查找…"</string>
     
+    <string name="share_fork_sina_weibo">关注新浪微博</string>
+    
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

@@ -197,13 +197,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     Platform weibo = ShareSDK.getPlatform(SinaWeibo.NAME);
                     weibo.setPlatformActionListener(new SimplePlatformActionListener());
 
-                    boolean isAuthValid = weibo.isAuthValid();
+                    weibo.removeAccount();
+                    
+                    /*boolean isAuthValid = weibo.isAuthValid();
                     if (isAuthValid) {//移除授权
                         weibo.removeAccount(true);
                     } else {
                         weibo.authorize();
-                    }
-
+                    }*/
                     
                     /*Intent intent = new Intent(mContext, NoteEditActivity.class);
 //                    Intent intent = new Intent(mContext, TestActivity.class);

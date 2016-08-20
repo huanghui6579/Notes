@@ -1,8 +1,13 @@
 package com.yunxinlink.notes.share;
 
+import android.content.res.Resources;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -17,6 +22,7 @@ import cn.sharesdk.framework.PlatformActionListener;
 import cn.sharesdk.framework.ShareSDK;
 import cn.sharesdk.framework.TitleLayout;
 import cn.sharesdk.framework.authorize.AuthorizeAdapter;
+import cn.sharesdk.sina.weibo.SinaWeibo;
 
 /**
  * 自定义的授权界面
@@ -26,7 +32,12 @@ import cn.sharesdk.framework.authorize.AuthorizeAdapter;
  */
 public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnClickListener, PlatformActionListener {
 
-    private PlatformActionListener backListener;
+    private PlatformActionListener mBackListener;
+
+    /**
+     * 授权成功后是否关注官方的微博
+     */
+    private boolean mIsForkWeibo;
 
     @Override
     public void onCreate() {
@@ -40,10 +51,20 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
         disablePopUpAnimation();
 
         initTitleView(platName);
+        
+        if (SinaWeibo.NAME.equals(platName)) {  //新浪微博，才拦截监听
+            initCheckView();
+            
+//            interceptPlatformActionListener(platName);
 
-        interceptPlatformActionListener(platName);
+        }
+
     }
 
+    /**
+     * 初始化标题栏
+     * @param platName
+     */
     private void initTitleView(String platName) {
         
         getActivity().setTheme(R.style.AppTheme_NoActionBar);
@@ -78,63 +99,58 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
         });
 
         titleLayout.addView(view, params);
+    }
 
+    /**
+     * 初始化关注微博的复选框
+     * @return
+     */
+    private void initCheckView() {
+        View bodyView = getBodyView().getChildAt(0);
+        if (bodyView instanceof LinearLayout) {
+            LinearLayout linearLayout = (LinearLayout) bodyView;
+            Resources resources = getActivity().getResources();
+
+            CheckBox checkBox = new CheckBox(getActivity());
+            checkBox.setChecked(true);
+            checkBox.setText(R.string.share_fork_sina_weibo);
+            checkBox.setTextColor(ResourcesCompat.getColor(resources, R.color.text_content_color, getActivity().getTheme()));
+            
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            
+            int marginHorzonal = resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin);
+            int marginVertical = resources.getDimensionPixelSize(R.dimen.content_padding);
+            
+            params.leftMargin = marginHorzonal;
+            params.topMargin = marginVertical;
+            params.bottomMargin = marginVertical;
+            params.rightMargin = marginHorzonal;
+
+            checkBox.setLayoutParams(params);
+
+            linearLayout.addView(checkBox, params);
+
+            mIsForkWeibo = true;
+
+            checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    mIsForkWeibo = isChecked;
+                }
+            });
+            
+        } else {
+            KLog.d("initCheckView bodyView is not linearLayout");
+        }
     }
 
     private void interceptPlatformActionListener(String platName) {
         Platform plat = ShareSDK.getPlatform(platName);
         // 备份此前设置的事件监听器
-        backListener = plat.getPlatformActionListener();
+        mBackListener = plat.getPlatformActionListener();
         // 设置新的监听器，实现事件拦截
         plat.setPlatformActionListener(this);
     }
-
-    /*private void initUi(String platName) {
-
-        ctvFollow = new CheckedTextView(getActivity());
-        try {
-            ctvFollow.setBackgroundResource(R.drawable.auth_follow_bg);
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        ctvFollow.setChecked(true);
-        int dp_10 = cn.sharesdk.framework.utils.R.dipToPx(getActivity(), 10);
-        ctvFollow.setCompoundDrawablePadding(dp_10);
-        ctvFollow.setCompoundDrawablesWithIntrinsicBounds(R.drawable.auth_cb,
-                0, 0, 0);
-        ctvFollow.setGravity(Gravity.CENTER_VERTICAL);
-        ctvFollow.setPadding(dp_10, dp_10, dp_10, dp_10);
-        ctvFollow.setText(R.string.sm_item_fl_weibo);
-        if (platName.equals("TencentWeibo")) {
-            ctvFollow.setText(R.string.sm_item_fl_tc);
-        }
-        ctvFollow.setTextColor(0xff909090);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        ctvFollow.setLayoutParams(lp);
-
-        TitleLayout tt = getTitleLayout();
-        tt.removeAllViews();
-        ViewGroup.LayoutParams fff = tt.getLayoutParams();
-        TextView tv = new TextView(getActivity());
-        tv.setLayoutParams(fff);
-        tv.setText("dfsdfsd");
-        tv.setGravity(Gravity.CENTER);
-        tt.addView(tv);
-
-        LinearLayout llBody = (LinearLayout) getBodyView().getChildAt(0);
-        llBody.addView(ctvFollow);
-        ctvFollow.setOnClickListener(this);
-
-        ctvFollow.measure(0, 0);
-        int height = ctvFollow.getMeasuredHeight();
-        TranslateAnimation animShow = new TranslateAnimation(
-                Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0,
-                Animation.ABSOLUTE, height, Animation.ABSOLUTE, 0);
-        animShow.setDuration(1000);
-        getWebBody().startAnimation(animShow);
-        ctvFollow.startAnimation(animShow);
-    }*/
 
     @Override
     public void onClick(View v) {
@@ -142,27 +158,65 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
 
     @Override
     public void onComplete(Platform platform, int action, HashMap<String, Object> hashMap) {
+        if (action == Platform.ACTION_FOLLOWING_USER) {
+            // 当作授权以后不做任何事情
+            platform.setPlatformActionListener(mBackListener);
+            if (mBackListener != null) {
+                mBackListener.onComplete(platform, Platform.ACTION_AUTHORIZING, null);
+            }
+        } else if (mIsForkWeibo) {
+
+            platform.setPlatformActionListener(mBackListener);
+            if (mBackListener != null) {
+                mBackListener.onComplete(platform, action, hashMap);
+            }
+            
+            // 授权成功，执行关注
+//            String account = "shelly珊珊";
+//            platform.followFriend(account);
+            
+        } else {
+            // 如果没有标记为“授权并关注”则直接返回
+            platform.setPlatformActionListener(mBackListener);
+            if (mBackListener != null) {
+                // 关注成功也只是当作授权成功返回
+                mBackListener.onComplete(platform, action, hashMap);
+            }
+        }
         KLog.d("---onComplete--platform---" + platform.getName() + "----action:" + action);
     }
 
     @Override
     public void onError(Platform platform, int action, Throwable throwable) {
+        if (action == Platform.ACTION_AUTHORIZING) {
+            // 授权时即发生错误
+            platform.setPlatformActionListener(mBackListener);
+            if (mBackListener != null) {
+                mBackListener.onError(platform, action, throwable);
+            }
+        } else {
+            // 关注时发生错误
+            platform.setPlatformActionListener(mBackListener);
+            if (mBackListener != null) {
+                mBackListener.onComplete(platform, Platform.ACTION_AUTHORIZING, null);
+            }
+        }
         KLog.d("---onError--platform---" + platform.getName() + "----action:" + action + "----error:" + throwable);
     }
 
     @Override
     public void onCancel(Platform platform, int action) {
         KLog.d("---onCancel--platform---" + platform.getName() + "----action:" + action);
-        platform.setPlatformActionListener(backListener);
+        platform.setPlatformActionListener(mBackListener);
         if (action == Platform.ACTION_AUTHORIZING) {
             // 授权前取消
-            if (backListener != null) {
-                backListener.onCancel(platform, action);
+            if (mBackListener != null) {
+                mBackListener.onCancel(platform, action);
             }
         } else {
             // 当作授权以后不做任何事情
-            if (backListener != null) {
-                backListener.onComplete(platform, Platform.ACTION_AUTHORIZING, null);
+            if (mBackListener != null) {
+                mBackListener.onComplete(platform, Platform.ACTION_AUTHORIZING, null);
             }
 
         }
