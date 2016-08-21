@@ -2,25 +2,21 @@ package com.yunxinlink.notes.share;
 
 import android.content.res.Resources;
 import android.support.v4.content.res.ResourcesCompat;
-import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.util.SystemUtil;
+import com.yunxinlink.notes.util.NoteUtil;
 
 import java.util.HashMap;
 
 import cn.sharesdk.framework.Platform;
 import cn.sharesdk.framework.PlatformActionListener;
 import cn.sharesdk.framework.ShareSDK;
-import cn.sharesdk.framework.TitleLayout;
 import cn.sharesdk.framework.authorize.AuthorizeAdapter;
 import cn.sharesdk.sina.weibo.SinaWeibo;
 
@@ -50,7 +46,8 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
         //禁止动画
         disablePopUpAnimation();
 
-        initTitleView(platName);
+        //自定义标题栏
+        NoteUtil.initTitleView(getActivity(), getTitleLayout());
         
         if (SinaWeibo.NAME.equals(platName)) {  //新浪微博，才拦截监听
             initCheckView();
@@ -59,46 +56,6 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
 
         }
 
-    }
-
-    /**
-     * 初始化标题栏
-     * @param platName
-     */
-    private void initTitleView(String platName) {
-        
-        getActivity().setTheme(R.style.AppTheme_NoActionBar);
-        
-        TitleLayout titleLayout = getTitleLayout();
-//        titleLayout.removeAllViews();
-        TextView textView = titleLayout.getTvTitle();
-
-        CharSequence title = textView.getText();
-
-        titleLayout.removeAllViews();
-
-        LayoutInflater inflater = LayoutInflater.from(getActivity());
-        View view = inflater.inflate(R.layout.app_bar_layout, null);
-
-        Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
-
-        toolbar.setTitle(title);
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        view.setLayoutParams(params);
-
-        int homeRes = SystemUtil.getResourceId(getActivity(), R.attr.homeAsUpIndicator);
-
-        toolbar.setNavigationIcon(homeRes);
-
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getActivity().onBackPressed();
-            }
-        });
-
-        titleLayout.addView(view, params);
     }
 
     /**
@@ -118,13 +75,13 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
             
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             
-            int marginHorzonal = resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin);
+            int marginHorizontal = resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin);
             int marginVertical = resources.getDimensionPixelSize(R.dimen.content_padding);
             
-            params.leftMargin = marginHorzonal;
+            params.leftMargin = marginHorizontal;
             params.topMargin = marginVertical;
             params.bottomMargin = marginVertical;
-            params.rightMargin = marginHorzonal;
+            params.rightMargin = marginHorizontal;
 
             checkBox.setLayoutParams(params);
 
@@ -144,6 +101,10 @@ public class NoteAuthorizeAdapter extends AuthorizeAdapter implements View.OnCli
         }
     }
 
+    /**
+     * 自定义监听的拦截
+     * @param platName
+     */
     private void interceptPlatformActionListener(String platName) {
         Platform plat = ShareSDK.getPlatform(platName);
         // 备份此前设置的事件监听器

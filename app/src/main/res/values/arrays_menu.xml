@@ -14,14 +14,14 @@
     <string-array name="url_menu_items">
         <item>@string/action_copy</item>
         <item>@string/action_web_open</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
     </string-array>
     
     <string-array name="tel_menu_items">
         <item>@string/action_copy</item>
         <item>@string/action_call</item>
         <item>@string/action_contact_add</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
     </string-array>
     
     <string-array name="tel_menu_items_add">
@@ -32,37 +32,37 @@
     <string-array name="mail_menu_items">
         <item>@string/action_copy</item>
         <item>@string/action_mailto</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
     </string-array>
     
     <string-array name="map_menu_items">
         <item>@string/action_copy</item>
         <item>@string/action_map_open</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
     </string-array>
     
     <string-array name="image_menu_items">
         <item>@string/action_image_open</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
         <item>@string/action_info</item>
     </string-array>
 
     <string-array name="voice_menu_items">
         <item>@string/action_voice_open</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
         <item>@string/action_info</item>
     </string-array>
 
     <string-array name="paint_menu_items">
         <item>@string/action_image_open</item>
         <item>@string/action_edit</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
         <item>@string/action_info</item>
     </string-array>
 
     <string-array name="file_menu_items">
         <item>@string/action_open</item>
-        <item>@string/action_forward</item>
+        <item>@string/action_share</item>
         <item>@string/action_info</item>
     </string-array>
 

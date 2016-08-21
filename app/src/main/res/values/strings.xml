@@ -35,6 +35,8 @@
     <string name="paint_save_error">画图保存失败，请检查是否授予应用SD卡读写权限</string>
     <string name="read_empty_contact">联系人数据为空</string>
     <string name="read_contact_failed">选择联系人失败，请允许读取联系人数据</string>
+    <string name="share_weibo_repeat">分享失败，内容重复了，请稍后再试</string>
+    <string name="share_no_client">没有安装%1S客户端,或客户端不可用</string>
 
     <string name="init">初始化中…</string>
 
@@ -133,7 +135,8 @@
     <string name="stroke_tip_alpha">不透明度</string>
     <string name="erase_tip_size">橡皮檫大小</string>
     <string name="erase_tip_clear">清除整页</string>
-    
+
+    <string name="app_wechat">微信</string>
     <string name="share_sina_weibo">新浪微博</string>
     <string name="share_wechat">微信好友</string>
     <string name="share_wechat_moments">微信朋友圈</string>
@@ -149,7 +152,7 @@
     <string name="find_hint">"查找…"</string>
     
     <string name="share_fork_sina_weibo">关注新浪微博</string>
-    
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

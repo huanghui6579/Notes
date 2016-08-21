@@ -61,6 +61,11 @@ public class ShareInfo {
      */
     private String filePath;
 
+    /**
+     * 网址的名称，QQ可用
+     */
+    private String site;
+
     public String getTitle() {
         return title;
     }
@@ -139,5 +144,13 @@ public class ShareInfo {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public String getSite() {
+        return site;
+    }
+
+    public void setSite(String site) {
+        this.site = site;
     }
 }

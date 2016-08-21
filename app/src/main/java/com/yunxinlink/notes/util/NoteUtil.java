@@ -7,9 +7,14 @@ import android.content.Intent;
 import android.net.Uri;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.adapter.ShareListAdapter;
@@ -25,6 +30,7 @@ import java.util.List;
 
 import cn.sharesdk.framework.Platform;
 import cn.sharesdk.framework.ShareSDK;
+import cn.sharesdk.framework.TitleLayout;
 import cn.sharesdk.sina.weibo.SinaWeibo;
 import cn.sharesdk.tencent.qq.QQ;
 import cn.sharesdk.tencent.qzone.QZone;
@@ -288,6 +294,9 @@ public class NoteUtil {
                         if (!TextUtils.isEmpty(shareInfo.getFilePath())) {
                             sp.setFilePath(shareInfo.getFilePath());
                         }
+                        if (!TextUtils.isEmpty(shareInfo.getSite())) {
+                            sp.setSite(shareInfo.getSite());
+                        }
                         String platformName = item.getPlatform();
                         Platform platform = null;
                         //3、非常重要：获取平台对象
@@ -296,14 +305,15 @@ public class NoteUtil {
                             sp.setShareType(shareInfo.getShareType());//非常重要：一定要设置分享属性
                             sp.setSite(context.getString(R.string.app_name));   //site是分享此内容的网站名称，仅在QQ空间使用
                         }
-                        
-                        if (platformName.equals(SinaWeibo.NAME)) {  //新浪微博，不支持多图片
+
+//                        if (platformName.equals(SinaWeibo.NAME)) {  //新浪微博，不支持多图片
                             if (isMultiImage) { //多张图片，则取第一张
                                 sp.setImagePath(imageArray[0]);
                             }
-                        }
-                        
+//                        }
+
                         if (platform != null) {
+                            boolean hasClient = platform.isClientValid();
                             SystemUtil.makeShortToast(R.string.share_ing);
                             platform.setPlatformActionListener(platformActionListener); // 设置分享事件回调
                             // 执行分享
@@ -315,5 +325,43 @@ public class NoteUtil {
                 })
                 .setNegativeButton(R.string.share_cancel, null)
                 .show();
+    }
+
+    /**
+     * 初始化标题栏,自定义的web分享界面的标题
+     */
+    public static void initTitleView(final Activity activity, TitleLayout titleLayout) {
+
+        activity.setTheme(R.style.AppTheme_NoActionBar);
+
+//        titleLayout.removeAllViews();
+        TextView textView = titleLayout.getTvTitle();
+
+        CharSequence title = textView.getText();
+
+        titleLayout.removeAllViews();
+
+        LayoutInflater inflater = LayoutInflater.from(activity);
+        View view = inflater.inflate(R.layout.app_bar_layout, null);
+
+        Toolbar toolbar = (Toolbar) view.findViewById(R.id.toolbar);
+
+        toolbar.setTitle(title);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        view.setLayoutParams(params);
+
+        int homeRes = SystemUtil.getResourceId(activity, R.attr.homeAsUpIndicator);
+
+        toolbar.setNavigationIcon(homeRes);
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                activity.onBackPressed();
+            }
+        });
+
+        titleLayout.addView(view, params);
     }
 }

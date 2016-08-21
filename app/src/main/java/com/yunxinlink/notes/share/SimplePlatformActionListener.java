@@ -1,11 +1,13 @@
 package com.yunxinlink.notes.share;
 
+import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -18,6 +20,9 @@ import java.util.HashMap;
 import cn.sharesdk.framework.Platform;
 import cn.sharesdk.framework.PlatformActionListener;
 import cn.sharesdk.sina.weibo.SinaWeibo;
+import cn.sharesdk.tencent.qq.QQ;
+import cn.sharesdk.tencent.qzone.QZone;
+import cn.sharesdk.wechat.friends.Wechat;
 
 /**
  * 分享组件分享后的回调
@@ -32,17 +37,21 @@ public class SimplePlatformActionListener implements PlatformActionListener {
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            int resId = 0;
+            String errorMsg = null;
+            Context context = NoteApplication.getInstance();
             switch (msg.what) {
                 case Constants.MSG_SUCCESS:
-                    resId = R.string.share_success;
+                    errorMsg = context.getString(R.string.share_success);
                     break;
                 case Constants.MSG_FAILED:
-                    resId = R.string.share_failed;
+                    errorMsg = (String) msg.obj;
+                    if (errorMsg == null) {
+                        errorMsg = context.getString(R.string.share_failed);
+                    }
                     break;
             }
-            if (resId != 0) {
-                SystemUtil.makeShortToast(resId);
+            if (errorMsg != null) {
+                SystemUtil.makeShortToast(errorMsg);
             }
         }
     };
@@ -57,34 +66,73 @@ public class SimplePlatformActionListener implements PlatformActionListener {
 
     @Override
     public void onError(Platform platform, int action, Throwable throwable) {
-        
-        switch (action) {
-            case Platform.ACTION_SHARE: //分享
-                if (SinaWeibo.NAME.equals(platform.getName())) {    //新浪微博的分享
-                    String msg = throwable.getMessage();
-                    try {
-                        JSONObject jsonObject = new JSONObject(msg);
-                        Object obj = jsonObject.opt("error");
-                        Gson gson = new Gson();
 
-                        JsonObject jsonObject1 = new JsonObject();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+        Message msg = mHandler.obtainMessage();
+        msg.what = Constants.MSG_FAILED;
+
+        boolean hasClient = true;
+        if (throwable != null && throwable instanceof ActivityNotFoundException) {
+            hasClient = false;
+        }
+
+        String platformName = platform.getName();
+
+        Context context = NoteApplication.getInstance();
+        String appName = null;
+        if (SinaWeibo.NAME.equals(platformName)) {    //新浪微博的分享
+            if (hasClient) {
+                switch (action) {
+                    case Platform.ACTION_SHARE: //分享
+                        String json = throwable == null ? "" : throwable.getMessage();
+                        try {
+                            JSONObject jsonObject = new JSONObject(json);
+                            String errorJson = jsonObject.optString("error", "");
+                            if (!TextUtils.isEmpty(errorJson)) {
+                                jsonObject = new JSONObject(errorJson);
+                                int errorCode = jsonObject.optInt("error_code", 0);
+                                if (errorCode == 20019) {   //短时间内，分享的内容重复
+                                    msg.obj = context.getString(R.string.share_weibo_repeat);
+                                }
+                            }
+
+                        } catch (JSONException e) {
+                            KLog.e(e);
+                            e.printStackTrace();
+                        }
+                        break;
                 }
-                break;
+            } else {
+                appName = context.getString(R.string.share_sina_weibo);
+            }
+        } else if (QQ.NAME.equals(platformName)) {
+            if (hasClient) {
+                //TODO 待填充
+            } else {
+                appName = context.getString(R.string.share_qq);
+            }
+        } else if (QZone.NAME.equals(platformName)) {
+            if (hasClient) {
+                //TODO 待填充
+            } else {
+                appName = context.getString(R.string.share_qq);
+            }
+        } else if (Wechat.NAME.equals(platformName)) {
+            if (hasClient) {
+                //TODO 待填充
+            } else {
+                appName = context.getString(R.string.app_wechat);
+            }
         }
-        
-        if (action == Platform.ACTION_SHARE) {  //分享
-            
+
+        if (appName != null) {  //no client
+            msg.obj = context.getString(R.string.share_no_client, appName);
         }
-        
-        mHandler.sendEmptyMessage(Constants.MSG_FAILED);
+
+        mHandler.sendMessage(msg);
         
         //java.lang.Throwable: {"status":400,"error":"{\"error\":\"repeat content!\",\"error_code\":20019,\"request\":\"\/2\/statuses\/update.json\"}"}
         
-        KLog.d(TAG, "---platform----onError--SimplePlatformActionListener share error:" + throwable.getMessage());
-        throwable.printStackTrace();
+        KLog.d(TAG, "---platform----onError--SimplePlatformActionListener share error:" + throwable);
     }
 
     @Override

@@ -2488,6 +2488,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         String text = note.getShowText();
                         Attach lastAttach = detailNote.getLastAttach();
                         ShareInfo shareInfo = new ShareInfo();
+                        String url = "http://www.yunxinlink.com/";
+//                        shareInfo.setTitleUrl(url);
+                        shareInfo.setSite(getAppName());
+                        shareInfo.setSiteUrl(url);
                         int shareType = 0;
                         if (!TextUtils.isEmpty(text)) {  //没有文本内容
                             shareInfo.setText(text);
@@ -2529,7 +2533,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                             }
                         }
                         shareInfo.setShareType(shareType);
-                        NoteUtil.showShare(mContext, shareInfo, true);
+                        NoteUtil.showShare(mContext, shareInfo, false);
                         break;
                 }
                 return false;
