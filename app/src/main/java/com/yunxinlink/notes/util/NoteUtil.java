@@ -49,7 +49,11 @@ public class NoteUtil {
      * 删除多条笔记
      * @param noteList 要删除的笔记的集合
      */
-    public static void handleDeleteNote(Context context, final List<DetailNoteInfo> noteList, boolean hasDeleteOpt) {
+    public static void handleDeleteNote(Context context, List<DetailNoteInfo> noteList, boolean hasDeleteOpt) {
+        if (noteList == null || noteList.size() == 0) {
+            return;
+        }
+        final List<DetailNoteInfo> deleteList = new ArrayList<>(noteList);
         if (!hasDeleteOpt) {   //之前是否有删除操作，如果没有，则需弹窗           
             AlertDialog.Builder builder = buildDialog(context);
             builder.setTitle(R.string.prompt)
@@ -57,13 +61,13 @@ public class NoteUtil {
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            doDeleteNote(noteList);
+                            doDeleteNote(deleteList);
                         }
                     })
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
         } else {    //直接删除
-            doDeleteNote(noteList);
+            doDeleteNote(deleteList);
         }
     }
 

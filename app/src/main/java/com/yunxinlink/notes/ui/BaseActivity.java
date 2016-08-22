@@ -9,7 +9,6 @@ import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.ActionBar;
-import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
@@ -22,8 +21,6 @@ import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.SystemUtil;
-
-import java.lang.reflect.Field;
 
 import me.imid.swipebacklayout.app.SwipeBackActivity;
 import me.imid.swipebacklayout.app.SwipeBackActivityHelper;
@@ -77,8 +74,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @return
      */
     protected String getAppName() {
-        int resId = mContext.getApplicationInfo().labelRes;
-        return getString(resId);
+        return SystemUtil.getAppName(this);
     }
     
     /**
@@ -184,21 +180,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @version: 1.0.0
      */
     protected void showPopMenuIcon(PopupMenu popupMenu) {
-        try {
-            Field field = popupMenu.getClass().getDeclaredField("mPopup");
-            if (field != null) {
-                field.setAccessible(true);
-                Object obj = field.get(popupMenu);
-                if (obj instanceof MenuPopupHelper) {
-                    MenuPopupHelper popupHelper = (MenuPopupHelper) obj;
-                    popupHelper.setForceShowIcon(true);
-                }
-            }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
+        SystemUtil.showPopMenuIcon(popupMenu);
     }
 
     /**
@@ -208,19 +190,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @version 1.0.0
      */
     protected void setMenuOverFlowTint(MenuItem... menuItems) {
-        if (menuItems != null) {
-            TypedArray a = obtainStyledAttributes(android.support.v7.appcompat.R.style.Widget_AppCompat_ActionButton_Overflow, new int[]{android.R.attr.src});
-            Drawable drawable = a.getDrawable(0);
-//            a = obtainStyledAttributes(R.style.AppTheme_PopupOverlay, new int[] {R.attr.colorButtonNormal});
-            int tint = SystemUtil.getColor(this, R.color.colorButtonControl);
-            if (drawable != null) {
-                DrawableCompat.setTint(drawable, tint);
-                for (MenuItem item : menuItems) {
-                    item.setIcon(drawable);
-                }
-            }
-            a.recycle();
-        }
+        SystemUtil.setMenuOverFlowTint(this, menuItems);
     }
 
     /**

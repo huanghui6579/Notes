@@ -6,8 +6,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.MainActivity">
-
-    <include layout="@layout/content_main"/>
+    
+    <FrameLayout
+        android:id="@id/content_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"

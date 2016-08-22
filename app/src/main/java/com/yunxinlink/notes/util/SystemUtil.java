@@ -7,6 +7,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.TypedArray;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -17,8 +18,12 @@ import android.preference.PreferenceManager;
 import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v7.view.menu.MenuPopupHelper;
+import android.support.v7.widget.PopupMenu;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -37,6 +42,7 @@ import com.yunxinlink.notes.util.log.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1316,5 +1322,86 @@ public class SystemUtil {
      */
     public static boolean isColorSimilarWhite(int color) {
         return isColorSimilar(Color.WHITE, color);
+    }
+
+    /**
+     * 强制显示popupMenu的图标
+     * @author huanghui1
+     * @update 2016/3/2 11:31
+     * @version: 1.0.0
+     */
+    public static void showPopMenuIcon(PopupMenu popupMenu) {
+        try {
+            Field field = popupMenu.getClass().getDeclaredField("mPopup");
+            if (field != null) {
+                field.setAccessible(true);
+                Object obj = field.get(popupMenu);
+                if (obj instanceof MenuPopupHelper) {
+                    MenuPopupHelper popupHelper = (MenuPopupHelper) obj;
+                    popupHelper.setForceShowIcon(true);
+                }
+            }
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 判断popuMenu是否显示
+     * @author tiger
+     * @update 2016/2/27 17:38
+     * @version 1.0.0
+     */
+    public static boolean isPopuMenuShowing(PopupMenu popupMenu) {
+        boolean isShowing = false;
+        if (popupMenu != null) {
+            try {
+                Field field = popupMenu.getClass().getDeclaredField("mPopup");
+                if (field != null) {
+                    field.setAccessible(true);
+                    Object obj = field.get(popupMenu);
+                    if (obj instanceof MenuPopupHelper) {
+                        MenuPopupHelper popupHelper = (MenuPopupHelper) obj;
+                        isShowing = popupHelper.isShowing();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return isShowing;
+    }
+
+    /**
+     * 获取app的名称
+     * @return
+     */
+    public static String getAppName(Context context) {
+        int resId = context.getApplicationInfo().labelRes;
+        return context.getString(resId);
+    }
+
+    /**
+     * 设置菜单图标的颜色
+     * @author tiger
+     * @update 2016/2/27 16:00
+     * @version 1.0.0
+     */
+    public static void setMenuOverFlowTint(Context context, MenuItem... menuItems) {
+        if (menuItems != null) {
+            TypedArray a = context.obtainStyledAttributes(android.support.v7.appcompat.R.style.Widget_AppCompat_ActionButton_Overflow, new int[]{android.R.attr.src});
+            Drawable drawable = a.getDrawable(0);
+//            a = obtainStyledAttributes(R.style.AppTheme_PopupOverlay, new int[] {R.attr.colorButtonNormal});
+            int tint = SystemUtil.getColor(context, R.color.colorButtonControl);
+            if (drawable != null) {
+                DrawableCompat.setTint(drawable, tint);
+                for (MenuItem item : menuItems) {
+                    item.setIcon(drawable);
+                }
+            }
+            a.recycle();
+        }
     }
 }
