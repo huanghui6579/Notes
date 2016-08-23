@@ -28,6 +28,11 @@ public interface Observer {
          * 批量更新
          */
         BATCH_UPDATE,
+
+        /**
+         * 移出，彻底删除
+         */
+        REMOVE,
     }
 
     /**

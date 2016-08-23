@@ -212,8 +212,8 @@ public class DBHelper extends SQLiteOpenHelper {
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_ADD)
                 .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
                 .append(" WHEN NEW.").append(Provider.NoteColumns.FOLDER_ID).append(" IS NOT NULL AND OLD.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_TRASH.ordinal()).append(" AND NEW.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_TRASH.ordinal()).append(" BEGIN UPDATE ")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_NONE.ordinal()).append(" AND NEW.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_NONE.ordinal()).append(" BEGIN UPDATE ")
                 .append(Provider.FolderColumns.TABLE_NAME)
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
@@ -232,8 +232,8 @@ public class DBHelper extends SQLiteOpenHelper {
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_MINUS)
                 .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
                 .append(" WHEN NEW.").append(Provider.NoteColumns.FOLDER_ID).append(" IS NOT NULL AND OLD.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_TRASH.ordinal()).append(" AND NEW.")
-                .append(Provider.NoteColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_TRASH.ordinal()).append(" BEGIN UPDATE ")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_NONE.ordinal()).append(" AND NEW.")
+                .append(Provider.NoteColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_NONE.ordinal()).append(" BEGIN UPDATE ")
                 .append(Provider.FolderColumns.TABLE_NAME)
                 .append(" SET ").append(Provider.FolderColumns.MODIFY_TIME)
                 .append(" = NEW.").append(Provider.FolderColumns.MODIFY_TIME)
@@ -280,14 +280,14 @@ public class DBHelper extends SQLiteOpenHelper {
 
         //创建将文件移出回收站的触发器
         /*CREATE TRIGGER "tri_untrash_folder" AFTER UPDATE ON "folder"
-        WHEN (OLD.delete_state IS NOT NULL OR OLD.delete_state != 0) AND NEW.delete_state = 0
+        WHEN (OLD.delete_state IS NOT NULL AND OLD.delete_state != 0) AND NEW.delete_state = 0
         BEGIN
         UPDATE notes SET delete_state = 0, sync_state = 0, modify_time = NEW.modify_time WHERE folder_id = NEW.sId;
         END;*/
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.FolderColumns.TRI_UNTRASH_FOLDER)
                 .append(" AFTER UPDATE ON ").append(Provider.FolderColumns.TABLE_NAME)
-                .append(" WHEN (OLD.").append(Provider.FolderColumns.DELETE_STATE).append(" IS NOT NULL OR OLD.")
+                .append(" WHEN (OLD.").append(Provider.FolderColumns.DELETE_STATE).append(" IS NOT NULL AND OLD.")
                 .append(Provider.FolderColumns.DELETE_STATE).append(" != ").append(DeleteState.DELETE_NONE.ordinal()).append(") AND NEW.")
                 .append(Provider.FolderColumns.DELETE_STATE).append(" = ").append(DeleteState.DELETE_NONE.ordinal())
                 .append(" BEGIN UPDATE ").append(Provider.NoteColumns.TABLE_NAME).append(" SET ")

@@ -11,6 +11,7 @@ import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -171,6 +172,17 @@ public abstract class BaseActivity extends SwipeBackActivity {
             }
         }
         return parent;
+    }
+
+    /**
+     * 获取菜单
+     * @return
+     */
+    protected Menu getOptionsMenu() {
+        if (mToolBar != null) {
+            return mToolBar.getMenu();
+        }
+        return null;
     }
     
     /**

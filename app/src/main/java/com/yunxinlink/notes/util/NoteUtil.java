@@ -18,6 +18,8 @@ import android.widget.TextView;
 
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.adapter.ShareListAdapter;
+import com.yunxinlink.notes.model.Attach;
+import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
@@ -26,6 +28,7 @@ import com.yunxinlink.notes.share.ShareItem;
 import com.yunxinlink.notes.share.SimplePlatformActionListener;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import cn.sharesdk.framework.Platform;
@@ -46,55 +49,112 @@ public class NoteUtil {
     private NoteUtil() {}
 
     /**
-     * 删除多条笔记
+     * 删除多条笔记,子线程中运行
      * @param noteList 要删除的笔记的集合
      */
     public static void handleDeleteNote(Context context, List<DetailNoteInfo> noteList, boolean hasDeleteOpt) {
+        handleDeleteNote(context, noteList, hasDeleteOpt, false);
+    }
+
+    /**
+     * 删除多条笔记，子线程中运行
+     * @param noteList 要删除的笔记的集合
+     * @param hasDeleteOpt 之前是否有删除操作，仅在删除到回收站是有效
+     * @param realDelete 是否真正的删除，即在回收站中删除                    
+     */
+    public static void handleDeleteNote(Context context, List<DetailNoteInfo> noteList, boolean hasDeleteOpt, final boolean realDelete) {
         if (noteList == null || noteList.size() == 0) {
             return;
         }
-        final List<DetailNoteInfo> deleteList = new ArrayList<>(noteList);
-        if (!hasDeleteOpt) {   //之前是否有删除操作，如果没有，则需弹窗           
+        if (!hasDeleteOpt || realDelete) {   //之前是否有删除操作，如果没有，则需弹窗
+            final List<DetailNoteInfo> deleteList = new ArrayList<>(noteList);
             AlertDialog.Builder builder = buildDialog(context);
-            builder.setTitle(R.string.prompt)
-                    .setMessage(R.string.confirm_to_trash)
+            int titleRes = 0;
+            int msgRes = 0;
+            if (realDelete) {   //彻底删除
+                titleRes = R.string.real_delete;
+                msgRes = R.string.tip_note_real_delete;
+            } else {
+                titleRes = R.string.action_delete;
+                msgRes = R.string.confirm_to_trash;
+            }
+            builder.setTitle(titleRes)
+                    .setMessage(msgRes)
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            doDeleteNote(deleteList);
+                            doDeleteNote(deleteList, realDelete);
                         }
                     })
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
         } else {    //直接删除
-            doDeleteNote(deleteList);
+            doDeleteNote(noteList, false);
         }
     }
 
     /**
-     * 删除多条笔记
+     * 删除多条笔记，子线程中运行
      * @param note 要删除的笔记
      */
     public static void handleDeleteNote(Context context, NoteInfo note, boolean hasDeleteOpt) {
+        handleDeleteNote(context, note, hasDeleteOpt, false);
+    }
+
+    /**
+     * 删除多条笔记，子线程中运行
+     * @param note 要删除的笔记
+     */
+    public static void handleDeleteNote(Context context, NoteInfo note, boolean hasDeleteOpt, final boolean realDelete) {
         final List<DetailNoteInfo> list = new ArrayList<>();
         DetailNoteInfo detailNote = new DetailNoteInfo();
         detailNote.setNoteInfo(note);
         list.add(detailNote);
-        handleDeleteNote(context, list, hasDeleteOpt);
+        handleDeleteNote(context, list, hasDeleteOpt, realDelete);
     }
 
     /**
-     * 删除多条笔记
+     * 删除多条笔记，子线程中运行
      * @param noteList 要删除的笔记的集合
+     * @param realDelete 是否彻底删除                
      */
-    private static void doDeleteNote(final List<DetailNoteInfo> noteList) {
+    private static void doDeleteNote(final List<DetailNoteInfo> noteList, final boolean realDelete) {
         final List<DetailNoteInfo> list = new ArrayList<>(noteList);
-        SystemUtil.getThreadPool().execute(new NoteTask(list) {
+        SystemUtil.getThreadPool().execute(new NoteTask(list, realDelete) {
             @Override
             public void run() {
-                NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0]);
+                DeleteState deleteState = null;
+                boolean deleteOpt = (boolean) params[1];
+                if (deleteOpt) {    //彻底删除
+                    deleteState = DeleteState.DELETE_DONE;
+                } else {
+                    deleteState = DeleteState.DELETE_TRASH;  
+                }
+                NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0], deleteState);
             }
         });
+    }
+
+    /**
+     * 清空回收站
+     */
+    public static void handleClearTrash(Context context) {
+        AlertDialog.Builder builder = buildDialog(context);
+        builder.setTitle(R.string.title_note_clear_all)
+                .setMessage(R.string.tip_note_clear_all)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        SystemUtil.getThreadPool().execute(new NoteTask() {
+                            @Override
+                            public void run() {
+                                NoteManager.getInstance().clearTrash();
+                            }
+                        });
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
 
@@ -329,6 +389,63 @@ public class NoteUtil {
                 })
                 .setNegativeButton(R.string.share_cancel, null)
                 .show();
+    }
+
+    /**
+     * 分享笔记
+     * @param detailNote
+     */
+    public static void shareNote(Context context, DetailNoteInfo detailNote) {
+        NoteInfo note = detailNote.getNoteInfo();
+        String text = note.getShowText();
+        Attach lastAttach = detailNote.getLastAttach();
+        ShareInfo shareInfo = new ShareInfo();
+        String url = "http://www.yunxinlink.com/";
+//                        shareInfo.setTitleUrl(url);
+        shareInfo.setSite(SystemUtil.getAppName(context));
+        shareInfo.setSiteUrl(url);
+        int shareType = 0;
+        if (!TextUtils.isEmpty(text)) {  //没有文本内容
+            shareInfo.setText(text);
+            shareType = Platform.SHARE_TEXT;
+        }
+        if (note.hasAttach() && note.getAttaches() != null && note.getAttaches().size() > 0) {
+            Collection<Attach> attaches = note.getAttaches().values();
+            List<String> images = new ArrayList<>();
+            for (Attach att : attaches) {
+                if (att.isImage()) {
+                    images.add(att.getLocalPath());
+                }
+            }
+            if (images.size() > 0) {    //有图片，则还添加图片
+                if (images.size() == 1) {   //只有一张图片
+                    shareInfo.setImagePath(images.get(0));
+                } else {
+                    String[] array = new String[images.size()];
+                    shareInfo.setImagePathArray(images.toArray(array));
+                }
+                if (shareType == 0) {   //没有文本内容
+                    shareType = Platform.SHARE_IMAGE;
+                }
+            } else if (lastAttach != null && !TextUtils.isEmpty(lastAttach.getLocalPath())) {
+                if (shareType == 0) {   //没有文本内容
+                    switch (lastAttach.getType()) {
+                        case Attach.VOICE:
+                            shareType = Platform.SHARE_MUSIC;
+                            break;
+                        case Attach.VIDEO:
+                            shareType = Platform.SHARE_VIDEO;
+                            break;
+                        default:
+                            shareType = Platform.SHARE_FILE;
+                            break;
+                    }
+                }
+                shareInfo.setFilePath(lastAttach.getLocalPath());
+            }
+        }
+        shareInfo.setShareType(shareType);
+        showShare(context, shareInfo, false);
     }
 
     /**

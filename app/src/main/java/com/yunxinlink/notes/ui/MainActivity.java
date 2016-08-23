@@ -90,6 +90,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      */
     private FloatingActionButton mFab;
     
+    //内容区域的根布局
+    private View mContentMain;
+    
     @Override
     protected int getContentView() {
         return R.layout.activity_main;
@@ -102,6 +105,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         if (mFab != null) {
             mFab.setOnClickListener(this);
         }
+
+        mContentMain = findViewById(R.id.content_main);
 
         //初始化顶部栏
         if (mToolBar != null) {
@@ -743,6 +748,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         }
     }
 
+    @Override
+    public View getContentMainView() {
+        return mContentMain;
+    }
+
     /**
      * 获取该activity的fragment
      * @return
@@ -783,8 +793,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 //退出选择模式
                 outActionMode(true);
 
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
+                /*Snackbar.make(mContentMain, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();*/
+                break;
+            case R.id.nav_trash:    //加载垃圾桶的笔记
+                intent = new Intent(mContext, TrashActivity.class);
+                startActivity(intent);
                 break;
         }
     }
@@ -942,6 +956,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         KLog.d(TAG, "--update--observer--mainFragment-is---null--");
                         return;
                     }
+                    List<DetailNoteInfo> detailNoteList = null;
                     if (data != null) {
                         if (data instanceof NoteInfo) {
                             NoteInfo noteInfo = (NoteInfo) data;
@@ -949,6 +964,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             detailNote.setNoteInfo(noteInfo);
                         } else if (data instanceof DetailNoteInfo) {
                             detailNote = ((DetailNoteInfo) data);
+                        } else if (data instanceof List) {  //多条数据
+                            detailNoteList = (List<DetailNoteInfo>) data;
                         }
                     }
                     switch (notifyType) {
@@ -956,6 +973,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             KLog.d(TAG, "------addNote----" + detailNote);
                             if (detailNote != null) {
                                 mainFragment.addNote(detailNote);
+                            } else if (detailNoteList != null) {  //多条记录
+                                mainFragment.addNotes(detailNoteList);
                             }
                             break;
                         case UPDATE:    //修改笔记
@@ -968,9 +987,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             KLog.d(TAG, "------deleteNote----" + detailNote);
                             if (detailNote != null) {
                                 mainFragment.deleteNote(detailNote, false);
-                            } else if (data instanceof List) {  //删除了多个笔记
-                                List<DetailNoteInfo> detailNoteList = (List<DetailNoteInfo>) data;
+                            } else if (detailNoteList != null) {  //删除了多个笔记
                                 mainFragment.deleteNotes(detailNoteList, false);
+                            } else {    //清除了所有
+                                mainFragment.clearNotes();
                             }
                             mainFragment.saveDeleteOpt();
                             break;
@@ -979,8 +999,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             boolean isFolderAll = TextUtils.isEmpty(mSelectedFolderId);
                             if (detailNote != null) {
                                 mainFragment.deleteNote(detailNote, isFolderAll);
-                            } else if (data instanceof List) {  //移动了多个笔记
-                                List<DetailNoteInfo> detailNoteList = (List<DetailNoteInfo>) data;
+                            } else if (detailNoteList != null) {  //移动了多个笔记
                                 mainFragment.deleteNotes(detailNoteList, isFolderAll);
                             }
                             if (isFolderAll) {  //在所有文件中，则给个操作结果的提示

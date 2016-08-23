@@ -25,9 +25,9 @@
     <!-- 改变WiFi状态的权限 -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <!-- 管理账号的权限 -->
-    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
     <!-- 获取账号的权限 -->
-    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <application
         android:name=".NoteApplication"
@@ -50,22 +50,23 @@
             android:name=".ui.NoteEditActivity"
             android:windowSoftInputMode="adjustResize" />
 
-        <activity-alias android:name=".ui.ShareActivity"
-            android:targetActivity=".ui.NoteEditActivity"
-            android:label="@string/label_note_share">
+        <activity-alias
+            android:name=".ui.ShareActivity"
+            android:label="@string/label_note_share"
+            android:targetActivity=".ui.NoteEditActivity">
             <intent-filter>
-                <action android:name="android.intent.action.SEND"/>
+                <action android:name="android.intent.action.SEND" />
 
-                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.DEFAULT" />
 
-                <data android:mimeType="*/*"/>
+                <data android:mimeType="*/*" />
             </intent-filter>
             <intent-filter>
-                <action android:name="android.intent.action.SEND_MULTIPLE"/>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
 
-                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.DEFAULT" />
 
-                <data android:mimeType="*/*"/>
+                <data android:mimeType="*/*" />
             </intent-filter>
         </activity-alias>
 
@@ -88,17 +89,22 @@
             android:name="com.mob.tools.MobUIShell"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="stateHidden|adjustResize" >
+            android:windowSoftInputMode="stateHidden|adjustResize">
 
             <!--
               AuthorizeAdapter表示一个继承自cn.sharesdk.framework.authorize.AuthorizeAdapter
               的类，这个类可以监听到页面的生命周期，也可以获取授权页面的各种UI控件。
               开发者可以通过继承AuthorizeAdapter，重写其方法，并获取各种UI来自定义这个页面的行为。
-        -->
-            <meta-data android:name="AuthorizeAdapter" android:value="com.yunxinlink.notes.share.NoteAuthorizeAdapter" />
-
-            <meta-data android:name="QQWebShareAdapter" android:value="com.yunxinlink.notes.share.NoteQQWebShareAdapter" />
-            <meta-data android:name="QZoneWebShareAdapter" android:value="com.yunxinlink.notes.share.NoteQZoneWebShareAdapter" />
+            -->
+            <meta-data
+                android:name="AuthorizeAdapter"
+                android:value="com.yunxinlink.notes.share.NoteAuthorizeAdapter" />
+            <meta-data
+                android:name="QQWebShareAdapter"
+                android:value="com.yunxinlink.notes.share.NoteQQWebShareAdapter" />
+            <meta-data
+                android:name="QZoneWebShareAdapter"
+                android:value="com.yunxinlink.notes.share.NoteQZoneWebShareAdapter" />
 
             <!--
             	QZoneWebShareAdapter表示一个继承自cn.sharesdk.tencent.qzone.QZoneWebShareAdapter
@@ -107,11 +113,14 @@
             <meta-data android:name="QZoneWebShareAdapter" android:value="cn.sharesdk.demo.MyQZoneWebShareAdapter" />
             <meta-data android:name="QQWebShareAdapter" android:value="cn.sharesdk.demo.MyQQWebShareAdapter" />
             -->
-            
+
+
             <!-- QQ和QQ空间分享 QQ登录的回调必须要配置的 -->
             <intent-filter>
                 <data android:scheme="tencent1105624410" />
+
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
@@ -119,21 +128,20 @@
             <!-- 新浪微博客户端分享回调必须配置 -->
             <intent-filter>
                 <action android:name="com.sina.weibo.sdk.action.ACTION_SDK_REQ_ACTIVITY" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            
         </activity>
 
-        <!--微信分享回调 -->
+        <!-- 微信分享回调 -->
         <activity
             android:name=".wxapi.WXEntryActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true"
-            android:screenOrientation="portrait" />
-
-
-        <activity android:name=".ui.TestActivity"></activity>
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity android:name=".ui.TestActivity" />
+        <activity android:name=".ui.TrashActivity" android:label="@string/label_trash"/>
     </application>
 
 </manifest>

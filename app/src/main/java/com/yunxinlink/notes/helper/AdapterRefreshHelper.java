@@ -26,10 +26,17 @@ public class AdapterRefreshHelper {
     public int toPosition;
     
     public void refresh(RecyclerView.Adapter adapter) {
+        int fromPos = 0;
         switch (type) {
             case AdapterRefreshHelper.TYPE_ADD:
-                adapter.notifyItemInserted(position);
-                adapter.notifyItemRangeChanged(position, adapter.getItemCount() - position);
+                if (fromPosition > 0 || toPosition > 0) { //区域性的添加
+                    fromPos = fromPosition > toPosition ? toPosition : fromPosition;
+                    adapter.notifyItemRangeInserted(fromPos, Math.abs(toPosition - fromPosition) + 1);
+                } else {
+                    fromPos = position;
+                    adapter.notifyItemInserted(position);
+                }
+                adapter.notifyItemRangeChanged(fromPos, adapter.getItemCount() - fromPos);
                 break;
             case AdapterRefreshHelper.TYPE_UPDATE:
                 adapter.notifyItemChanged(position);
@@ -41,7 +48,7 @@ public class AdapterRefreshHelper {
             case AdapterRefreshHelper.TYPE_SWAP:
                 adapter.notifyItemMoved(fromPosition, toPosition);
                 //取位置索引小的
-                int fromPos = fromPosition > toPosition ? toPosition : fromPosition;
+                fromPos = fromPosition > toPosition ? toPosition : fromPosition;
                 adapter.notifyItemRangeChanged(fromPos, Math.abs(toPosition - fromPosition) + 1);
                 break;
             default:

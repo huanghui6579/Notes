@@ -265,16 +265,21 @@ public class NoteManager extends Observable<Observer> {
      * @param note 笔记
      * @return 返回数据
      */
-    private ContentValues initTrashValues(NoteInfo note) {
+    private ContentValues initDeleteValues(NoteInfo note, DeleteState deleteState) {
 
-        note.setDeleteState(DeleteState.DELETE_TRASH);
-        note.setSyncState(SyncState.SYNC_UP);
-        note.setModifyTime(System.currentTimeMillis());
-        
         ContentValues values = new ContentValues();
-        values.put(Provider.NoteColumns.DELETE_STATE, note.getDeleteState().ordinal());
-        values.put(Provider.NoteColumns.SYNC_STATE, note.getSyncState().ordinal());
-        values.put(Provider.NoteColumns.MODIFY_TIME, note.getModifyTime());
+        
+        long time = System.currentTimeMillis();
+        
+        if (note != null) {
+            note.setDeleteState(deleteState);
+            note.setSyncState(SyncState.SYNC_UP);
+            note.setModifyTime(time);
+        }
+
+        values.put(Provider.NoteColumns.DELETE_STATE, deleteState.ordinal());
+        values.put(Provider.NoteColumns.SYNC_STATE, SyncState.SYNC_UP.ordinal());
+        values.put(Provider.NoteColumns.MODIFY_TIME, time);
         return values;
     }
     
@@ -285,9 +290,21 @@ public class NoteManager extends Observable<Observer> {
      * @version: 1.0.0
      */
     public boolean deleteNote(DetailNoteInfo detailNote) {
+        return deleteNote(detailNote, DeleteState.DELETE_TRASH);
+    }
+    
+    /**
+     * 删除笔记
+     * @param detailNote 笔记
+     * @param deleteState 删除的状态，有还原、移到回收站、彻底删除几种
+     * @author huanghui1
+     * @update 2016/6/21 15:16
+     * @version: 1.0.0
+     */
+    public boolean deleteNote(DetailNoteInfo detailNote, DeleteState deleteState) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         NoteInfo note = detailNote.getNoteInfo();
-        ContentValues values = initTrashValues(note);
+        ContentValues values = initDeleteValues(note, deleteState);
         int row = 0;
         try {
             db.beginTransaction();
@@ -300,7 +317,15 @@ public class NoteManager extends Observable<Observer> {
             db.endTransaction();
         }
         if (row > 0) {
-            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, detailNote);
+            Observer.NotifyType notifyType = null;
+            if (DeleteState.DELETE_NONE == deleteState) {
+                notifyType = Observer.NotifyType.ADD;
+            } else if (DeleteState.DELETE_DONE == deleteState) {    //彻底删除
+                notifyType = Observer.NotifyType.REMOVE;
+            } else {
+                notifyType = Observer.NotifyType.DELETE;
+            }
+            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, notifyType, detailNote);
             return true;
         } else {
             notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, null);
@@ -315,17 +340,28 @@ public class NoteManager extends Observable<Observer> {
      * @return 返回是否删除成功
      */
     public boolean deleteNote(List<DetailNoteInfo> noteList) {
+        return deleteNote(noteList, DeleteState.DELETE_TRASH);
+    }
+
+    /**
+     * 删除多条笔记，移动到回收站，并不是真正的删除
+     * @param noteList 要删除的笔记的集合
+     * @param deleteState 删除的状态，是删除到垃圾桶还是彻底删除            
+     * @return 返回是否删除成功
+     */
+    public boolean deleteNote(List<DetailNoteInfo> noteList, DeleteState deleteState) {
         if (noteList == null || noteList.size() == 0) {
-            KLog.d(TAG, "----deleteNote---list--size--0--success---");
+            KLog.d(TAG, "----deleteNote---list--size--0--success--deleteState----" + deleteState);
             return true;
         }
         if (noteList.size() == 1) { //只有一条
-            return deleteNote(noteList.get(0));
+            return deleteNote(noteList.get(0), deleteState);
         } else {
             int row = 0;
             SQLiteDatabase db = mDBHelper.getWritableDatabase();
             try {
-                ContentValues values = initTrashValues(noteList.get(0).getNoteInfo());
+                NoteInfo note = noteList.get(0).getNoteInfo();
+                ContentValues values = initDeleteValues(note, deleteState);
                 //拼凑sql语句
                 StringBuilder builder = new StringBuilder(Provider.NoteColumns._ID);
                 builder.append(" in (");
@@ -333,7 +369,7 @@ public class NoteManager extends Observable<Observer> {
                 String[] selectionArgs = new String[size];
                 for (int i = 0; i < size; i++) {
                     DetailNoteInfo detailNote = noteList.get(i);
-                    NoteInfo note = detailNote.getNoteInfo();
+                    note = detailNote.getNoteInfo();
                     builder.append("?").append(Constants.TAG_COMMA);
                     selectionArgs[i] = String.valueOf(note.getId());
                 }
@@ -344,17 +380,53 @@ public class NoteManager extends Observable<Observer> {
                 row = db.update(Provider.NoteColumns.TABLE_NAME, values, builder.toString(), selectionArgs);
                 db.setTransactionSuccessful();
             } catch (Exception e) {
-                KLog.e("TAG", "--deleteNote--list--error--" + e.getMessage());
+                KLog.e("TAG", "--deleteNote--list---deleteState--" + deleteState + "--error--" + e.getMessage());
             } finally {
                 db.endTransaction();
             }
             if (row > 0) {
-                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, noteList);
+                Observer.NotifyType notifyType = null;
+                if (DeleteState.DELETE_NONE == deleteState) {   //撤销删除
+                    notifyType = Observer.NotifyType.ADD;
+                } else if (DeleteState.DELETE_DONE == deleteState) {    //彻底删除
+                    notifyType = Observer.NotifyType.REMOVE;
+                } else {
+                    notifyType = Observer.NotifyType.DELETE;
+                }
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, notifyType, noteList);
                 return true;
             } else {
-                KLog.w(TAG, "-------deleteNote--list--failed----");
+                KLog.w(TAG, "-------deleteNote--list--failed--deleteState--" + deleteState);
                 return false;
             }
+        }
+    }
+
+    /**
+     * 清空回收站
+     * @return
+     */
+    public boolean clearTrash() {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = initDeleteValues(null, DeleteState.DELETE_DONE);
+        String selection = Provider.NoteColumns.DELETE_STATE  + " = ?";
+        String[] args = {String.valueOf(DeleteState.DELETE_TRASH.ordinal())};
+        long row = 0;
+        db.beginTransaction();
+        try {
+            row = db.update(Provider.NoteColumns.TABLE_NAME, values, selection, args);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            KLog.e("TAG", "--clearTrash--error----" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        if (row > 0) {
+            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.REMOVE, null);
+            return true;
+        } else {
+            KLog.e("TAG", "--clearTrash--failed----");
+            return false;
         }
     }
     

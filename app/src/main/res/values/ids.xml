@@ -15,4 +15,5 @@
     <item type="id" name="content_layout" />
     <item type="id" name="iv_icon" />
     <item type="id" name="content_container" />
+    <item type="id" name="action_clear_all" />
 </resources>

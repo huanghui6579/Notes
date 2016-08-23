@@ -14,7 +14,9 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -30,9 +32,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -47,11 +49,11 @@ import com.yunxinlink.notes.listener.OnCheckedChangeListener;
 import com.yunxinlink.notes.listener.OnItemClickListener;
 import com.yunxinlink.notes.listener.OnItemLongClickListener;
 import com.yunxinlink.notes.model.Attach;
+import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
-import com.yunxinlink.notes.share.ShareInfo;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteTask;
@@ -63,11 +65,8 @@ import com.yunxinlink.notes.widget.NoteItemViewAware;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-
-import cn.sharesdk.framework.Platform;
 
 /**
  * 显示笔记的主界面
@@ -78,6 +77,7 @@ import cn.sharesdk.framework.Platform;
 public class MainFragment extends BaseFragment {
     
     public static final String ARG_FOLDER_ID = "folder_id";
+    public static final String ARG_IS_TRASH = "is_trash";
 
     private static final int MSG_MOVE_FAILED = 4;
     private static final int MSG_MOVE_SUCCESS = 5;
@@ -87,7 +87,7 @@ public class MainFragment extends BaseFragment {
 
     private RecyclerView mRecyclerView;
     
-    private FrameLayout mMainFrame;
+    private CoordinatorLayout mMainFrame;
 
     private NoteListAdapter mNoteListAdapter;
     private NoteGridAdapter mNoteGridAdapter;
@@ -139,6 +139,11 @@ public class MainFragment extends BaseFragment {
     //要加载的笔记本的sid
     private String mFolderId;
 
+    /**
+     * 是否加载的是垃圾桶的笔记
+     */
+    private boolean mIsTrash;
+
     public MainFragment() {
         // Required empty public constructor
     }
@@ -151,11 +156,24 @@ public class MainFragment extends BaseFragment {
      */
     // TODO: Rename and change types and number of parameters
     public static MainFragment newInstance(String folderId) {
+        return newInstance(folderId, false);
+    }
+
+    /**
+     * Use this factory method to create a new instance of
+     * this fragment using the provided parameters.
+     * @param folderId 笔记本的id,要加载的文件夹下的笔记，null：表示加载所有的笔记
+     * @param isTrash 是否只加载垃圾桶中的数据                
+     * @return A new instance of fragment MainFragment.
+     */
+    // TODO: Rename and change types and number of parameters
+    public static MainFragment newInstance(String folderId, boolean isTrash) {
         MainFragment fragment = new MainFragment();
         Bundle args = new Bundle();
         if (!TextUtils.isEmpty(folderId)) {
             args.putString(ARG_FOLDER_ID, folderId);
         }
+        args.putBoolean(ARG_IS_TRASH, isTrash);
         fragment.setArguments(args);
         return fragment;
     }
@@ -169,6 +187,7 @@ public class MainFragment extends BaseFragment {
         Bundle args = getArguments();
         if (args != null) {
             mFolderId = args.getString(ARG_FOLDER_ID);
+            mIsTrash = args.getBoolean(ARG_IS_TRASH, false);
         }
     }
 
@@ -186,7 +205,7 @@ public class MainFragment extends BaseFragment {
         //初始化下拉刷新界面
         mRefresher = (SwipeRefreshLayout) view.findViewById(R.id.refresher);
         
-        mMainFrame = (FrameLayout) view.findViewById(R.id.main_frame);
+        mMainFrame = (CoordinatorLayout) view.findViewById(R.id.main_frame);
 
         mNotes = new ArrayList<>();
         mLayoutManagerFactory = new LayoutManagerFactory();
@@ -214,11 +233,18 @@ public class MainFragment extends BaseFragment {
         //初始化数据
         initData();
     }
-
+    
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
         inflater.inflate(R.menu.main, menu);
+        
+        if (mIsTrash) { //回收站的界面
+            MenuItem clearAllItem = menu.add(0, R.id.action_clear_all, 200, R.string.action_clear_all);
+            MenuItemCompat.setShowAsAction(clearAllItem, MenuItem.SHOW_AS_ACTION_ALWAYS);
+            clearAllItem.setIcon(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_clear_all, getContext().getTheme()));
+        }
+        
         MenuItem item = menu.findItem(R.id.action_more);
         SystemUtil.setMenuOverFlowTint(getContext(), item);
         
@@ -234,6 +260,9 @@ public class MainFragment extends BaseFragment {
                 
                 View view = ((BaseActivity) getActivity()).getToolBarMenuView(id);
                 createPopMenu(view);
+                break;
+            case R.id.action_clear_all: //清空回收站，彻底删除回收站所有的笔记
+                NoteUtil.handleClearTrash(getContext());
                 break;
         }
 
@@ -260,30 +289,6 @@ public class MainFragment extends BaseFragment {
 
         //加载笔记
         loadNotes(mFolderId);
-
-        /*if (isFolderAllDisable()) { //不能加载所有文件夹里的笔记，则加载第一个文件夹
-            //加载文件夹
-            List<Folder> folders = loadFolder(false);
-
-            if (folders != null && folders.size() > 0) {
-                reLoadFirstFolder(folders.get(0));
-            } else {
-                //加载笔记
-                loadNotes(mSelectedFolderId, mNoteSort);
-            }
-
-        } else {
-            //加载笔记
-            loadNotes(mSelectedFolderId, mNoteSort);
-
-            doInbackground(new Runnable() {
-                @Override
-                public void run() {
-                    //加载文件夹
-                    loadFolder(isShowFolderAll());
-                }
-            });
-        }*/
     }
 
     /**
@@ -371,6 +376,7 @@ public class MainFragment extends BaseFragment {
             args.putString("folderId", folderId);
         }
         args.putInt("sort", mNoteSort);
+        args.putBoolean("isRecycle", mIsTrash);
         List<DetailNoteInfo> list = noteManager.getAllDetailNotes(getCurrentUser(), args);
         Message msg = mHandler.obtainMessage();
         msg.what = Constants.MSG_SUCCESS2;
@@ -388,10 +394,19 @@ public class MainFragment extends BaseFragment {
         if (mMainEmptyView == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             mMainEmptyView = inflater.inflate(R.layout.main_empty_view, null);
+            
+            if (mIsTrash) {
 
-//            CoordinatorLayout viewGroup = (CoordinatorLayout) view.findViewById(R.id.content_main);
-            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(CoordinatorLayout.LayoutParams.MATCH_PARENT, CoordinatorLayout.LayoutParams.WRAP_CONTENT);
+                TextView tvContent = (TextView) mMainEmptyView.findViewById(R.id.tv_content);
+                Button btnLogin = (Button) mMainEmptyView.findViewById(R.id.btn_login);
+                btnLogin.setVisibility(View.GONE);
+
+                tvContent.setText(R.string.tip_note_empty);
+            }
+            
+            CoordinatorLayout.LayoutParams layoutParams = new CoordinatorLayout.LayoutParams(CoordinatorLayout.LayoutParams.MATCH_PARENT, CoordinatorLayout.LayoutParams.WRAP_CONTENT);
             layoutParams.gravity = Gravity.CENTER;
+            layoutParams.anchorGravity = Gravity.CENTER;
             mMainEmptyView.setLayoutParams(layoutParams);
 
             if (mMainFrame != null) {
@@ -503,7 +518,7 @@ public class MainFragment extends BaseFragment {
             if (resetAdapter) {
                 mRecyclerView.setAdapter(mNoteGridAdapter);
             } else {
-                if (refreshHelper == null || refreshHelper.type == AdapterRefreshHelper.TYPE_NONE) {
+                if (refreshHelper == null) {
                     mNoteGridAdapter.notifyDataSetChanged();
                 } else {
                     refreshHelper.refresh(mNoteGridAdapter);
@@ -523,7 +538,7 @@ public class MainFragment extends BaseFragment {
             if (resetAdapter) {
                 mRecyclerView.setAdapter(mNoteListAdapter);
             } else {
-                if (refreshHelper == null || refreshHelper.type == AdapterRefreshHelper.TYPE_NONE) {
+                if (refreshHelper == null) {
                     mNoteListAdapter.notifyDataSetChanged();
                 } else {
                     refreshHelper.refresh(mNoteListAdapter);
@@ -550,6 +565,43 @@ public class MainFragment extends BaseFragment {
     }
 
     /**
+     * 添加多条笔记，刷新界面
+     * @param list
+     */
+    public void addNotes(List<DetailNoteInfo> list) {
+        mNotes.addAll(0, list);
+        AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+        refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
+        refreshHelper.fromPosition = 0;
+        refreshHelper.toPosition = list.size() - 1;
+        refreshUI(mNotes, refreshHelper);
+    }
+
+    /**
+     * 显示撤销删除的提示
+     */
+    private void showUnDeleteToast(final List<DetailNoteInfo> list) {
+        View contentView = mListener == null ? null : mListener.getContentMainView();
+        contentView = contentView == null ? mMainFrame : contentView;
+        Snackbar.make(contentView, R.string.delete_result_success, Snackbar.LENGTH_SHORT)
+                .setAction(R.string.undo, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        handleUnDeleteNote(list);
+                    }
+                }).show();
+    }
+
+    /**
+     * 显示撤销删除的提示
+     */
+    private void showUnDeleteToast(final DetailNoteInfo detailNote) {
+        List<DetailNoteInfo> list = new ArrayList<>(1);
+        list.add(detailNote);
+        showUnDeleteToast(list);
+    }
+
+    /**
      * 删除笔记
      * @param detailNote 笔记
      * @param isMove 是指只是移动笔记到其他文件文件，如果是指移动，那么在"所有文件夹"中就不需要删除了
@@ -566,6 +618,12 @@ public class MainFragment extends BaseFragment {
                 refreshHelper.type = AdapterRefreshHelper.TYPE_DELETE;
                 refreshHelper.position = index;
                 refreshUI(mNotes, refreshHelper);
+
+                if (!mIsTrash) {    //非回收站才显示
+                    //显示回撤提示
+                    showUnDeleteToast(detailNote);
+                }
+                
             }
         }
     }
@@ -588,8 +646,21 @@ public class MainFragment extends BaseFragment {
             } else {
                 mNotes.removeAll(list);
                 refreshUI(mNotes, null);
+                
+                if (!mIsTrash) {    //非回收站才显示
+                    //显示回撤提示
+                    showUnDeleteToast(list);
+                }
             }
         }
+    }
+
+    /**
+     * 清空界面所有的笔记
+     */
+    public void clearNotes() {
+        mNotes.clear();
+        refreshUI(mNotes, null);
     }
 
     /**
@@ -621,7 +692,31 @@ public class MainFragment extends BaseFragment {
     private void handleDeleteNote(final DetailNoteInfo detailNote) {
         List<DetailNoteInfo> list = new ArrayList<>(1);
         list.add(detailNote);
-        NoteUtil.handleDeleteNote(getContext(), list, mHasDeleteOpt);
+        NoteUtil.handleDeleteNote(getContext(), list, mHasDeleteOpt, mIsTrash);
+    }
+
+    /**
+     * 恢复笔记
+     * @param list
+     */
+    private void handleUnDeleteNote(List<DetailNoteInfo> list) {
+        final List<DetailNoteInfo> detailNoteInfos = new ArrayList<>(list);
+        doInbackground(new NoteTask(detailNoteInfos) {
+            @Override
+            public void run() {
+                NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0], DeleteState.DELETE_NONE);
+            }
+        });
+    }
+
+    /**
+     * 恢复笔记
+     * @param detailNote
+     */
+    private void handleUnDeleteNote(DetailNoteInfo detailNote) {
+        List<DetailNoteInfo> list = new ArrayList<>(1);
+        list.add(detailNote);
+        handleUnDeleteNote(list);
     }
 
     /**
@@ -719,11 +814,39 @@ public class MainFragment extends BaseFragment {
             //显示recycleView
             SystemUtil.setViewVisibility(mRefresher, View.VISIBLE);
             clearEmptyView();
+            configMenuItem(true);
         } else {    //没有数据
             setShowContentStyle(mIsGridStyle, false, null);
             //隐藏recycleView
             SystemUtil.setViewVisibility(mRefresher, View.GONE);
             loadEmptyView();
+            configMenuItem(false);
+        }
+    }
+
+    /**
+     * 显示或者隐藏菜单项
+     * @param hasData 是否有数据
+     */
+    private void configMenuItem(boolean hasData) {
+        if (!mIsTrash) {    //只有回收站界面才处理
+            return;
+        }
+        Menu menu = ((BaseActivity) getActivity()).getOptionsMenu();
+        if (menu != null) {
+            int size = menu.size();
+            for (int i = 0; i < size; i++) {
+                MenuItem menuItem = menu.getItem(i);
+                if (hasData) {  //设为可用
+                    if (!menuItem.isVisible()) {
+                        menuItem.setVisible(true);
+                    }
+                } else {
+                    if (menuItem.isVisible()) {
+                        menuItem.setVisible(false);
+                    }
+                }
+            }
         }
     }
 
@@ -829,8 +952,6 @@ public class MainFragment extends BaseFragment {
             removeSelectedItem(pos);
         }
     }
-
-//    private void 
 
     /**
      * 初始化note的适配器
@@ -1107,11 +1228,15 @@ public class MainFragment extends BaseFragment {
         @Override
         public boolean onCreateActionMode(ActionMode mode, final Menu menu) {
             MenuInflater menuInflater = getActivity().getMenuInflater();
-            menuInflater.inflate(R.menu.grid_item_opt, menu);
-
-            if (!FolderCache.getInstance().hasMoreFolder()) {   //没有更多的文件夹，除了“所有文件夹”
-                //移除“移动”菜单
-                menu.removeItem(R.id.action_move);
+            
+            if (mIsTrash) { //回收站界面
+                menuInflater.inflate(R.menu.note_trash_grid_item, menu);
+            } else {
+                menuInflater.inflate(R.menu.note_grid_item, menu);
+                if (!FolderCache.getInstance().hasMoreFolder()) {   //没有更多的文件夹，除了“所有文件夹”
+                    //移除“移动”菜单
+                    menu.removeItem(R.id.action_move);
+                }
             }
             return true;
         }
@@ -1128,12 +1253,16 @@ public class MainFragment extends BaseFragment {
                     moveNotes(mSelectedList);
                     break;
                 case R.id.action_delete:    //删除
-                    NoteUtil.handleDeleteNote(getContext(), mSelectedList, mHasDeleteOpt);
+                    NoteUtil.handleDeleteNote(getContext(), mSelectedList, mHasDeleteOpt, mIsTrash);
                     break;
                 case R.id.action_share:    //分享
+                    NoteUtil.shareNote(getContext(), mSelectedList.get(0));
                     break;
                 case R.id.action_info:    //详情
                     NoteUtil.showInfo(getContext(), mSelectedList.get(0).getNoteInfo());
+                    break;
+                case R.id.action_restore:   //还原
+                    handleUnDeleteNote(mSelectedList);
                     break;
             }
             outActionMode(true);
@@ -1814,9 +1943,15 @@ public class MainFragment extends BaseFragment {
             public void onClick(View v) {
                 switch (v.getId()) {
                     case R.id.iv_overflow:
-                        PopupMenu itemMenu = createPopMenu(v, R.menu.grid_item_opt, false, new ItemMenuClickListener(detailNote));
+                        int menuRes = 0;
+                        if (mIsTrash) { //回收站的菜单
+                            menuRes = R.menu.note_trash_grid_item;
+                        } else {
+                            menuRes = R.menu.note_grid_item;
+                        }
+                        PopupMenu itemMenu = createPopMenu(v, menuRes, false, new ItemMenuClickListener(detailNote));
                         boolean hasMoreFolder = FolderCache.getInstance().hasMoreFolder();
-                        if (!hasMoreFolder) {   //删除“移动”菜单项
+                        if (!mIsTrash && !hasMoreFolder) {   //删除“移动”菜单项
                             Menu menu = itemMenu.getMenu();
                             if (menu != null) {
                                 menu.removeItem(R.id.action_move);
@@ -1853,57 +1988,11 @@ public class MainFragment extends BaseFragment {
                     case R.id.action_move:  //移动
                         moveNote(detailNote);
                         break;
-                    case R.id.action_share:
-                        NoteInfo note = detailNote.getNoteInfo();
-                        String text = note.getShowText();
-                        Attach lastAttach = detailNote.getLastAttach();
-                        ShareInfo shareInfo = new ShareInfo();
-                        String url = "http://www.yunxinlink.com/";
-//                        shareInfo.setTitleUrl(url);
-                        shareInfo.setSite(SystemUtil.getAppName(getContext()));
-                        shareInfo.setSiteUrl(url);
-                        int shareType = 0;
-                        if (!TextUtils.isEmpty(text)) {  //没有文本内容
-                            shareInfo.setText(text);
-                            shareType = Platform.SHARE_TEXT;
-                        }
-                        if (note.hasAttach() && note.getAttaches() != null && note.getAttaches().size() > 0) {
-                            Collection<Attach> attaches = note.getAttaches().values();
-                            List<String> images = new ArrayList<>();
-                            for (Attach att : attaches) {
-                                if (att.isImage()) {
-                                    images.add(att.getLocalPath());
-                                }
-                            }
-                            if (images.size() > 0) {    //有图片，则还添加图片
-                                if (images.size() == 1) {   //只有一张图片
-                                    shareInfo.setImagePath(images.get(0));
-                                } else {
-                                    String[] array = new String[images.size()];
-                                    shareInfo.setImagePathArray(images.toArray(array));
-                                }
-                                if (shareType == 0) {   //没有文本内容
-                                    shareType = Platform.SHARE_IMAGE;
-                                }
-                            } else if (lastAttach != null && !TextUtils.isEmpty(lastAttach.getLocalPath())) {
-                                if (shareType == 0) {   //没有文本内容
-                                    switch (lastAttach.getType()) {
-                                        case Attach.VOICE:
-                                            shareType = Platform.SHARE_MUSIC;
-                                            break;
-                                        case Attach.VIDEO:
-                                            shareType = Platform.SHARE_VIDEO;
-                                            break;
-                                        default:
-                                            shareType = Platform.SHARE_FILE;
-                                            break;
-                                    }
-                                }
-                                shareInfo.setFilePath(lastAttach.getLocalPath());
-                            }
-                        }
-                        shareInfo.setShareType(shareType);
-                        NoteUtil.showShare(mContext, shareInfo, false);
+                    case R.id.action_share: //分享
+                        NoteUtil.shareNote(getContext(), detailNote);
+                        break;
+                    case R.id.action_restore:   //还原
+                        handleUnDeleteNote(detailNote);
                         break;
                 }
                 return false;
@@ -1924,27 +2013,6 @@ public class MainFragment extends BaseFragment {
             MainFragment target = mTarget.get();
             if (target != null) {
                 switch (msg.what) {
-                    /*case Constants.MSG_SUCCESS: //文件夹加载完毕
-                        List<Folder> folderList = (List<Folder>) msg.obj;
-                        target.mFolders.clear();
-                        if (folderList != null && folderList.size() > 0) {
-                            target.mFolders.addAll(folderList);
-                        }
-                        String currentItem = target.mNavAdapter.getSelectedItem();
-                        if (!TextUtils.isEmpty(currentItem) &&
-                                !currentItem.equals(target.mSelectedFolderId)) {  //更新默认选中的项
-                            target.mNavAdapter.setSelectedItem(target.mSelectedFolderId);
-                        } else if (TextUtils.isEmpty(currentItem) && !TextUtils.isEmpty(target.mSelectedFolderId)) {
-                            target.mNavAdapter.setSelectedItem(target.mSelectedFolderId);
-                        }
-                        target.mNavAdapter.notifyDataSetChanged();
-
-                        String subTitle = target.getSubTitle(target.mSelectedFolderId);
-
-                        //更新子标题
-                        target.updateSubTitle(subTitle);
-
-                        break;*/
                     case Constants.MSG_SUCCESS2:    //笔记内容加载成功
                         target.mRefresher.setRefreshing(false);
                         List<DetailNoteInfo> list = (List<DetailNoteInfo>) msg.obj;
@@ -1962,17 +2030,6 @@ public class MainFragment extends BaseFragment {
                         }
 
                         break;
-                    /*case MSG_SELECT_NAV:    //选择左菜单，菜单消失
-                        if (target.mNavDrawer != null) {
-                            target.mNavDrawer.closeDrawers();
-                        }
-                        break;*/
-                    /*case MSG_MOVE_FAILED:   //移动文件夹失败
-                        SystemUtil.makeShortToast(R.string.move_result_error);
-                        break;
-                    case MSG_MOVE_SUCCESS:   //移动文件夹成功
-                        SystemUtil.makeShortToast(R.string.result_success);
-                        break;*/
                     case MSG_PALETTE_COLOR: //给笔记的item着色，针对有背景图片的
                         int titleColor = msg.arg1;
                         int bodyColor = msg.arg2;
@@ -2018,5 +2075,11 @@ public class MainFragment extends BaseFragment {
          * @param isOn 是否是开启状态，true：是开启状态
          */
         void setActionMode(boolean isOn);
+
+        /**
+         * 获取主界面内容区域的根布局
+         * @return
+         */
+        View getContentMainView();
     }
 }

@@ -20,6 +20,7 @@
     <string name="label_folder_list">笔记本列表</string>
     <string name="label_folder_edit">编辑笔记本</string>
     <string name="label_note_share">保存到云信笔记</string>
+    <string name="label_trash">回收站</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -29,6 +30,7 @@
     <string name="update_result_error">保存失败</string>
     <string name="update_result_success">保存成功</string>
     <string name="delete_result_error">删除失败</string>
+    <string name="delete_result_success">删除成功</string>
     <string name="move_result_error">移动失败</string>
     <string name="record_error">录音失败，请检查是否有录音的权限</string>
     <string name="paint_save_error_reason">画图保存失败，由于画图需要保存文件到SD卡中，所以请授予SD卡的读写权限</string>
@@ -51,6 +53,11 @@
     <string name="tip_read_permission_failed">插入联系人失败，需要读取联系人的权限</string>
     <string name="tip_grant_write_storage_failed">初始化数据写入SD卡失败，没有写入权限</string>
     <string name="tip_share_attach_max_size">一次最多分享%1$d个文件</string>
+    <string name="tip_note_clear_all">清空后，将不可恢复，确定清空吗？</string>
+    <string name="tip_note_real_delete">删除后，将不可恢复，确定删除吗？</string>
+    <string name="tip_note_empty">没有数据，很干净哦~</string>
+    
+    <string name="title_note_clear_all">清空回收站</string>
 
     <string name="result_success">操作成功</string>
 
@@ -70,6 +77,8 @@
     <string name="sync_state">同步状态</string>
     <string name="default_state">默认状态</string>
     <string name="default_folder">默认文件夹</string>
+    <string name="undo">撤销</string>
+    <string name="real_delete">彻底删除</string>
 
     <string name="hint_folder_edit">输入文件夹名称</string>
 
@@ -111,6 +120,7 @@
     <string name="action_info">详情</string>
     <string name="action_delete">删除</string>
     <string name="action_move">移动</string>
+    <string name="action_restore">还原</string>
     <string name="action_add">新建</string>
     <string name="action_forward">转发</string>
     <string name="action_copy">复制</string>
@@ -128,6 +138,7 @@
     <string name="action_undo">撤销</string>
     <string name="action_redo">重做</string>
     <string name="action_open">打开</string>
+    <string name="action_clear_all">清空</string>
 
     <string name="stroke_tip_type">画笔类型</string>
     <string name="stroke_tip_size">画笔大小</string>

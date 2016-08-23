@@ -2321,6 +2321,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     SystemUtil.choseFile(NoteEditActivity.this, null, REQ_PICK_FILE);
                     break;
                 case R.id.action_share:    //分享
+                    NoteUtil.shareNote(mContext, mDetailNote);
                     break;
                 case R.id.action_info:    //详情
                     if (mNote != null && !mNote.isEmpty()) {

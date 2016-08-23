@@ -92,9 +92,9 @@
     <style name="NoteAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert">
         <!-- Used for the buttons -->
         <item name="colorAccent">@color/colorAccent</item>
-        <!--<item name="buttonBarPositiveButtonStyle">@style/NoteButtonBarButtonStyle</item>
+        <!--<item name="buttonBarPositiveButtonStyle">@style/NoteButtonBarButtonStyle</item>-->
         <item name="buttonBarNegativeButtonStyle">@style/NoteButtonBarNegativeButtonStyle</item>
-        <item name="buttonBarNeutralButtonStyle">@style/NoteButtonBarNegativeButtonStyle</item>-->
+        <item name="buttonBarNeutralButtonStyle">@style/NoteButtonBarNegativeButtonStyle</item>
         <!--<item name="android:textColor">@color/colorPrimary</item>-->
         <!-- Used for the title and text -->
         <!--<item name="android:textColorPrimary">#FFFFFF</item>-->
@@ -107,6 +107,6 @@
     </style>
 
     <style name="NoteButtonBarNegativeButtonStyle" parent="@style/Widget.AppCompat.Button.ButtonBar.AlertDialog">
-        <item name="android:textColor">?android:attr/textColorPrimary</item>
+        <item name="android:textColor">@color/text_content_color</item>
     </style>
 </resources>
