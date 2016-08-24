@@ -39,6 +39,7 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.ui.settings.SettingsActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -798,6 +799,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 break;
             case R.id.nav_trash:    //加载垃圾桶的笔记
                 intent = new Intent(mContext, TrashActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.nav_settings: //设置
+                intent = new Intent(mContext, SettingsActivity.class);
                 startActivity(intent);
                 break;
         }

@@ -6,6 +6,9 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:preferenceStyle">@style/NotePreferenceStyle</item>
+        <item name="android:preferenceCategoryStyle">@style/NotePreferenceStyle.Category</item>
+        <item name="android:preferenceInformationStyle">@style/NotePreferenceStyle.Information</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
@@ -108,5 +111,22 @@
 
     <style name="NoteButtonBarNegativeButtonStyle" parent="@style/Widget.AppCompat.Button.ButtonBar.AlertDialog">
         <item name="android:textColor">@color/text_content_color</item>
+    </style>
+    
+    <style name="NotePreferenceStyle">
+        <item name="android:layout">@layout/item_preference</item>
+    </style>
+    
+    <style name="NotePreferenceStyle.Category">
+        <item name="android:layout">@layout/layout_preference_category</item>
+        <!-- The title should not dim if the category is disabled, instead only the preference children should dim. -->
+        <item name="android:shouldDisableView">false</item>
+        <item name="android:selectable">false</item>
+    </style>
+    
+    <style name="NotePreferenceStyle.Information">
+        <item name="android:layout">@layout/layout_preference_information</item>
+        <item name="android:enabled">false</item>
+        <item name="android:shouldDisableView">false</item>
     </style>
 </resources>

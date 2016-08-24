@@ -141,7 +141,20 @@
             android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity android:name=".ui.TestActivity" />
-        <activity android:name=".ui.TrashActivity" android:label="@string/label_trash"/>
+        <activity
+            android:name=".ui.TrashActivity"
+            android:label="@string/label_trash" />
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:label="@string/label_settings" />
+        <activity
+            android:name=".ui.settings.SettingsSyncActivity"
+            android:label="@string/action_upload" android:exported="false">
+            <intent-filter>
+                <action android:name="com.yunxinlink.notes.SYNC_SETTINGS"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

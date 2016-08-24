@@ -21,6 +21,7 @@
     <string name="label_folder_edit">编辑笔记本</string>
     <string name="label_note_share">保存到云信笔记</string>
     <string name="label_trash">回收站</string>
+    <string name="label_settings">设置</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -56,7 +57,7 @@
     <string name="tip_note_clear_all">清空后，将不可恢复，确定清空吗？</string>
     <string name="tip_note_real_delete">删除后，将不可恢复，确定删除吗？</string>
     <string name="tip_note_empty">没有数据，很干净哦~</string>
-    
+
     <string name="title_note_clear_all">清空回收站</string>
 
     <string name="result_success">操作成功</string>
@@ -164,8 +165,87 @@
 
     <string name="share_fork_sina_weibo">关注新浪微博</string>
 
+    <string name="settings_category_normal">常规</string>
+    <string name="settings_category_other">其他</string>
+    <string name="settings_account_title">账号</string>
+    <string name="settings_account_summary">设置同步账号</string>
+    <string name="settings_sync_summary">同步方式</string>
+    <string name="settings_security_title">安全</string>
+    <string name="settings_security_summary">输入密码才能查看笔记</string>
+    <string name="settings_more_title">更多设置</string>
+    <string name="settings_more_summary">主题、快捷方式等</string>
+    <string name="settings_feedback_title">反馈</string>
+    <string name="settings_feedback_summary">提交意见或建议</string>
+    <string name="settings_about_title">关于</string>
+    <string name="settings_about_summary">当前版本、检查更新、推荐等</string>
+
+    <string name="settings_sync_note_title">笔记</string>
+    <string name="settings_sync_note_summary">后台自动同步笔记</string>
+    <string name="settings_sync_wifi_title">Wi-Fi同步</string>
+    <string name="settings_sync_wifi_summary">仅在Wi-Fi环境下自动同步</string>
+    <string name="settings_sync_state_title">同步状态</string>
+    <string name="settings_sync_state_summary">没有同步过</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="message_denied">Permission \"%1$s\" has been denied.</string>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_title_social_recommendations">Enable social recommendations</string>
+    <string name="pref_description_social_recommendations">Recommendations for people to contact
+        based on your message history
+    </string>
+
+    <string name="pref_title_display_name">Display name</string>
+    <string name="pref_default_display_name">John Smith</string>
+
+    <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
+    <string-array name="pref_example_list_titles">
+        <item>Always</item>
+        <item>When possible</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_example_list_values">
+        <item>1</item>
+        <item>0</item>
+        <item>-1</item>
+    </string-array>
+
+    <!-- Example settings for Data & Sync -->
+    <string name="pref_header_data_sync">Data &amp; sync</string>
+
+    <string name="pref_title_sync_frequency">Sync frequency</string>
+    <string-array name="pref_sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>360</item>
+        <item>-1</item>
+    </string-array>
+
+    <string name="pref_title_system_sync_settings">System sync settings</string>
+
+    <!-- Example settings for Notifications -->
+    <string name="pref_header_notifications">Notifications</string>
+
+    <string name="pref_title_new_message_notifications">New message notifications</string>
+
+    <string name="pref_title_ringtone">Ringtone</string>
+    <string name="pref_ringtone_silent">Silent</string>
+
+    <string name="pref_title_vibrate">Vibrate</string>
 </resources>

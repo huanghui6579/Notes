@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/label_settings">
+
+    <PreferenceCategory android:title="@string/settings_category_normal"/>
+
+    <Preference android:title="@string/settings_account_title"
+        android:icon="@drawable/ic_social_person"
+        android:summary="@string/settings_account_summary"/>
+
+    <Preference android:title="@string/action_upload"
+        android:icon="@drawable/ic_sync_black_24dp"
+        android:summary="@string/settings_sync_summary">
+        <intent android:action="com.yunxinlink.notes.SYNC_SETTINGS"/>
+    </Preference>
+
+    <Preference android:title="@string/settings_security_title"
+        android:icon="@drawable/ic_action_lock"
+        android:summary="@string/settings_security_summary"/>
+
+    <Preference android:title="@string/settings_more_title"
+        android:icon="@drawable/ic_more_horiz"
+        android:summary="@string/settings_more_summary"/>
+
+    <PreferenceCategory android:title="@string/settings_category_other"/>
+
+    <Preference android:title="@string/settings_feedback_title"
+        android:icon="@drawable/ic_feedback_black"
+        android:summary="@string/settings_feedback_summary"/>
+
+    <Preference android:title="@string/settings_about_title"
+        android:icon="@drawable/ic_action_info"
+        android:summary="@string/settings_about_summary"/>
+
+</PreferenceScreen>
