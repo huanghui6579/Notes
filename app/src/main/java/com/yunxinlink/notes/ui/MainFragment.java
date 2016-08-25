@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -248,6 +249,10 @@ public class MainFragment extends BaseFragment {
         MenuItem item = menu.findItem(R.id.action_more);
         SystemUtil.setMenuOverFlowTint(getContext(), item);
         
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        
+        ((BaseActivity) getActivity()).setMenuTint(searchItem, Color.WHITE);
+        
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -263,6 +268,10 @@ public class MainFragment extends BaseFragment {
                 break;
             case R.id.action_clear_all: //清空回收站，彻底删除回收站所有的笔记
                 NoteUtil.handleClearTrash(getContext());
+                break;
+            case R.id.action_search:    //搜索
+                Intent intent = new Intent(getActivity(), SearchActivity.class);
+                startActivity(intent);
                 break;
         }
 

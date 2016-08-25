@@ -167,18 +167,19 @@ public class NoteManager extends Observable<Observer> {
                 selectionArgs = new String[] {String.valueOf(userId)};
             }
         } else {    //当前用户没有登录
+            selection = "(" + Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL) AND ";
             if (!TextUtils.isEmpty(folder)) {
                 if (deleteState == 0) {
-                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
+                    selection += Provider.NoteColumns.FOLDER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
                 } else {
-                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+                    selection += Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
                 }
                 selectionArgs = new String[] {folder};
             } else {
                 if (deleteState == 0) {
-                    selection = Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = ?";
+                    selection += "(" + Provider.NoteColumns.DELETE_STATE + " IS NULL OR " + Provider.NoteColumns.DELETE_STATE + " = ?)";
                 } else {
-                    selection = Provider.NoteColumns.DELETE_STATE + " = ?";
+                    selection += Provider.NoteColumns.DELETE_STATE + " = ?";
                 }
                 selectionArgs = new String[] {String.valueOf(deleteState)};
             }
@@ -1251,6 +1252,61 @@ public class NoteManager extends Observable<Observer> {
     public NoteInfo getNote(int noteId) {
         NoteInfo info = new NoteInfo(noteId);
         return getNote(info);
+    }
+
+    /**
+     * 搜索笔记
+     * @param keyword 关键字
+     * @return
+     */
+    public List<DetailNoteInfo> findNotes(User user, String keyword) {
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String selection = null;
+        String[] selectionArgs = null;
+        int sort = 0;
+        int deleteState = DeleteState.DELETE_NONE.ordinal();
+        //是否加载回收站里的笔记
+        int userId = 0;
+        if (user != null) { //当前用户有登录
+            userId = user.getId();
+        }
+        
+        if (userId == 0) {  //没有用户登录
+            selection = "(" + Provider.NoteColumns.USER_ID + " = ? OR " + Provider.NoteColumns.USER_ID + " IS NULL) ";
+        } else {
+            selection = Provider.NoteColumns.USER_ID + " = ? ";
+        }
+        selection += " AND (" + Provider.NoteColumns.DELETE_STATE + " IS NULL OR " + Provider.NoteColumns.DELETE_STATE + " = ?) AND " +
+            "CASE WHEN " + Provider.NoteColumns.SHOW_CONTENT + " IS NOT NULL THEN " + Provider.NoteColumns.SHOW_CONTENT + " ELSE " + Provider.NoteColumns.CONTENT + " END LIKE ?";
+        selectionArgs = new String[] {String.valueOf(userId), String.valueOf(deleteState), "%" + keyword + "%"};
+        List<DetailNoteInfo> list = null;
+        String orderBy = getNoteSort(sort);
+        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, selection, selectionArgs, null, null, orderBy);
+        if (cursor != null) {
+            list = new ArrayList<>();
+            while (cursor.moveToNext()) {
+                NoteInfo note = cursor2Note(cursor);
+                DetailNoteInfo detailNote = new DetailNoteInfo();
+                detailNote.setNoteInfo(note);
+
+                String noteSid = note.getSId();
+
+                if (note.isDetailNote()) {
+                    List<DetailList> details = getDetailList(db, noteSid);
+                    detailNote.setDetailList(details);
+                }
+                if (note.hasAttach()) { //有附件
+                    
+                    Attach attach = getLastAttach(db, note.getSId());
+
+                    detailNote.setLastAttach(attach);
+                }
+
+                list.add(detailNote);
+            }
+            cursor.close();
+        }
+        return list;
     }
     
 }

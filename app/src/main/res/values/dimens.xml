@@ -16,6 +16,8 @@
     <dimen name="grid_item_padding">4dp</dimen>
 
     <dimen name="grid_content_spacing">4dp</dimen>
+    
+    <dimen name="list_item_padding_vertical">10dp</dimen>
 
     <dimen name="content_text_size">14sp</dimen>
     <dimen name="content_text_size_large">18sp</dimen>
@@ -47,7 +49,7 @@
 
     <dimen name="stroke_split_viertical_space">10dp</dimen>
     <dimen name="stroke_base_size">30dp</dimen>
-    
+
     <dimen name="settings_icon_margin">12dp</dimen>
 
     <dimen name="popup_min_width">200dp</dimen>

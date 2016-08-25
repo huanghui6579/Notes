@@ -149,10 +149,19 @@
             android:label="@string/label_settings" />
         <activity
             android:name=".ui.settings.SettingsSyncActivity"
-            android:label="@string/action_upload" android:exported="false">
+            android:exported="false"
+            android:label="@string/action_upload">
             <intent-filter>
-                <action android:name="com.yunxinlink.notes.SYNC_SETTINGS"/>
+                <action android:name="com.yunxinlink.notes.SYNC_SETTINGS" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".ui.SearchActivity"
+            android:label="@string/action_search">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
         </activity>
     </application>
