@@ -157,11 +157,19 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <activity android:name=".ui.SearchActivity"
+        <activity
+            android:name=".ui.SearchActivity"
             android:label="@string/action_search">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <action android:name="android.intent.action.SEARCH" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".ui.settings.SettingsSecurityActivity">
+            <intent-filter>
+                <action android:name="com.yunxinlink.notes.SECURITY_SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
     </application>

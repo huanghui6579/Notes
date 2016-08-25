@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -10,7 +11,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.MenuItemCompat;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.text.TextUtils;
@@ -66,6 +66,9 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
     private List<DetailNoteInfo> mNotes;
     private NoteAdapter mNoteAdapter;
     private RecyclerView mRecyclerView;
+    
+    //搜索的关键字
+    private String mKeyword;
 
     @Override
     protected int getContentView() {
@@ -124,10 +127,13 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
             LayoutManagerFactory managerFactory = new LayoutManagerFactory();
             RecyclerView.LayoutManager layoutManager = managerFactory.getLayoutManager(mContext, false);
             mRecyclerView.setLayoutManager(layoutManager);
-            DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(mContext, LinearLayoutManager.HORIZONTAL);
+            DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(mContext, R.drawable.divider_horizontal, DividerItemDecoration.VERTICAL_LIST);
             mRecyclerView.addItemDecoration(dividerItemDecoration);
             mRecyclerView.setAdapter(mNoteAdapter);
         }
+
+        mNoteAdapter.setKeyword(mKeyword);
+        
         mNoteAdapter.notifyDataSetChanged();
     }
 
@@ -148,6 +154,7 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
 
     @Override
     public boolean onQueryTextSubmit(String query) {
+        this.mKeyword =  query;
         KLog.d(TAG, "----query----" + query);
         searchNotes(query);
         return true;
@@ -155,6 +162,7 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
 
     @Override
     public boolean onQueryTextChange(String newText) {
+        this.mKeyword =  newText; 
         KLog.d(TAG, "----newText----" + newText);
         searchNotes(newText);
         return true;
@@ -191,7 +199,29 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
 
     @Override
     public void onItemClick(View view) {
-        
+        Integer position = (Integer) view.getTag();
+        position = position == null ? 0 : position;
+        DetailNoteInfo detailNote = mNotes.get(position);
+        NoteViewHolder viewHolder = (NoteViewHolder) mRecyclerView.findViewHolderForAdapterPosition(position);
+        if (detailNote != null && viewHolder != null) {
+            showNoteInfo(detailNote.getNoteInfo());
+        }
+    }
+
+    /**
+     * 显示编辑笔记
+     * @param note 笔记
+     */
+    private void showNoteInfo(NoteInfo note) {
+        if (note == null) {
+            return;
+        }
+        Intent intent = new Intent(mContext, NoteEditActivity.class);
+        intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
+        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSId());
+        intent.putExtra(NoteEditActivity.ARG_IS_NOTE_TEXT, !note.isDetailNote());
+        intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
+        startActivity(intent);
     }
 
     /**
@@ -226,6 +256,11 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
         private ItemAttachIcon mItemAttachIcon;
         //着色的颜色
         private int mTintColor;
+        //高亮的颜色
+        private int mHighlightColor;
+
+        //搜索的关键字，为该关键字着色
+        String mKeyword;
 
         public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
             this.mOnItemClickListener = onItemClickListener;
@@ -236,6 +271,8 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
             mInflater = LayoutInflater.from(context);
 
             mTintColor = initTintColor();
+            
+            mHighlightColor = getPrimaryColor();
 
             mItemAttachIcon = new ItemAttachIcon();
         }
@@ -271,7 +308,7 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
             //重置附件图标的各种状态
             resetAttachView(holder);
 
-            holder.mTvContent.setText(note.getStyleContent(true, detailNote.getDetailList()));
+            holder.mTvContent.setText(note.getStyleContent(true, detailNote.getDetailList(), mKeyword, mHighlightColor));
             holder.mTvTime.setText(TimeUtil.formatNoteTime(note.getShowTime(true)));
 
             if (note.hasAttach() && detailNote.getLastAttach() != null) {
@@ -292,6 +329,14 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
         private int initTintColor() {
             Resources resources = getResources();
             return ResourcesCompat.getColor(resources, R.color.text_time_color, getTheme());
+        }
+
+        /**
+         * 设置关键字
+         * @param keyword
+         */
+        public void setKeyword(String keyword) {
+            this.mKeyword = keyword;
         }
 
         /**

@@ -387,7 +387,7 @@ public class NoteUtil {
                         }
                     }
                 })
-                .setNegativeButton(R.string.share_cancel, null)
+                .setPositiveButton(R.string.share_cancel, null)
                 .show();
     }
 

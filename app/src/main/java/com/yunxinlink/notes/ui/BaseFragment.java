@@ -2,6 +2,8 @@ package com.yunxinlink.notes.ui;
 
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.widget.PopupMenu;
@@ -22,6 +24,14 @@ public class BaseFragment extends Fragment {
     
     public BaseFragment() {
         TAG = this.getClass().getSimpleName();
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        //在配置变化的时候将这个fragment保存下来
+        setRetainInstance(true);
     }
 
     /**

@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     
-    <string-array name="search_suggestion">
-        <item>abc</item>
-        <item>about fdhj dk</item>
-        <item>test family dk</item>
-        <item>android group dk</item>
+    <string-array name="pwd_type">
+        <item>数字</item>
+        <item>图案</item>
     </string-array>
+    
+    <integer-array name="pwd_type_values">
+        <item>1</item>
+        <item>2</item>
+    </integer-array>
 </resources>

@@ -32,7 +32,6 @@
             android:layout_centerVertical="true"
             android:layout_marginLeft="@dimen/activity_horizontal_margin"
             android:layout_marginStart="@dimen/activity_horizontal_margin"
-            android:src="@mipmap/ic_launcher"
             android:contentDescription="@null"
             android:layout_toLeftOf="@id/cb_check"
             android:layout_toStartOf="@id/cb_check"

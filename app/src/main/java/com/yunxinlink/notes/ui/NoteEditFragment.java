@@ -176,14 +176,15 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
      * @param view
      */
     private void initView(View view) {
+
+        mContentLayout = (NoteFrameLayout) view.findViewById(R.id.content_layout);
+
         mEtContent = (NoteEditText) view.findViewById(R.id.et_content);
         mTvContent = (NoteTextView) view.findViewById(R.id.tv_content);
 
         if (mTvContent == null || mEtContent == null) {
             return;
         }
-
-        mContentLayout = (NoteFrameLayout) view.findViewById(R.id.content_layout);
 
 //        mRichTextWrapper = new RichTextWrapper(mEtContent, mHandler);
         mRichTextWrapper = new RichTextWrapper(mTvContent, mHandler);

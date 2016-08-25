@@ -16,7 +16,7 @@
     <dimen name="grid_item_padding">4dp</dimen>
 
     <dimen name="grid_content_spacing">4dp</dimen>
-    
+
     <dimen name="list_item_padding_vertical">10dp</dimen>
 
     <dimen name="content_text_size">14sp</dimen>

@@ -58,6 +58,7 @@
     <string name="tip_note_clear_all">清空后，将不可恢复，确定清空吗？</string>
     <string name="tip_note_real_delete">删除后，将不可恢复，确定删除吗？</string>
     <string name="tip_note_empty">没有数据，很干净哦~</string>
+    <string name="tip_share_no_text">没有内容是不能分享的哦~</string>
 
     <string name="title_note_clear_all">清空回收站</string>
 
@@ -172,7 +173,7 @@
     <string name="settings_account_summary">设置同步账号</string>
     <string name="settings_sync_summary">同步方式</string>
     <string name="settings_security_title">安全</string>
-    <string name="settings_security_summary">输入密码才能查看笔记</string>
+    <string name="settings_security_summary">输入密码才能查看、搜索、分享笔记</string>
     <string name="settings_more_title">更多设置</string>
     <string name="settings_more_summary">主题、快捷方式等</string>
     <string name="settings_feedback_title">反馈</string>
@@ -182,11 +183,25 @@
 
     <string name="settings_sync_note_title">笔记</string>
     <string name="settings_sync_note_summary">后台自动同步笔记</string>
-    <string name="settings_sync_wifi_title">Wi-Fi同步</string>
-    <string name="settings_sync_wifi_summary">仅在Wi-Fi环境下自动同步</string>
+    <string name="settings_sync_traffic_title">移动数据流量同步</string>
+    <string name="settings_sync_traffic_summary">在3G/4G等数据流量环境下也自动同步</string>
     <string name="settings_sync_state_title">同步状态</string>
     <string name="settings_sync_state_summary">没有同步过</string>
     
+    <string name="settings_security_type_title">安全密码</string>
+    <string name="settings_security_type_summary">查看、搜索、分享笔记等需要密码</string>
+    <string name="settings_security_pwd_modify">修改密码</string>
+    <string name="settings_security_widget_title">桌面中显示笔记</string>
+    <string name="settings_security_widget_summary">在桌面的小工具中显示笔记的内容</string>
+    
+    <string name="settings_pwd_type_title">选择密码类型</string>
+    
+    <string name="settings_key_sync_note_auto">sync_note_auto</string>
+    <string name="settings_key_sync_note_traffic">sync_note_traffic</string>
+    <string name="settings_key_sync_note_state">sync_note_state</string>
+    <string name="settings_key_security_password">security_password</string>
+    <string name="settings_key_security_show_widget">security_show_widget</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

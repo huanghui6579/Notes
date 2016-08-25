@@ -1,23 +1,23 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <SwitchPreference 
-        android:key="@string/settings_key_sync_note_auto"
-        android:title="@string/settings_sync_note_title"
-        android:summary="@string/settings_sync_note_summary"
-        android:defaultValue="true"
-        android:checked="true"/>
-    
     <SwitchPreference
-        android:key="@string/settings_key_sync_note_traffic"
-        android:title="@string/settings_sync_traffic_title"
-        android:summary="@string/settings_sync_traffic_summary"
+        android:key="@string/settings_key_security_password"
+        android:title="@string/settings_security_type_title"
+        android:summary="@string/settings_security_type_summary"
         android:defaultValue="false"
         android:checked="false"/>
     
-    <Preference
-        android:key="@string/settings_key_sync_note_state"
-        android:title="@string/settings_sync_state_title"
-        android:summary="@string/settings_sync_state_summary" />
+    <Preference 
+        android:title="@string/settings_security_pwd_modify"
+        android:dependency="security_password"/>
+
+    <SwitchPreference
+        android:key="@string/settings_key_security_show_widget"
+        android:title="@string/settings_security_widget_title"
+        android:summary="@string/settings_security_widget_summary"
+        android:dependency="security_password"
+        android:defaultValue="false"
+        android:checked="false"/>
     
     <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
          dismiss it. -->

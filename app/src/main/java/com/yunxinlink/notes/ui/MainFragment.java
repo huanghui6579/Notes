@@ -190,6 +190,7 @@ public class MainFragment extends BaseFragment {
             mFolderId = args.getString(ARG_FOLDER_ID);
             mIsTrash = args.getBoolean(ARG_IS_TRASH, false);
         }
+        
     }
 
     @Override
@@ -234,7 +235,7 @@ public class MainFragment extends BaseFragment {
         //初始化数据
         initData();
     }
-    
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
@@ -244,14 +245,15 @@ public class MainFragment extends BaseFragment {
             MenuItem clearAllItem = menu.add(0, R.id.action_clear_all, 200, R.string.action_clear_all);
             MenuItemCompat.setShowAsAction(clearAllItem, MenuItem.SHOW_AS_ACTION_ALWAYS);
             clearAllItem.setIcon(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_clear_all, getContext().getTheme()));
+
+            menu.removeItem(R.id.action_search);
+        } else {
+            MenuItem searchItem = menu.findItem(R.id.action_search);
+            ((BaseActivity) getActivity()).setMenuTint(searchItem, Color.WHITE);
         }
         
         MenuItem item = menu.findItem(R.id.action_more);
         SystemUtil.setMenuOverFlowTint(getContext(), item);
-        
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        
-        ((BaseActivity) getActivity()).setMenuTint(searchItem, Color.WHITE);
         
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -292,6 +294,10 @@ public class MainFragment extends BaseFragment {
      * 刷新数据
      */
     private void doOnRefresh() {
+        if (mListener == null) {
+            KLog.d(TAG, "-----mListener--is--null---can--not---doOnRefresh----");
+            return;
+        }
 
         //初始化笔记的一些设置项
         initNoteSettings();
@@ -1011,7 +1017,11 @@ public class MainFragment extends BaseFragment {
                         if (pos == null) {
                             return;
                         }
-                        showNoteInfo(mNotes.get(pos).getNoteInfo());
+                        if (mIsTrash) { //回收站界面不能查看，显示详细信息
+                            showTrashNote(mNotes.get(pos));
+                        } else {    //非回收站界面
+                            showNoteInfo(mNotes.get(pos).getNoteInfo());
+                        }
                     }
                 }
             });
@@ -1056,11 +1066,37 @@ public class MainFragment extends BaseFragment {
                         if (pos == null) {
                             return;
                         }
-                        showNoteInfo(mNotes.get(pos).getNoteInfo());
+                        if (mIsTrash) { //回收站界面不能查看，显示详细信息
+                            showTrashNote(mNotes.get(pos));
+                        } else {    //非回收站界面
+                            showNoteInfo(mNotes.get(pos).getNoteInfo());
+                        }
                     }
                 }
             });
         }
+    }
+    
+    /**
+     * 显示垃圾桶中的笔记信息
+     * @author huanghui1
+     * @update 2016/8/25 17:33
+     * @version: 1.0.0
+     */
+    private void showTrashNote(final DetailNoteInfo detailNote) {
+        NoteInfo note = detailNote.getNoteInfo();
+        String info = note.getNoteInfo(getContext());
+        AlertDialog.Builder builder = NoteUtil.buildDialog(getContext());
+        builder.setTitle(note.getNoteTitle(false))
+                .setMessage(info)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNegativeButton(R.string.action_restore, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        handleUnDeleteNote(detailNote);
+                    }
+                })
+                .show();
     }
 
     /**

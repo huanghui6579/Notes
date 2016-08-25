@@ -42,8 +42,8 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
         
 //        bindPreferenceSummaryToValue(findPreference("sync_note_state"));
         
-        bindPreferenceChangeListener(findPreference("sync_note_auto"));
-        bindPreferenceChangeListener(findPreference("sync_note_wifi"));
+//        bindPreferenceChangeListener(findPreference("sync_note_auto"));
+//        bindPreferenceChangeListener(findPreference("sync_note_traffic"));
     }
 
     @Override

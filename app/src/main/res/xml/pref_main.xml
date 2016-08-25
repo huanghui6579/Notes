@@ -16,7 +16,9 @@
 
     <Preference android:title="@string/settings_security_title"
         android:icon="@drawable/ic_action_lock"
-        android:summary="@string/settings_security_summary"/>
+        android:summary="@string/settings_security_summary">
+        <intent android:action="com.yunxinlink.notes.SECURITY_SETTINGS"/>
+    </Preference>        
 
     <Preference android:title="@string/settings_more_title"
         android:icon="@drawable/ic_more_horiz"

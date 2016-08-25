@@ -7,6 +7,7 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.BulletSpan;
 import android.text.style.StrikethroughSpan;
 
@@ -19,6 +20,8 @@ import com.yunxinlink.notes.util.TimeUtil;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 记事本的基本信息实体
@@ -358,6 +361,18 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
      * @return
      */
     public CharSequence getStyleContent(boolean hasTitle, List<DetailList> detailLists) {
+        return getStyleContent(hasTitle, detailLists, null, 0);
+    }
+
+    /**
+     * 获取笔记的全内容
+     * @param hasTitle 是否包含标题，仅对清单有效
+     * @param detailLists 笔记的清单
+     * @param keyword 要高亮的关键字
+     * @param color 高亮的颜色               
+     * @return
+     */
+    public CharSequence getStyleContent(boolean hasTitle, List<DetailList> detailLists, String keyword, int color) {
         if (isDetailNote()) {   //清单笔记
 //            String tContent = content;
             
@@ -381,7 +396,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                     if (TextUtils.isEmpty(line)) {  //空的清单
                         line = " ";
                     }
-                    SpannableString spannableString = styleText(line, detail);
+                    SpannableString spannableString = styleText(line, detail, keyword, color);
 
                     builder.append(spannableString).append(Constants.TAG_NEXT_LINE);
                     i++;
@@ -394,7 +409,21 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
             }
             return builder;
         } else {
-            return getShowText();
+            String text = getShowText();
+            int subLength = 200;
+            if (!TextUtils.isEmpty(text) && !TextUtils.isEmpty(keyword) && color != 0) {    //需要加高亮
+                String subText = null;
+                if (text.length() > subLength) {  //只识高亮前200个字符
+                    subText = text.substring(0, subLength);
+                } else {
+                    subText = text;
+                }
+                SpannableString spannableString = new SpannableString(subText);
+                highlightText(spannableString, subText, keyword, color);
+                return spannableString;
+            } else {
+                return text;
+            }
         }
     }
 
@@ -435,20 +464,50 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     /**
      * 给文本的前面加上"点"
      * @param text
+     * @param keyword 要高亮的关键字
+     * @param color 高亮的颜色
      * @return
      */
-    private SpannableString styleText(String text, DetailList detail) {
+    private SpannableString styleText(String text, DetailList detail, String keyword, int color) {
         SpannableString spannableString = new SpannableString(text);
 
+        //黑的小圆点
         BulletSpan bulletSpan = new BulletSpan(12);
 
         spannableString.setSpan(bulletSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         
+        int length = text.length();
+        
         if (detail.isChecked()) {   //该清单项已完成，添加删除线
             StrikethroughSpan strikethroughSpan = new StrikethroughSpan();
-            spannableString.setSpan(strikethroughSpan, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannableString.setSpan(strikethroughSpan, 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        if (!TextUtils.isEmpty(keyword) && color != 0) {    //需要加高亮
+
+            highlightText(spannableString, text, keyword, color);
         }
         
+        return spannableString;
+    }
+
+    /**
+     * 高亮文本
+     * @param text 原始的文本
+     * @param keyword 要高亮的文字
+     * @param color 颜色
+     * @return
+     */
+    public SpannableString highlightText(SpannableString spannableString, String text, String keyword, int color) {
+        Pattern pattern = Pattern.compile(keyword);
+        Matcher matcher = pattern.matcher(text);
+        while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+
+            BackgroundColorSpan colorSpan = new BackgroundColorSpan(color);
+            spannableString.setSpan(colorSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         return spannableString;
     }
 

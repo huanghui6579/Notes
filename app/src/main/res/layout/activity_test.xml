@@ -10,7 +10,7 @@
     tools:context=".ui.TestActivity">
     
     <TextView
-        android:id="@+id/tv_content"
+        android:id="@id/tv_content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="北京时间8月15日上午，2016年里约奥运会举重大项结束了女子75公斤以上级争夺，中国选手孟苏平以"
