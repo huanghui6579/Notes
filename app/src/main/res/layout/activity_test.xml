@@ -23,7 +23,31 @@
         android:layout_below="@id/tv_content"
         android:layout_marginTop="@dimen/activity_vertical_margin"
         android:visibility="gone"/>
-    
+
+    <Button
+        android:id="@+id/btn_lock"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/iv_img"
+        android:text="创建图案密码"/>
+
+    <Button
+        android:id="@+id/btn_compare"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_lock"
+        android:text="图案密码登录"/>
+
+    <Button
+        android:id="@+id/btn_keyStore"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_compare"
+        android:text="获取密钥"/>
+
     <!--<ImageView
         android:id="@+id/icon"
         android:layout_width="wrap_content"

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.yunxinlink.notes">
 
     <!-- 往SDCard写入数据权限 -->
@@ -36,6 +37,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar.Default">
+
         <activity
             android:name=".ui.MainActivity"
             android:label="@string/app_name"
@@ -169,9 +171,14 @@
         <activity android:name=".ui.settings.SettingsSecurityActivity">
             <intent-filter>
                 <action android:name="com.yunxinlink.notes.SECURITY_SETTINGS" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".lock.ui.LockPatternActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.LockPattern.Dark"/>
     </application>
 
 </manifest>

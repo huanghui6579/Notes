@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 手势密码的主题 -->
+    <style name="AppTheme.LockPattern.Dark" parent="AppTheme.NoActionBar.Default">
+
+        <!-- android-lockpattern -->
+
+        <!--<item name="alp_theme_resources">@style/Alp.ThemeResources.Dark</item>-->
+
+        <item name="alp_button_bar_style">?attr/buttonBarStyle</item>
+        <item name="alp_button_bar_button_style">?attr/buttonBarButtonStyle</item>
+
+        <item name="alp_selector_ic_action_lockpattern">@drawable/alp_selector_ic_action_lockpattern_dark</item>
+        <item name="alp_color_lock_pattern_view_regular">?attr/colorPrimary</item>
+        <item name="alp_color_lock_pattern_view_success">@color/alp_lock_pattern_view_success_dark</item>
+        <item name="alp_color_lock_pattern_view_error">@color/alp_lock_pattern_view_error_dark</item>
+    </style>
+
+</resources>

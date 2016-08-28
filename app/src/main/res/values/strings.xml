@@ -187,15 +187,15 @@
     <string name="settings_sync_traffic_summary">在3G/4G等数据流量环境下也自动同步</string>
     <string name="settings_sync_state_title">同步状态</string>
     <string name="settings_sync_state_summary">没有同步过</string>
-    
+
     <string name="settings_security_type_title">安全密码</string>
     <string name="settings_security_type_summary">查看、搜索、分享笔记等需要密码</string>
     <string name="settings_security_pwd_modify">修改密码</string>
     <string name="settings_security_widget_title">桌面中显示笔记</string>
     <string name="settings_security_widget_summary">在桌面的小工具中显示笔记的内容</string>
-    
+
     <string name="settings_pwd_type_title">选择密码类型</string>
-    
+
     <string name="settings_key_sync_note_auto">sync_note_auto</string>
     <string name="settings_key_sync_note_traffic">sync_note_traffic</string>
     <string name="settings_key_sync_note_state">sync_note_state</string>

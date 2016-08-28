@@ -1,1 +1,1 @@
-include ':app', ':lib', ':sharesdk'
+include ':app', ':sharesdk', ':lockpattern'

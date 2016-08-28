@@ -785,8 +785,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         weibo.authorize();
                     }*/
 
-                intent = new Intent(mContext, NoteEditActivity.class);
-//                    Intent intent = new Intent(mContext, TestActivity.class);
+//                intent = new Intent(mContext, NoteEditActivity.class);
+                intent = new Intent(mContext, TestActivity.class);
                 intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                 intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
                 startActivity(intent);

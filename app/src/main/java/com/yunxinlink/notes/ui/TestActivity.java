@@ -1,26 +1,64 @@
 package com.yunxinlink.notes.ui;
 
+import android.annotation.TargetApi;
+import android.content.Intent;
 import android.content.res.ColorStateList;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
+import android.os.Build;
+import android.security.KeyPairGeneratorSpec;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.util.ImageUtil;
+import com.yunxinlink.notes.lock.ui.LockPatternActivity;
+import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
 import com.yunxinlink.notes.util.log.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.List;
+
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.NoSuchPaddingException;
+import javax.security.auth.x500.X500Principal;
 
 public class TestActivity extends BaseActivity {
+    // This is your preferred flag
+    private static final int REQ_CREATE_PATTERN = 1;
+    private static final int REQ_VERIFY_PATTERN = 2;
+    private static final int REQ_VERIFY_CAPTCHA = 3;
 
     @Override
     protected int getContentView() {
@@ -42,7 +80,7 @@ public class TestActivity extends BaseActivity {
             searchView.setIconified(false);
         }*/
 
-        final TextView textView = (TextView) findViewById(R.id.tv_content);
+        /*final TextView textView = (TextView) findViewById(R.id.tv_content);
         final ImageView imageView = (ImageView) findViewById(R.id.iv_img);
 
         String filePath = "/sdcard/images/7dd98d1001e939011b6cf83f79ec54e736d19640.jpg";
@@ -56,8 +94,56 @@ public class TestActivity extends BaseActivity {
                     imageView.setImageDrawable(drawable);
                 }
             }
-        });
-        
+        });*/
+
+        final TextView textView = (TextView) findViewById(R.id.tv_content);
+
+        AlpSettings.Security.setAutoSavePattern(mContext, true);
+        Button btnLock = (Button) findViewById(R.id.btn_lock);
+        if (btnLock != null) {
+            btnLock.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    LockPatternActivity.IntentBuilder
+                            .newPatternCreator(mContext)
+                            .startForResult(TestActivity.this, REQ_CREATE_PATTERN);
+                }
+            });
+        }
+        Button btnCompare = (Button) findViewById(R.id.btn_compare);
+        if (btnCompare != null) {
+            btnCompare.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    LockPatternActivity.IntentBuilder
+                            .newPatternComparator(mContext)
+                            .startForResult(TestActivity.this, REQ_VERIFY_PATTERN);
+                }
+            });
+        }
+        Button btnKeyStore = (Button) findViewById(R.id.btn_keyStore);
+        if (btnKeyStore != null) {
+            btnKeyStore.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    KeyStore keyStore = getKeyStore();
+//                    refreshKeys(keyStore);
+
+                    String alias = "NoteAlias";
+
+                    createNewKeys(keyStore, alias);
+
+                    String text = "使用Android自身";
+                    KLog.d("加密的前的内容：" + text);
+                    String encryptString = encryptString(keyStore, alias, text);
+                    KLog.d("加密的后的内容：" + encryptString);
+
+                    String decryptString = decryptString(keyStore, alias, encryptString);
+                    KLog.d("解密的后的内容：" + decryptString);
+                }
+            });
+        }
+
         
         /*ImageView imageView = (ImageView) findViewById(R.id.icon);
 
@@ -81,6 +167,30 @@ public class TestActivity extends BaseActivity {
         int resId = R.drawable.ic_action_undo;
         
         tintDoMenuIcon(btnDo, resId, disableColor);*/
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+            switch (requestCode) {
+                case REQ_CREATE_PATTERN:
+                    switch (resultCode) {
+                        case RESULT_OK:
+                            final char[] pattern = data.getCharArrayExtra(LockPatternActivity.EXTRA_PATTERN);
+                            String text = new String(pattern);
+                            KLog.d("text:" + text);
+                            break;
+                    }
+                    break;
+                case REQ_VERIFY_PATTERN:
+                    switch (resultCode) {
+                        case RESULT_OK:
+                            int tryCount = data.getIntExtra(LockPatternActivity.EXTRA_RETRY_COUNT, 1);
+                            KLog.d("tryCount:" + tryCount);
+                            break;
+                    }
+                    break;
+            }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void tintDoMenuIcon(ImageButton imageButton, int resId, int disableColor) {
@@ -172,5 +282,172 @@ public class TestActivity extends BaseActivity {
 
         DrawableCompat.setTintList(srcDrawable, colorList);
         return srcDrawable;
+    }
+
+    public static KeyStore getKeyStore() {
+        try {
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null);
+            return keyStore;
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public List<String> refreshKeys(KeyStore keyStore) {
+        List<String> keyAliases = new ArrayList<>();
+        try {
+            Enumeration<String> aliases = keyStore.aliases();
+            while (aliases.hasMoreElements()) {
+                keyAliases.add(aliases.nextElement());
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+        KLog.d(TAG, "keyAliases:" + keyAliases);
+        return keyAliases;
+    }
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public void createNewKeys(KeyStore keyStore, String alias) {
+        // Create new key if needed
+        try {
+            if (!keyStore.containsAlias(alias)) {
+                Calendar start = Calendar.getInstance();
+                Calendar end = Calendar.getInstance();
+                end.add(Calendar.YEAR, 1);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT);
+                        KeyGenParameterSpec spec = builder.setCertificateSubject(new X500Principal("CN=Sample Name, O=Android Authority"))
+                                .setCertificateNotAfter(end.getTime())
+                                .setCertificateNotBefore(start.getTime())
+                                .setCertificateSerialNumber(BigInteger.ONE)
+                                .setKeyValidityEnd(end.getTime())
+                                .setKeyValidityStart(start.getTime()).build();
+
+                        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
+                        generator.initialize(spec);
+                        KeyPair keyPair = generator.generateKeyPair();
+                        PrivateKey privateKey = keyPair.getPrivate();
+                        KLog.d("privateKey:" + privateKey + " publicKey:" + keyPair.getPublic());
+                    } else {
+                        KeyPairGeneratorSpec.Builder builder = new KeyPairGeneratorSpec.Builder(mContext);
+                        builder.setAlias(alias)
+                                .setSubject(new X500Principal("CN=Sample Name, O=Android Authority"))
+                                .setSerialNumber(BigInteger.ONE)
+                                .setStartDate(start.getTime())
+                                .setEndDate(end.getTime());
+
+                        KeyPairGeneratorSpec spec = builder.build();
+                        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
+                        generator.initialize(spec);
+                        KeyPair keyPair = generator.generateKeyPair();
+                        KLog.d("privateKey:" + keyPair.getPrivate() + " publicKey:" + keyPair.getPublic());
+                    }
+                }
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
+        refreshKeys(keyStore);
+    }
+
+    /**
+     * 加密一个文本块由密钥对的公钥执行。我们检索公钥，请求一个密码，使用我们更喜欢的加密或解密转换（“RSA/ECB/PKCS1Padding”），
+     * 然后初始化密码，使用检索到的公钥来执行加密（Cipher.ENCRYPT_MODE）。密码操作（和返回）一个字节 []。
+     * 我们将密码包含在 CipherOutputStream 中，和 ByteArrayOutputStream 一起来处理加密复杂性。加密进程的结果就是转化成一个显示为 Base64 的字符串
+     * @param keyStore
+     * @param alias
+     * @param text
+     * @return
+     */
+    private String encryptString(KeyStore keyStore, String alias, String text) {
+        try {
+            KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
+
+            RSAPublicKey publicKey = (RSAPublicKey) privateKeyEntry.getCertificate().getPublicKey();
+
+            Cipher input = Cipher.getInstance("RSA/ECB/PKCS1Padding", "AndroidOpenSSL");
+            input.init(Cipher.ENCRYPT_MODE, publicKey);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(
+                    outputStream, input);
+            cipherOutputStream.write(text.getBytes("UTF-8"));
+            cipherOutputStream.close();
+
+            byte [] vals = outputStream.toByteArray();
+            return new String(vals);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String decryptString(KeyStore keyStore, String alias, String text) {
+        try {
+            KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(alias, null);
+
+            RSAPrivateKey privateKey = (RSAPrivateKey) privateKeyEntry.getPrivateKey();
+            Cipher output = Cipher.getInstance("RSA/ECB/PKCS1Padding", "AndroidOpenSSL");
+            output.init(Cipher.DECRYPT_MODE, privateKey);
+
+            CipherInputStream cipherInputStream = new CipherInputStream(
+                    new ByteArrayInputStream(text.getBytes()), output);
+
+            ArrayList<Byte> values = new ArrayList<>();
+            int nextByte;
+            while ((nextByte = cipherInputStream.read()) != -1) {
+                values.add((byte)nextByte);
+            }
+            byte[] bytes = new byte[values.size()];
+            for(int i = 0; i < bytes.length; i++) {
+                bytes[i] = values.get(i).byteValue();
+            }
+            return new String(bytes, 0, bytes.length, "UTF-8");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableEntryException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

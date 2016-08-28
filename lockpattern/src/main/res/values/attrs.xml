@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="Alp.LockPatternView">
+
+        <!--
+             Aspect to use when drawing LockPatternView. Choices are "square"(default), "lock_width"
+             or "lock_height"
+        -->
+        <attr name="alp_aspect" format="string"/>
+        <!-- Color to use when drawing LockPatternView paths. -->
+        <attr name="alp_pathColor" format="color|reference"/>
+        <!-- The regular pattern color -->
+        <attr name="alp_regularColor" format="color|reference"/>
+        <!-- The error color -->
+        <attr name="alp_errorColor" format="color|reference"/>
+        <!-- The success color -->
+        <attr name="alp_successColor" format="color|reference"/>
+    </declare-styleable>
+
+    <attr name="alp_selector_ic_action_lockpattern" format="reference"/>
+    <attr name="alp_color_lock_pattern_view_regular" format="reference"/>
+    <attr name="alp_color_lock_pattern_view_success" format="reference"/>
+    <attr name="alp_color_lock_pattern_view_error" format="reference"/>
+
+    <attr name="alp_button_bar_style" format="reference"/>
+    <attr name="alp_button_bar_button_style" format="reference"/>
+    <attr name="alp_theme_dialog" format="reference"/>
+    <attr name="alp_theme_resources" format="reference"/>
+</resources>
