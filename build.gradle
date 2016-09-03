@@ -12,14 +12,19 @@ buildscript {
     }
 }
 
+//download dependencies
+apply from: 'gradleDependency/dependencies.gradle'
+
 allprojects {
     repositories {
         jcenter()
         // Please note that this URL only supports version 10.0.0+
         maven { url 'http://haibison.bitbucket.org/maven-repos' }
     }
+
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+

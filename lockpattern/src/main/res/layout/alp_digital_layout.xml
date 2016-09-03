@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/black"
+        android:text="方尽快到附近的会计法"/>
+
+    <!--<LinearLayout
+        android:id="@+id/digital_input_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
+        <CheckBox
+            android:id="@+id/checkbox1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:button="@drawable/alp_digital_check_color_dark"
+            android:layout_weight="1"/>
+        <CheckBox
+            android:id="@+id/checkbox2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:button="@drawable/alp_digital_check_color_dark"
+            android:layout_weight="1"/>
+        <CheckBox
+            android:id="@+id/checkbox3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:button="@drawable/alp_digital_check_color_dark"
+            android:layout_weight="1"/>
+        <CheckBox
+            android:id="@+id/checkbox4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:button="@drawable/alp_digital_check_color_dark"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
+    <GridView
+        android:id="@+id/digital_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/digital_input_layout"
+        android:cacheColorHint="@android:color/transparent"
+        android:layout_marginTop="@dimen/alp_digital_grid_margin">
+
+    </GridView>-->
+
+</RelativeLayout>

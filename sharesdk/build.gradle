@@ -1,12 +1,14 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "24.0.0"
+    def globalConfiguration = rootProject.extensions.getByName("ext");
+
+    compileSdkVersion globalConfiguration.getAt("compileSdkVersion")
+    buildToolsVersion globalConfiguration.getAt("buildToolsVersion")
 
     defaultConfig {
-        minSdkVersion 15
-        targetSdkVersion 23
+        minSdkVersion globalConfiguration.getAt("minSdkVersion")
+        targetSdkVersion globalConfiguration.getAt("targetSdkVersion")
         versionCode 1
         versionName "1.0"
     }
@@ -21,5 +23,5 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.4.0'
+    compile supportDependencies.appcompat
 }

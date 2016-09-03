@@ -16,15 +16,15 @@
         android:text="北京时间8月15日上午，2016年里约奥运会举重大项结束了女子75公斤以上级争夺，中国选手孟苏平以"
         android:visibility="visible"/>
     
-    <ImageView
+    <!--<ImageView
         android:id="@+id/iv_img"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/tv_content"
         android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:visibility="gone"/>
+        android:visibility="gone"/>-->
 
-    <Button
+    <!--<Button
         android:id="@+id/btn_lock"
         android:layout_width="match_parent"
         android:layout_marginTop="4dp"
@@ -46,7 +46,12 @@
         android:layout_marginTop="4dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/btn_compare"
-        android:text="获取密钥"/>
+        android:text="获取密钥"/>-->
+
+    <com.yunxinlink.notes.lockpattern.widget.DigitalLockView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_content"/>
 
     <!--<ImageView
         android:id="@+id/icon"

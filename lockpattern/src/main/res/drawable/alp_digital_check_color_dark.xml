@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="false">
+        <layer-list>
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="@android:color/black"/>
+                    <size android:width="@dimen/alp_lock_pattern_dot_size" android:height="@dimen/alp_lock_pattern_dot_size"/>
+                </shape>
+            </item>
+
+            <item android:top="@dimen/alp_digital_circle_size"
+                android:right="@dimen/alp_digital_circle_size"
+                android:bottom="@dimen/alp_digital_circle_size"
+                android:left="@dimen/alp_digital_circle_size">
+                <shape android:shape="oval">
+                    <size android:width="@dimen/alp_lock_pattern_dot_inner_size" android:height="@dimen/alp_lock_pattern_dot_inner_size"/>
+                    <solid android:color="@android:color/white"/>
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    
+    <item android:state_checked="true">
+        <layer-list>
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="@android:color/black" />
+                    <size android:width="@dimen/alp_lock_pattern_dot_size" android:height="@dimen/alp_lock_pattern_dot_size" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

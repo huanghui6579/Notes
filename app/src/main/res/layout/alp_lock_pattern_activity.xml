@@ -49,6 +49,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_above="@id/alp_textview_forget"
+            android:layout_alignWithParentIfMissing="true"
             android:layout_centerInParent="true"/>
 
         <FrameLayout

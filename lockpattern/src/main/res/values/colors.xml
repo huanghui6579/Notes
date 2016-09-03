@@ -30,4 +30,6 @@
     <color name="alp_aosp_background_material_dark">#ff303030</color>
     <color name="alp_aosp_background_material_light">#ffeeeeee</color>
 
+    <color name="item_control_color">#20000000</color>
+
 </resources>

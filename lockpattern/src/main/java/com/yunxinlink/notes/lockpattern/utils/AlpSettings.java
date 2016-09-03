@@ -64,19 +64,6 @@ public class AlpSettings {
     }//genDatabaseFilename()
 
     /**
-     * Gets new {@link SharedPreferences}.
-     *
-     * @param context the context.
-     * @return {@link SharedPreferences}.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    @NonNull
-    public static SharedPreferences p(@NonNull Context context) {
-        // Always use application context
-        return context.getApplicationContext().getSharedPreferences(genPreferenceFilename(), Context.MODE_PRIVATE);
-    }//p()
-
-    /**
      * Setup {@code pm} to use global unique filename and global access mode. You must use this method if you let the user change preferences
      * via UI, such as {@link PreferenceActivity}, {@link PreferenceFragment}...
      *
@@ -90,6 +77,19 @@ public class AlpSettings {
         pm.setSharedPreferencesMode(Context.MODE_PRIVATE);
         pm.setSharedPreferencesName(genPreferenceFilename());
     }//setupPreferenceManager()
+
+    /**
+     * Gets new {@link SharedPreferences}.
+     *
+     * @param context the context.
+     * @return {@link SharedPreferences}.
+     */
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @NonNull
+    public static SharedPreferences p(@NonNull Context context) {
+        // Always use application context
+        return context.getApplicationContext().getSharedPreferences(genPreferenceFilename(), Context.MODE_PRIVATE);
+    }//p()
 
     /**
      * Display preferences.
@@ -353,7 +353,7 @@ public class AlpSettings {
          */
         @Nullable
         public static char[] getEncrypterClass(@NonNull Context context) {
-            final String clazz = p(context).getString(context.getString(R.string.alp_pkey_sys_encrypter_class), null);
+            final String clazz = p(context).getString(context.getString(R.string.alp_pkey_sys_encrypter_class), LockPatternEncryper.class.getName());
             return clazz == null ? null : clazz.toCharArray();
         }//getEncrypterClass()
 

@@ -13,15 +13,12 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
-import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.lock.ui.LockPatternActivity;
-import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.ByteArrayInputStream;
@@ -98,7 +95,7 @@ public class TestActivity extends BaseActivity {
 
         final TextView textView = (TextView) findViewById(R.id.tv_content);
 
-        AlpSettings.Security.setAutoSavePattern(mContext, true);
+        /*AlpSettings.Security.setAutoSavePattern(mContext, true);
         Button btnLock = (Button) findViewById(R.id.btn_lock);
         if (btnLock != null) {
             btnLock.setOnClickListener(new View.OnClickListener() {
@@ -126,25 +123,36 @@ public class TestActivity extends BaseActivity {
             btnKeyStore.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    KeyStore keyStore = getKeyStore();
-//                    refreshKeys(keyStore);
+                    *//*
+                 * 加密用的Key 可以用26个字母和数字组成，最好不要用保留字符，虽然不会错，至于怎么裁决，个人看情况而定
+                 * 此处使用AES-128-CBC加密模式，key需要为16位。
+                 *//*
+                    String password = "1234567890123456";
+                    String content = "有道词典手机版. 全新云图书，一站式的英语学习平台. iPhone立即下载 · App Store · PP助手一键 ... 单词本. 支持与桌面词典的复习计划互相同步，随时随地背单词。";
+                    String encoderText = EncryptionUtil.AESEncrypt(password, content);
+                    KLog.d("加密之前：" + content);
+                    KLog.d("encoderText: " + encoderText);
 
-                    String alias = "NoteAlias";
-
-                    createNewKeys(keyStore, alias);
-
-                    String text = "使用Android自身";
-                    KLog.d("加密的前的内容：" + text);
-                    String encryptString = encryptString(keyStore, alias, text);
-                    KLog.d("加密的后的内容：" + encryptString);
-
-                    String decryptString = decryptString(keyStore, alias, encryptString);
-                    KLog.d("解密的后的内容：" + decryptString);
+                    String decoderText = EncryptionUtil.AESDecrypt(password, encoderText);
+                    KLog.d("解密后的数据：" + decoderText);
+//                    KeyStore keyStore = getKeyStore();
+////                    refreshKeys(keyStore);
+//
+//                    String alias = "NoteAlias";
+//
+//                    createNewKeys(keyStore, alias);
+//
+//                    String text = "使用Android自身";
+//                    KLog.d("加密的前的内容：" + text);
+//                    String encryptString = encryptString(keyStore, alias, text);
+//                    KLog.d("加密的后的内容：" + encryptString);
+//
+//                    String decryptString = decryptString(keyStore, alias, encryptString);
+//                    KLog.d("解密的后的内容：" + decryptString);
                 }
             });
-        }
+        }*/
 
-        
         /*ImageView imageView = (ImageView) findViewById(R.id.icon);
 
         Drawable drawable = getResources().getDrawable(R.drawable.ic_action_trash);
