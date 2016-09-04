@@ -24,4 +24,6 @@
     <color name="text_time_color">#CCCCCC</color>
     
     <color name="tint_color_gray">#858585</color>
+
+    <color name="text_appearance_grey">#8a000000</color>
 </resources>

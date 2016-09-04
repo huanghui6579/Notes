@@ -50,8 +50,8 @@
         android:layout_gravity="center_vertical"
         android:layout_toRightOf="@id/voice_layout"
         android:layout_toEndOf="@id/voice_layout"
-        android:layout_marginLeft="@dimen/horizonal_space_large"
-        android:layout_marginStart="@dimen/horizonal_space_large"
+        android:layout_marginLeft="@dimen/horizontal_space_large"
+        android:layout_marginStart="@dimen/horizontal_space_large"
         android:background="@null"
         android:tint="@color/text_content_color"
         /><!--ic_play_arrow--><!--android:background="@drawable/common_circle_background_selector"-->

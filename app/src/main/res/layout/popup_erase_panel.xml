@@ -37,7 +37,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1px"
-        android:layout_marginTop="@dimen/stroke_split_viertical_space"
+        android:layout_marginTop="@dimen/stroke_split_vertical_space"
         android:background="@drawable/list_divider"/>
     
     <TextView

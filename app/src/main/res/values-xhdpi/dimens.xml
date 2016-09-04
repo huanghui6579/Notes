@@ -1,4 +1,4 @@
 <resources>
     
-    <dimen name="horizonal_space_large">36dp</dimen>
+    <dimen name="horizontal_space_large">36dp</dimen>
 </resources>

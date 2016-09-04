@@ -13,8 +13,8 @@
         android:id="@id/iv_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:minWidth="@dimen/horizonal_space_large"
-        android:minHeight="@dimen/horizonal_space_large"
+        android:minWidth="@dimen/horizontal_space_large"
+        android:minHeight="@dimen/horizontal_space_large"
         android:contentDescription="@null"/>
 
     <TextView

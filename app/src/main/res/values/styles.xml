@@ -88,8 +88,8 @@
     </style>
 
     <style name="StokeRadioStyle.Type">
-        <item name="android:minWidth">@dimen/horizonal_space_large</item>
-        <item name="android:minHeight">@dimen/horizonal_space_large</item>
+        <item name="android:minWidth">@dimen/horizontal_space_large</item>
+        <item name="android:minHeight">@dimen/horizontal_space_large</item>
     </style>
 
     <style name="NoteAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert">
@@ -128,5 +128,12 @@
         <item name="android:layout">@layout/layout_preference_information</item>
         <item name="android:enabled">false</item>
         <item name="android:shouldDisableView">false</item>
+    </style>
+
+    <style name="TextTipBtnStyle">
+        <item name="android:textAppearance">?android:attr/textAppearanceSmall</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:textColor">@color/text_grey_color</item>
     </style>
 </resources>

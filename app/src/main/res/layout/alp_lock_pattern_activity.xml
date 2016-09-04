@@ -40,8 +40,7 @@
             android:layout_marginTop="@dimen/activity_vertical_margin"
             android:layout_marginBottom="@dimen/activity_vertical_margin"
             android:gravity="center_horizontal"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textIsSelectable="true"
+            style="@style/TextTipBtnStyle"
             android:text="@string/alp_cmd_forgot_pattern"/>
 
         <com.yunxinlink.notes.lockpattern.widget.LockPatternView

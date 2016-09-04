@@ -60,7 +60,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/stroke_split_viertical_space"
+        android:layout_marginTop="@dimen/stroke_split_vertical_space"
         android:text="@string/stroke_tip_color"/>
 
     <RadioGroup

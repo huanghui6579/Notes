@@ -37,7 +37,6 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar.Default">
-
         <activity
             android:name=".ui.MainActivity"
             android:label="@string/app_name"
@@ -178,7 +177,8 @@
         <activity
             android:name=".lock.ui.LockPatternActivity"
             android:exported="false"
-            android:theme="@style/AppTheme.LockPattern.Dark"/>
+            android:theme="@style/AppTheme.LockPattern.Dark" />
+        <activity android:name=".lock.ui.LockDigitalActivity"></activity>
     </application>
 
 </manifest>

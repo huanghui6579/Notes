@@ -41,13 +41,13 @@
 
     <dimen name="list_divider_height">1px</dimen>
 
-    <dimen name="horizonal_space_middle">24dp</dimen>
-    <dimen name="horizonal_space_large">36dp</dimen>
+    <dimen name="horizontal_space_middle">24dp</dimen>
+    <dimen name="horizontal_space_large">36dp</dimen>
 
     <dimen name="radio_bg_size_small">20dp</dimen>
     <dimen name="radio_bg_circuit_small">2dp</dimen>
 
-    <dimen name="stroke_split_viertical_space">10dp</dimen>
+    <dimen name="stroke_split_vertical_space">10dp</dimen>
     <dimen name="stroke_base_size">30dp</dimen>
 
     <dimen name="settings_icon_margin">12dp</dimen>

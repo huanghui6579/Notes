@@ -21,7 +21,6 @@ import android.widget.TextView;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.lockpattern.R;
 import com.yunxinlink.notes.lockpattern.utils.ResourceUtils;
-import com.yunxinlink.notes.lockpattern.utils.ViewUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +45,11 @@ public class DigitalLockView extends RelativeLayout {
     //密码输入框
     private LinearLayout mInputLayout;
 
+    //固定密码位数，默认4位
+    private int mMaxNumbers  = MAX_NUMBERS;
+
     //4位密码数字
-    private List<Integer> mDigitals = new ArrayList<>(MAX_NUMBERS);
+    private List<Integer> mDigitals = new ArrayList<>(mMaxNumbers);
 
     /**
      * 密码输入状态的监听器
@@ -69,20 +71,22 @@ public class DigitalLockView extends RelativeLayout {
     }
 
     private View init(Context context) {
-        LinearLayout inputLayout = initDigitalInput(context);
-        int viewId = ViewUtil.generateViewId();
-        inputLayout.setId(viewId);
-        RelativeLayout.LayoutParams inputParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        inputLayout.setLayoutParams(inputParams);
-        inputParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        addView(inputLayout);
+//        LinearLayout inputLayout = initDigitalInput(context);
+//        int viewId = ViewUtil.generateViewId();
+//        inputLayout.setId(viewId);
+//        RelativeLayout.LayoutParams inputParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+//        inputLayout.setLayoutParams(inputParams);
+//        inputParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+//        addView(inputLayout);
 
         GridView gridView = initGridView(context);
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
-        params.addRule(RelativeLayout.BELOW, viewId);
+//        params.addRule(RelativeLayout.BELOW, viewId);
 
-        params.topMargin = 16;
+//        params.topMargin = 16;
+
+        params.addRule(RelativeLayout.CENTER_IN_PARENT);
 
         gridView.setLayoutParams(params);
 
@@ -97,10 +101,13 @@ public class DigitalLockView extends RelativeLayout {
      * @return
      */
     private GridView initGridView(Context context) {
-        GridView gridView = new GridView(context);
+        GridView gridView = new LockGridView(context);
+        RelativeLayout.LayoutParams params = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        gridView.setLayoutParams(params);
+        gridView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
         gridView.setNumColumns(3);
         gridView.setCacheColorHint(getResources().getColor(android.R.color.transparent));
-
+        gridView.setVerticalSpacing(64);
         final List<Cell> cells = initCells();
 
         if (mCells == null) {
@@ -131,7 +138,7 @@ public class DigitalLockView extends RelativeLayout {
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-        for (int i = 0; i < MAX_NUMBERS; i++) {
+        for (int i = 0; i < mMaxNumbers; i++) {
 
             LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 
@@ -191,6 +198,14 @@ public class DigitalLockView extends RelativeLayout {
     }
 
     /**
+     * 设置密码的位数
+     * @param maxNumbers
+     */
+    public void setMaxNumbers(int maxNumbers) {
+        this.mMaxNumbers = maxNumbers;
+    }
+
+    /**
      * 获取输入的密码
      * @return
      */
@@ -210,29 +225,10 @@ public class DigitalLockView extends RelativeLayout {
      */
     private void resetDigital() {
         mDigitals.clear();
-        if (mInputLayout != null) {
-            int size = mInputLayout.getChildCount();
-            for (int i = 0; i < size; i++) {
-                CheckBox checkBox = (CheckBox) mInputLayout.getChildAt(i);
-                checkBox.setChecked(false);
-            }
-        }
         if (mInputChangedListener != null) {
             mInputChangedListener.onInputCleared();
         }
         KLog.d("resetDigital mDigitals:" + mDigitals);
-    }
-
-    /**
-     * 设置密码输入框的选中状态
-     * @param index 需要改变的索引
-     * @param isChecked 是否选中
-     */
-    private void setCheckState(int index, boolean isChecked) {
-        if (mInputLayout != null) {
-            CheckBox checkBox = (CheckBox) mInputLayout.getChildAt(index);
-            checkBox.setChecked(isChecked);
-        }
     }
 
     /**
@@ -242,15 +238,10 @@ public class DigitalLockView extends RelativeLayout {
         if (mDigitals.size() > 0) {
             //最后一个
             int index = mDigitals.size() - 1;
-            if (mInputLayout != null) {
-                CheckBox checkBox = (CheckBox) mInputLayout.getChildAt(index);
-                checkBox.setChecked(false);
-            }
             mDigitals.remove(index);
-            setCheckState(index, false);
             if (mInputChangedListener != null) {
                 String text = getDigital();
-                mInputChangedListener.onInput(text);
+                mInputChangedListener.onInput(index, false, text);
             }
             KLog.d("delDigitals mDigitals:" + mDigitals);
         } else {
@@ -267,12 +258,10 @@ public class DigitalLockView extends RelativeLayout {
      * @return
      */
     private void addDigital(int number) {
-        if (mDigitals.size() < MAX_NUMBERS) {//没有输入完成
+        if (mDigitals.size() < mMaxNumbers) {//没有输入完成
             mDigitals.add(number);
             int index = mDigitals.size() - 1;
-
-            setCheckState(index, true);
-            if (mDigitals.size() == MAX_NUMBERS) {  //输入完成
+            if (mDigitals.size() == mMaxNumbers) {  //输入完成
                 if (mInputChangedListener != null) {
                     String text = getDigital();
                     mInputChangedListener.onInputCompleted(text);
@@ -280,7 +269,7 @@ public class DigitalLockView extends RelativeLayout {
             } else {    //没有输入完成
                 if (mInputChangedListener != null) {
                     String text = getDigital();
-                    mInputChangedListener.onInput(text);
+                    mInputChangedListener.onInput(index, true, text);
                 }
             }
         } else {
@@ -350,11 +339,12 @@ public class DigitalLockView extends RelativeLayout {
                 if (convertView == null) {
                     delHolder = new GridDelViewHolder();
 
-                    SquareFrameLayout frameLayout = new SquareFrameLayout(mContext);
+                    FrameLayout frameLayout = new FrameLayout(mContext);
 
                     FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
 
                     params.gravity = Gravity.CENTER;
+                    params.topMargin = 16;
                     ImageView imageView = new ImageView(mContext);
 
                     imageView.setLayoutParams(params);
@@ -363,6 +353,7 @@ public class DigitalLockView extends RelativeLayout {
                     delHolder.imageView = imageView;
 
                     convertView = frameLayout;
+                    convertView.setTag(delHolder);
                 } else {
                     delHolder = (GridDelViewHolder) convertView.getTag();
                 }
@@ -381,7 +372,7 @@ public class DigitalLockView extends RelativeLayout {
                 if (convertView == null) {
                     holder = new GridViewHolder();
 
-                    TextView textView = new SquareTextView(mContext);
+                    TextView textView = new TextView(mContext);
                     textView.setGravity(Gravity.CENTER);
                     textView.setTextSize(48);
                     textView.setTextColor(color);
@@ -473,7 +464,7 @@ public class DigitalLockView extends RelativeLayout {
     /**
      * 密码输入变化的监听器
      */
-    interface OnInputChangedListener {
+    public interface OnInputChangedListener {
         /**
          * 输入完成后的回调
          * @param digital 输入的密码字符串
@@ -482,9 +473,11 @@ public class DigitalLockView extends RelativeLayout {
 
         /**
          * 输入中，还没有输入完成
+         * @param index 当前操作的密码位数
+         * @param isChecked 是否是选中状态
          * @param digital 已经输入的密码
          */
-        void onInput(String digital);
+        void onInput(int index, boolean isChecked, String digital);
 
         /**
          * 密码清除后的回调
