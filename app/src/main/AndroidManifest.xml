@@ -175,10 +175,10 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".lock.ui.LockPatternActivity"
+            android:name=".ui.lock.LockPatternActivity"
             android:exported="false"
             android:theme="@style/AppTheme.LockPattern.Dark" />
-        <activity android:name=".lock.ui.LockDigitalActivity"></activity>
+        <activity android:name=".ui.lock.LockDigitalActivity"></activity>
     </application>
 
 </manifest>

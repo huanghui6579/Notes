@@ -20,7 +20,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.yunxinlink.notes.lock.ui.LockDigitalActivity">
+    tools:context=".ui.lock.LockDigitalActivity">
 
     <include
         layout="@layout/app_bar_layout"

@@ -13,12 +13,16 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.lock.ui.LockPatternActivity;
+import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
+import com.yunxinlink.notes.ui.lock.LockDigitalActivity;
+import com.yunxinlink.notes.ui.lock.LockPatternActivity;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.ByteArrayInputStream;
@@ -56,6 +60,8 @@ public class TestActivity extends BaseActivity {
     private static final int REQ_CREATE_PATTERN = 1;
     private static final int REQ_VERIFY_PATTERN = 2;
     private static final int REQ_VERIFY_CAPTCHA = 3;
+    private static final int REQ_CREATE_DIGITAL = 4;
+    private static final int REQ_VERIFY_DIGITAL = 5;
 
     @Override
     protected int getContentView() {
@@ -95,7 +101,7 @@ public class TestActivity extends BaseActivity {
 
         final TextView textView = (TextView) findViewById(R.id.tv_content);
 
-        /*AlpSettings.Security.setAutoSavePattern(mContext, true);
+        AlpSettings.Security.setAutoSavePattern(mContext, true);
         Button btnLock = (Button) findViewById(R.id.btn_lock);
         if (btnLock != null) {
             btnLock.setOnClickListener(new View.OnClickListener() {
@@ -118,6 +124,32 @@ public class TestActivity extends BaseActivity {
                 }
             });
         }
+
+
+        Button btnDigitalLock = (Button) findViewById(R.id.btn_digital_lock);
+        if (btnDigitalLock != null) {
+            btnDigitalLock.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    LockDigitalActivity.IntentBuilder
+                            .newPatternCreator(mContext)
+                            .startForResult(TestActivity.this, REQ_CREATE_DIGITAL);
+                }
+            });
+        }
+        Button btnDigitalCompare = (Button) findViewById(R.id.btn_digital_compare);
+        if (btnDigitalCompare != null) {
+            btnDigitalCompare.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    LockDigitalActivity.IntentBuilder
+                            .newPatternComparator(mContext)
+                            .startForResult(TestActivity.this, REQ_VERIFY_DIGITAL);
+                }
+            });
+        }
+
+        /*
         Button btnKeyStore = (Button) findViewById(R.id.btn_keyStore);
         if (btnKeyStore != null) {
             btnKeyStore.setOnClickListener(new View.OnClickListener() {
@@ -194,6 +226,22 @@ public class TestActivity extends BaseActivity {
                         case RESULT_OK:
                             int tryCount = data.getIntExtra(LockPatternActivity.EXTRA_RETRY_COUNT, 1);
                             KLog.d("tryCount:" + tryCount);
+                            break;
+                    }
+                    break;
+                case REQ_CREATE_DIGITAL:
+                    switch (resultCode) {
+                        case RESULT_OK:
+                            int tryCount = data.getIntExtra(LockDigitalActivity.EXTRA_RETRY_COUNT, 1);
+                            KLog.d("tryCount digital:" + tryCount);
+                            break;
+                    }
+                    break;
+                case REQ_VERIFY_DIGITAL:
+                    switch (resultCode) {
+                        case RESULT_OK:
+                            final String pattern = data.getStringExtra(LockDigitalActivity.EXTRA_PATTERN);
+                            KLog.d("digital text:" + pattern);
                             break;
                     }
                     break;

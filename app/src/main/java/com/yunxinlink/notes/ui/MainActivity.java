@@ -34,12 +34,12 @@ import com.yunxinlink.notes.db.observer.ContentObserver;
 import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.helper.AdapterRefreshHelper;
 import com.yunxinlink.notes.listener.OnItemClickListener;
-import com.yunxinlink.notes.lock.ui.LockDigitalActivity;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.ui.lock.LockDigitalActivity;
 import com.yunxinlink.notes.ui.settings.SettingsActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -787,8 +787,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     }*/
 
 //                intent = new Intent(mContext, NoteEditActivity.class);
-//                intent = new Intent(mContext, TestActivity.class);
-                intent = new Intent(mContext, LockDigitalActivity.class);
+                intent = new Intent(mContext, TestActivity.class);
+//                intent = new Intent(mContext, LockDigitalActivity.class);
                 intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                 intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
                 startActivity(intent);

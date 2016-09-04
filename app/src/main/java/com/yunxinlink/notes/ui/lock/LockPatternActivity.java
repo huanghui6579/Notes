@@ -1,4 +1,4 @@
-package com.yunxinlink.notes.lock.ui;
+package com.yunxinlink.notes.ui.lock;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -307,6 +307,11 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
     }
 
     @Override
+    public boolean isSwipeBackEnabled() {
+        return false;
+    }
+
+    @Override
     protected void initView() {
         //检查可支持的action
         checkAction();
@@ -364,7 +369,7 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
             // This call requires permission WRITE_SETTINGS. Since it's not necessary, we don't need to declare that permission in manifest.
             // Don't scare our users  :-D
             hapticFeedbackEnabled = Settings.System.getInt(getContentResolver(), Settings.System.HAPTIC_FEEDBACK_ENABLED, 0) != 0;
-        } catch (Throwable t) { Log.e(TAG, t.getMessage(), t); }// Ignore it
+        } catch (Throwable t) { KLog.e(TAG, t.getMessage(), t); }// Ignore it
         mLockPatternView.setTactileFeedbackEnabled(hapticFeedbackEnabled);
 
         mLockPatternView.setInStealthMode(stealthMode && !ACTION_VERIFY_CAPTCHA.equals(getIntent().getAction()));
@@ -426,15 +431,29 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
         initContentView();
     }
 
+    /**
+     * 取消解锁
+     * @return
+     */
+    private boolean onUnLockCanceled() {
+        if (loadingView != null) loadingView.cancel(true);
+
+        finishWithNegativeResult(RESULT_CANCELED);
+
+        return true;
+    }
+
+    @Override
+    protected void onBack() {
+        onUnLockCanceled();
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // Use this hook instead of onBackPressed(), because onBackPressed() is not available in API 4.
         if (keyCode == KeyEvent.KEYCODE_BACK && ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
-            if (loadingView != null) loadingView.cancel(true);
 
-            finishWithNegativeResult(RESULT_CANCELED);
-
-            return true;
+            return onUnLockCanceled();
         }//if
         return super.onKeyDown(keyCode, event);
     }

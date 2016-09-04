@@ -346,6 +346,28 @@ public class AlpSettings {
         }//setPattern()
 
         /**
+         * Sets the pattern.
+         *
+         * @param context the context.
+         * @param digital the digital, can be {@code null} to reset it.
+         */
+        public static void setDigital(@NonNull Context context, @NonNull String digital) {
+            p(context).edit()
+                    .putString(context.getString(R.string.alp_pkey_sys_pattern), digital)
+                    .apply();
+        }
+
+        /**
+         * Sets the pattern.
+         *
+         * @param context the context.
+         */
+        public static String getDigital(@NonNull Context context) {
+            final String pattern = p(context).getString(context.getString(R.string.alp_pkey_sys_pattern), null);
+            return pattern;
+        }
+
+        /**
          * Gets encrypter class.
          *
          * @param context the context.

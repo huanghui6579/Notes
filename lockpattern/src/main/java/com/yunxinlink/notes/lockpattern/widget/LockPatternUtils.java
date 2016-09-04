@@ -16,9 +16,7 @@
 
 package com.yunxinlink.notes.lockpattern.widget;
 
-import android.os.Build;
 import android.util.Log;
-import android.view.View;
 
 import com.yunxinlink.notes.lockpattern.collect.Lists;
 import com.yunxinlink.notes.lockpattern.utils.Randoms;
@@ -30,7 +28,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import haibison.android.underdogs.NonNull;
 
@@ -115,9 +112,21 @@ public class LockPatternUtils {
      */
     @NonNull
     public static String patternToSha1(@NonNull List<LockPatternView.Cell> pattern) {
+        String str = patternToString(pattern);
+        return patternToSha1(str);
+    }//patternToSha1()
+
+    /**
+     * Serializes a pattern
+     *
+     * @param digital The pattern
+     * @return The SHA-1 string of the pattern got from {@link #patternToString(List)}
+     */
+    @NonNull
+    public static String patternToSha1(@NonNull String digital) {
         try {
             final MessageDigest md = MessageDigest.getInstance(SHA1);
-            md.update(patternToString(pattern).getBytes(UTF8));
+            md.update(digital.getBytes(UTF8));
 
             final byte[] digest = md.digest();
             final BigInteger bi = new BigInteger(1, digest);
@@ -140,7 +149,7 @@ public class LockPatternUtils {
      * @param size the size of the pattern to be generated.
      * @return the generated pattern.
      * @throws IndexOutOfBoundsException if {@code size <= 0} or {@code size > }
-     *                                   {@link haibison.android.lockpattern.widget.LockPatternView#MATRIX_SIZE LockPatternView.MATRIX_SIZE}.
+     *                                   {@link com.yunxinlink.notes.lockpattern.widget.LockPatternView#MATRIX_SIZE LockPatternView.MATRIX_SIZE}.
      * @author Hai Bison
      * @since v2.7 beta
      */

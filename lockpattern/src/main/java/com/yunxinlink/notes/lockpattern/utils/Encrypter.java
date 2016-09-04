@@ -53,4 +53,25 @@ public interface Encrypter {
     @NonNull
     List<LockPatternView.Cell> decrypt(@NonNull Context context, @NonNull char[] encryptedPattern);
 
+    /**
+     * Encrypts {@code pattern}.
+     *
+     * @param context the context.
+     * @param digital the digital in the form of a LockView.
+     * @return the encrypted char array of the pattern.
+     * @since v2.1 beta
+     */
+    @NonNull
+    String encrypt(@NonNull Context context, @NonNull String digital);
+
+    /**
+     * Decrypts an encrypted pattern.
+     *
+     * @param context          the context.
+     * @param encryptedDigital the encrypted pattern.
+     * @return the original pattern.
+     */
+    @NonNull
+    String decrypt(@NonNull Context context, @NonNull String encryptedDigital);
+
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -7,6 +7,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:orientation="vertical"
     tools:context=".ui.TestActivity">
     
     <TextView
@@ -24,12 +25,11 @@
         android:layout_marginTop="@dimen/activity_vertical_margin"
         android:visibility="gone"/>-->
 
-    <!--<Button
+    <Button
         android:id="@+id/btn_lock"
         android:layout_width="match_parent"
         android:layout_marginTop="4dp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/iv_img"
         android:text="创建图案密码"/>
 
     <Button
@@ -37,21 +37,33 @@
         android:layout_width="match_parent"
         android:layout_marginTop="4dp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/btn_lock"
         android:text="图案密码登录"/>
+
+    <Button
+        android:id="@+id/btn_digital_lock"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:layout_height="wrap_content"
+        android:text="创建数字密码"/>
+
+    <Button
+        android:id="@+id/btn_digital_compare"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:layout_height="wrap_content"
+        android:text="数字密码登录"/>
 
     <Button
         android:id="@+id/btn_keyStore"
         android:layout_width="match_parent"
         android:layout_marginTop="4dp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/btn_compare"
-        android:text="获取密钥"/>-->
+        android:text="获取密钥"/>
 
-    <com.yunxinlink.notes.lockpattern.widget.DigitalLockView
+    <!--<com.yunxinlink.notes.lockpattern.widget.DigitalLockView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/tv_content"/>
+        android:layout_below="@id/tv_content"/>-->
 
     <!--<ImageView
         android:id="@+id/icon"
@@ -106,4 +118,4 @@
         android:background="@null"
         android:text="房间看的风景开发阶段"/>-->
 
-</RelativeLayout>
+</LinearLayout>

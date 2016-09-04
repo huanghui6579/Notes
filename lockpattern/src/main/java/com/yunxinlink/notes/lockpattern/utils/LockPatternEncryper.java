@@ -30,7 +30,7 @@ public class LockPatternEncryper implements Encrypter {
         if (result == null) {
             return null;
         }
-        KLog.d("LockPatternEncryper encrypt result:" + result);
+        KLog.d("LockPattern Encryper encrypt result:" + result);
         return result.toCharArray();
     }
 
@@ -44,7 +44,27 @@ public class LockPatternEncryper implements Encrypter {
         if (result == null) {
             return null;
         }
-        KLog.d("LockPatternEncryper decrypt result:" + result);
+        KLog.d("LockPattern Encryper decrypt result:" + result);
         return LockPatternUtils.stringToPattern(result);
+    }
+
+    @Override
+    public String encrypt(Context context, String digital) {
+        if (digital == null) {
+            return null;
+        }
+        String result = EncryptionUtil.AESEncrypt(LOCK_PATTERN_KEY, digital);
+        KLog.d("LockDigitalPattern Encryper encrypt result:" + result);
+        return result;
+    }
+
+    @Override
+    public String decrypt(Context context, String encryptedDigital) {
+        if (encryptedDigital == null) {
+            return null;
+        }
+        String result = EncryptionUtil.AESDecrypt(LOCK_PATTERN_KEY, encryptedDigital);
+        KLog.d("LockDigitalPattern Encryper decrypt result:" + result);
+        return result;
     }
 }

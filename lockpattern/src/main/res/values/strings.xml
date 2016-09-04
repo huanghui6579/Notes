@@ -20,7 +20,11 @@
     <string name="alp_msg_release_finger_when_done">完成后请抬起手指</string>
     <string name="alp_msg_try_again">对不起,请重试</string>
     <string name="alp_msg_your_new_unlock_pattern">您的新解锁图案:</string>
-    <string name="alp_msg_input_to_unlock">请输入密码解锁:</string>
+    <string name="alp_msg_input_to_unlock">请输入密码来解锁:</string>
+    <string name="alp_msg_input_an_lock">请输入密码</string>
+    <string name="alp_msg_input_an_lock_confirm">请输入密码以确认:</string>
+    <string name="alp_msg_input_lock_error">与上一次不同，请重输</string>
+    <string name="alp_msg_input_new_lock">新密码设置成功</string>
 
 
     <plurals name="alp_pmsg_connect_x_dots">
