@@ -31,7 +31,7 @@ import java.util.List;
  * @version 1.0.0
  * @update 2016/9/3 16:05
  */
-public class DigitalLockView extends RelativeLayout {
+public class LockDigitalView extends RelativeLayout {
     /**
      * 4位密码
      */
@@ -56,15 +56,15 @@ public class DigitalLockView extends RelativeLayout {
      */
     private OnInputChangedListener mInputChangedListener;
 
-    public DigitalLockView(Context context) {
+    public LockDigitalView(Context context) {
         this(context, null);
     }
 
-    public DigitalLockView(Context context, AttributeSet attrs) {
+    public LockDigitalView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public DigitalLockView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public LockDigitalView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
         init(context);
@@ -232,6 +232,16 @@ public class DigitalLockView extends RelativeLayout {
     }
 
     /**
+     * 输入完成
+     */
+    private void inputCompleted() {
+        String text = getDigital();
+        KLog.d("inputCompleted text:" + text);
+        mDigitals.clear();
+        mInputChangedListener.onInputCompleted(text);
+    }
+
+    /**
      * 一个个删除密码，从最后一个开始删除
      */
     private void delDigital() {
@@ -260,11 +270,11 @@ public class DigitalLockView extends RelativeLayout {
     private void addDigital(int number) {
         if (mDigitals.size() < mMaxNumbers) {//没有输入完成
             mDigitals.add(number);
+            KLog.d("addDigital mDigitals:" + mDigitals);
             int index = mDigitals.size() - 1;
             if (mDigitals.size() == mMaxNumbers) {  //输入完成
                 if (mInputChangedListener != null) {
-                    String text = getDigital();
-                    mInputChangedListener.onInputCompleted(text);
+                    inputCompleted();
                 }
             } else {    //没有输入完成
                 if (mInputChangedListener != null) {
@@ -274,11 +284,9 @@ public class DigitalLockView extends RelativeLayout {
             }
         } else {
             if (mInputChangedListener != null) {
-                String text = getDigital();
-                mInputChangedListener.onInputCompleted(text);
+                inputCompleted();
             }
         }
-        KLog.d("addDigital mDigitals:" + mDigitals);
     }
 
     /**

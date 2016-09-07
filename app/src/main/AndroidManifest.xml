@@ -175,10 +175,21 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.lock.LockPatternActivity"
+            android:name=".lock.ui.LockPatternActivity"
             android:exported="false"
-            android:theme="@style/AppTheme.LockPattern.Dark" />
-        <activity android:name=".ui.lock.LockDigitalActivity"></activity>
+            android:theme="@style/AppTheme.LockPattern.Dark" >
+            <intent-filter>
+                <action android:name="com.yunxinlink.notes.PATTERN_LOCK_ACTION"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>            
+        <activity android:name=".lock.ui.LockDigitalActivity"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.yunxinlink.notes.DIGITAL_LOCK_ACTION"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

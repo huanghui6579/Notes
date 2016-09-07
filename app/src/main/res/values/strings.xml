@@ -196,12 +196,6 @@
 
     <string name="settings_pwd_type_title">选择密码类型</string>
 
-    <string name="settings_key_sync_note_auto">sync_note_auto</string>
-    <string name="settings_key_sync_note_traffic">sync_note_traffic</string>
-    <string name="settings_key_sync_note_state">sync_note_state</string>
-    <string name="settings_key_security_password">security_password</string>
-    <string name="settings_key_security_show_widget">security_show_widget</string>
-
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

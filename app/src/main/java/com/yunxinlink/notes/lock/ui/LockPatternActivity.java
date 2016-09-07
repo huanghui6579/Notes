@@ -1,4 +1,4 @@
-package com.yunxinlink.notes.ui.lock;
+package com.yunxinlink.notes.lock.ui;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -83,6 +83,8 @@ import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Security.METADA
 @Permissions(names = {Manifest.permission.WRITE_SETTINGS}, required = false, description = "For *reading* haptic feedback setting")
 public class LockPatternActivity extends BaseActivity implements View.OnClickListener {
     private static final String CLASSNAME = LockPatternActivity.class.getSimpleName();
+
+    public static final String LOCK_ACTION = "com.yunxinlink.notes.PATTERN_LOCK_ACTION";
 
     /**
      * Use this action to create new pattern. You can provide an {@link Encrypter} with {@link

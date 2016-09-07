@@ -21,8 +21,8 @@ import android.widget.TextView;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
-import com.yunxinlink.notes.ui.lock.LockDigitalActivity;
-import com.yunxinlink.notes.ui.lock.LockPatternActivity;
+import com.yunxinlink.notes.lock.ui.LockDigitalActivity;
+import com.yunxinlink.notes.lock.ui.LockPatternActivity;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.ByteArrayInputStream;
@@ -232,16 +232,16 @@ public class TestActivity extends BaseActivity {
                 case REQ_CREATE_DIGITAL:
                     switch (resultCode) {
                         case RESULT_OK:
-                            int tryCount = data.getIntExtra(LockDigitalActivity.EXTRA_RETRY_COUNT, 1);
-                            KLog.d("tryCount digital:" + tryCount);
+                            final String pattern = data.getStringExtra(LockDigitalActivity.EXTRA_PATTERN);
+                            KLog.d("digital text:" + pattern);
                             break;
                     }
                     break;
                 case REQ_VERIFY_DIGITAL:
                     switch (resultCode) {
                         case RESULT_OK:
-                            final String pattern = data.getStringExtra(LockDigitalActivity.EXTRA_PATTERN);
-                            KLog.d("digital text:" + pattern);
+                            int tryCount = data.getIntExtra(LockDigitalActivity.EXTRA_RETRY_COUNT, 1);
+                            KLog.d("tryCount digital:" + tryCount);
                             break;
                     }
                     break;

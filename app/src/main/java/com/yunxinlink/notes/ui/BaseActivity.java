@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
@@ -17,8 +18,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.lock.ILockerActivityDelegate;
+import com.yunxinlink.notes.lock.LockerDelegate;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -43,7 +47,11 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     private boolean mShowHomeUp;
 
+    //手势滑动返回的工具类
     private SwipeBackActivityHelper mSwipeBackHelper;
+    
+    //密码锁的工具类
+    private ILockerActivityDelegate mLockerActivityDelegate;
 
     public BaseActivity() {
         TAG = this.getClass().getSimpleName();
@@ -54,6 +62,12 @@ public abstract class BaseActivity extends SwipeBackActivity {
         mContext = this;
 
         super.onCreate(savedInstanceState);
+
+        mLockerActivityDelegate = LockerDelegate.getInstance(getApplicationContext());
+        
+        if (hasLockedController()) {
+            mLockerActivityDelegate.onCreate(this, savedInstanceState);
+        }
 
         mShowHomeUp = showHomeUp();
 
@@ -68,6 +82,47 @@ public abstract class BaseActivity extends SwipeBackActivity {
         if (mToolBar != null) {
             updateToolBar(mToolBar);
         }
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        
+        if (hasLockedController()) {
+            mLockerActivityDelegate.onRestart(this, null);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (hasLockedController()) {
+            mLockerActivityDelegate.onResume(this, null);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (hasLockedController()) {
+            mLockerActivityDelegate.onActivityResult(this, requestCode, resultCode, data);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+    
+    protected final ILockerActivityDelegate getLockerActivityDelegate() {
+        if (mLockerActivityDelegate == null) {
+            KLog.d(TAG, "getLockerActivityDelegate but mLockerActivityDelegate is null, getAppLockActivityDelegate method must be called after onCreate called! ");
+        }
+        return mLockerActivityDelegate;
+    }
+
+    /**
+     * 是否需要加锁
+     * @return
+     */
+    protected boolean hasLockedController() {
+        return true;
     }
 
     /**

@@ -39,7 +39,6 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
-import com.yunxinlink.notes.ui.lock.LockDigitalActivity;
 import com.yunxinlink.notes.ui.settings.SettingsActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;

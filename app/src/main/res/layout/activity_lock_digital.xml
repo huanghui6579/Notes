@@ -20,7 +20,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".ui.lock.LockDigitalActivity">
+    tools:context=".lock.ui.LockDigitalActivity">
 
     <include
         layout="@layout/app_bar_layout"
@@ -59,7 +59,7 @@
 
         </RelativeLayout>
 
-        <com.yunxinlink.notes.lockpattern.widget.DigitalLockView
+        <com.yunxinlink.notes.lockpattern.widget.LockDigitalView
             android:id="@+id/alp_view_lock_digital"
             android:layout_width="match_parent"
             android:layout_height="0dp"

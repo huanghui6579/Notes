@@ -1,4 +1,4 @@
-package com.yunxinlink.notes.ui.lock;
+package com.yunxinlink.notes.lock.ui;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -28,7 +28,7 @@ import com.yunxinlink.notes.lockpattern.utils.Encrypter;
 import com.yunxinlink.notes.lockpattern.utils.InvalidEncrypterException;
 import com.yunxinlink.notes.lockpattern.utils.LoadingView;
 import com.yunxinlink.notes.lockpattern.utils.UI;
-import com.yunxinlink.notes.lockpattern.widget.DigitalLockView;
+import com.yunxinlink.notes.lockpattern.widget.LockDigitalView;
 import com.yunxinlink.notes.lockpattern.widget.LockPatternUtils;
 import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -47,10 +47,12 @@ import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Display.METADAT
 import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Security.METADATA_AUTO_SAVE_PATTERN;
 import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Security.METADATA_ENCRYPTER_CLASS;
 
-public class LockDigitalActivity extends BaseActivity implements DigitalLockView.OnInputChangedListener {
+public class LockDigitalActivity extends BaseActivity implements LockDigitalView.OnInputChangedListener {
+    
+    public static final String LOCK_ACTION = "com.yunxinlink.notes.DIGITAL_LOCK_ACTION";
 
     private static final String CLASSNAME = LockDigitalActivity.class.getSimpleName();
-
+    
     /**
      * Use this action to create new pattern. You can provide an {@link Encrypter} with {@link
      * AlpSettings.Security#setEncrypterClass(android.content.Context, Class)} to improve security.
@@ -225,7 +227,7 @@ public class LockDigitalActivity extends BaseActivity implements DigitalLockView
     private LinearLayout mInputLayout;
     private TextView mTvInputInfo;
     private TextView mTvForget;
-    private DigitalLockView mDigitalView;
+    private LockDigitalView mDigitalView;
 
     @Override
     protected int getContentView() {
@@ -289,7 +291,7 @@ public class LockDigitalActivity extends BaseActivity implements DigitalLockView
 
         mTvInputInfo = (TextView) findViewById(R.id.alp_textview_info);
         mTvForget = (TextView) findViewById(R.id.alp_textview_forget);
-        mDigitalView = (DigitalLockView) findViewById(R.id.alp_view_lock_digital);
+        mDigitalView = (LockDigitalView) findViewById(R.id.alp_view_lock_digital);
 
         // LOCK PATTERN VIEW
 
@@ -460,14 +462,7 @@ public class LockDigitalActivity extends BaseActivity implements DigitalLockView
      * 清除密码
      */
     private void resetDigital() {
-        if (mInputLayout != null) {
-            KLog.d("resetDigital called");
-            int size = mInputLayout.getChildCount();
-            for (int i = 0; i < size; i++) {
-                CheckBox checkBox = (CheckBox) mInputLayout.getChildAt(i);
-                checkBox.setChecked(false);
-            }
-        }
+        resetCheckState(false);
 
         if (ACTION_CREATE_PATTERN.equals(getIntent().getAction())) {
 //            mLockPatternView.setDisplayMode(LockPatternView.DisplayMode.Correct);
@@ -492,6 +487,21 @@ public class LockDigitalActivity extends BaseActivity implements DigitalLockView
         if (mInputLayout != null) {
             CheckBox checkBox = (CheckBox) mInputLayout.getChildAt(index);
             checkBox.setChecked(isChecked);
+        }
+    }
+
+    /**
+     * 重置密码输入框的选中状态
+     * @param isChecked
+     */
+    private void resetCheckState(boolean isChecked) {
+        if (mInputLayout != null) {
+            KLog.d("resetDigital called");
+            int size = mInputLayout.getChildCount();
+            for (int i = 0; i < size; i++) {
+                CheckBox checkBox = (CheckBox) mInputLayout.getChildAt(i);
+                checkBox.setChecked(isChecked);
+            }
         }
     }
 
@@ -653,6 +663,7 @@ public class LockDigitalActivity extends BaseActivity implements DigitalLockView
                     else {
 //                        mLockPatternView.setDisplayMode(LockPatternView.DisplayMode.Wrong);
                         mTvInputInfo.setText(R.string.alp_msg_try_again);
+                        resetCheckState(false);
 //                        mLockPatternView.postDelayed(mLockPatternViewReloader, DELAY_TIME_TO_RELOAD_LOCK_PATTERN_VIEW);
                     }
                 }
