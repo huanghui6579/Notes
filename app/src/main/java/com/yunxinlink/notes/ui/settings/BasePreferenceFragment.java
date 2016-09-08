@@ -9,6 +9,11 @@ import android.preference.PreferenceFragment;
  * @version: 0.0.1
  */
 public abstract class BasePreferenceFragment extends PreferenceFragment {
+    protected static String TAG = null;
+
+    BasePreferenceFragment() {
+        TAG = getClass().getSimpleName();
+    }
 
 //    /**
 //     * A preference value change listener that updates the preference's summary

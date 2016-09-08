@@ -8,6 +8,7 @@
         android:checked="false"/>
     
     <Preference 
+        android:key="@string/settings_key_security_modify_password"
         android:title="@string/settings_security_pwd_modify"
         android:dependency="security_password"/>
 

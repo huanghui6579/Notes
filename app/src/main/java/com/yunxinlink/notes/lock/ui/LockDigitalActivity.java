@@ -23,6 +23,7 @@ import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.lock.ILockerActivityDelegate;
 import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
 import com.yunxinlink.notes.lockpattern.utils.Encrypter;
 import com.yunxinlink.notes.lockpattern.utils.InvalidEncrypterException;
@@ -49,8 +50,6 @@ import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Security.METADA
 
 public class LockDigitalActivity extends BaseActivity implements LockDigitalView.OnInputChangedListener {
     
-    public static final String LOCK_ACTION = "com.yunxinlink.notes.DIGITAL_LOCK_ACTION";
-
     private static final String CLASSNAME = LockDigitalActivity.class.getSimpleName();
     
     /**
@@ -158,6 +157,13 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
     public static final String EXTRA_RETRY_COUNT = CLASSNAME + ".RETRY_COUNT";
 
     /**
+     * For actions {@link #ACTION_COMPARE_PATTERN}, this key holds the max number of tries that the user
+     * attempted to verify the input pattern.
+     */
+    @Param(type = Param.Type.OUTPUT, dataTypes = int.class)
+    public static final String EXTRA_RETRY_MAX_COUNT = CLASSNAME + ".RETRY_MAX_COUNT";
+
+    /**
      * You put a {@link PendingIntent} into this extra. The library will show a button <kbd>"Forgot pattern?"</kbd> and call your intent later
      * when the user taps it.
      * <p>
@@ -247,7 +253,7 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
         if (ACTION_CREATE_PATTERN.equals(getIntent().getAction())) {
             SystemUtil.setViewVisibility(mTvForget, View.GONE);
 
-            if (mTvInputInfo != null) mTvInputInfo.setText(infoText);
+            if (!TextUtils.isEmpty(infoText)) mTvInputInfo.setText(infoText);
             else mTvInputInfo.setText(R.string.alp_msg_input_an_lock);
 
             // BUTTON OK
@@ -272,6 +278,11 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
 //                mFooter.setVisibility(View.VISIBLE);
             }//if
         }//ACTION_COMPARE_PATTERN
+    }
+
+    @Override
+    protected boolean hasLockedController() {
+        return false;
     }
 
     @Override
@@ -378,6 +389,14 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
     }//loadSettings()
 
     /**
+     * get max retries count
+     * @return
+     */
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+
+    /**
      * 检查是否支持action
      * @throws UnsupportedOperationException
      */
@@ -430,7 +449,13 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
      * #RESULT_FORGOT_PATTERN}).
      */
     private void finishWithNegativeResult(int resultCode) {
-        if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) intentResult.putExtra(EXTRA_RETRY_COUNT, retryCount);
+        boolean hasAnim = true;
+        if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
+            intentResult.putExtra(ILockerActivityDelegate.EXTRA_FLAG_IS_BACK_PRESSED, true);
+            intentResult.putExtra(EXTRA_RETRY_COUNT, retryCount);
+            intentResult.putExtra(EXTRA_RETRY_MAX_COUNT, maxRetries);
+            hasAnim = false;
+        }
 
         setResult(resultCode, intentResult);
 
@@ -451,6 +476,9 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
         catch (Throwable t) { Log.e(TAG, CLASSNAME + " >> Failed sending PendingIntent: " + piCancelled, t); }
 
         finish();
+        if (!hasAnim) {
+            overridePendingTransition(0, 0);
+        }
     }//finishWithNegativeResult()
 
     @Override

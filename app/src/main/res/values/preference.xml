@@ -5,5 +5,6 @@
     <string name="settings_key_sync_note_state">sync_note_state</string>
     <string name="settings_key_security_password">security_password</string>
     <string name="settings_key_security_show_widget">security_show_widget</string>
+    <string name="settings_key_security_modify_password">security_modify_password</string>
     <string name="settings_key_security_type">security_type</string>
 </resources>

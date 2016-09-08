@@ -11,8 +11,8 @@ import com.yunxinlink.notes.lock.ui.LockPatternActivity;
 public interface ILockerManager {
 
     enum LockerActivityAction {
-        LOCKER_ACTIVITY_DIGITAL(LockDigitalActivity.LOCK_ACTION),
-        LOCKER_ACTIVITY_PATTERN(LockPatternActivity.LOCK_ACTION);
+        LOCKER_ACTIVITY_DIGITAL(LockDigitalActivity.ACTION_COMPARE_PATTERN),
+        LOCKER_ACTIVITY_PATTERN(LockPatternActivity.ACTION_COMPARE_PATTERN);
 
         private String action;
 
@@ -20,8 +20,15 @@ public interface ILockerManager {
             this.action = action;
         }
 
-        public String getAction() {
-            return action;
+        public LockAction getLockAction() {
+            LockAction lockAction = new LockAction();
+            lockAction.action = action;
+            if (LockDigitalActivity.ACTION_COMPARE_PATTERN.equals(action)) {
+                lockAction.clazz = LockDigitalActivity.class;
+            } else if (LockPatternActivity.ACTION_COMPARE_PATTERN.equals(action)) {
+                lockAction.clazz = LockPatternActivity.class;
+            }
+            return lockAction;
         }
 
         public String toString() {
@@ -56,5 +63,11 @@ public interface ILockerManager {
      * 获取不同解锁方式的解锁界面
      * @return
      */
-    String acquireLockerActivityAction();
+    LockAction acquireLockerActivityAction();
+
+    /**
+     * 设置密码锁的信息
+     * @param lockInfo
+     */
+    void setLockInfo(LockInfo lockInfo);
 }

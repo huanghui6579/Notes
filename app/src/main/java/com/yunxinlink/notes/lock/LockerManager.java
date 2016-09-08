@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.util.SettingsUtil;
 
 /**
@@ -14,19 +15,14 @@ import com.yunxinlink.notes.util.SettingsUtil;
  */
 public class LockerManager implements ILockerManager {
 
+    private static final String TAG = "LockerManager";
+    
     private static ILockerManager mLockerManager = null;
     
     private Context mContext;
 
-    /**
-     * 是否有锁
-     */
-    private boolean mHasLock;
-
-    /**
-     * 是否被锁中
-     */
-    private boolean mIsLocking;
+    //密码锁定的相关属性
+    private LockInfo mLockInfo;
     
     private LockBroadcastReceiver mLockBroadcastReceiver;
     
@@ -49,14 +45,36 @@ public class LockerManager implements ILockerManager {
      * 初始化
      */
     private void init(Context context) {
-        mHasLock = SettingsUtil.hasLock(context);
-        mIsLocking = false;
+        mLockInfo = new LockInfo();
+        boolean hasLock = SettingsUtil.hasLock(context);
+        LockType lockType = SettingsUtil.getLockType(context);
+        mLockInfo.setLockType(lockType);
+        mLockInfo.setHasLock(hasLock);
+        if (hasLock && lockType != null) {  //设置的密码锁，且密码锁的类型可用
+            mLockInfo.setLocking(true);
+        } else {
+            mLockInfo.setLocking(false);
+        }
+    }
+    
+    @Override
+    public void setLockInfo(LockInfo lockInfo) {
+        if (mLockInfo == null) {
+            mLockInfo = new LockInfo();
+        }
+        mLockInfo.setLocking(lockInfo.isLocking());
+        mLockInfo.setHasLock(lockInfo.hasLock());
+        mLockInfo.setLockType(lockInfo.getLockType());
+        
+        SettingsUtil.setHasLock(lockInfo.hasLock());
+        SettingsUtil.setLockType(lockInfo.getLockType());
     }
 
     /**
      * 注销广播
      */
     public void destory() {
+        mLockInfo = null;
         if (mLockBroadcastReceiver != null) {
             mLockBroadcastReceiver.unregister(mContext);
             mLockBroadcastReceiver = null;
@@ -65,45 +83,57 @@ public class LockerManager implements ILockerManager {
     
     @Override
     public boolean hasLock() {
-        return mHasLock;
+        return mLockInfo != null && mLockInfo.hasLock();
     }
 
     @Override
     public boolean isBeingLocked() {
-        return mIsLocking;
+        return hasLock() && mLockInfo.isLocking();
     }
 
     @Override
     public void unlock() {
-        mIsLocking = false;
+        if (mLockInfo != null) {
+            mLockInfo.setLocking(false);
+        }
     }
 
     @Override
     public void lock() {
-        mHasLock = true;
-        mIsLocking = true;
+        if (mLockInfo != null) {
+            mLockInfo.setHasLock(true);
+            mLockInfo.setLocking(true);
+        }
     }
     
     private void makeLock() {
-        mIsLocking = true;
+        if (mLockInfo != null) {
+            if (mLockInfo.isLockAvailable()) {
+                mLockInfo.setLocking(true);
+            } else {
+                mLockInfo.setLocking(false);
+            }
+        }
     }
     
     private void unMakeLock() {
-        mIsLocking = false;
+        if (mLockInfo != null) {
+            mLockInfo.setLocking(false);
+        }
     }
 
     @Override
-    public String acquireLockerActivityAction() {
+    public LockAction acquireLockerActivityAction() {
         LockType lockType = SettingsUtil.getLockType(mContext);
         if (lockType != null) {
             switch (lockType) {
                 case PATTERN:   //图案密码
-                    return LockerActivityAction.LOCKER_ACTIVITY_PATTERN.getAction();
+                    return LockerActivityAction.LOCKER_ACTIVITY_PATTERN.getLockAction();
                 case DIGITAL:   //数字密码
-                    return LockerActivityAction.LOCKER_ACTIVITY_DIGITAL.getAction();
+                    return LockerActivityAction.LOCKER_ACTIVITY_DIGITAL.getLockAction();
             }
         }
-        return LockerActivityAction.LOCKER_ACTIVITY_PATTERN.getAction();
+        return LockerActivityAction.LOCKER_ACTIVITY_PATTERN.getLockAction();
     }
     
     class LockBroadcastReceiver extends BroadcastReceiver {
@@ -130,8 +160,10 @@ public class LockerManager implements ILockerManager {
             if (intent != null && intent.getAction() != null) {
                 String action = intent.getAction();
                 if (Intent.ACTION_SCREEN_OFF.equals(action)) {  //灭屏广播
+                    KLog.d(TAG, "onReceive a action screen off");
                     makeLock();
                 } else if (ACTION_LOCK_SETTINGS_CHANGED.equals(action)) {   //密码的策略改变了
+                    KLog.d(TAG, "onReceive a action lock settings changed");
                     init(context);
                 }
             }

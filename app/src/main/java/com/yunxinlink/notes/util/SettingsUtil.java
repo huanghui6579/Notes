@@ -29,6 +29,10 @@ public class SettingsUtil {
         }
         return mHasLock;
     }
+    
+    public static void setHasLock(boolean hasLock) {
+        mHasLock = hasLock;
+    }
 
     /**
      * 获取密码锁的类型，1：图案密码，2：数字密码, see {@link LockType#DIGITAL} and {@link LockType#PATTERN}
@@ -41,5 +45,9 @@ public class SettingsUtil {
             mLockType = LockType.valueOf(type);
         }
         return mLockType;
+    }
+    
+    public static void setLockType(LockType lockType) {
+        mLockType = lockType;
     }
 }

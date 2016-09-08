@@ -187,9 +187,7 @@ public class SystemUtil {
      * @param text
      */
     public static void makeShortToast(CharSequence text) {
-        Toast toast = Toast.makeText(NoteApplication.getInstance(), text, Toast.LENGTH_SHORT);
-        toast = setToastStyle(toast);
-        toast.show();
+        Toast.makeText(NoteApplication.getInstance(), text, Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -199,9 +197,7 @@ public class SystemUtil {
      * @param resId
      */
     public static void makeShortToast(int resId) {
-        Toast toast = Toast.makeText(NoteApplication.getInstance(), resId, Toast.LENGTH_SHORT);
-        toast = setToastStyle(toast);
-        toast.show();
+        Toast.makeText(NoteApplication.getInstance(), resId, Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -211,9 +207,7 @@ public class SystemUtil {
      * @param text
      */
     public static void makeLongToast(CharSequence text) {
-        Toast toast = Toast.makeText(NoteApplication.getInstance(), text, Toast.LENGTH_LONG);
-        toast = setToastStyle(toast);
-        toast.show();
+        Toast.makeText(NoteApplication.getInstance(), text, Toast.LENGTH_LONG).show();
     }
 
     /**
@@ -222,10 +216,9 @@ public class SystemUtil {
      * @update 2014年10月7日 上午9:50:02
      * @param resId
      */
+    @Deprecated
     public static void makeLongToast(int resId) {
-        Toast toast = Toast.makeText(NoteApplication.getInstance(), resId, Toast.LENGTH_LONG);
-        toast = setToastStyle(toast);
-        toast.show();
+        Toast.makeText(NoteApplication.getInstance(), resId, Toast.LENGTH_LONG).show();
     }
 
     /**

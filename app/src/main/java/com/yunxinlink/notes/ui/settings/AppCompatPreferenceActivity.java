@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.ui.settings;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
@@ -13,21 +14,84 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.socks.library.KLog;
+import com.yunxinlink.notes.lock.ILockerActivityDelegate;
+import com.yunxinlink.notes.lock.LockInfo;
+import com.yunxinlink.notes.lock.LockerDelegate;
+
 import me.imid.swipebacklayout.app.SwipeBackPreferenceActivity;
 
 /**
  * A {@link android.preference.PreferenceActivity} which implements and proxies the necessary calls
  * to be used with AppCompat.
  */
-    public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceActivity {
+public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceActivity {
+    
+    protected static String TAG;
 
     private AppCompatDelegate mDelegate;
+    
+    public AppCompatPreferenceActivity() {
+        TAG = getClass().getSimpleName();
+    }
+
+    //密码锁的工具类
+    private ILockerActivityDelegate mLockerActivityDelegate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         getDelegate().installViewFactory();
         getDelegate().onCreate(savedInstanceState);
         super.onCreate(savedInstanceState);
+
+        mLockerActivityDelegate = LockerDelegate.getInstance(getApplicationContext());
+
+        if (isInterrupt()) {
+            KLog.d(TAG, "onCreate isInterrupt true");
+//            return;
+        }
+    }
+
+    /**
+     * 是否中断
+     * @return
+     */
+    protected boolean isInterrupt() {
+        return false;
+    }
+
+    /**
+     * 是否需要加锁
+     * @return
+     */
+    protected boolean hasLockedController() {
+        return true;
+    }
+
+    /**
+     * 重新锁定应用，一般用于主界面的退出
+     * @return
+     */
+    protected boolean reLock() {
+        return false;
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        if (hasLockedController()) {
+            mLockerActivityDelegate.onRestart(this, null);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (hasLockedController()) {
+            mLockerActivityDelegate.onResume(this, null);
+        }
     }
 
     @Override
@@ -108,6 +172,18 @@ import me.imid.swipebacklayout.app.SwipeBackPreferenceActivity;
     protected void onDestroy() {
         super.onDestroy();
         getDelegate().onDestroy();
+
+        if (hasLockedController() && reLock()) {
+            mLockerActivityDelegate.onDestroy(this, null);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (hasLockedController()) {
+            mLockerActivityDelegate.onActivityResult(this, requestCode, resultCode, data);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     public void invalidateOptionsMenu() {
@@ -154,5 +230,15 @@ import me.imid.swipebacklayout.app.SwipeBackPreferenceActivity;
     protected boolean isXLargeTablet(Context context) {
         return (context.getResources().getConfiguration().screenLayout
                 & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
+    }
+
+    /**
+     * 更新密码锁的信息
+     * @param lockInfo
+     */
+    protected void updateLockInfo(LockInfo lockInfo) {
+        if (mLockerActivityDelegate != null) {
+            mLockerActivityDelegate.updateLockInfo(lockInfo);
+        }
     }
 }

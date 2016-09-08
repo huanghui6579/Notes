@@ -62,10 +62,19 @@ public abstract class BaseActivity extends SwipeBackActivity {
         mContext = this;
 
         super.onCreate(savedInstanceState);
-
+        
         mLockerActivityDelegate = LockerDelegate.getInstance(getApplicationContext());
+
+        if (isInterrupt()) {
+            KLog.d(TAG, "onCreate isInterrupt true");
+            return;
+        }
         
         if (hasLockedController()) {
+            if (savedInstanceState == null) {
+                savedInstanceState = new Bundle();
+            }
+            savedInstanceState.putBoolean(ILockerActivityDelegate.EXTRA_BOOLEAN_SHOULD_START_LOCK_DELAY, true);
             mLockerActivityDelegate.onCreate(this, savedInstanceState);
         }
 
@@ -84,6 +93,14 @@ public abstract class BaseActivity extends SwipeBackActivity {
         }
     }
 
+    /**
+     * 是否中断
+     * @return
+     */
+    protected boolean isInterrupt() {
+        return false;
+    }
+
     @Override
     protected void onRestart() {
         super.onRestart();
@@ -99,6 +116,15 @@ public abstract class BaseActivity extends SwipeBackActivity {
 
         if (hasLockedController()) {
             mLockerActivityDelegate.onResume(this, null);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        
+        if (hasLockedController() && reLock()) {
+            mLockerActivityDelegate.onDestroy(this, null);
         }
     }
 
@@ -123,6 +149,14 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     protected boolean hasLockedController() {
         return true;
+    }
+
+    /**
+     * 重新锁定应用，一般用于主界面的退出
+     * @return
+     */
+    protected boolean reLock() {
+        return false;
     }
 
     /**

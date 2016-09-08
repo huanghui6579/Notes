@@ -42,6 +42,7 @@ import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.ui.settings.SettingsActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
+import com.yunxinlink.notes.util.SettingsUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.lang.ref.WeakReference;
@@ -59,6 +60,8 @@ import cn.sharesdk.framework.ShareSDK;
  * @version: 1.0.0
  */
 public class MainActivity extends BaseActivity implements View.OnClickListener, MainFragment.OnMainFragmentInteractionListener {
+    
+    public static final String ARG_EXIT = "arg_exit";
     
     private static final int MSG_SELECT_NAV = 3;
 
@@ -157,6 +160,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         registContentObserver();
     }
 
+    @Override
+    protected boolean isInterrupt() {
+        if (exit()) {
+            return true;
+        } else {
+            return super.isInterrupt();
+        }
+    }
+
     /**
      * 填充主界面
      * @param folderId 笔记本的id
@@ -219,6 +231,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
         requestPermission();
 
+    }
+
+    @Override
+    protected boolean reLock() {
+        if (SettingsUtil.hasLock(this)) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -486,6 +506,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         //注销观察者
         unRegistContentObserver();
         super.onDestroy();
+    }
+
+    /**
+     * 退出
+     * @return
+     */
+    private boolean exit() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            boolean exit = intent.getBooleanExtra(ARG_EXIT, false);
+            if (exit) {
+                KLog.d(TAG, "main activity will exit");
+                finish();
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -785,8 +822,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         weibo.authorize();
                     }*/
 
-//                intent = new Intent(mContext, NoteEditActivity.class);
-                intent = new Intent(mContext, TestActivity.class);
+                intent = new Intent(mContext, NoteEditActivity.class);
+//                intent = new Intent(mContext, TestActivity.class);
 //                intent = new Intent(mContext, LockDigitalActivity.class);
                 intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                 intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);

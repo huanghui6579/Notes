@@ -3,14 +3,15 @@ package com.yunxinlink.notes.lock;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.SystemClock;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.ui.MainActivity;
 
 import java.lang.reflect.Method;
 
@@ -56,6 +57,7 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
     
     @Override
     public boolean startLockerActivity(Activity activity, Bundle extra) {
+        mLockerActivityState = 0;
         if (activity == null) {
             KLog.d(TAG, "the activity is null when call startLockerActivity");
             return false;
@@ -65,26 +67,28 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
         KLog.d(TAG, "startLockerActivity intent:" + intent);
         boolean flag = false;
         if (mLockerManager != null && mLockerManager.isBeingLocked()) {
-            String action = mLockerManager.acquireLockerActivityAction();
-            flag = startLockerActivity(activity, extra, action);
+            LockAction lockAction = mLockerManager.acquireLockerActivityAction();
+            flag = startLockerActivity(activity, extra, lockAction);
         }
         return flag;
     }
     
-    private boolean startLockerActivity(Activity activity, Bundle extra, String action) {
-        if (action == null || TextUtils.isEmpty(action)) {
+    private boolean startLockerActivity(Activity activity, Bundle extra, LockAction lockAction) {
+        if (lockAction == null || TextUtils.isEmpty(lockAction.action) || lockAction.clazz == null) {
+            return false;
         }
         boolean result = false;
-        Intent intent = new Intent(action);
+        Intent intent = new Intent(lockAction.action, null, activity, lockAction.clazz);
         intent.putExtra(EXTRA_FLAG_LOCK, true);
         try {
             if (intent.resolveActivity(activity.getPackageManager()) != null) {
                 activity.startActivityForResult(intent, REQUEST_CODE);
-                KLog.d(TAG, "start lock activity action:" + action);
+                activity.overridePendingTransition(0, 0);
+                KLog.d(TAG, "start lock activity action:" + lockAction);
                 result = true;
             }
         } catch (Exception e) {
-            KLog.e(TAG, "start lock activity action:" + action + ", and error:" + e.getMessage());
+            KLog.e(TAG, "start lock activity action:" + lockAction + ", and error:" + e.getMessage());
             e.printStackTrace();
         }
         return result;
@@ -124,17 +128,19 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
     public void onCreate(Activity activity, Bundle extra) {
         KLog.d(TAG, "LockerDelegate onCreate");
         if (extra != null) {
-            mIsActivityRecreate = extra.getBoolean(EXTRA_FLAG_IS_ACTIVTY_RECREATE, false);
+            mIsActivityRecreate = extra.getBoolean(EXTRA_FLAG_IS_ACTIVITY_RECREATE, false);
             KLog.d(TAG, "LockerDelegate is activity recreated : " + mIsActivityRecreate);
             if (mIsActivityRecreate) {
                 return;
             }
         }
-        if (mLockerActivityState == 0 && mLockerManager.isBeingLocked()) {
+        if (/*mLockerActivityState == 0 && */mLockerManager.isBeingLocked()) {
             if (needLockActivity(extra)) {
+                KLog.d(TAG, "onCreate need lock activity");
                 doStartLockActivity(activity,extra);
             } else {    //不需要锁定界面
-                mLockerActivityState = 6;
+                KLog.d(TAG, "onCreate don't need lock activity");
+//                mLockerActivityState = 6;
             }
         }
     }
@@ -142,7 +148,23 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
     @Override
     public void onRestart(Activity activity, Bundle extra) {
         KLog.d(TAG, "LockerDelegate onRestart");
-        if (mLockerActivityState == 0) {
+        if (mLockerManager != null && mLockerManager.isBeingLocked()) {
+            if (!isActivityTopOfTask(activity)) {   //当前界面不在最顶部
+                mLockerActivityState = 3;
+                return;
+            }
+            boolean shouldDelay = false;
+            if (extra != null) {
+                shouldDelay = extra.getBoolean(EXTRA_BOOLEAN_SHOULD_START_LOCK_DELAY, false);
+            }
+            if (shouldDelay) {
+                doStartLockActivityDelay(activity, extra);  //延迟锁定
+            } else {
+                doStartLockActivity(activity,extra);
+            }
+
+        }
+        /*if (mLockerActivityState == 0) {
             if (mLockerManager != null && mLockerManager.isBeingLocked()) {
                 if (!isActivityTopOfTask(activity)) {   //当前界面不在最顶部
                     mLockerActivityState = 3;
@@ -164,7 +186,7 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
                 SystemClock.sleep(200);
             }
             mLockerActivityState = 0;
-        }
+        }*/
     }
 
     /**
@@ -174,9 +196,10 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
      */
     private boolean doStartLockActivity(Activity activity, Bundle extra) {
         boolean result = startLockerActivity(activity, extra);
-        if (result) {   //已加锁
-            mLockerActivityState = 1;
-        }
+        KLog.d(TAG, "doStartLockActivity result:" + result);
+//        if (result) {   //已加锁
+//            mLockerActivityState = 1;
+//        }
         return result;
     }
 
@@ -187,7 +210,8 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
      */
     private void doStartLockActivityDelay(Activity activity, Bundle extra) {
         startLockActivityDelay(activity, extra);
-        mLockerActivityState = 5;   //延迟锁定
+        KLog.d(TAG, "doStartLockActivityDelay ");
+//        mLockerActivityState = 5;   //延迟锁定
     }
     
     private void startLockActivityDelay(Activity activity, Bundle extra) {
@@ -201,8 +225,9 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
     public void onResume(Activity activity, Bundle extra) {
         KLog.d(TAG, "LockerDelegate onResume");
         if (mLockerActivityState == 3) {    //之前不在最顶部，则现在锁定
+            KLog.d(TAG, "onResume start lock activity");
             doStartLockActivity(activity,extra);
-        } else if (mLockerActivityState == 6) { //不需要锁定
+        } else { //不需要锁定
             mLockerActivityState = 0;
         }
     }
@@ -210,7 +235,7 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
     @Override
     public void onNewIntent(Activity activity, Bundle extra) {
         KLog.d(TAG, "LockerDelegate onNewIntent");
-        if (mLockerActivityState == 0 && mLockerManager.isBeingLocked()) {
+        if (/*mLockerActivityState == 0 && */mLockerManager.isBeingLocked()) {
             if (needLockActivity(extra)) {
                 if (mIsActivityRecreate) {
                     doStartLockActivityDelay(activity, extra);  //延迟锁定
@@ -218,7 +243,8 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
                     doStartLockActivity(activity, extra);   //立即锁定
                 }
             } else {    //不需要锁定
-                mLockerActivityState = 6;
+                KLog.d(TAG, "onNewIntent don't need lock activity");
+//                mLockerActivityState = 6;
             }
         }
     }
@@ -226,17 +252,18 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
     @Override
     public boolean onPageSelected(Activity activity, Bundle extra) {
         KLog.d(TAG, "LockerDelegate onPageSelected");
-        if (mLockerActivityState == 0) {
+        return doStartLockActivity(activity, extra);
+        /*if (mLockerActivityState == 0) {
            return doStartLockActivity(activity, extra);
         }
-        return false;
+        return false;*/
     }
 
     @Override
     public boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
         KLog.d(TAG, "LockerDelegate onActivityResult");
         int result = responseLockerActivityResult(activity, requestCode, resultCode, data);
-        switch (result) {
+        /*switch (result) {
             case 1: //解锁成功
             case -1:    //解锁取消，用户主动返回
                 mLockerActivityState = 2;
@@ -248,13 +275,31 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
             default:
                 mLockerActivityState = 0;
                 break;
-        }
+        }*/
         return result != 0;
+    }
+
+    @Override
+    public void onDestroy(Activity activity, Bundle extra) {
+        mLockerManager.lock();
+    }
+
+    @Override
+    public void updateLockInfo(LockInfo lockInfo) {
+        mLockerManager.setLockInfo(lockInfo);
     }
 
     private void onResultValidateFailed(Activity activity) {
         if (activity != null) {
             activity.finish();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                activity.finishAffinity();
+            } else {
+                Intent home = new Intent(activity, MainActivity.class);
+                home.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                home.putExtra(MainActivity.ARG_EXIT, true);
+                activity.startActivity(home);
+            }
         }
     }
 

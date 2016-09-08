@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.lock.ILockerActivityDelegate;
 import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
 import com.yunxinlink.notes.lockpattern.utils.Encrypter;
 import com.yunxinlink.notes.lockpattern.utils.InvalidEncrypterException;
@@ -83,8 +84,6 @@ import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Security.METADA
 @Permissions(names = {Manifest.permission.WRITE_SETTINGS}, required = false, description = "For *reading* haptic feedback setting")
 public class LockPatternActivity extends BaseActivity implements View.OnClickListener {
     private static final String CLASSNAME = LockPatternActivity.class.getSimpleName();
-
-    public static final String LOCK_ACTION = "com.yunxinlink.notes.PATTERN_LOCK_ACTION";
 
     /**
      * Use this action to create new pattern. You can provide an {@link Encrypter} with {@link
@@ -157,6 +156,13 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
      */
     @Param(type = Param.Type.OUTPUT, dataTypes = int.class)
     public static final String EXTRA_RETRY_COUNT = CLASSNAME + ".RETRY_COUNT";
+    
+    /**
+     * For actions {@link #ACTION_COMPARE_PATTERN} and {@link #ACTION_VERIFY_CAPTCHA}, this key holds the max number of tries that the user
+     * attempted to verify the input pattern.
+     */
+    @Param(type = Param.Type.OUTPUT, dataTypes = int.class)
+    public static final String EXTRA_RETRY_MAX_COUNT = CLASSNAME + ".RETRY_MAX_COUNT";
 
     /**
      * Sets value of this key to a theme in {@code R.style.Alp_Theme_*} . Default is the one you set in your {@code
@@ -248,6 +254,12 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
     public static final String EXTRA_TITLE = CLASSNAME + ".TITLE";
 
     /**
+     * Use this extra to provide text for the info text view.
+     */
+    @Param(type = Param.Type.INPUT, dataTypes = { int.class, CharSequence.class })
+    public static final String EXTRA_TEXT_INFO = CLASSNAME + ".TEXT_INFO";
+
+    /**
      * Use this extra to provide layout for the activity. To have 2 or more layouts in different screen states (portrait, landscape...) but
      * using only one ID, you can do these steps:
      * <p>
@@ -331,6 +343,11 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
         }//if
 
         initContentView();
+    }
+
+    @Override
+    protected boolean hasLockedController() {
+        return false;
     }
 
     /**
@@ -560,8 +577,14 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
      * #RESULT_FORGOT_PATTERN}).
      */
     private void finishWithNegativeResult(int resultCode) {
-        if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) intentResult.putExtra(EXTRA_RETRY_COUNT, retryCount);
-
+        boolean hasAnim = true;
+        if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
+            intentResult.putExtra(ILockerActivityDelegate.EXTRA_FLAG_IS_BACK_PRESSED, true);
+            intentResult.putExtra(EXTRA_RETRY_COUNT, retryCount);
+            intentResult.putExtra(EXTRA_RETRY_MAX_COUNT, maxRetries);
+            hasAnim = false;
+        }
+        
         setResult(resultCode, intentResult);
 
         // ResultReceiver
@@ -581,6 +604,9 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
         catch (Throwable t) { Log.e(TAG, CLASSNAME + " >> Failed sending PendingIntent: " + piCancelled, t); }
 
         finish();
+        if (!hasAnim) {
+            overridePendingTransition(0, 0);
+        }
     }//finishWithNegativeResult()
 
     /**
@@ -637,6 +663,14 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
             throw new InvalidEncrypterException();
         }
     }//loadSettings()
+
+    /**
+     * get max retries count
+     * @return
+     */
+    public int getMaxRetries() {
+        return maxRetries;
+    }
 
     /**
      * Checks and creates the pattern.

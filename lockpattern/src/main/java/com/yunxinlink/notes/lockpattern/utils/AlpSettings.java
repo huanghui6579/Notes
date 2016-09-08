@@ -151,7 +151,7 @@ public class AlpSettings {
          * @param v       the value.
          */
         public static void setStealthMode(@NonNull Context context, boolean v) {
-            p(context).edit().putBoolean(context.getString(R.string.alp_pkey_display_stealth_mode), v).commit();
+            p(context).edit().putBoolean(context.getString(R.string.alp_pkey_display_stealth_mode), v).apply();
         }//setStealthMode()
 
         /**
@@ -189,7 +189,7 @@ public class AlpSettings {
          */
         public static void setMinWiredDots(@NonNull Context context, int v) {
             v = validateMinWiredDots(context, v);
-            p(context).edit().putInt(context.getString(R.string.alp_pkey_display_min_wired_dots), v).commit();
+            p(context).edit().putInt(context.getString(R.string.alp_pkey_display_min_wired_dots), v).apply();
         }//setMinWiredDots()
 
         /**
@@ -227,7 +227,7 @@ public class AlpSettings {
          */
         public static void setMaxRetries(@NonNull Context context, int v) {
             v = validateMaxRetries(context, v);
-            p(context).edit().putInt(context.getString(R.string.alp_pkey_display_max_retries), v).commit();
+            p(context).edit().putInt(context.getString(R.string.alp_pkey_display_max_retries), v).apply();
         }//setMaxRetries()
 
         /**
@@ -265,7 +265,7 @@ public class AlpSettings {
          */
         public static void setCaptchaWiredDots(@NonNull Context context, int v) {
             v = validateCaptchaWiredDots(context, v);
-            p(context).edit().putInt(context.getString(R.string.alp_pkey_display_captcha_wired_dots), v).commit();
+            p(context).edit().putInt(context.getString(R.string.alp_pkey_display_captcha_wired_dots), v).apply();
         }//setCaptchaWiredDots()
 
     }//Display
@@ -342,7 +342,7 @@ public class AlpSettings {
         public static void setPattern(@NonNull Context context, @Nullable char[] pattern) {
             p(context).edit()
                     .putString(context.getString(R.string.alp_pkey_sys_pattern), pattern != null ? new String(pattern) : null)
-                    .commit();
+                    .apply();
         }//setPattern()
 
         /**
@@ -402,7 +402,7 @@ public class AlpSettings {
         public static void setEncrypterClass(@NonNull Context context, @Nullable char[] clazz) {
             p(context).edit()
                     .putString(context.getString(R.string.alp_pkey_sys_encrypter_class), clazz != null ? new String(clazz) : null)
-                    .commit();
+                    .apply();
         }//setEncrypterClass()
 
     }//Security

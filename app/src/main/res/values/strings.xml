@@ -41,6 +41,7 @@
     <string name="read_contact_failed">选择联系人失败，请允许读取联系人数据</string>
     <string name="share_weibo_repeat">分享失败，内容重复了，请稍后再试</string>
     <string name="share_no_client">没有安装%1S客户端,或客户端不可用</string>
+    <string name="pwd_error">密码错误，请稍后再试</string>
 
     <string name="init">初始化中…</string>
 

@@ -18,7 +18,7 @@ public interface ILockerActivityDelegate {
     
     String EXTRA_FLAG_LOCK = "extra.flag.lock";
     String EXTRA_FLAG_IS_BACK_PRESSED = "extra.flag.back";
-    String EXTRA_FLAG_IS_ACTIVTY_RECREATE = "extra.flag.activity_recreate";
+    String EXTRA_FLAG_IS_ACTIVITY_RECREATE = "extra.flag.activity_recreate";
 
     void onCreate(Activity activity, Bundle extra);
 
@@ -31,4 +31,12 @@ public interface ILockerActivityDelegate {
     boolean onPageSelected(Activity activity, Bundle extra);
 
     boolean onActivityResult(Activity activity, int requestCode, int resultCode, Intent data);
+    
+    void onDestroy(Activity activity, Bundle extra);
+
+    /**
+     * 更新密码锁的信息
+     * @param lockInfo
+     */
+    void updateLockInfo(LockInfo lockInfo);
 }
