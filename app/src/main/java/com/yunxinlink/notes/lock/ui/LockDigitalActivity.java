@@ -193,6 +193,24 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
     public static final String EXTRA_TITLE = CLASSNAME + ".TITLE";
 
     /**
+     * Use this extra to provide text for the info text view.
+     */
+    @Param(type = Param.Type.INPUT, dataTypes = { int.class })
+    public static final String EXTRA_TEXT_INFO = CLASSNAME + ".TEXT_INFO";
+
+    /**
+     * Use this extra to identify is is modify .
+     */
+    @Param(type = Param.Type.INPUT, dataTypes = { boolean.class })
+    public static final String EXTRA_IS_MODIFY = CLASSNAME + ".IS_MODIFY";
+
+    /**
+     * Use this extra to controller lock.
+     */
+    @Param(type = Param.Type.INPUT, dataTypes = { boolean.class })
+    public static final String EXTRA_HAS_LOCK_CONTROLLER = CLASSNAME + ".HAS_LOCK_CONTROLLER";
+
+    /**
      * Helper enum for button OK commands. (Because we use only one "OK" button for different commands).
      */
     private enum ButtonOkCommand { CONTINUE, FORGOT_PATTERN, DONE }
@@ -250,11 +268,17 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
 
         // COMMAND BUTTONS
 
+        int infoRes = getExtraTextInfo();
+
         if (ACTION_CREATE_PATTERN.equals(getIntent().getAction())) {
             SystemUtil.setViewVisibility(mTvForget, View.GONE);
 
             if (!TextUtils.isEmpty(infoText)) mTvInputInfo.setText(infoText);
-            else mTvInputInfo.setText(R.string.alp_msg_input_an_lock);
+            else if (infoRes != 0) {
+                mTvInputInfo.setText(infoRes);
+            } else {
+                mTvInputInfo.setText(R.string.alp_msg_input_an_lock);
+            }
 
             // BUTTON OK
             if (btnOkCmd == null) btnOkCmd = ButtonOkCommand.CONTINUE;
@@ -266,8 +290,12 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
 //            if (btnOkEnabled != null) mBtnConfirm.setEnabled(btnOkEnabled);
         }//ACTION_CREATE_PATTERN
         else if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
-            if (TextUtils.isEmpty(infoText)) mTvInputInfo.setText(R.string.alp_msg_input_to_unlock);
-            else mTvInputInfo.setText(infoText);
+            if (!TextUtils.isEmpty(infoText)) mTvInputInfo.setText(infoText);
+            else if (infoRes != 0) {
+                mTvInputInfo.setText(infoRes);
+            } else {
+                mTvInputInfo.setText(R.string.alp_msg_input_to_unlock);
+            }
             if (getIntent().hasExtra(EXTRA_PENDING_INTENT_FORGOT_PATTERN)) {
 
                 SystemUtil.setViewVisibility(mTvForget, View.VISIBLE);
@@ -280,9 +308,40 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
         }//ACTION_COMPARE_PATTERN
     }
 
+    /**
+     * 获取指定的标题信息
+     * @return
+     */
+    private int getExtraTextInfo() {
+        int resId = 0;
+        Intent intent = getIntent();
+        if (intent != null) {
+            resId = intent.getIntExtra(EXTRA_TEXT_INFO, 0);
+        }
+        return resId;
+    }
+
+    /**
+     * 是否是解锁行为,即，是否已锁定的方式进入此界面
+     * @return
+     */
+    private boolean isLockAction() {
+        Intent intent = getIntent();
+        boolean isLockAction = false;
+        if (intent != null) {
+            isLockAction = intent.getBooleanExtra(ILockerActivityDelegate.EXTRA_FLAG_LOCK, false);
+        }
+        return isLockAction;
+    }
+
     @Override
     protected boolean hasLockedController() {
-        return false;
+        Intent intent = getIntent();
+        boolean hasLockController = false;
+        if (intent != null) {
+            hasLockController = intent.getBooleanExtra(EXTRA_HAS_LOCK_CONTROLLER, false);
+        }
+        return hasLockController;
     }
 
     @Override
@@ -324,6 +383,28 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
         //设置密码位数
         mDigitalView.setMaxNumbers(MAX_NUMBERS);
         mDigitalView.setInputChangedListener(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!isModify() && getLockerActivityDelegate() != null && !hasLockedController() && !getLockerActivityDelegate().isLocked()) {
+            KLog.d(TAG, "onResume is locked and will finish");
+            finish();
+        }
+    }
+
+    /**
+     * 是否是修改密码
+     * @return
+     */
+    private boolean isModify() {
+        Intent intent = getIntent();
+        boolean flag = false;
+        if (intent != null) {
+            flag = intent.getBooleanExtra(EXTRA_IS_MODIFY, false);
+        }
+        return flag;
     }
 
     @Override
@@ -454,7 +535,7 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
             intentResult.putExtra(ILockerActivityDelegate.EXTRA_FLAG_IS_BACK_PRESSED, true);
             intentResult.putExtra(EXTRA_RETRY_COUNT, retryCount);
             intentResult.putExtra(EXTRA_RETRY_MAX_COUNT, maxRetries);
-            hasAnim = false;
+            hasAnim = !isLockAction();
         }
 
         setResult(resultCode, intentResult);
@@ -491,18 +572,26 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
      */
     private void resetDigital() {
         resetCheckState(false);
-
+        int infoRes = getExtraTextInfo();
         if (ACTION_CREATE_PATTERN.equals(getIntent().getAction())) {
 //            mLockPatternView.setDisplayMode(LockPatternView.DisplayMode.Correct);
 //                mBtnConfirm.setEnabled(false);
             if (btnOkCmd == ButtonOkCommand.CONTINUE) {
                 getIntent().removeExtra(EXTRA_PATTERN);
-                mTvInputInfo.setText(R.string.alp_msg_input_to_unlock);
+                if (infoRes != 0) {
+                    mTvInputInfo.setText(infoRes);
+                } else {
+                    mTvInputInfo.setText(R.string.alp_msg_input_to_unlock);
+                }
             } else mTvInputInfo.setText(R.string.alp_msg_input_an_lock_confirm);
         }//ACTION_CREATE_PATTERN
         else if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
 //            mLockPatternView.setDisplayMode(LockPatternView.DisplayMode.Correct);
-            mTvInputInfo.setText(R.string.alp_msg_input_to_unlock);
+            if (infoRes != 0) {
+                mTvInputInfo.setText(infoRes);
+            } else {
+                mTvInputInfo.setText(R.string.alp_msg_input_to_unlock);
+            }
         }//ACTION_COMPARE_PATTERN
     }
 

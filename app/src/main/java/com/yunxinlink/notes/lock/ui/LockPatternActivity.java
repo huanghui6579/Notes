@@ -260,6 +260,18 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
     public static final String EXTRA_TEXT_INFO = CLASSNAME + ".TEXT_INFO";
 
     /**
+     * Use this extra to identify is is modify .
+     */
+    @Param(type = Param.Type.INPUT, dataTypes = { boolean.class })
+    public static final String EXTRA_IS_MODIFY = CLASSNAME + ".IS_MODIFY";
+
+    /**
+     * Use this extra to controller lock.
+     */
+    @Param(type = Param.Type.INPUT, dataTypes = { boolean.class })
+    public static final String EXTRA_HAS_LOCK_CONTROLLER = CLASSNAME + ".HAS_LOCK_CONTROLLER";
+
+    /**
      * Use this extra to provide layout for the activity. To have 2 or more layouts in different screen states (portrait, landscape...) but
      * using only one ID, you can do these steps:
      * <p>
@@ -345,9 +357,27 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
         initContentView();
     }
 
+    /**
+     * 是否是解锁行为,即，是否已锁定的方式进入此界面
+     * @return
+     */
+    private boolean isLockAction() {
+        Intent intent = getIntent();
+        boolean isLockAction = false;
+        if (intent != null) {
+            isLockAction = intent.getBooleanExtra(ILockerActivityDelegate.EXTRA_FLAG_LOCK, false);
+        }
+        return isLockAction;
+    }
+
     @Override
     protected boolean hasLockedController() {
-        return false;
+        Intent intent = getIntent();
+        boolean hasLockController = false;
+        if (intent != null) {
+            hasLockController = intent.getBooleanExtra(EXTRA_HAS_LOCK_CONTROLLER, false);
+        }
+        return hasLockController;
     }
 
     /**
@@ -397,12 +427,16 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
             mLockPatternView.setPattern(lastDisplayMode, lastPattern);
 
         // COMMAND BUTTONS
+        
+        int infoRes = getExtraTextInfo();
 
         if (ACTION_CREATE_PATTERN.equals(getIntent().getAction())) {
             SystemUtil.setViewVisibility(mTextForget, View.GONE);
 
             if (infoText != null) mTextInfo.setText(infoText);
-            else mTextInfo.setText(R.string.alp_msg_draw_an_unlock_pattern);
+            else if (infoRes != 0) {
+                mTextInfo.setText(infoRes);
+            } else mTextInfo.setText(R.string.alp_msg_draw_an_unlock_pattern);
 
             // BUTTON OK
             if (btnOkCmd == null) btnOkCmd = ButtonOkCommand.CONTINUE;
@@ -414,8 +448,10 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
 //            if (btnOkEnabled != null) mBtnConfirm.setEnabled(btnOkEnabled);
         }//ACTION_CREATE_PATTERN
         else if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
-            if (TextUtils.isEmpty(infoText)) mTextInfo.setText(R.string.alp_msg_draw_pattern_to_unlock);
-            else mTextInfo.setText(infoText);
+            if (!TextUtils.isEmpty(infoText)) mTextInfo.setText(infoText);
+            else if (infoRes != 0) {
+                mTextInfo.setText(infoRes);
+            } else mTextInfo.setText(R.string.alp_msg_draw_pattern_to_unlock);
             if (getIntent().hasExtra(EXTRA_PENDING_INTENT_FORGOT_PATTERN)) {
 
                 SystemUtil.setViewVisibility(mTextForget, View.VISIBLE);
@@ -438,6 +474,41 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
             mLockPatternView.setPattern(LockPatternView.DisplayMode.Animate, pattern);
         }//ACTION_VERIFY_CAPTCHA
     }//initContentView()
+
+    /**
+     * 获取指定的标题信息
+     * @return
+     */
+    private int getExtraTextInfo() {
+        int resId = 0;
+        Intent intent = getIntent();
+        if (intent != null) {
+            resId = intent.getIntExtra(EXTRA_TEXT_INFO, 0);
+        }
+        return resId;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!isModify() && getLockerActivityDelegate() != null && !hasLockedController() && !getLockerActivityDelegate().isLocked()) {
+            KLog.d(TAG, "onResume is locked and will finish");
+            finish();
+        }
+    }
+
+    /**
+     * 是否是修改密码
+     * @return
+     */
+    private boolean isModify() {
+        Intent intent = getIntent();
+        boolean flag = false;
+        if (intent != null) {
+            flag = intent.getBooleanExtra(EXTRA_IS_MODIFY, false);
+        }
+        return flag;
+    }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -582,7 +653,7 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
             intentResult.putExtra(ILockerActivityDelegate.EXTRA_FLAG_IS_BACK_PRESSED, true);
             intentResult.putExtra(EXTRA_RETRY_COUNT, retryCount);
             intentResult.putExtra(EXTRA_RETRY_MAX_COUNT, maxRetries);
-            hasAnim = false;
+            hasAnim = !isLockAction();
         }
         
         setResult(resultCode, intentResult);
@@ -843,6 +914,8 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
         public void onPatternStart() {
             mLockPatternView.removeCallbacks(mLockPatternViewReloader);
             mLockPatternView.setDisplayMode(LockPatternView.DisplayMode.Correct);
+            
+            int infoRes = getExtraTextInfo();
 
             if (ACTION_CREATE_PATTERN.equals(getIntent().getAction())) {
                 mTextInfo.setText(R.string.alp_msg_release_finger_when_done);
@@ -850,7 +923,11 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
                 if (btnOkCmd == ButtonOkCommand.CONTINUE) getIntent().removeExtra(EXTRA_PATTERN);
             }//ACTION_CREATE_PATTERN
             else if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
-                mTextInfo.setText(R.string.alp_msg_draw_pattern_to_unlock);
+                if (infoRes != 0) {
+                    mTextInfo.setText(infoRes);
+                } else {
+                    mTextInfo.setText(R.string.alp_msg_draw_pattern_to_unlock);
+                }
             }//ACTION_COMPARE_PATTERN
             else if (ACTION_VERIFY_CAPTCHA.equals(getIntent().getAction())) {
                 mTextInfo.setText(R.string.alp_msg_redraw_pattern_to_confirm);
@@ -874,17 +951,27 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
         public void onPatternCleared() {
             mLockPatternView.removeCallbacks(mLockPatternViewReloader);
 
+            int infoRes = getExtraTextInfo();
+            
             if (ACTION_CREATE_PATTERN.equals(getIntent().getAction())) {
                 mLockPatternView.setDisplayMode(LockPatternView.DisplayMode.Correct);
 //                mBtnConfirm.setEnabled(false);
                 if (btnOkCmd == ButtonOkCommand.CONTINUE) {
                     getIntent().removeExtra(EXTRA_PATTERN);
-                    mTextInfo.setText(R.string.alp_msg_draw_an_unlock_pattern);
+                    if (infoRes != 0) {
+                        mTextInfo.setText(infoRes);
+                    } else {
+                        mTextInfo.setText(R.string.alp_msg_draw_an_unlock_pattern);
+                    }
                 } else mTextInfo.setText(R.string.alp_msg_redraw_pattern_to_confirm);
             }//ACTION_CREATE_PATTERN
             else if (ACTION_COMPARE_PATTERN.equals(getIntent().getAction())) {
                 mLockPatternView.setDisplayMode(LockPatternView.DisplayMode.Correct);
-                mTextInfo.setText(R.string.alp_msg_draw_pattern_to_unlock);
+                if (infoRes != 0) {
+                    mTextInfo.setText(infoRes);
+                } else {
+                    mTextInfo.setText(R.string.alp_msg_draw_pattern_to_unlock);
+                }
             }//ACTION_COMPARE_PATTERN
             else if (ACTION_VERIFY_CAPTCHA.equals(getIntent().getAction())) {
                 mTextInfo.setText(R.string.alp_msg_redraw_pattern_to_confirm);

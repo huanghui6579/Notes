@@ -241,4 +241,14 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
             mLockerActivityDelegate.updateLockInfo(lockInfo);
         }
     }
+
+    /**
+     * 更新目前app的解锁状态
+     * @param isLocking 是否锁定，true：已锁定
+     */
+    protected void updateLockState(boolean isLocking) {
+        if (mLockerActivityDelegate != null) {
+            mLockerActivityDelegate.setLockState(isLocking);
+        }
+    }
 }

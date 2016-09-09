@@ -196,6 +196,10 @@
     <string name="settings_security_widget_summary">在桌面的小工具中显示笔记的内容</string>
 
     <string name="settings_pwd_type_title">选择密码类型</string>
+    <string name="settings_pwd_modify_digital_title">请输入原始密码:</string>
+    <string name="settings_pwd_modify_pattern_title">请绘制原始图案:</string>
+    <string name="settings_pwd_modify_digital_new_title">请输入新密码:</string>
+    <string name="settings_pwd_modify_pattern_new_title">请绘制新图案:</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

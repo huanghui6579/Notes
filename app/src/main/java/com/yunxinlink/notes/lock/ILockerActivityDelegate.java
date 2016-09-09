@@ -39,4 +39,16 @@ public interface ILockerActivityDelegate {
      * @param lockInfo
      */
     void updateLockInfo(LockInfo lockInfo);
+
+    /**
+     * 是否加锁中
+     * @return
+     */
+    boolean isLocked();
+
+    /**
+     * 设置当前app的解锁状态
+     * @param isLocking 是否锁定，true：锁定
+     */
+    void setLockState(boolean isLocking);
 }

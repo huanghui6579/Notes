@@ -2,6 +2,7 @@ package com.yunxinlink.notes.ui.settings;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.SwitchPreference;
@@ -112,26 +113,33 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
         LockType lockType = SettingsUtil.getLockType(getActivity());
         if (lockType != null) { //有密码
             int requestCode = 0;
+            Intent intent = null;
             switch (lockType) {
                 case DIGITAL:
+                    intent = LockDigitalActivity.IntentBuilder
+                            .newPatternComparator(getActivity())
+                            .build();
                     if (isModify) {
                         requestCode = SettingsSecurityActivity.REQ_MODIFY_DIGITAL;
+                        intent.putExtra(LockDigitalActivity.EXTRA_TEXT_INFO, R.string.settings_pwd_modify_digital_title);
                     } else {
                         requestCode = SettingsSecurityActivity.REQ_COMPARE_DIGITAL;
                     }
-                    LockDigitalActivity.IntentBuilder
-                            .newPatternComparator(getActivity())
-                            .startForResult(getActivity(), requestCode);
+                    intent.putExtra(LockDigitalActivity.EXTRA_IS_MODIFY, true);
+                    getActivity().startActivityForResult(intent, requestCode);
                     break;
                 case PATTERN:
+                    intent = LockPatternActivity.IntentBuilder
+                            .newPatternComparator(getActivity())
+                            .build();
                     if (isModify) {
                         requestCode = SettingsSecurityActivity.REQ_MODIFY_PATTERN;
+                        intent.putExtra(LockPatternActivity.EXTRA_TEXT_INFO, R.string.settings_pwd_modify_pattern_title);
                     } else {
                         requestCode = SettingsSecurityActivity.REQ_COMPARE_PATTERN;
                     }
-                    LockPatternActivity.IntentBuilder
-                            .newPatternComparator(getActivity())
-                            .startForResult(getActivity(), requestCode);
+                    intent.putExtra(LockPatternActivity.EXTRA_IS_MODIFY, true);
+                    getActivity().startActivityForResult(intent, requestCode);
                     break;
             }
             return true;
@@ -151,16 +159,21 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
                         AlpSettings.Security.setAutoSavePattern(getActivity(), true);
+                        Intent intent = null;
                         switch (which) {
                             case 0: //数字密码
-                                LockDigitalActivity.IntentBuilder
+                                intent = LockDigitalActivity.IntentBuilder
                                         .newPatternCreator(getActivity())
-                                        .startForResult(getActivity(), SettingsSecurityActivity.REQ_CREATE_DIGITAL);
+                                        .build();
+                                intent.putExtra(LockDigitalActivity.EXTRA_HAS_LOCK_CONTROLLER, true);
+                                getActivity().startActivityForResult(intent, SettingsSecurityActivity.REQ_CREATE_DIGITAL);
                                 break;
                             case 1: //图案密码
-                                LockPatternActivity.IntentBuilder
+                                intent = LockPatternActivity.IntentBuilder
                                         .newPatternCreator(getActivity())
-                                        .startForResult(getActivity(), SettingsSecurityActivity.REQ_CREATE_PATTERN);
+                                        .build();
+                                intent.putExtra(LockPatternActivity.EXTRA_HAS_LOCK_CONTROLLER, true);
+                                getActivity().startActivityForResult(intent, SettingsSecurityActivity.REQ_CREATE_PATTERN);
                                 break;
                         }
                     }

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.preference.PreferenceManager;
+import android.support.v7.app.AppCompatDelegate;
 
 import com.jiongbull.jlog.JLog;
 import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
@@ -51,6 +52,8 @@ public class NoteApplication extends Application {
     public void onCreate() {
         super.onCreate();
         mInstance = this;
+
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
 
         initLog();
 

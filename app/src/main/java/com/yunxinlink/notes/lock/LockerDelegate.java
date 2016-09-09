@@ -289,9 +289,23 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
         mLockerManager.setLockInfo(lockInfo);
     }
 
+    @Override
+    public boolean isLocked() {
+        return mLockerManager.isBeingLocked();
+    }
+
+    @Override
+    public void setLockState(boolean isLocking) {
+        if (isLocking) {
+            mLockerManager.lock();
+        } else {
+            mLockerManager.unlock();
+        }
+    }
+
     private void onResultValidateFailed(Activity activity) {
         if (activity != null) {
-            activity.finish();
+            
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 activity.finishAffinity();
             } else {
@@ -300,6 +314,7 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
                 home.putExtra(MainActivity.ARG_EXIT, true);
                 activity.startActivity(home);
             }
+            activity.finish();
         }
     }
 

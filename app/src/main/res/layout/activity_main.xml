@@ -26,7 +26,7 @@
             android:layout_width="@dimen/nav_width"
             android:layout_height="match_parent"
             android:layout_gravity="start"
-            android:background="@android:color/white">
+            android:background="@color/nav_panel_bg_color">
 
             <LinearLayout
                 android:id="@+id/nav_bottom"

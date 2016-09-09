@@ -45,6 +45,7 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
         boolean hasLock = false;
         int tryCount = 0;
         int maxTryCount = 0;
+        Intent intent = null;
         switch (requestCode) {
             case REQ_CREATE_DIGITAL:    //创建数字密码
                 if (resultCode == RESULT_OK) {  //成功
@@ -100,11 +101,15 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
                 }
                 KLog.d("onActivityResult compare modify pattern success try count:" + tryCount);
                 if (resultCode == RESULT_OK) {  //成功
-                    lockType = LockType.PATTERN;
-                    hasLock = false;
-                    LockPatternActivity.IntentBuilder
+//                    lockType = LockType.PATTERN;
+//                    hasLock = true;
+                    saveLockState(false);
+                    intent = LockPatternActivity.IntentBuilder
                             .newPatternCreator(this)
-                            .startForResult(this, SettingsSecurityActivity.REQ_CREATE_PATTERN);
+                            .build();
+                    intent.putExtra(LockPatternActivity.EXTRA_HAS_LOCK_CONTROLLER, true);
+                    intent.putExtra(LockPatternActivity.EXTRA_TEXT_INFO, R.string.settings_pwd_modify_pattern_new_title);
+                    startActivityForResult(intent, SettingsSecurityActivity.REQ_CREATE_PATTERN);
                 } else {    //面输入次数超过5次，稍后再试
                     if (maxTryCount != 0 && tryCount >= maxTryCount) {
                         SystemUtil.makeShortToast(R.string.pwd_error);
@@ -118,11 +123,15 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
                 }
                 KLog.d("onActivityResult compare modify digital success try count:" + tryCount);
                 if (resultCode == RESULT_OK) {  //成功
-                    lockType = LockType.DIGITAL;
-                    hasLock = false;
-                    LockDigitalActivity.IntentBuilder
+//                    lockType = LockType.DIGITAL;
+//                    hasLock = true;
+                    saveLockState(false);
+                    intent = LockDigitalActivity.IntentBuilder
                             .newPatternCreator(this)
-                            .startForResult(this, SettingsSecurityActivity.REQ_CREATE_DIGITAL);
+                            .build();
+                    intent.putExtra(LockDigitalActivity.EXTRA_HAS_LOCK_CONTROLLER, true);
+                    intent.putExtra(LockDigitalActivity.EXTRA_TEXT_INFO, R.string.settings_pwd_modify_digital_new_title);
+                    startActivityForResult(intent, SettingsSecurityActivity.REQ_CREATE_DIGITAL);
                 } else {    //面输入次数超过5次，稍后再试
                     if (maxTryCount != 0 && tryCount >= maxTryCount) {
                         SystemUtil.makeShortToast(R.string.pwd_error);
@@ -130,6 +139,7 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
                 }
                 break;
         }
+        KLog.d(TAG, "lockType:" + lockType + ", hasLock" + hasLock);
         saveSecurityType(lockType, hasLock);
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -161,5 +171,13 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
         if (securityFragment != null) {
             securityFragment.saveSecurityPreference(hasLock);
         }
+    }
+
+    /**
+     * 保存目前app的解锁状态
+     * @param isLocking 是否锁定，true：锁定了
+     */
+    public void saveLockState(boolean isLocking) {
+        updateLockState(isLocking);
     }
 }

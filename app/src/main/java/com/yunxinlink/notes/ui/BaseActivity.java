@@ -62,7 +62,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
         mContext = this;
 
         super.onCreate(savedInstanceState);
-        
+
         mLockerActivityDelegate = LockerDelegate.getInstance(getApplicationContext());
 
         if (isInterrupt()) {
