@@ -4,8 +4,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
@@ -326,11 +328,14 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                         return;
                     }
                     //更新后
+                    Drawable stateDrawable = null;
                     if (isShowFolderAll()) {    //显示“所有文件夹项”
-                        holder.mIvState.setImageResource(R.drawable.ic_visibility);
+                        stateDrawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_visibility, getTheme());
                     } else {
-                        holder.mIvState.setImageResource(R.drawable.ic_visibility_off);
+                        stateDrawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_visibility_off, getTheme());
                     }
+                    stateDrawable = getTintDrawable(stateDrawable, 0);
+                    holder.mIvState.setImageDrawable(stateDrawable);
                     
                 } else {    //其他普通文件夹，则进入编辑文件夹的界面
                     Intent intent = new Intent(mContext, FolderEditActivity.class);
@@ -568,11 +573,15 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             
             if (isUnPersistentFolder) { //“所有文件夹”
                 final boolean isShowAll = isShowFolderAll();
+                Drawable stateDrawable = null;
                 if (isShowAll) {    //显示“所有文件夹项”
-                    holder.mIvState.setImageResource(R.drawable.ic_visibility);
+                    stateDrawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_visibility, getTheme());
                 } else {
-                    holder.mIvState.setImageResource(R.drawable.ic_visibility_off);
+                    stateDrawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_visibility_off, getTheme());
                 }
+
+                stateDrawable = getTintDrawable(stateDrawable, 0);
+                holder.mIvState.setImageDrawable(stateDrawable);
                 
             } else {    //其他文件夹
                 holder.mIvState.setImageResource(R.drawable.ic_reorder_grey);

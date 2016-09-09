@@ -493,8 +493,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             } else {
                 drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_action_description, getTheme());
                 textTes = R.string.note_type_text;
-                getTintDrawable(drawable, 0);
             }
+            getTintDrawable(drawable, 0);
             if (detailItem != null) {
                 detailItem.setIcon(drawable);
                 detailItem.setTitle(textTes);
@@ -1041,8 +1041,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             case R.id.action_attach:    //添加附件
                 attachView = getToolBarMenuView(R.id.action_attach);
                 mAttachPopu = createPopuMenu(attachView, mAttachPopu, R.menu.edit_attach, true);
-                MenuItem brushItem = mAttachPopu.getMenu().findItem(R.id.action_brush);
-                setMenuTint(brushItem, getResources().getColor(R.color.colorPrimary));
                 break;
             case R.id.action_more:  //更多
                 attachView = getToolBarMenuView(R.id.action_more);
@@ -1085,15 +1083,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         setupOverMenuStyle(isTextMode());
                     }
 
-                    MenuItem shareItem = menu.findItem(R.id.action_share);
-                    setMenuTint(shareItem, 0);
-
-                    MenuItem searchItem = menu.findItem(R.id.action_find);
-                    setMenuTint(searchItem, 0);
-
-                    MenuItem deleteItem = menu.findItem(R.id.action_delete);
-                    setMenuTint(deleteItem, 0);
-
                     tempPopu.show();
                 }
             }
@@ -1107,25 +1096,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private PopupMenu showViewActionMore(View attachView, PopupMenu popupMenu) {
         final PopupMenu tempPopu = createPopuMenu(attachView, popupMenu, R.menu.edit_view_overflow, false);
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (tempPopu != null) {
-                    Menu menu = tempPopu.getMenu();
-
-                    MenuItem searchItem = menu.findItem(R.id.action_find);
-                    setMenuTint(searchItem, 0);
-
-                    MenuItem shareItem = menu.findItem(R.id.action_share);
-                    setMenuTint(shareItem, 0);
-
-                    MenuItem deleteItem = menu.findItem(R.id.action_delete);
-                    setMenuTint(deleteItem, 0);
-
-                    tempPopu.show();
-                }
-            }
-        });
+        tempPopu.show();
         return tempPopu;
     }
 
@@ -1136,10 +1107,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @update 2016/3/2 14:15
      * @version: 1.0.0
      */
-    private PopupMenu createPopuMenu(View aucher, PopupMenu popupMenu, int menuResId, boolean showImmediate) {
-        if (aucher != null) {
+    private PopupMenu createPopuMenu(View author, PopupMenu popupMenu, int menuResId, boolean showImmediate) {
+        if (author != null) {
             if (popupMenu == null) {
-                popupMenu = createPopMenu(aucher, menuResId, true, new OnPopMenuItemClickListener());
+                popupMenu = createPopMenu(author, menuResId, true, new OnPopMenuItemClickListener());
             }
             if (showImmediate) {
                 popupMenu.show();

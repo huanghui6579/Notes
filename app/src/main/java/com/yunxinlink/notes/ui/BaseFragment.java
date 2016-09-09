@@ -7,6 +7,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.widget.PopupMenu;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
 import com.yunxinlink.notes.NoteApplication;
@@ -77,6 +79,20 @@ public class BaseFragment extends Fragment {
     }
 
     /**
+     * 为菜单的图标着色
+     * @author huanghui1
+     * @update 2016/3/2 16:05
+     * @version: 1.0.0
+     */
+    protected void setMenuTint(MenuItem item, int color) {
+        if (item != null) {
+            Drawable icon = item.getIcon().mutate();
+            getTintDrawable(icon, color);
+            item.setIcon(icon);
+        }
+    }
+
+    /**
      * 返回着色后的图标
      * @param srcIcon 原始图标
      * @param color
@@ -92,6 +108,19 @@ public class BaseFragment extends Fragment {
             DrawableCompat.setTint(srcIcon, tint);
         }
         return srcIcon;
+    }
+
+
+    /**
+     * 给menu的各项着色，默认的颜色是colorPrimary
+     * @param menu
+     */
+    protected void tintMenu(Menu menu) {
+        int size = menu.size();
+        for (int i = 0; i < size; i++) {
+            MenuItem menuItem = menu.getItem(i);
+            setMenuTint(menuItem, 0);
+        }
     }
 
     /**

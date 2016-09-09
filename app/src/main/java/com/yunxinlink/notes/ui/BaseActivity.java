@@ -223,6 +223,10 @@ public abstract class BaseActivity extends SwipeBackActivity {
             if (showIcon) {
                 showPopMenuIcon(popupMenu);
             }
+            Menu menu = popupMenu.getMenu();
+            if (menu != null) {
+                tintMenu(menu);
+            }
             return popupMenu;
         } else {
             return null;
@@ -305,6 +309,18 @@ public abstract class BaseActivity extends SwipeBackActivity {
             Drawable icon = item.getIcon().mutate();
             getTintDrawable(icon, color);
             item.setIcon(icon);
+        }
+    }
+
+    /**
+     * 给menu的各项着色，默认的颜色是colorPrimary
+     * @param menu
+     */
+    protected void tintMenu(Menu menu) {
+        int size = menu.size();
+        for (int i = 0; i < size; i++) {
+            MenuItem menuItem = menu.getItem(i);
+            setMenuTint(menuItem, 0);
         }
     }
 

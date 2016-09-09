@@ -495,12 +495,15 @@ public class MainFragment extends BaseFragment {
         if (author != null) {
             if (mMainPopuMenu == null) {
                 mMainPopuMenu = createPopMenu(author, R.menu.main_overflow, true, new OnPopuMenuItemClickListener());
-                if (!mIsGridStyle) {    //开始就显示列表，则菜单为网格
-                    Menu menu = mMainPopuMenu.getMenu();
-                    MenuItem menuItem = menu.findItem(R.id.nav_show_style);
-                    if (menuItem != null) {
-                        menuItem.setTitle(R.string.action_show_grid);
-                        menuItem.setIcon(R.drawable.ic_action_grid);
+                Menu menu = mMainPopuMenu.getMenu();
+                if (menu != null) {
+                    tintMenu(menu);
+                    if (!mIsGridStyle) {    //开始就显示列表，则菜单为网格
+                        MenuItem menuItem = menu.findItem(R.id.nav_show_style);
+                        if (menuItem != null) {
+                            menuItem.setTitle(R.string.action_show_grid);
+                            menuItem.setIcon(R.drawable.ic_action_grid);
+                        }
                     }
                 }
             }
