@@ -167,6 +167,16 @@
             android:theme="@style/AppTheme.LockPattern.Dark" />
         <activity android:name=".lock.ui.LockDigitalActivity" />
         <activity android:name=".ui.settings.SettingsMoreActivity" />
+
+        <receiver android:name=".appwidget.ShortCreateAppWidget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/short_create_app_widget_info" />
+        </receiver>
     </application>
 
 </manifest>
