@@ -32,4 +32,7 @@
 
     <color name="item_control_color">#20000000</color>
 
+    <color name="alp_digital_input_checked">@android:color/black</color>
+    <color name="alp_digital_input_unchecked">@android:color/white</color>
+
 </resources>

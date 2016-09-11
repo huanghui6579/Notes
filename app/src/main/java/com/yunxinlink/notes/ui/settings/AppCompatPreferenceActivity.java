@@ -2,10 +2,12 @@ package com.yunxinlink.notes.ui.settings;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.Toolbar;
@@ -18,6 +20,7 @@ import com.socks.library.KLog;
 import com.yunxinlink.notes.lock.ILockerActivityDelegate;
 import com.yunxinlink.notes.lock.LockInfo;
 import com.yunxinlink.notes.lock.LockerDelegate;
+import com.yunxinlink.notes.receiver.ThemeReceiver;
 
 import me.imid.swipebacklayout.app.SwipeBackPreferenceActivity;
 
@@ -38,6 +41,9 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
     //密码锁的工具类
     private ILockerActivityDelegate mLockerActivityDelegate;
 
+    //主题切换的广播
+    private ThemeReceiver mThemeReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         getDelegate().installViewFactory();
@@ -50,6 +56,48 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
             KLog.d(TAG, "onCreate isInterrupt true");
 //            return;
         }
+
+        registThemeReceiver();
+    }
+
+    /**
+     * 注册主题变换的广播
+     */
+    private void registThemeReceiver() {
+        if (mThemeReceiver == null) {
+            mThemeReceiver = new ThemeReceiver(this);
+        }
+        IntentFilter filter = new IntentFilter(ThemeReceiver.ACTION_THEME_CHANGE);
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.registerReceiver(mThemeReceiver, filter);
+    }
+
+    /**
+     * 注销主题的广播
+     */
+    private void unregistThemeReceiver() {
+        if (mThemeReceiver != null) {
+            LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+            localBroadcastManager.unregisterReceiver(mThemeReceiver);
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if (outState != null) {
+            outState.putBoolean(ILockerActivityDelegate.EXTRA_FLAG_IS_ACTIVITY_RECREATE, true);
+            KLog.d(TAG, "onSaveInstanceState call outState is recreate:" + outState);
+        }
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            savedInstanceState.remove(ILockerActivityDelegate.EXTRA_FLAG_IS_ACTIVITY_RECREATE);
+            KLog.d(TAG, "onRestoreInstanceState call savedInstanceState:" + savedInstanceState);
+        }
+        super.onRestoreInstanceState(savedInstanceState);
     }
 
     /**
@@ -172,6 +220,8 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
     protected void onDestroy() {
         super.onDestroy();
         getDelegate().onDestroy();
+
+        unregistThemeReceiver();
 
         if (hasLockedController() && reLock()) {
             mLockerActivityDelegate.onDestroy(this, null);

@@ -86,13 +86,15 @@ import java.util.Stack;
 public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher, 
         NoteEditFragment.OnFragmentInteractionListener, 
         DetailListFragment.OnDetailInteractionListener {
-    
+
+
     public static final String ARG_NOTE_ID = "noteId";
     public static final String ARG_NOTE_SID = "noteSId";
     public static final String ARG_IS_NOTE_TEXT = "isNoteText";
     public static final String ARG_FOLDER_ID = "folderId";
     public static final String ARG_OPT_DELETE = "opt_delete";
-    
+    public static final String ARG_HAS_LOCK_CONTROLLER = "has_lock_controller";
+
     private static final int MSG_INIT_BOTTOM_TOOL_BAR = 3;
     private static final int MSG_READ_CONTACT_SUCCESS = 4;
     private static final int MSG_READ_CONTACT_FAILED = 5;
@@ -233,6 +235,25 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         setCustomTitle(title, 0);
         
         KLog.d(TAG, "---updateToolBar--");
+    }
+
+    @Override
+    protected boolean hasLockedController() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            boolean hasLockController = intent.getBooleanExtra(ARG_HAS_LOCK_CONTROLLER, true);
+            if (hasLockController) {
+                return false;
+            } else {
+                String action = intent.getAction();
+                if (Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)) {  //分享过来的，也不加锁
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        }
+        return super.hasLockedController();
     }
 
     /**

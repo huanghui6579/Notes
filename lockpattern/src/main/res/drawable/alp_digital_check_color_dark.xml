@@ -4,7 +4,7 @@
         <layer-list>
             <item>
                 <shape android:shape="oval">
-                    <solid android:color="@android:color/black"/>
+                    <solid android:color="@color/alp_digital_input_checked"/>
                     <size android:width="@dimen/alp_lock_pattern_dot_size" android:height="@dimen/alp_lock_pattern_dot_size"/>
                 </shape>
             </item>
@@ -15,7 +15,7 @@
                 android:left="@dimen/alp_digital_circle_size">
                 <shape android:shape="oval">
                     <size android:width="@dimen/alp_lock_pattern_dot_inner_size" android:height="@dimen/alp_lock_pattern_dot_inner_size"/>
-                    <solid android:color="@android:color/white"/>
+                    <solid android:color="@color/alp_digital_input_unchecked"/>
                 </shape>
             </item>
         </layer-list>
@@ -25,7 +25,7 @@
         <layer-list>
             <item>
                 <shape android:shape="oval">
-                    <solid android:color="@android:color/black" />
+                    <solid android:color="@color/alp_digital_input_checked" />
                     <size android:width="@dimen/alp_lock_pattern_dot_size" android:height="@dimen/alp_lock_pattern_dot_size" />
                 </shape>
             </item>

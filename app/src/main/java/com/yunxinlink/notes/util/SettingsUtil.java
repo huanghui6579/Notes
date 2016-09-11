@@ -18,6 +18,9 @@ public class SettingsUtil {
     //密码锁的类型
     private static LockType mLockType;
 
+    //当前设置的默认主题，主要是默认和夜间两种
+    private static Integer mDefaultNightMode;
+
     /**
      * 是否有安全锁
      * @return
@@ -50,4 +53,32 @@ public class SettingsUtil {
     public static void setLockType(LockType lockType) {
         mLockType = lockType;
     }
+
+    /**
+     * 获取保存的主题,one of {@link android.support.v7.app.AppCompatDelegate#MODE_NIGHT_YES}, {@link android.support.v7.app.AppCompatDelegate#MODE_NIGHT_NO}
+     * @param context
+     * @return
+     */
+    public static int getDefaultNightMode(Context context) {
+        if (mDefaultNightMode == null || mDefaultNightMode == -1) {
+            SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+            mDefaultNightMode = preferences.getInt(context.getString(R.string.settings_key_theme_mode), -1);
+        }
+        return mDefaultNightMode;
+    }
+
+    /**
+     * 保存主题
+     * @param context
+     * @param mode 主题类型，one of {@link android.support.v7.app.AppCompatDelegate#MODE_NIGHT_YES}, {@link android.support.v7.app.AppCompatDelegate#MODE_NIGHT_NO}
+     */
+    public static void setDefaultNightMode(Context context, int mode) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(context.getString(R.string.settings_key_theme_mode), mode);
+        editor.apply();
+
+        mDefaultNightMode = mode;
+    }
+
 }

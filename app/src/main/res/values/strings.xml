@@ -201,6 +201,13 @@
     <string name="settings_pwd_modify_digital_new_title">请输入新密码:</string>
     <string name="settings_pwd_modify_pattern_new_title">请绘制新图案:</string>
 
+    <string name="settings_more_shortcut_title">状态栏快捷方式</string>
+    <string name="settings_more_shortcut_summary">在状态栏中能够方便的新建笔记</string>
+    <string name="settings_more_theme_title">主题</string>
+    <string name="settings_more_theme_summary">选择默认或者夜间主题</string>
+
+    <string name="settings_notification_create_shortcut">快速新建笔记</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 

@@ -136,4 +136,14 @@
         <item name="android:focusable">true</item>
         <item name="android:textColor">@color/text_grey_color</item>
     </style>
+    
+    <style name="TextAppearance.AppCompat.Notification" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/switch_thumb_disabled_material_light</item>
+        <item name="android:textSize">@dimen/abc_text_size_caption_material</item>
+    </style>
+
+    <style name="TextAppearance.AppCompat.Notification.Title">
+        <item name="android:textColor">@color/primary_text_default_material_light</item>
+        <item name="android:textSize">@dimen/abc_text_size_body_1_material</item>
+    </style>
 </resources>

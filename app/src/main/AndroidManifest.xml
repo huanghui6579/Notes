@@ -151,13 +151,7 @@
         <activity
             android:name=".ui.settings.SettingsSyncActivity"
             android:exported="false"
-            android:label="@string/action_upload">
-            <intent-filter>
-                <action android:name="com.yunxinlink.notes.SYNC_SETTINGS" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+            android:label="@string/action_upload" />
         <activity
             android:name=".ui.SearchActivity"
             android:label="@string/action_search">
@@ -167,17 +161,12 @@
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
         </activity>
-        <activity android:name=".ui.settings.SettingsSecurityActivity">
-            <intent-filter>
-                <action android:name="com.yunxinlink.notes.SECURITY_SETTINGS" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+        <activity android:name=".ui.settings.SettingsSecurityActivity" />
         <activity
             android:name=".lock.ui.LockPatternActivity"
-            android:theme="@style/AppTheme.LockPattern.Dark"/>
-        <activity android:name=".lock.ui.LockDigitalActivity"/>
+            android:theme="@style/AppTheme.LockPattern.Dark" />
+        <activity android:name=".lock.ui.LockDigitalActivity" />
+        <activity android:name=".ui.settings.SettingsMoreActivity" />
     </application>
 
 </manifest>

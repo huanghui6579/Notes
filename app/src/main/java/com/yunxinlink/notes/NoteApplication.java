@@ -2,9 +2,11 @@ package com.yunxinlink.notes;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatDelegate;
 
 import com.jiongbull.jlog.JLog;
@@ -15,7 +17,11 @@ import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.receiver.ThemeReceiver;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteTask;
+import com.yunxinlink.notes.util.NoteUtil;
+import com.yunxinlink.notes.util.SettingsUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.FilePathGenerator;
 import com.yunxinlink.notes.util.log.Log;
@@ -48,16 +54,51 @@ public class NoteApplication extends Application {
      */
     private boolean mShowFolderAll = true;
 
+    //主题切换的广播
+    private ThemeReceiver mThemeReceiver;
+
     @Override
     public void onCreate() {
         super.onCreate();
         mInstance = this;
 
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        registThemeReceiver();
+
+        int nightMode = SettingsUtil.getDefaultNightMode(this);
+        if (nightMode == AppCompatDelegate.MODE_NIGHT_YES) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        }
 
         initLog();
-
         init(this);
+    }
+
+    /**
+     * 注册主题变换的广播
+     */
+    private void registThemeReceiver() {
+        if (mThemeReceiver == null) {
+            mThemeReceiver = new ThemeReceiver(this);
+        }
+        IntentFilter filter = new IntentFilter(ThemeReceiver.ACTION_THEME_CHANGE);
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.registerReceiver(mThemeReceiver, filter);
+    }
+
+    /**
+     * 注销主题的广播
+     */
+    private void unregistThemeReceiver() {
+        if (mThemeReceiver != null) {
+            LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+            localBroadcastManager.unregisterReceiver(mThemeReceiver);
+        }
+    }
+
+    @Override
+    public void onTerminate() {
+        unregistThemeReceiver();
+        super.onTerminate();
     }
 
     /**
@@ -67,7 +108,7 @@ public class NoteApplication extends Application {
     public static NoteApplication getInstance() {
         return mInstance;
     }
-    
+
     /**
      * 初始化日志的配置
      * @author huanghui1
@@ -122,19 +163,25 @@ public class NoteApplication extends Application {
      * @version: 1.0.0
      */
     private void init(final Context context) {
-        new Thread(new Runnable() {
+        SystemUtil.getThreadPool().execute(new NoteTask() {
             @Override
             public void run() {
                 Log.d(TAG, "--app----init---");
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
                 mDefaultFolderSid = sharedPreferences.getString(Constants.PREF_DEFAULT_FOLDER, "");
                 mShowFolderAll = sharedPreferences.getBoolean(Constants.PREF_SHOW_FOLDER_ALL, true);
+                //是否有通知栏的快捷方式
+                boolean hasCreateShortcut = sharedPreferences.getBoolean(getString(R.string.settings_key_more_shortcut), false);
+                if (hasCreateShortcut) {
+                    NoteUtil.createNotificationShortcut(getApplicationContext(), Constants.ID_NOTIFY_CREATE_SHORTCUT);
+                }
 
                 //初始化图片加载器
                 initImageLoaderConfig();
             }
-        }, "init").start();
+        });
     }
+
 
     public User getCurrentUser() {
         return mCurrentUser;

@@ -334,7 +334,7 @@ public class LockPatternActivity extends BaseActivity implements View.OnClickLis
 
     @Override
     public boolean isSwipeBackEnabled() {
-        return false;
+        return !isLockAction();
     }
 
     @Override

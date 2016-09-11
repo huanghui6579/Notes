@@ -1,12 +1,16 @@
 package com.yunxinlink.notes.util;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -14,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import com.yunxinlink.notes.R;
@@ -26,6 +31,8 @@ import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.share.ShareInfo;
 import com.yunxinlink.notes.share.ShareItem;
 import com.yunxinlink.notes.share.SimplePlatformActionListener;
+import com.yunxinlink.notes.ui.MainActivity;
+import com.yunxinlink.notes.ui.NoteEditActivity;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -484,5 +491,39 @@ public class NoteUtil {
         });
 
         titleLayout.addView(view, params);
+    }
+
+    /**
+     * 在通知栏上创建快捷方式
+     */
+    public static void createNotificationShortcut(Context context, int notifyId) {
+
+        Intent addIntent = new Intent(context, NoteEditActivity.class);
+        PendingIntent addPendingIntent = PendingIntent.getActivity(context, 0, addIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        addIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_NEW_TASK);
+        addIntent.putExtra(NoteEditActivity.ARG_HAS_LOCK_CONTROLLER, false);
+
+        RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.layout_nofitication_create);
+        remoteViews.setOnClickPendingIntent(R.id.btn_plus, addPendingIntent);
+
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK|Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 1, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+        Notification notification = builder.setAutoCancel(false)
+                .setOngoing(true)
+                .setContent(remoteViews)
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .build();
+        NotificationManagerCompat.from(context).notify(notifyId, notification);
+    }
+
+    /**
+     * 取消状态栏的快捷方式
+     */
+    public static void cancelNotificationShortcut(Context context, int notifyId) {
+        NotificationManagerCompat.from(context).cancel(notifyId);
     }
 }

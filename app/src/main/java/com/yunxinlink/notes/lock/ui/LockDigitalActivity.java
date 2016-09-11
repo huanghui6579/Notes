@@ -564,7 +564,7 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
 
     @Override
     public boolean isSwipeBackEnabled() {
-        return false;
+        return !isLockAction();
     }
 
     /**

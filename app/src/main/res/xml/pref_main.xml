@@ -11,18 +11,26 @@
     <Preference android:title="@string/action_upload"
         android:icon="@drawable/ic_sync_black_24dp"
         android:summary="@string/settings_sync_summary">
-        <intent android:action="com.yunxinlink.notes.SYNC_SETTINGS"/>
+        <intent
+            android:targetClass="com.yunxinlink.notes.ui.settings.SettingsSyncActivity"
+            android:targetPackage="com.yunxinlink.notes"/>
     </Preference>
 
     <Preference android:title="@string/settings_security_title"
         android:icon="@drawable/ic_action_lock"
         android:summary="@string/settings_security_summary">
-        <intent android:action="com.yunxinlink.notes.SECURITY_SETTINGS"/>
+        <intent
+            android:targetClass="com.yunxinlink.notes.ui.settings.SettingsSecurityActivity"
+            android:targetPackage="com.yunxinlink.notes"/>
     </Preference>        
 
     <Preference android:title="@string/settings_more_title"
         android:icon="@drawable/ic_more_horiz"
-        android:summary="@string/settings_more_summary"/>
+        android:summary="@string/settings_more_summary">
+        <intent
+            android:targetClass="com.yunxinlink.notes.ui.settings.SettingsMoreActivity"
+            android:targetPackage="com.yunxinlink.notes"/>
+    </Preference>
 
     <PreferenceCategory android:title="@string/settings_category_other"/>
 

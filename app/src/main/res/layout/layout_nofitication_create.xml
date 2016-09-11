@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageView android:id="@id/iv_icon"
+        android:layout_width="@dimen/notification_icon_size"
+        android:layout_height="@dimen/notification_icon_size"
+        android:layout_marginStart="12dp"
+        android:layout_marginLeft="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginRight="12dp"
+        android:layout_gravity="start|center_vertical"
+        android:scaleType="centerInside"
+        android:src="@mipmap/ic_launcher"/>
+
+    <LinearLayout
+        android:id="@+id/notification_main_column"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginRight="@dimen/list_item_height_middle"
+        android:layout_marginEnd="@dimen/list_item_height_middle"
+        android:layout_marginLeft="@dimen/list_item_height_middle"
+        android:layout_marginStart="@dimen/list_item_height_middle"
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical" >
+
+        <TextView android:id="@+id/title"
+            android:textAppearance="@style/TextAppearance.AppCompat.Notification.Title"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:singleLine="true"
+            android:ellipsize="marquee"
+            android:fadingEdge="horizontal"
+            android:gravity="bottom"
+            android:layout_weight="1"
+            android:text="@string/app_name"/>
+
+        <TextView android:id="@+id/text"
+            android:textAppearance="@style/TextAppearance.AppCompat.Notification"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:singleLine="true"
+            android:ellipsize="marquee"
+            android:fadingEdge="horizontal"
+            android:gravity="top"
+            android:layout_weight="1"
+            android:text="@string/settings_notification_create_shortcut"/>
+    </LinearLayout>
+
+    <ImageView android:id="@+id/btn_plus"
+        android:layout_width="@dimen/notification_icon_size"
+        android:layout_height="@dimen/notification_icon_size"
+        android:scaleType="centerInside"
+        android:layout_gravity="end|center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@drawable/ic_plus"
+        android:tint="@color/primary_material_light"
+        android:background="@drawable/common_action_bar_item_background_selector"/>
+
+</FrameLayout>

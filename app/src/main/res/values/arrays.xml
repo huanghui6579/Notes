@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    
+
     <string-array name="pwd_type">
         <item>数字</item>
         <item>图案</item>
@@ -10,4 +10,10 @@
         <item>1</item>
         <item>2</item>
     </integer-array>
+
+
+    <string-array name="theme_type">
+        <item>默认</item>
+        <item>夜间</item>
+    </string-array>
 </resources>

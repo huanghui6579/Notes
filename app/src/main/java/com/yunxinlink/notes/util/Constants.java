@@ -17,6 +17,9 @@ public class Constants {
     public static final String DATA_MSG_ATT_FOLDER_NAME = "attach";
     public static final String APP_NOTES_FOLDER_NAME = "notes";
 
+    //通知栏快捷方式的通知id，1000
+    public static final int ID_NOTIFY_CREATE_SHORTCUT = 1000;
+
     /**
      * 最多只处理5个分享过来的附件
      */

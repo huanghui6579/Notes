@@ -7,4 +7,7 @@
     <string name="settings_key_security_show_widget">security_show_widget</string>
     <string name="settings_key_security_modify_password">security_modify_password</string>
     <string name="settings_key_security_type">security_type</string>
+    <string name="settings_key_more_shortcut">more_shortcut</string>
+    <string name="settings_key_more_theme">more_theme</string>
+    <string name="settings_key_theme_mode">theme_mode</string>
 </resources>
