@@ -31,4 +31,9 @@
 
     <color name="text_color_pressed">@color/colorPrimary</color>
     <color name="text_color_normal">@color/text_color</color>
+    
+    <color name="panel_bg_color_dark">#303030</color>
+    <color name="widget_item_selected">#2196f3</color>
+    <color name="widget_item_normal">@color/panel_bg_color_dark</color>
+    <color name="widget_item_border_color">#56dedede</color>
 </resources>

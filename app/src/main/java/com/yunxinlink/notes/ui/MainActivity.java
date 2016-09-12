@@ -39,6 +39,7 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.test.TestWidgetActivity;
 import com.yunxinlink.notes.ui.settings.SettingsActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -822,9 +823,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         weibo.authorize();
                     }*/
 
-                intent = new Intent(mContext, NoteEditActivity.class);
+//                intent = new Intent(mContext, NoteEditActivity.class);
 //                intent = new Intent(mContext, TestActivity.class);
 //                intent = new Intent(mContext, LockDigitalActivity.class);
+                intent = new Intent(mContext, TestWidgetActivity.class);
                 intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);
                 intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
                 startActivity(intent);

@@ -898,6 +898,11 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
 
         }
 
+        @Override
+        public void onItemCompleted() {
+            
+        }
+
         /**
          * 清单列表的holder
          */

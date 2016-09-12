@@ -67,6 +67,8 @@ public abstract class BaseActivity extends SwipeBackActivity {
     protected void onCreate(Bundle savedInstanceState) {
         mContext = this;
 
+        initWindow();
+
         super.onCreate(savedInstanceState);
 
         mLockerActivityDelegate = LockerDelegate.getInstance(getApplicationContext());
@@ -99,6 +101,13 @@ public abstract class BaseActivity extends SwipeBackActivity {
         if (mToolBar != null) {
             updateToolBar(mToolBar);
         }
+    }
+
+    /**
+     * 设置window的属性
+     */
+    protected void initWindow() {
+        
     }
 
     @Override

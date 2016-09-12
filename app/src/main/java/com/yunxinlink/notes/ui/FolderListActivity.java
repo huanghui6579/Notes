@@ -625,6 +625,11 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         public void onItemDismiss(int position) {
 
         }
+
+        @Override
+        public void onItemCompleted() {
+            
+        }
     }
     
     /**

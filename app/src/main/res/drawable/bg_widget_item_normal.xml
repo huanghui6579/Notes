@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <stroke android:color="@color/widget_item_border_color" android:width="@dimen/list_divider_height"/>
+    <size android:width="@dimen/list_item_height_small"
+        android:height="@dimen/list_item_height_small"/>
+    <solid android:color="@color/widget_item_normal"/>
+</shape>

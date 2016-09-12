@@ -55,4 +55,9 @@ public interface ItemTouchHelperAdapter {
      * @see RecyclerView.ViewHolder#getAdapterPosition()
      */
     void onItemDismiss(int position);
+
+    /**
+     * 停止拖动
+     */
+    void onItemCompleted();
 }
