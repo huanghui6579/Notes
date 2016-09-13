@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:topLeftRadius="@dimen/widget_bg_radius_size"
+        android:topRightRadius="@dimen/widget_bg_radius_size"/>
+    <solid android:color="@color/widget_color_primary_dark"/>
+</shape>

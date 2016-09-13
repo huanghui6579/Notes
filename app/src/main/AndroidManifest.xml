@@ -178,7 +178,11 @@
                 android:resource="@xml/short_create_app_widget_info" />
         </receiver>
 
-        <activity android:name=".test.TestWidgetActivity"></activity>
+        <activity android:name=".appwidget.ShortCreateAppWidgetConfigure">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

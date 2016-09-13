@@ -273,4 +273,5 @@
 
     <string name="appwidget_text">@string/app_name</string>
     <string name="add_widget">添加小部件</string>
+    <string name="widget_item_max_tip">不能添加更多了哦~</string>
 </resources>

@@ -24,6 +24,10 @@ public class Constants {
      * 最多只处理5个分享过来的附件
      */
     public static final int MAX_SHARE_ATTACH_SIZE = 5;
+    /**
+     * 桌面显示的widget项的数量
+     */
+    public static final int MAX_WIDGET_ITEM_SIZE = 5;
     
     //菜单各项的不可用的alpha颜色值
     public static final float MENU_ITEM_COLOR_ALPHA = 0.25F;

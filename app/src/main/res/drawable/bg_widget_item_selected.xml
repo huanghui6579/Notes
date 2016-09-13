@@ -4,5 +4,5 @@
     
     <size android:width="@dimen/list_item_height_small"
         android:height="@dimen/list_item_height_small"/>
-    <solid android:color="@color/widget_item_selected"/>
+    <solid android:color="@color/widget_color_primary"/>
 </shape>

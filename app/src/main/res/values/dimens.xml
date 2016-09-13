@@ -63,5 +63,10 @@ http://developer.android.com/guide/topics/appwidgets/index.html#CreatingLayout
     <dimen name="widget_margin">8dp</dimen>
     <dimen name="widget_item_text_margin_top">4dp</dimen>
     <dimen name="icon_size_small">24dp</dimen>
+    <dimen name="icon_size_middle">48dp</dimen>
+    <dimen name="widget_header_name_size">12sp</dimen>
+    <dimen name="widget_item_settings_icon_size">16dp</dimen>
+    <dimen name="widget_item_margin_left">8dp</dimen>
+    <dimen name="widget_bg_radius_size">2dp</dimen>
 
 </resources>

@@ -146,4 +146,14 @@
         <item name="android:textColor">@color/primary_text_default_material_light</item>
         <item name="android:textSize">@dimen/abc_text_size_body_1_material</item>
     </style>
+    
+    <style name="WidgetItemStyle">
+        <item name="android:layout_width">@dimen/icon_size_middle</item>
+        <item name="android:layout_height">@dimen/icon_size_middle</item>
+        <item name="android:scaleType">centerInside</item>
+        <item name="android:tint">@android:color/white</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">@drawable/common_action_bar_item_background_selector</item>
+    </style>
 </resources>

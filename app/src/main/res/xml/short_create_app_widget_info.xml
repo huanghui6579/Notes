@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:initialKeyguardLayout="@layout/short_create_app_widget"
     android:initialLayout="@layout/short_create_app_widget"
     android:minHeight="40dp"
     android:minWidth="250dp"
-    android:previewImage="@drawable/example_appwidget_preview"
+    android:previewImage="@drawable/short_create_appwidget_preview"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="86400000"
-    android:widgetCategory="home_screen"></appwidget-provider>
+    android:configure="com.yunxinlink.notes.appwidget.ShortCreateAppWidgetConfigure"
+    android:widgetCategory="home_screen"
+    tools:targetApi="jelly_bean_mr1" />

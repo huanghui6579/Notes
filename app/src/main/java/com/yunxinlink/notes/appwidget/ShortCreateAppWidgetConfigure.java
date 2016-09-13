@@ -1,6 +1,9 @@
-package com.yunxinlink.notes.test;
+package com.yunxinlink.notes.appwidget;
 
+import android.appwidget.AppWidgetManager;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
@@ -20,6 +23,7 @@ import com.yunxinlink.notes.helper.OnStartDragListener;
 import com.yunxinlink.notes.helper.SimpleItemTouchHelperCallback;
 import com.yunxinlink.notes.listener.OnItemClickListener;
 import com.yunxinlink.notes.ui.BaseActivity;
+import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.widget.LayoutManagerFactory;
 import com.yunxinlink.notes.widget.SpacesItemDecoration;
@@ -28,7 +32,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TestWidgetActivity extends BaseActivity implements OnStartDragListener, OnItemClickListener, View.OnClickListener {
+/**
+ * 快速创建编辑项widget的配置界面
+ * @author huanghui1
+ * @update 2016/9/13 19:02
+ * @version: 1.0.0
+ */
+public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnStartDragListener, OnItemClickListener, View.OnClickListener {
     
     private RecyclerView mRecyclerView;
     
@@ -62,7 +72,7 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
 
     @Override
     protected int getContentView() {
-        return R.layout.activity_test_widget;
+        return R.layout.appwidget_conf_short_create;
     }
     
     private void loadData() {
@@ -74,7 +84,7 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
             item.resId = resArray[i];
             item.sort = i + 1;
             
-            if (i < 5) {
+            if (i < Constants.MAX_WIDGET_ITEM_SIZE) {
                 item.isChecked = true;
             }
             
@@ -100,6 +110,8 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
 
     @Override
     protected void initData() {
+        onCanceledConfigure();
+
         loadData();
     }
 
@@ -124,21 +136,35 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
         WidgetViewHolder tagHolder = (WidgetViewHolder) view.getTag();
         if (tagHolder == null) return;
         WidgetItem item = items.get(position);
+        int firstUnIndex = getFirstUnSelected();
         if (item.isChecked) {  //由选中变为没选中
-            int lastIndex = getLastSelected();
             item.isChecked = false;
             tagHolder.itemView.setSelected(false);
-            if (lastIndex != -1 && position != lastIndex - 1) {
-                int toPosition = lastIndex - 1;
+            if (firstUnIndex != -1 && position != firstUnIndex - 1) {
+                int toPosition = firstUnIndex - 1;
                 toPosition = toPosition < 0 ? 0 : toPosition;
                 swapItem(items, position, toPosition);
                 mRecyclerView.getAdapter().notifyItemRangeChanged(position, Math.abs(toPosition - position) + 1);
             }
             SystemUtil.setViewEnable(btnOk, false);
         } else {    //由没选中到选中
+            int selectedSize = getSelectedSize();
+            if (selectedSize >= Constants.MAX_WIDGET_ITEM_SIZE) {   //已经选了5个了
+                SystemUtil.makeShortToast(R.string.widget_item_max_tip);
+                return;
+            }
             item.isChecked = true;
             tagHolder.itemView.setSelected(true);
-            if (hasMaxItem()) {
+            
+            if (position != firstUnIndex) {
+                int toPosition = firstUnIndex;
+                toPosition = toPosition >= items.size() ? items.size() - 1 : toPosition;
+                swapItem(items, position, toPosition);
+                mRecyclerView.getAdapter().notifyItemRangeChanged(toPosition, Math.abs(toPosition - position) + 1);
+            }
+            
+            selectedSize ++;
+            if (selectedSize >= Constants.MAX_WIDGET_ITEM_SIZE) {    //目前刚好满5个
                 SystemUtil.setViewEnable(btnOk, true);
             }
         }
@@ -146,17 +172,50 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
     }
 
     /**
-     * 选中是否达到最大数额
+     * 完成配置
+     */
+    private void onCompletedConfigure() {
+        Intent intent = getIntent();
+        Bundle extras = intent.getExtras();
+        if (extras != null) {
+            int widgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);//从intent中得出widgetId  
+            //通知 appwidget 的配置已完成  
+            Intent result = new Intent();
+            result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
+            setResult(RESULT_OK, result);
+            KLog.d(TAG, "onCompletedConfigure invoke");
+            finish();
+        }
+    }
+
+    /**
+     * 取消配置
+     */
+    private void onCanceledConfigure() {
+        Intent intent = getIntent();
+        Bundle extras = intent.getExtras();
+        if (extras != null) {
+            int widgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);//从intent中得出widgetId 
+            //通知 appwidget 的配置已取消  
+            Intent result = new Intent();
+            result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
+            setResult(RESULT_CANCELED, result);
+            KLog.d(TAG, "onCanceledConfigure invoke");
+        }
+    }
+
+    /**
+     * 获取选中的数量
      * @return
      */
-    private boolean hasMaxItem() {
+    private int getSelectedSize() {
         int size = 0;
         for (WidgetItem item : items) {
             if (item.isChecked) {
                 size ++;
             }
         }
-        return size >= 5;
+        return size;
     }
 
     /**
@@ -188,10 +247,10 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
     }
 
     /**
-     * 获取最后一个选中的索引
+     * 获取第一个没有选中的索引
      * @return
      */
-    private int getLastSelected() {
+    private int getFirstUnSelected() {
         int size = items.size();
         int index = -1;
         for (int i = 0; i < size; i++) {
@@ -206,7 +265,7 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
 
     @Override
     public void onClick(View v) {
-        
+        onCompletedConfigure();
     }
 
     class WidgetItem {
@@ -268,7 +327,7 @@ public class TestWidgetActivity extends BaseActivity implements OnStartDragListe
 
         @Override
         public WidgetViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = mInflater.inflate(R.layout.test_item_widget, parent, false);
+            View view = mInflater.inflate(R.layout.item_appwidget_conf_short_create, parent, false);
             WidgetViewHolder holder = new WidgetViewHolder(view);
             holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
