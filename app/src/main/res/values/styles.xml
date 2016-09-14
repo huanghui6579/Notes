@@ -27,6 +27,15 @@
     <style name="AppTheme.NoActionBar.Default.Main">
         <item name="android:windowIsTranslucent">false</item>
     </style>
+    
+    <style name="AppTheme.NoActionBar.Dark">
+        <item name="colorPrimary">@color/colorPrimaryNight</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryNightDark</item>
+    </style>
+    
+    <style name="AppTheme.NoActionBar.Dark.Default">
+        
+    </style>
 
     <style name="AppTheme.ActionMode" parent="Widget.AppCompat.ActionMode">
         <item name="background">?attr/colorPrimary</item>
@@ -154,6 +163,6 @@
         <item name="android:tint">@android:color/white</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
-        <item name="android:background">@drawable/common_action_bar_item_background_selector</item>
+        <item name="android:background">@drawable/common_background_borderless_selector</item>
     </style>
 </resources>

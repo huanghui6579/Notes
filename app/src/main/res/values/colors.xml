@@ -37,4 +37,9 @@
     <color name="widget_color_primary_dark">#1976d2</color>
     <color name="widget_item_normal">@color/panel_bg_color_dark</color>
     <color name="widget_item_border_color">#56dedede</color>
+    
+    <color name="text_color_night">#C1C1C1</color>
+
+    <color name="colorPrimaryNight">#4D5258</color>
+    <color name="colorPrimaryNightDark">#3D4146</color>
 </resources>

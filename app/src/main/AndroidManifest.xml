@@ -178,7 +178,8 @@
                 android:resource="@xml/short_create_app_widget_info" />
         </receiver>
 
-        <activity android:name=".appwidget.ShortCreateAppWidgetConfigure">
+        <activity android:name=".appwidget.ShortCreateAppWidgetConfigure"
+            android:theme="@style/AppTheme.NoActionBar.Dark.Default">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
             </intent-filter>

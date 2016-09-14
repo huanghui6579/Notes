@@ -40,6 +40,7 @@ import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.appwidget.WidgetAction;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.db.Provider;
@@ -94,6 +95,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     public static final String ARG_FOLDER_ID = "folderId";
     public static final String ARG_OPT_DELETE = "opt_delete";
     public static final String ARG_HAS_LOCK_CONTROLLER = "has_lock_controller";
+    
+    public static final String ARG_NOTE_ADD_TYPE = "note_add_type";
 
     private static final int MSG_INIT_BOTTOM_TOOL_BAR = 3;
     private static final int MSG_READ_CONTACT_SUCCESS = 4;
@@ -737,15 +740,54 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         if (mNoteEditFragment != null) {
             mNoteEditFragment.initEditInfo();
-            
+
             //处理分享过来的数据
             handleShareAction();
-            
+
             if (mNote.getId() <= 0) {   //没有内容，可能是新建笔记
                 showNote(mDetailNote);
             }
-            
+
             changeNoteMode(true);
+
+            //处理桌面小部件的事件
+            createNote();
+        }
+    }
+
+    /**
+     * 出来桌面小部件的各类型的添加笔记
+     */
+    private void createNote() {
+        Intent intent = getIntent();
+        if (intent == null) {
+            return;
+        }
+        int noteType = intent.getIntExtra(ARG_NOTE_ADD_TYPE, -1);
+        if (noteType <= 0) {
+            return;
+        }
+                
+        WidgetAction widgetAction = WidgetAction.valueOf(noteType);
+        if (widgetAction == null) {
+            return;
+        }
+        switch (widgetAction) {
+            case NOTE_CAMERA:
+                takePicture();
+                break;
+            case NOTE_VOICE:
+                makeVoice();
+                break;
+            case NOTE_BRUSH:
+                makePaint();
+                break;
+            case NOTE_FILE:
+                chooseFile();
+                break;
+            case NOTE_PHOTO:
+                chooseImage();
+                break;
         }
     }
 
@@ -1057,7 +1099,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 saveNote(false);
                 break;
             case R.id.action_photo: //图片
-                SystemUtil.choseImage((Activity) mContext, REQ_PICK_IMAGE);
+                chooseImage();
                 break;
             case R.id.action_attach:    //添加附件
                 attachView = getToolBarMenuView(R.id.action_attach);
@@ -2242,6 +2284,65 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     }
 
     /**
+     * 添加拍照
+     */
+    private void takePicture() {
+        try {
+            String sid = getNoteSid();
+            mAttachFile = null;
+            mAttachFile = SystemUtil.getCameraFile(sid);
+            if (mAttachFile == null) {
+                SystemUtil.makeShortToast(R.string.tip_mkfile_error);
+            } else {
+                openCamera(mAttachFile);
+            }
+        } catch (IOException e) {
+            SystemUtil.makeShortToast(R.string.tip_camera_error);
+            KLog.e(TAG, "----OnPopMenuItemClickListener---onMenuItemClick----openCamera---error--" + e.getMessage());
+        }
+    }
+
+    /**
+     * 添加语音
+     */
+    private void makeVoice() {
+        mAttachFile = null;
+        try {
+            startRecorder();
+        } catch (Exception e) {
+            SystemUtil.makeShortToast(R.string.record_error);
+            KLog.e(TAG, "---startRecorder--error--" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 添加涂鸦
+     */
+    private void makePaint() {
+        Intent intent = new Intent(mContext, HandWritingActivity.class);
+        AttachSpec attachSpec = new AttachSpec();
+        attachSpec.noteSid = getNoteSid();
+        attachSpec.attachType = Attach.PAINT;
+        intent.putExtra(Constants.ARG_CORE_OBJ, attachSpec);
+        startActivityForResult(intent, REQ_PAINT);
+    }
+
+    /**
+     * 添加附件
+     */
+    private void chooseFile() {
+        SystemUtil.choseFile(NoteEditActivity.this, null, REQ_PICK_FILE);
+    }
+
+    /**
+     * 添加图片
+     */
+    private void chooseImage() {
+        SystemUtil.choseImage((Activity) mContext, REQ_PICK_IMAGE);
+    }
+
+    /**
      * 附件加载完成的回调
      */
     class SimpleAttachAddCompleteListenerImpl extends SimpleAttachAddCompleteListener {
@@ -2270,29 +2371,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             Intent intent = null;
             switch (item.getItemId()) {
                 case R.id.action_camera: //拍照
-                    try {
-                        sid = getNoteSid();
-                        mAttachFile = null;
-                        mAttachFile = SystemUtil.getCameraFile(sid);
-                        if (mAttachFile == null) {
-                            SystemUtil.makeShortToast(R.string.tip_mkfile_error);
-                        } else {
-                            openCamera(mAttachFile);
-                        }
-                    } catch (IOException e) {
-                        SystemUtil.makeShortToast(R.string.tip_camera_error);
-                        KLog.e(TAG, "----OnPopMenuItemClickListener---onMenuItemClick----openCamera---error--" + e.getMessage());
-                    }
+                    takePicture();
                     break;
                 case R.id.action_voice: //添加语音
-                    mAttachFile = null;
-                    try {
-                        startRecorder();
-                    } catch (Exception e) {
-                        SystemUtil.makeShortToast(R.string.record_error);
-                        KLog.e(TAG, "---startRecorder--error--" + e.getMessage());
-                        e.printStackTrace();
-                    }
+                    makeVoice();
                     break;
                 case R.id.action_delete:    //删除
                     if (mNote != null) {
@@ -2302,15 +2384,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     }
                     break;
                 case R.id.action_brush: //涂鸦
-                    intent = new Intent(mContext, HandWritingActivity.class);
-                    AttachSpec attachSpec = new AttachSpec();
-                    attachSpec.noteSid = getNoteSid();
-                    attachSpec.attachType = Attach.PAINT;
-                    intent.putExtra(Constants.ARG_CORE_OBJ, attachSpec);
-                    startActivityForResult(intent, REQ_PAINT);
+                    makePaint();
                     break;
                 case R.id.action_file:    //添加附件
-                    SystemUtil.choseFile(NoteEditActivity.this, null, REQ_PICK_FILE);
+                    chooseFile();
                     break;
                 case R.id.action_share:    //分享
                     if (mDetailNote == null || TextUtils.isEmpty(mDetailNote.getNoteText())) {

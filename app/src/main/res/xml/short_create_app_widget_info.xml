@@ -6,7 +6,7 @@
     android:minHeight="40dp"
     android:minWidth="250dp"
     android:previewImage="@drawable/short_create_appwidget_preview"
-    android:resizeMode="horizontal|vertical"
+    android:resizeMode="none"
     android:updatePeriodMillis="86400000"
     android:configure="com.yunxinlink.notes.appwidget.ShortCreateAppWidgetConfigure"
     android:widgetCategory="home_screen"

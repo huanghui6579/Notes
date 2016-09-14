@@ -1,7 +1,12 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="@dimen/widget_margin">
+    android:paddingLeft="@dimen/widget_margin"
+    android:paddingStart="@dimen/widget_margin"
+    android:paddingRight="@dimen/widget_margin"
+    android:paddingEnd="@dimen/widget_margin"
+    android:paddingTop="@dimen/widget_margin_vertical"
+    android:paddingBottom="@dimen/widget_margin_vertical">
     
     <RelativeLayout
         android:id="@+id/header_layout"
@@ -24,7 +29,7 @@
             android:layout_centerVertical="true"
             android:clickable="true"
             android:focusable="true"
-            android:background="@drawable/common_action_bar_item_background_selector"
+            android:background="@drawable/common_background_borderless_selector"
             android:layout_marginLeft="@dimen/widget_margin"
             android:layout_marginStart="@dimen/widget_margin"/>
         <TextView
@@ -60,12 +65,13 @@
             android:layout_centerVertical="true"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
-            android:background="@drawable/common_action_bar_item_background_selector"
+            android:background="@drawable/common_background_borderless_selector"
             android:clickable="true"
             android:focusable="true"
             android:src="@mipmap/ic_launcher"/>
         
         <LinearLayout
+            android:id="@+id/bottom_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_toRightOf="@id/iv_logo"
@@ -74,22 +80,27 @@
             android:layout_marginStart="@dimen/widget_item_margin_left"
             android:orientation="horizontal">
             <ImageView
+                android:id="@+id/item_1"
                 style="@style/WidgetItemStyle"
                 android:layout_weight="1"
                 android:src="@drawable/ic_note_add"/>
             <ImageView
+                android:id="@+id/item_2"
                 style="@style/WidgetItemStyle"
                 android:layout_weight="1"
                 android:src="@drawable/ic_action_camera"/>
             <ImageView
+                android:id="@+id/item_3"
                 style="@style/WidgetItemStyle"
                 android:layout_weight="1"
                 android:src="@drawable/ic_action_voice"/>
             <ImageView
+                android:id="@+id/item_4"
                 style="@style/WidgetItemStyle"
                 android:layout_weight="1"
                 android:src="@drawable/ic_action_brush"/>
             <ImageView
+                android:id="@+id/item_5"
                 style="@style/WidgetItemStyle"
                 android:layout_weight="1"
                 android:src="@drawable/ic_action_insert_file"/>

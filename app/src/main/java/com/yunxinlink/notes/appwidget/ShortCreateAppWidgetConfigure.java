@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
@@ -29,7 +28,6 @@ import com.yunxinlink.notes.widget.LayoutManagerFactory;
 import com.yunxinlink.notes.widget.SpacesItemDecoration;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,14 +40,14 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
     
     private RecyclerView mRecyclerView;
     
-    private List<WidgetItem> items;
+    private static List<WidgetItem> mWidgetItems;
 
     private ItemTouchHelper mItemTouchHelper;
     
-    private Button btnOk;
+    private Button mBtnOk;
     
-    private String[] nameArray = null;
-    private int[] resArray = {
+    private String[] mNameArray = null;
+    private int[] mResArray = {
             R.drawable.ic_note_add,
             R.drawable.ic_action_camera,
             R.drawable.ic_action_voice,
@@ -58,15 +56,24 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
             R.drawable.ic_action_insert_file,
             R.drawable.ic_action_search
     };
-
-    @Override
-    protected void initWindow() {
-        AppCompatDelegate appCompatDelegate = getDelegate();
-        appCompatDelegate.setLocalNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-    }
+    
+    private int[] mWidgetTypeArray = {
+            WidgetAction.NOTE_TEXT.ordinal(),
+            WidgetAction.NOTE_CAMERA.ordinal(),
+            WidgetAction.NOTE_VOICE.ordinal(),
+            WidgetAction.NOTE_BRUSH.ordinal(),
+            WidgetAction.NOTE_PHOTO.ordinal(),
+            WidgetAction.NOTE_FILE.ordinal(),
+            WidgetAction.NOTE_SEARCH.ordinal()
+    };
 
     @Override
     public boolean isSwipeBackEnabled() {
+        return false;
+    }
+
+    @Override
+    protected boolean hasLockedController() {
         return false;
     }
 
@@ -76,22 +83,22 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
     }
     
     private void loadData() {
-        items = new ArrayList<>();
-        int size = resArray.length;
+        mWidgetItems = new ArrayList<>();
+        int size = mResArray.length;
         for (int i = 0; i < size; i++) {
             WidgetItem item = new WidgetItem();
-            item.name = nameArray[i];
-            item.resId = resArray[i];
-            item.sort = i + 1;
-            
+            item.setName(mNameArray[i]);
+            item.setResId(mResArray[i]);
+            item.setSort(i + 1);
+            item.setType(mWidgetTypeArray[i]);
             if (i < Constants.MAX_WIDGET_ITEM_SIZE) {
-                item.isChecked = true;
+                item.setChecked(true);
             }
             
-            items.add(item);
+            mWidgetItems.add(item);
         }
 
-        WidgetAdapter adapter = new WidgetAdapter(items, this, this);
+        WidgetAdapter adapter = new WidgetAdapter(mWidgetItems, this, this);
         LayoutManagerFactory layoutManagerFactory = new LayoutManagerFactory();
         layoutManagerFactory.setGridSpanCount(4);
 
@@ -118,10 +125,10 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
     @Override
     protected void initView() {
         mRecyclerView = (RecyclerView) findViewById(R.id.lv_data);
-        btnOk = (Button) findViewById(R.id.btn_ok);
-        nameArray = getResources().getStringArray(R.array.widget_item_names);
+        mBtnOk = (Button) findViewById(R.id.btn_ok);
+        mNameArray = getResources().getStringArray(R.array.widget_item_names);
 
-        btnOk.setOnClickListener(this);
+        mBtnOk.setOnClickListener(this);
     }
 
     @Override
@@ -135,37 +142,37 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
         if (position == null) return;
         WidgetViewHolder tagHolder = (WidgetViewHolder) view.getTag();
         if (tagHolder == null) return;
-        WidgetItem item = items.get(position);
+        WidgetItem item = mWidgetItems.get(position);
         int firstUnIndex = getFirstUnSelected();
-        if (item.isChecked) {  //由选中变为没选中
-            item.isChecked = false;
+        if (item.isChecked()) {  //由选中变为没选中
+            item.setChecked(false);
             tagHolder.itemView.setSelected(false);
             if (firstUnIndex != -1 && position != firstUnIndex - 1) {
                 int toPosition = firstUnIndex - 1;
                 toPosition = toPosition < 0 ? 0 : toPosition;
-                swapItem(items, position, toPosition);
+                swapItem(mWidgetItems, position, toPosition);
                 mRecyclerView.getAdapter().notifyItemRangeChanged(position, Math.abs(toPosition - position) + 1);
             }
-            SystemUtil.setViewEnable(btnOk, false);
+            SystemUtil.setViewEnable(mBtnOk, false);
         } else {    //由没选中到选中
             int selectedSize = getSelectedSize();
             if (selectedSize >= Constants.MAX_WIDGET_ITEM_SIZE) {   //已经选了5个了
                 SystemUtil.makeShortToast(R.string.widget_item_max_tip);
                 return;
             }
-            item.isChecked = true;
+            item.setChecked(true);
             tagHolder.itemView.setSelected(true);
             
             if (position != firstUnIndex) {
                 int toPosition = firstUnIndex;
-                toPosition = toPosition >= items.size() ? items.size() - 1 : toPosition;
-                swapItem(items, position, toPosition);
+                toPosition = toPosition >= mWidgetItems.size() ? mWidgetItems.size() - 1 : toPosition;
+                swapItem(mWidgetItems, position, toPosition);
                 mRecyclerView.getAdapter().notifyItemRangeChanged(toPosition, Math.abs(toPosition - position) + 1);
             }
             
             selectedSize ++;
             if (selectedSize >= Constants.MAX_WIDGET_ITEM_SIZE) {    //目前刚好满5个
-                SystemUtil.setViewEnable(btnOk, true);
+                SystemUtil.setViewEnable(mBtnOk, true);
             }
         }
         
@@ -182,6 +189,7 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
             //通知 appwidget 的配置已完成  
             Intent result = new Intent();
             result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
+            ShortCreateAppWidget.updateAppWidget(mContext, AppWidgetManager.getInstance(mContext), widgetId);
             setResult(RESULT_OK, result);
             KLog.d(TAG, "onCompletedConfigure invoke");
             finish();
@@ -210,12 +218,28 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
      */
     private int getSelectedSize() {
         int size = 0;
-        for (WidgetItem item : items) {
-            if (item.isChecked) {
+        for (WidgetItem item : mWidgetItems) {
+            if (item.isChecked()) {
                 size ++;
             }
         }
         return size;
+    }
+
+    /**
+     * 获取选择的item项数组
+     * @return
+     */
+    static WidgetItem[] getSelectedItems() {
+        if (SystemUtil.isEmpty(mWidgetItems)) {
+            KLog.d(TAG, "getSelectedItems mWidgetItems is null");
+            return null;
+        }
+        WidgetItem[] items = new WidgetItem[Constants.MAX_WIDGET_ITEM_SIZE];
+        for (int i = 0; i < Constants.MAX_WIDGET_ITEM_SIZE; i++) {
+            items[i] = mWidgetItems.get(i);
+        }
+        return items;
     }
 
     /**
@@ -226,14 +250,17 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
      * @return
      */
     private boolean swapItem(List<WidgetItem> list, int fromPosition, int toPosition) {
-        Collections.swap(list, fromPosition, toPosition);
+        WidgetItem fromItem = list.get(fromPosition);
+        list.remove(fromPosition);
+        list.add(toPosition, fromItem);
+//        Collections.swap(list, fromPosition, toPosition);
 
         //最小的位置
         int fromPos = Math.min(fromPosition, toPosition);
         int size = list.size() - fromPos;
         for (int i = fromPos; i < size; i++) {
             WidgetItem item = list.get(i);
-            item.sort = i + 1;
+            item.setSort(i + 1);
         }
 
         AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
@@ -251,11 +278,11 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
      * @return
      */
     private int getFirstUnSelected() {
-        int size = items.size();
+        int size = mWidgetItems.size();
         int index = -1;
         for (int i = 0; i < size; i++) {
-            WidgetItem item = items.get(i);
-            if (!item.isChecked) {
+            WidgetItem item = mWidgetItems.get(i);
+            if (!item.isChecked()) {
                 index = i;
                 break;
             }
@@ -268,22 +295,7 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
         onCompletedConfigure();
     }
 
-    class WidgetItem {
-        String name;
-        int resId;
-        int sort;
-        
-        boolean isChecked;
-
-        @Override
-        public String toString() {
-            return "WidgetItem{" +
-                    "name='" + name + '\'' +
-                    ", sort=" + sort +
-                    ", isChecked=" + isChecked +
-                    '}';
-        }
-    }
+    
     
     class WidgetViewHolder extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         ImageView ivIcon;
@@ -337,7 +349,7 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
                         return false;
                     }
                     WidgetItem item = mList.get(pos);
-                    if (!item.isChecked) {
+                    if (!item.isChecked()) {
                         return false;
                     }
                     WidgetViewHolder tagHolder = (WidgetViewHolder) v.getTag();
@@ -363,10 +375,10 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
             holder.itemView.setTag(holder);
             holder.itemView.setTag(R.integer.item_tag_data, position);
             WidgetItem item = mList.get(position);
-            holder.ivIcon.setImageResource(item.resId);
-            holder.tvDesc.setText(item.name);
+            holder.ivIcon.setImageResource(item.getResId());
+            holder.tvDesc.setText(item.getName());
 
-            holder.itemView.setSelected(item.isChecked);
+            holder.itemView.setSelected(item.isChecked());
             
         }
 
@@ -378,7 +390,7 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
         @Override
         public boolean onItemMove(int fromPosition, int toPosition) {
             WidgetItem toItem = mList.get(toPosition);
-            if (!toItem.isChecked) {
+            if (!toItem.isChecked()) {
                 return false;
             }
             return swapItem(mList, fromPosition, toPosition);

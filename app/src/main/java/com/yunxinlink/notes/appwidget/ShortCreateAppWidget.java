@@ -1,5 +1,6 @@
 package com.yunxinlink.notes.appwidget;
 
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
@@ -9,6 +10,9 @@ import android.widget.RemoteViews;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.ui.MainActivity;
+import com.yunxinlink.notes.ui.NoteEditActivity;
+import com.yunxinlink.notes.ui.SearchActivity;
 
 /**
  * Implementation of App Widget functionality.
@@ -17,13 +21,52 @@ import com.yunxinlink.notes.R;
 public class ShortCreateAppWidget extends AppWidgetProvider {
     private static final String TAG = "ShortCreateAppWidget";
 
+    private static final int REQ_MAIN = 10;
+    private static final int REQ_SETTINGS = 11;
+    
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
 
-        CharSequence widgetText = context.getString(R.string.appwidget_text);
+//        CharSequence widgetText = context.getString(R.string.appwidget_text);
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.short_create_app_widget);
 //        views.setTextViewText(R.id.appwidget_text, widgetText);
+        
+        Intent mainIntent = new Intent(context, MainActivity.class);
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent mainPendingIntent = PendingIntent.getActivity(context, REQ_MAIN, mainIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        views.setOnClickPendingIntent(R.id.iv_logo, mainPendingIntent);
+        
+        Intent settingsIntent = new Intent(context, ShortCreateAppWidgetConfigure.class);
+        settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle extra = new Bundle();
+        extra.putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        settingsIntent.putExtras(extra);
+        PendingIntent settingsPendingIntent = PendingIntent.getActivity(context, REQ_SETTINGS, settingsIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        views.setOnClickPendingIntent(R.id.btn_settings, settingsPendingIntent);
+
+        WidgetItem[] widgetItems = ShortCreateAppWidgetConfigure.getSelectedItems();
+        if (widgetItems != null && widgetItems.length > 0) {
+            //Get the ID for R.layout.widget_blue
+            int length = widgetItems.length;
+            for (int i = 0; i < length; i++) {
+                WidgetItem item = widgetItems[i];
+                int resId = context.getResources().getIdentifier("item_" + (i + 1), "id", context.getPackageName());
+                if (resId != 0) {
+                    Intent intent = null;
+                    if (item.getType() == WidgetAction.NOTE_SEARCH.ordinal()) { //搜索
+                        intent = new Intent(context, SearchActivity.class);
+                    } else {
+                        intent = new Intent(context, NoteEditActivity.class);
+                    }
+                    intent.putExtra(NoteEditActivity.ARG_NOTE_ADD_TYPE, item.getType());
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    PendingIntent pendingIntent = PendingIntent.getActivity(context, i + 1, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+                    views.setImageViewResource(resId, item.getResId());
+                    views.setOnClickPendingIntent(resId, pendingIntent);
+                }
+            }
+        }
 
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
@@ -59,7 +102,6 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
     @Override
     public void onAppWidgetOptionsChanged(Context context, AppWidgetManager appWidgetManager, int appWidgetId, Bundle newOptions) {
         KLog.d(TAG, "ShortCreateAppWidget onAppWidgetOptionsChanged");
-        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions);
     }
 
     @Override
