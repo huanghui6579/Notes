@@ -9,7 +9,10 @@ import android.os.Bundle;
 import android.widget.RemoteViews;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.cache.FolderCache;
+import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.ui.SearchActivity;
@@ -26,7 +29,7 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
     
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
-
+        KLog.d(TAG, "updateAppWidget invoke");
 //        CharSequence widgetText = context.getString(R.string.appwidget_text);
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.short_create_app_widget);
@@ -44,9 +47,19 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
         settingsIntent.putExtras(extra);
         PendingIntent settingsPendingIntent = PendingIntent.getActivity(context, REQ_SETTINGS, settingsIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_settings, settingsPendingIntent);
+        
+        String defaultFolderSid = ((NoteApplication) context.getApplicationContext()).getDefaultFolderSid();
+
+        KLog.d(TAG, "default folder sid:" + defaultFolderSid);
 
         WidgetItem[] widgetItems = ShortCreateAppWidgetConfigure.getSelectedItems();
         if (widgetItems != null && widgetItems.length > 0) {
+
+            Folder defaultFolder = FolderCache.getInstance().getCacheFolder(defaultFolderSid);
+            if (defaultFolder != null) {
+                views.setTextViewText(R.id.tv_header_name, defaultFolder.getName());
+            }
+            
             //Get the ID for R.layout.widget_blue
             int length = widgetItems.length;
             for (int i = 0; i < length; i++) {
@@ -60,12 +73,15 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
                         intent = new Intent(context, NoteEditActivity.class);
                     }
                     intent.putExtra(NoteEditActivity.ARG_NOTE_ADD_TYPE, item.getType());
+                    intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, defaultFolderSid);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     PendingIntent pendingIntent = PendingIntent.getActivity(context, i + 1, intent, PendingIntent.FLAG_CANCEL_CURRENT);
                     views.setImageViewResource(resId, item.getResId());
                     views.setOnClickPendingIntent(resId, pendingIntent);
                 }
             }
+        } else {
+            KLog.d(TAG, "updateAppWidget widgetItems is null");
         }
 
         // Instruct the widget manager to update the widget

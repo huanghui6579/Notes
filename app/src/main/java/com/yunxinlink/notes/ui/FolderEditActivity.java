@@ -8,12 +8,12 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
-import com.yunxinlink.notes.util.log.Log;
 
 /**
  * 文件夹编辑、添加界面
@@ -162,7 +162,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                         mFolder.setUserId(getCurrentUserId());
                         mFolder = FolderManager.getInstance().addFolder(mFolder);
                         if (mFolder == null) {
-                            Log.w(TAG, "---saveFolder----addFolder----error--");
+                            KLog.w(TAG, "---saveFolder----addFolder----error--");
                         }
                     } else {    //更新
                         mFolder.setName(name);
@@ -170,8 +170,8 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                         mFolder.setIsLock(isLock);
                         mFolder.setDefault(isDefault);
                         boolean result = FolderManager.getInstance().updateFolder(mFolder);
-                        if (result) {
-                            Log.w(TAG, "---saveFolder----updateFolder----error--");
+                        if (!result) {
+                            KLog.w(TAG, "---saveFolder----updateFolder----error--");
                         }
                     }
                 }

@@ -94,6 +94,7 @@
     <string name="folder_move_no_more">没有可移动的文件夹</string>
 
     <string name="default_archive">所有</string>
+    <string name="default_archive_widget">所有文件夹</string>
 
     <string name="sort_style">排序方式</string>
     <string name="sort_modify_time">最近更新</string>

@@ -1,12 +1,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingLeft="@dimen/widget_margin"
-    android:paddingStart="@dimen/widget_margin"
-    android:paddingRight="@dimen/widget_margin"
-    android:paddingEnd="@dimen/widget_margin"
-    android:paddingTop="@dimen/widget_margin_vertical"
-    android:paddingBottom="@dimen/widget_margin_vertical">
+    style="@style/AppWidgetContainerStyle">
     
     <RelativeLayout
         android:id="@+id/header_layout"
@@ -44,7 +39,7 @@
             android:layout_toLeftOf="@id/btn_settings"
             android:layout_toStartOf="@id/btn_settings"
             android:layout_centerVertical="true"
-            android:text="所有文件夹"/>
+            android:text="@string/default_archive_widget"/>
     </RelativeLayout>
     
     <RelativeLayout

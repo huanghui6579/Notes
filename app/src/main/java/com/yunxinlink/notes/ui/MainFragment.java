@@ -1341,6 +1341,7 @@ public class MainFragment extends BaseFragment {
                 });
                 RecyclerView.LayoutManager layoutManager = mLayoutManagerFactory.getLayoutManager(getContext(), mIsGridStyle);
                 mRecyclerView.setLayoutManager(layoutManager);
+                int resId = 0;
                 if (mIsGridStyle) { //显示成网格样式
                                 /*if (mItemDecoration != null) {
                                     mRecyclerView.removeItemDecoration(mItemDecoration);
@@ -1352,7 +1353,8 @@ public class MainFragment extends BaseFragment {
                     mRecyclerView.setPadding(padding, 0, padding, 0);
                     mRecyclerView.setAdapter(mNoteGridAdapter);
                     item.setTitle(R.string.action_show_list);
-                    item.setIcon(R.drawable.ic_action_view_list);
+                    resId = R.drawable.ic_action_view_list;
+//                    item.setIcon(R.drawable.ic_action_view_list);
                 } else {    //列表样式
                     mRecyclerView.setPadding(0, 0, 0, 0);
 //                                mRecyclerView.addItemDecoration(getItemDecoration(mContext));
@@ -1361,8 +1363,12 @@ public class MainFragment extends BaseFragment {
                     }
                     mRecyclerView.setAdapter(mNoteListAdapter);
                     item.setTitle(R.string.action_show_grid);
-                    item.setIcon(R.drawable.ic_action_grid);
+                    resId = R.drawable.ic_action_grid;
+//                    item.setIcon(R.drawable.ic_action_grid);
                 }
+                Drawable drawable = ResourcesCompat.getDrawable(getResources(), resId, getActivity().getTheme());
+                drawable = getTintDrawable(drawable, 0);
+                item.setIcon(drawable);
 
             }
         });

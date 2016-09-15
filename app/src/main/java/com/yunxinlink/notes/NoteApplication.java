@@ -1,7 +1,9 @@
 package com.yunxinlink.notes;
 
 import android.app.Application;
+import android.appwidget.AppWidgetManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -146,6 +148,8 @@ public class NoteApplication extends Application {
 
     public void setDefaultFolderSid(String defaultFolderSid) {
         this.mDefaultFolderSid = defaultFolderSid;
+
+        updateWidgetFolder();
     }
 
     public boolean isShowFolderAll() {
@@ -180,6 +184,19 @@ public class NoteApplication extends Application {
                 initImageLoaderConfig();
             }
         });
+    }
+
+    /**
+     * 更新桌面小部件的默认文件夹
+     */
+    private void updateWidgetFolder() {
+        int widgetId = NoteUtil.getShortCreateAppWidgetId(this);
+        if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {    //widget id 有效
+            KLog.d(TAG, "updateWidgetFolder send broadcast ");
+            Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] {widgetId});
+            sendBroadcast(intent);
+        }
     }
 
 

@@ -165,4 +165,11 @@
         <item name="android:focusable">true</item>
         <item name="android:background">@drawable/common_background_borderless_selector</item>
     </style>
+    
+    <style name="AppWidgetContainerStyle">
+        <item name="android:paddingLeft">@dimen/widget_margin</item>
+        <item name="android:paddingRight">@dimen/widget_margin</item>
+        <item name="android:paddingTop">@dimen/widget_margin_vertical</item>
+        <item name="android:paddingBottom">@dimen/widget_margin_vertical</item>
+    </style>
 </resources>

@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.db.DBHelper;
@@ -20,6 +21,8 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteTask;
+import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.util.ArrayList;
@@ -99,6 +102,37 @@ public class FolderManager extends Observable<Observer> {
             cursor.close();
         }
         return list;
+    }
+
+    /**
+     * 加载所有的笔记本
+     * @param user
+     * @param args
+     * @param callback
+     */
+    public void loadAllFolders(User user, Bundle args, OnLoadCallback<Map<String, Folder>> callback) {
+        Map<String, Folder> map = FolderCache.getInstance().getFolderMap();
+        if (map == null || map.size() == 0) {    //没有笔记本
+            SystemUtil.getThreadPool().execute(new NoteTask(user, args, callback) {
+                @Override
+                public void run() {
+                    User u = (User) params[0];
+                    Bundle extra = (Bundle) params[1];
+                    OnLoadCallback<Map<String, Folder>> tCallback = (OnLoadCallback<Map<String, Folder>>) params[2];
+
+                    getAllFolders(u, extra);
+                    KLog.d(TAG, "load all folders completed");
+                    if (tCallback != null) {
+                        KLog.d(TAG, "load all folders completed onLoadCompleted");
+                        tCallback.onLoadCompleted(FolderCache.getInstance().getFolderMap(), extra);
+                    }
+                }
+            });
+        } else {
+            if (callback != null) {
+                callback.onLoadCompleted(map, args);
+            }
+        }
     }
     
     /**

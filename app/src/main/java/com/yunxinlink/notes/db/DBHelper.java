@@ -137,6 +137,16 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.UserColumns.MODIFY_TIME).append(" INTEGER, ")
                 .append(Provider.UserColumns.LAST_SYNC_TIME).append(" INTEGER); ");
         db.execSQL(builder.toString());
+        
+        //创建widget的表
+        builder = new StringBuilder();
+        builder.append("CREATE TABLE ").append(Provider.WidgetColumns.TABLE_NAME).append(" (")
+                .append(Provider.WidgetColumns._ID).append(" INTEGER PRIMARY KEY NOT NULL, ")
+                .append(Provider.WidgetColumns.TITLE).append(" TEXT NOT NULL, ")
+                .append(Provider.WidgetColumns.TYPE).append(" INTEGER, ")
+                .append(Provider.WidgetColumns.SORT).append(" INTEGER, ")
+                .append(Provider.WidgetColumns.SORT2).append(" INTEGER);");
+        db.execSQL(builder.toString());
 
         //创建笔记的sid索引
         builder = new StringBuilder();
@@ -337,6 +347,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + Provider.HandWriteColumns.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + Provider.RemindersColumns.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + Provider.UserColumns.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + Provider.WidgetColumns.TABLE_NAME);
         
         onCreate(db);
     }

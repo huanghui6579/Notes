@@ -4,6 +4,8 @@ import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
@@ -14,21 +16,29 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.helper.AdapterRefreshHelper;
 import com.yunxinlink.notes.helper.ItemTouchHelperAdapter;
 import com.yunxinlink.notes.helper.ItemTouchHelperViewHolder;
 import com.yunxinlink.notes.helper.OnStartDragListener;
 import com.yunxinlink.notes.helper.SimpleItemTouchHelperCallback;
 import com.yunxinlink.notes.listener.OnItemClickListener;
+import com.yunxinlink.notes.model.Folder;
+import com.yunxinlink.notes.persistent.FolderManager;
+import com.yunxinlink.notes.persistent.OnLoadCallback;
 import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteTask;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.widget.LayoutManagerFactory;
 import com.yunxinlink.notes.widget.SpacesItemDecoration;
 
-import java.util.ArrayList;
+import java.lang.ref.WeakReference;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 快速创建编辑项widget的配置界面
@@ -38,6 +48,12 @@ import java.util.List;
  */
 public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnStartDragListener, OnItemClickListener, View.OnClickListener {
     
+    private static final int MSG_UPDATE_WIDGET = 1;
+    private static final int MSG_UPDATE_WIDGET_ITEMS = 2;
+    private static final int MSG_INIT_WIDGET_ITEMS = 3;
+    
+    public static final String ARG_WIDGET_SORT = "widget_sort";
+    
     private RecyclerView mRecyclerView;
     
     private static List<WidgetItem> mWidgetItems;
@@ -45,6 +61,13 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
     private ItemTouchHelper mItemTouchHelper;
     
     private Button mBtnOk;
+
+    /**
+     * 排序的字段索引，0：表示排序sort，1：sort2
+     */
+    private int mSortIndex;
+    
+    private Handler mHandler = new MyHandler(this);
     
     private String[] mNameArray = null;
     private int[] mResArray = {
@@ -66,7 +89,7 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
             WidgetAction.NOTE_FILE.ordinal(),
             WidgetAction.NOTE_SEARCH.ordinal()
     };
-
+    
     @Override
     public boolean isSwipeBackEnabled() {
         return false;
@@ -83,19 +106,8 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
     }
     
     private void loadData() {
-        mWidgetItems = new ArrayList<>();
-        int size = mResArray.length;
-        for (int i = 0; i < size; i++) {
-            WidgetItem item = new WidgetItem();
-            item.setName(mNameArray[i]);
-            item.setResId(mResArray[i]);
-            item.setSort(i + 1);
-            item.setType(mWidgetTypeArray[i]);
-            if (i < Constants.MAX_WIDGET_ITEM_SIZE) {
-                item.setChecked(true);
-            }
-            
-            mWidgetItems.add(item);
+        if (SystemUtil.isEmpty(mWidgetItems)) {
+            mWidgetItems = WidgetItemCache.getInstance().getWidgetItems();
         }
 
         WidgetAdapter adapter = new WidgetAdapter(mWidgetItems, this, this);
@@ -113,13 +125,120 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapter);
         mItemTouchHelper = new ItemTouchHelper(callback);
         mItemTouchHelper.attachToRecyclerView(mRecyclerView);
+
+        if (SystemUtil.isEmpty(mWidgetItems)) {
+            loadWidgetItems();
+        }
     }
 
     @Override
     protected void initData() {
-        onCanceledConfigure();
+        int widgetId = onCanceledConfigure();
+
+        handleIntent();
+
+        loadAllFolders(mContext, widgetId);
 
         loadData();
+    }
+    
+    private void handleIntent() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            mSortIndex = intent.getIntExtra(ARG_WIDGET_SORT, 0);
+        }
+    }
+
+    /**
+     * 加载widget items
+     */
+    private void loadWidgetItems() {
+        doInbackground(new NoteTask() {
+            @Override
+            public void run() {
+                List<WidgetItem> items = WidgetManager.getInstance().getAllWidgetItems();
+                if (SystemUtil.isEmpty(items)) {    //数据库中也没有
+                    mHandler.sendEmptyMessage(MSG_INIT_WIDGET_ITEMS);
+                } else {
+                    Message msg = mHandler.obtainMessage();
+                    msg.what = MSG_UPDATE_WIDGET_ITEMS;
+                    msg.obj = items;
+                    mHandler.sendMessage(msg);
+                }
+            }
+        });
+    }
+    
+    /**
+     * 初始化初始的widget items
+     */
+    private void initWidgetItems() {
+        int size = mResArray.length;
+        for (int i = 0; i < size; i++) {
+            WidgetItem item = new WidgetItem();
+            item.setName(mNameArray[i]);
+            item.setResId(mResArray[i]);
+            item.setSort(i + 1);
+            item.setType(mWidgetTypeArray[i]);
+            if (i < Constants.MAX_WIDGET_ITEM_SIZE) {
+                item.setChecked(true);
+            }
+
+            mWidgetItems.add(item);
+        }
+        
+        doInbackground(new NoteTask(mWidgetItems) {
+            @Override
+            public void run() {
+                List<WidgetItem> list = (List<WidgetItem>) params[0];
+                WidgetManager.getInstance().initWidgets(list);
+            }
+        });
+    }
+
+    /**
+     * 保存排序
+     * @param list
+     */
+    private void saveSort(List<WidgetItem> list, int sortIndex) {
+        doInbackground(new NoteTask(list, sortIndex) {
+            @Override
+            public void run() {
+                WidgetManager.getInstance().updateSort((List<WidgetItem>) params[0], (Integer) params[1]);
+            }
+        });
+    }
+
+    /**
+     * 加载所有笔记
+     * @param context
+     */
+    private void loadAllFolders(Context context, int appWidgetId) {
+        if (FolderCache.getInstance().hasMoreFolder()) {
+            return;
+        }
+        NoteApplication app = (NoteApplication) context.getApplicationContext();
+        Bundle args = new Bundle();
+        args.putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        FolderManager.getInstance().loadAllFolders(app.getCurrentUser(), args, new OnLoadCallback<Map<String, Folder>>() {
+            @Override
+            public void onLoadCompleted(Map<String, Folder> data, Bundle args) {
+                int widgetId = args.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);//从args中得出widgetId  
+                Message msg = mHandler.obtainMessage();
+                msg.what = MSG_UPDATE_WIDGET;
+                msg.arg1 = widgetId;
+                mHandler.sendMessage(msg);
+            }
+        });
+    }
+
+    /**
+     * 更新widget
+     * @param widgetId
+     */
+    private void updateWidget(int widgetId) {
+        KLog.d(TAG, "updateWidget configure invoke widgetId:" + widgetId);
+        ShortCreateAppWidget.updateAppWidget(mContext, AppWidgetManager.getInstance(mContext), widgetId);
     }
 
     @Override
@@ -189,6 +308,7 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
             //通知 appwidget 的配置已完成  
             Intent result = new Intent();
             result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
+            NoteUtil.saveShortCreateAppWidgetId(mContext, widgetId);
             ShortCreateAppWidget.updateAppWidget(mContext, AppWidgetManager.getInstance(mContext), widgetId);
             setResult(RESULT_OK, result);
             KLog.d(TAG, "onCompletedConfigure invoke");
@@ -199,17 +319,20 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
     /**
      * 取消配置
      */
-    private void onCanceledConfigure() {
+    private int onCanceledConfigure() {
         Intent intent = getIntent();
         Bundle extras = intent.getExtras();
+        int widgetId = 0;
         if (extras != null) {
-            int widgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);//从intent中得出widgetId 
+            widgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);//从intent中得出widgetId 
             //通知 appwidget 的配置已取消  
             Intent result = new Intent();
             result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
+            NoteUtil.saveShortCreateAppWidgetId(mContext, 0);
             setResult(RESULT_CANCELED, result);
             KLog.d(TAG, "onCanceledConfigure invoke");
         }
+        return widgetId;
     }
 
     /**
@@ -270,6 +393,10 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
         refreshHelper.notify = false;
         refreshHelper.refresh(mRecyclerView.getAdapter());
         KLog.d(TAG, "list:" + list);
+        
+        int toPos = Math.max(fromPosition, toPosition);
+        List<WidgetItem> subList = list.subList(fromPos, toPos);
+        saveSort(subList, mSortIndex);
         return true;
     }
 
@@ -294,8 +421,6 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
     public void onClick(View v) {
         onCompletedConfigure();
     }
-
-    
     
     class WidgetViewHolder extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         ImageView ivIcon;
@@ -405,6 +530,38 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
         public void onItemCompleted() {
             KLog.d(TAG, "---onItemCompleted---");
             notifyDataSetChanged();
+        }
+    }
+
+    private static class MyHandler extends Handler {
+        private final WeakReference<ShortCreateAppWidgetConfigure> mTarget;
+
+        public MyHandler(ShortCreateAppWidgetConfigure target) {
+            mTarget = new WeakReference<>(target);
+        }
+        
+        @Override
+        public void handleMessage(Message msg) {
+
+            ShortCreateAppWidgetConfigure target = mTarget.get();
+            
+            if (target != null) {
+                switch (msg.what) {
+                    case MSG_UPDATE_WIDGET: //更新桌面widget
+                        int widgetId = msg.arg1;
+                        target.updateWidget(widgetId);
+                        break;
+                    case MSG_INIT_WIDGET_ITEMS: //初始化桌面小部件的各项
+                        target.initWidgetItems();
+                        break;
+                    case MSG_UPDATE_WIDGET_ITEMS:   //刷新界面
+                        if (target.mRecyclerView != null) {
+                            target.mRecyclerView.getAdapter().notifyDataSetChanged();
+                        }
+                        break;
+                }
+                
+            }
         }
     }
 }

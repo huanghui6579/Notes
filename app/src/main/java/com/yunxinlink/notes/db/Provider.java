@@ -500,6 +500,37 @@ public final class Provider {
     }
 
     /**
+     * 桌面小部件的表
+     */
+    public static final class WidgetColumns implements BaseColumns {
+
+        public static final String TABLE_NAME = "widget";
+        /**
+         * 标题，名称
+         */
+        public static final String TITLE = "title";
+
+        /**
+         * 类型
+         */
+        public static final String TYPE = "type";
+
+        /**
+         * 排序
+         */
+        public static final String SORT = "sort";
+
+        /**
+         * 排序方式2，主要用于列表的标题栏的图标排序
+         */
+        public static final String SORT2 = "sort2";
+        
+        public static final String DEFAULT_SORT = SORT + " ASC";
+        
+        public static final String DEFAULT_SORT2 = SORT2 + " ASC";
+    }
+
+    /**
      * 用户的设置表
      * @author tiger
      * @update 2016/3/6 10:36

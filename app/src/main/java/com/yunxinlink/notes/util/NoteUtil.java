@@ -3,9 +3,11 @@ package com.yunxinlink.notes.util;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -525,5 +527,27 @@ public class NoteUtil {
      */
     public static void cancelNotificationShortcut(Context context, int notifyId) {
         NotificationManagerCompat.from(context).cancel(notifyId);
+    }
+
+    /**
+     * 保存快速创建小部件的id
+     * @param context
+     * @param appWidgetId
+     */
+    public static void saveShortCreateAppWidgetId(Context context, int appWidgetId) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(Constants.PREF_APPWIDGETID_SHORT_CREATE, appWidgetId);
+        editor.apply();
+    }
+
+    /**
+     * 获取快速创建小部件的id
+     * @param context
+     * @return
+     */
+    public static int getShortCreateAppWidgetId(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        return preferences.getInt(Constants.PREF_APPWIDGETID_SHORT_CREATE, AppWidgetManager.INVALID_APPWIDGET_ID);
     }
 }

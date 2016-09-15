@@ -66,6 +66,11 @@ public class Constants {
      * 笔记的排序方式
      */
     public static final String PREF_NOTE_SORT = "note_sort";
+
+    /**
+     * 快速创建笔记的桌面小部件id
+     */
+    public static final String PREF_APPWIDGETID_SHORT_CREATE = "appwidgetid_short_create";
     
     /**
      * 回车的标签
