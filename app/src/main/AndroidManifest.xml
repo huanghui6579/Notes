@@ -79,6 +79,12 @@
             android:name=".service.CoreService"
             android:exported="false" />
 
+        <service
+            android:name=".appwidget.NoteListRemoteViewsService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" >
+        </service>
+
         <activity
             android:name=".ui.FolderEditActivity"
             android:label="@string/label_folder_edit"

@@ -370,4 +370,13 @@ public class ImageUtil {
     public static Drawable bitmap2Drawable(Context context, Bitmap bitmap) {
         return new BitmapDrawable(context.getResources(), bitmap);
     }
+
+    /**
+     * 将drawable转换成bitmap
+     * @param drawable
+     * @return
+     */
+    public static Bitmap drawable2Bitmap(Drawable drawable) {
+        return ((BitmapDrawable) drawable).getBitmap();
+    }
 }

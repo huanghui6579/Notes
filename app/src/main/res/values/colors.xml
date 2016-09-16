@@ -42,4 +42,6 @@
 
     <color name="colorPrimaryNight">#4D5258</color>
     <color name="colorPrimaryNightDark">#3D4146</color>
+
+    <color name="widget_list_bg_color">#EFEEF1</color>
 </resources>

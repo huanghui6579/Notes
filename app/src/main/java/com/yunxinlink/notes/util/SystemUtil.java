@@ -1397,4 +1397,36 @@ public class SystemUtil {
             a.recycle();
         }
     }
+
+    /**
+     * 返回着色后的图标
+     * @param srcIcon 原始图标
+     * @param color
+     * @return
+     */
+    public static Drawable getTintDrawable(Context context, Drawable srcIcon, int color) {
+        if (srcIcon != null) {
+            int tint = color;
+            if (tint == 0) {
+                tint = getPrimaryColor(context);
+            }
+            srcIcon = DrawableCompat.wrap(srcIcon);
+            DrawableCompat.setTint(srcIcon, tint);
+        }
+        return srcIcon;
+    }
+
+    /**
+     * 获取应用的主题色
+     * @author huanghui1
+     * @update 2016/3/2 16:07
+     * @version: 1.0.0
+     */
+    public static int getPrimaryColor(Context context) {
+        TypedArray a = context.obtainStyledAttributes(R.style.AppTheme, new int[] {R.attr.colorPrimary});
+        int defaultColor = SystemUtil.getColor(context, R.color.colorPrimary);
+        int color = a.getColor(0, defaultColor);
+        a.recycle();
+        return color;
+    }
 }

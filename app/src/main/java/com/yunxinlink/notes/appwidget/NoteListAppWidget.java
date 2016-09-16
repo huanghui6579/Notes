@@ -5,8 +5,10 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.widget.RemoteViews;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.ui.MainActivity;
@@ -20,6 +22,7 @@ public class NoteListAppWidget extends AppWidgetProvider {
 
     private static final int REQ_MAIN = 1;
     private static final int REQ_ADD = 2;
+    private static final String TAG = "NoteListAppWidget";
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
@@ -41,13 +44,25 @@ public class NoteListAppWidget extends AppWidgetProvider {
         PendingIntent addPendingIntent = PendingIntent.getActivity(context, REQ_ADD, addIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_add, addPendingIntent);
 
+        Intent intent = new Intent(context, NoteListRemoteViewsService.class);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
+
+        views.setRemoteAdapter(R.id.lv_data, intent);
+
+//        views.setPendingIntentTemplate();
+
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
+//        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.lv_data);
+
+        KLog.d(TAG, "updateAppWidget");
     }
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         // There may be multiple widgets active, so update all of them
+        KLog.d(TAG, "onUpdate");
         for (int appWidgetId : appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId);
         }

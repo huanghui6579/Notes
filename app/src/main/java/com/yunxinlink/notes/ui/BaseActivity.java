@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.ColorStateList;
-import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
@@ -390,15 +389,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @return
      */
     protected Drawable getTintDrawable(Drawable srcIcon, int color) {
-        if (srcIcon != null) {
-            int tint = color;
-            if (tint == 0) {
-                tint = getPrimaryColor();
-            }
-            srcIcon = DrawableCompat.wrap(srcIcon);
-            DrawableCompat.setTint(srcIcon, tint);
-        }
-        return srcIcon;
+        return SystemUtil.getTintDrawable(this, srcIcon, color);
     }
 
     /**
@@ -464,11 +455,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @version: 1.0.0
      */
     protected int getPrimaryColor() {
-        TypedArray a = obtainStyledAttributes(R.style.AppTheme, new int[] {R.attr.colorPrimary});
-        int defaultColor = SystemUtil.getColor(this, R.color.colorPrimary);
-        int color = a.getColor(0, defaultColor);
-        a.recycle();
-        return color;
+        return SystemUtil.getPrimaryColor(this);
     }
     
     protected abstract int getContentView();

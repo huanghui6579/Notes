@@ -46,6 +46,9 @@
     <ListView
         android:id="@id/lv_data"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_widget_bottom_light"
+        android:dividerHeight="@dimen/list_divider_height"
+        android:divider="@drawable/list_divider"
+        android:listSelector="@drawable/widget_list_selector"/>
 </LinearLayout>
