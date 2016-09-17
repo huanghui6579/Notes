@@ -18,6 +18,7 @@ import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -115,6 +116,14 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
 //        intent.putExtra("Item",position+1);
 //        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
 //        remoteViews.setOnClickFillInIntent(R.id.slide_layout, intent);
+
+        //与Widget中remoteViews.setPendingIntentTemplate配对使用，共同作用。
+        Intent intent = new Intent(NoteListAppWidget.ACTION_ITEM_CLICK);
+        intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
+        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSId());
+        intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
+        intent.putExtra(NoteEditActivity.ARG_IS_NOTE_TEXT, !note.isDetailNote());
+        remoteViews.setOnClickFillInIntent(R.id.slide_layout, intent);
 
         if (note.hasAttach() && detailNote.getLastAttach() != null) {
             remoteViews.setViewVisibility(R.id.iv_icon, View.VISIBLE);

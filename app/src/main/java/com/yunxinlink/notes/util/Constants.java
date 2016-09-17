@@ -71,7 +71,8 @@ public class Constants {
      * 快速创建笔记的桌面小部件id
      */
     public static final String PREF_APPWIDGETID_SHORT_CREATE = "appwidgetid_short_create";
-    
+    public static final String PREF_APPWIDGETID_LIST = "appwidgetid_list";
+
     /**
      * 回车的标签
      */

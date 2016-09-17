@@ -15,6 +15,7 @@ import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.richtext.AttachText;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.io.File;
@@ -199,6 +200,9 @@ public class CoreService extends IntentService {
         note.setShowContent(attachText.getText());
         detailNote = mNoteManager.addDetailNote(detailNote, attSidList, attachSids);
         boolean success = detailNote != null;
+        if (success) {
+            NoteUtil.notifyAppWidgetList(this);
+        }
         KLog.d(TAG, "---onHandleIntent---addNote----result---" + success + "---note---" + sid);
     }
 
@@ -239,6 +243,9 @@ public class CoreService extends IntentService {
             //不需要更新内容
             mNoteManager.updateTextAttach(null, note, attSidList, attachSids, false);
             success = true;
+        }
+        if (success) {
+            NoteUtil.notifyAppWidgetList(this);
         }
         KLog.d(TAG, "---onHandleIntent---updateNote----result---" + success + "---note---" + sid);
     }

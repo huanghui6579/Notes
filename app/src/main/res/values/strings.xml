@@ -273,6 +273,8 @@
     <string name="pref_title_vibrate">Vibrate</string>
 
     <string name="appwidget_text">@string/app_name</string>
+    <string name="appwidget_note_list_label">云信笔记列表</string>
+    <string name="appwidget_short_create_label">云信笔记工具</string>
     <string name="add_widget">添加小部件</string>
     <string name="widget_item_max_tip">不能添加更多了哦~</string>
 </resources>

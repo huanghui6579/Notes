@@ -290,6 +290,7 @@ public class NoteManager extends Observable<Observer> {
      * @update 2016/6/21 15:16
      * @version: 1.0.0
      */
+    @Deprecated
     public boolean deleteNote(DetailNoteInfo detailNote) {
         return deleteNote(detailNote, DeleteState.DELETE_TRASH);
     }
@@ -340,6 +341,7 @@ public class NoteManager extends Observable<Observer> {
      * @param noteList 要删除的笔记的集合
      * @return 返回是否删除成功
      */
+    @Deprecated
     public boolean deleteNote(List<DetailNoteInfo> noteList) {
         return deleteNote(noteList, DeleteState.DELETE_TRASH);
     }
@@ -552,6 +554,7 @@ public class NoteManager extends Observable<Observer> {
      * @update 2016/6/18 11:14
      * @version: 1.0.0
      */
+    @Deprecated
     public NoteInfo addNote(NoteInfo note, List<String> cacheList, List<String> attachList) {
         
         DetailNoteInfo detailNote = new DetailNoteInfo();
@@ -943,7 +946,7 @@ public class NoteManager extends Observable<Observer> {
      * @param list
      * @return
      */
-    public boolean deleteDetailList(List<DetailList> list, SQLiteDatabase db) {
+    private boolean deleteDetailList(List<DetailList> list, SQLiteDatabase db) {
         if (list != null && list.size() > 0) {
             if (db == null) {
                 db = mDBHelper.getWritableDatabase();
@@ -1070,6 +1073,7 @@ public class NoteManager extends Observable<Observer> {
      * @update 2016/6/18 16:46
      * @version: 1.0.0
      */
+    @Deprecated
     public boolean updateNote(NoteInfo note, List<String> cacheList, List<String> attachList, List<DetailList> detailLists) {
         DetailNoteInfo detailNote = new DetailNoteInfo();
         detailNote.setNoteInfo(note);
@@ -1150,7 +1154,7 @@ public class NoteManager extends Observable<Observer> {
      * @param newFolder
      * @param time
      */
-    private void updateNoteMoteFolder(SQLiteDatabase db, Folder oldFolder, Folder newFolder, long time) {
+    private void updateNoteMoveFolder(SQLiteDatabase db, Folder oldFolder, Folder newFolder, long time) {
         if (oldFolder != null && !oldFolder.isEmpty()) { //非“所有文件夹”
 
             SyncState syncState = SyncState.SYNC_UP;
@@ -1180,17 +1184,17 @@ public class NoteManager extends Observable<Observer> {
                     .append(Provider.FolderColumns._ID).append(" = ? THEN ? ELSE ").append(Provider.FolderColumns._COUNT)
                     .append(" END), ").append(Provider.FolderColumns.MODIFY_TIME).append(" = ?, ").append(Provider.FolderColumns.SYNC_STATE)
                     .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" IN (?, ?)");
-            Object[] seletionArgs = {oldFolder.getId(), oldFolder.getCount(), newFolder.getId(), newFolder.getCount(),
+            Object[] selectionArgs = {oldFolder.getId(), oldFolder.getCount(), newFolder.getId(), newFolder.getCount(),
                     time, syncState.ordinal(), oldFolder.getId(), newFolder.getId()};
-            db.execSQL(sb.toString(), seletionArgs);
+            db.execSQL(sb.toString(), selectionArgs);
         } else {
             //原始文件夹是所有文件夹，则只更新目的文件夹
                     /*UPDATE folder SET _count = ? where _id = ?*/
             StringBuilder sb = new StringBuilder();
             sb.append("UPDATE ").append(Provider.FolderColumns.TABLE_NAME).append(" set ").append(Provider.FolderColumns._COUNT)
                     .append(" = ? WHERE ").append(Provider.FolderColumns._ID).append(" = ?");
-            Object[] seletionArgs = {newFolder.getCount(), newFolder.getId()};
-            db.execSQL(sb.toString(), seletionArgs);
+            Object[] selectionArgs = {newFolder.getCount(), newFolder.getId()};
+            db.execSQL(sb.toString(), selectionArgs);
         }
     }
 
@@ -1219,7 +1223,7 @@ public class NoteManager extends Observable<Observer> {
                 int row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
                 
                 if (row > 0) {
-                    updateNoteMoteFolder(db, oldFolder, newFolder, time);
+                    updateNoteMoveFolder(db, oldFolder, newFolder, time);
                     noteList.add(detailNote);
                 }
                 

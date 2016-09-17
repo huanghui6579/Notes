@@ -16,6 +16,7 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.ui.SearchActivity;
+import com.yunxinlink.notes.util.NoteUtil;
 
 /**
  * Implementation of App Widget functionality.
@@ -29,7 +30,7 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
     
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
-        KLog.d(TAG, "updateAppWidget invoke");
+        KLog.d(TAG, "updateAppWidget invoke appWidgetId:" + appWidgetId);
 //        CharSequence widgetText = context.getString(R.string.appwidget_text);
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.short_create_app_widget);
@@ -122,6 +123,7 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
 
     @Override
     public void onDeleted(Context context, int[] appWidgetIds) {
+        NoteUtil.removeShortCreateAppWidgetId(context);
         KLog.d(TAG, "ShortCreateAppWidget onDeleted");
         super.onDeleted(context, appWidgetIds);
     }

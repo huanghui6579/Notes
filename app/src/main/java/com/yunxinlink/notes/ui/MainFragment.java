@@ -722,7 +722,10 @@ public class MainFragment extends BaseFragment {
         doInbackground(new NoteTask(detailNoteInfos) {
             @Override
             public void run() {
-                NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0], DeleteState.DELETE_NONE);
+                boolean success = NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0], DeleteState.DELETE_NONE);
+                if (success) {
+                    NoteUtil.notifyAppWidgetList(getContext());
+                }
             }
         });
     }

@@ -174,7 +174,8 @@
         <activity android:name=".lock.ui.LockDigitalActivity" />
         <activity android:name=".ui.settings.SettingsMoreActivity" />
 
-        <receiver android:name=".appwidget.ShortCreateAppWidget">
+        <receiver android:name=".appwidget.ShortCreateAppWidget"
+            android:label="@string/appwidget_short_create_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -192,9 +193,18 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".appwidget.NoteListAppWidget">
+        <receiver android:name=".appwidget.NoteListAppWidget"
+            android:label="@string/appwidget_note_list_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="com.yunxinlink.notes.appwidget.action.APPWIDGET_NOTIFY_CHANGE" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="com.yunxinlink.notes.appwidget.action.APPWIDGET_ITEM_CLICK" />
             </intent-filter>
 
             <meta-data

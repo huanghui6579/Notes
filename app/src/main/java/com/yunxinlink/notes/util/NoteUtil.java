@@ -23,8 +23,10 @@ import android.widget.LinearLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.adapter.ShareListAdapter;
+import com.yunxinlink.notes.appwidget.NoteListAppWidget;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.DetailNoteInfo;
@@ -71,7 +73,7 @@ public class NoteUtil {
      * @param hasDeleteOpt 之前是否有删除操作，仅在删除到回收站是有效
      * @param realDelete 是否真正的删除，即在回收站中删除                    
      */
-    public static void handleDeleteNote(Context context, List<DetailNoteInfo> noteList, boolean hasDeleteOpt, final boolean realDelete) {
+    public static void handleDeleteNote(final Context context, List<DetailNoteInfo> noteList, boolean hasDeleteOpt, final boolean realDelete) {
         if (noteList == null || noteList.size() == 0) {
             return;
         }
@@ -92,13 +94,13 @@ public class NoteUtil {
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            doDeleteNote(deleteList, realDelete);
+                            doDeleteNote(deleteList, realDelete, context);
                         }
                     })
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
         } else {    //直接删除
-            doDeleteNote(noteList, false);
+            doDeleteNote(noteList, false, context);
         }
     }
 
@@ -127,9 +129,9 @@ public class NoteUtil {
      * @param noteList 要删除的笔记的集合
      * @param realDelete 是否彻底删除                
      */
-    private static void doDeleteNote(final List<DetailNoteInfo> noteList, final boolean realDelete) {
+    private static void doDeleteNote(final List<DetailNoteInfo> noteList, final boolean realDelete, final Context context) {
         final List<DetailNoteInfo> list = new ArrayList<>(noteList);
-        SystemUtil.getThreadPool().execute(new NoteTask(list, realDelete) {
+        SystemUtil.getThreadPool().execute(new NoteTask(list, realDelete, context) {
             @Override
             public void run() {
                 DeleteState deleteState = null;
@@ -139,7 +141,10 @@ public class NoteUtil {
                 } else {
                     deleteState = DeleteState.DELETE_TRASH;  
                 }
-                NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0], deleteState);
+                boolean success = NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0], deleteState);
+                if (success) {
+                    NoteUtil.notifyAppWidgetList(context);
+                }
             }
         });
     }
@@ -549,5 +554,67 @@ public class NoteUtil {
     public static int getShortCreateAppWidgetId(Context context) {
         SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
         return preferences.getInt(Constants.PREF_APPWIDGETID_SHORT_CREATE, AppWidgetManager.INVALID_APPWIDGET_ID);
+    }
+
+
+    /**
+     * 移除列表的widgetAppId
+     * @param context
+     */
+    public static void removeShortCreateAppWidgetId(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.remove(Constants.PREF_APPWIDGETID_SHORT_CREATE);
+        editor.apply();
+    }
+
+    /**
+     * 保存笔记列表的桌面小部件id
+     * @param context
+     * @param appWidgetId
+     * @return
+     */
+    public static void saveListAppWidgetId(Context context, int appWidgetId) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(Constants.PREF_APPWIDGETID_LIST, appWidgetId);
+        editor.apply();
+    }
+
+    /**
+     * 移除列表的widgetAppId
+     * @param context
+     */
+    public static void removeListAppWidgetId(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.remove(Constants.PREF_APPWIDGETID_LIST);
+        editor.apply();
+    }
+
+    /**
+     * 获取桌面小部件笔记列表的id
+     * @param context
+     * @return
+     */
+    public static int getListAppWidgetId(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        return preferences.getInt(Constants.PREF_APPWIDGETID_LIST, AppWidgetManager.INVALID_APPWIDGET_ID);
+    }
+
+    /**
+     * 通知appwidget来刷新列表
+     * @param context
+     */
+    public static void notifyAppWidgetList(Context context) {
+        int appWidgetId = getListAppWidgetId(context);
+        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            Intent intent = new Intent(NoteListAppWidget.ACTION_NOTIFY_CHANGE);
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            context.sendBroadcast(intent);
+            KLog.d("notifyAppWidgetList invoke appwidget id:" + appWidgetId);
+        } else {
+            KLog.d("notifyAppWidgetList invoke failed appwidget id:" + appWidgetId);
+        }
     }
 }
