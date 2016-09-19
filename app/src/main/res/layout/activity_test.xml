@@ -1,121 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:orientation="vertical"
-    tools:context=".ui.TestActivity">
+    android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        android:orientation="vertical"
+        tools:context=".test.TestActivity">
+
+        <TextView
+            android:id="@id/tv_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="北京时间8月15日上午，2016年里约奥运会举重大项结束了女子75公斤以上级争夺，中国选手孟苏平以"
+            android:visibility="visible"/>
+
+        <!--<ImageView
+            android:id="@+id/iv_img"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_content"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:visibility="gone"/>-->
+
+        <Button
+            android:id="@+id/btn_lock"
+            android:layout_width="match_parent"
+            android:layout_marginTop="4dp"
+            android:layout_height="wrap_content"
+            android:text="创建图案密码"/>
+
+        <Button
+            android:id="@+id/btn_compare"
+            android:layout_width="match_parent"
+            android:layout_marginTop="4dp"
+            android:layout_height="wrap_content"
+            android:text="图案密码登录"/>
+
+        <Button
+            android:id="@+id/btn_digital_lock"
+            android:layout_width="match_parent"
+            android:layout_marginTop="4dp"
+            android:layout_height="wrap_content"
+            android:text="创建数字密码"/>
+
+        <Button
+            android:id="@+id/btn_digital_compare"
+            android:layout_width="match_parent"
+            android:layout_marginTop="4dp"
+            android:layout_height="wrap_content"
+            android:text="数字密码登录"/>
+
+        <Button
+            android:id="@+id/btn_keyStore"
+            android:layout_width="match_parent"
+            android:layout_marginTop="4dp"
+            android:layout_height="wrap_content"
+            android:text="获取密钥"/>
+
+        <Button
+            android:id="@+id/btn_device_info"
+            android:layout_width="match_parent"
+            android:layout_marginTop="4dp"
+            android:layout_height="wrap_content"
+            android:text="获取设备信息"/>
+        
+        <TextView
+            android:id="@+id/tv_device_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!--<com.yunxinlink.notes.lockpattern.widget.DigitalLockView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_content"/>-->
+
+        <!--<ImageView
+            android:id="@+id/icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     
-    <TextView
-        android:id="@id/tv_content"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="北京时间8月15日上午，2016年里约奥运会举重大项结束了女子75公斤以上级争夺，中国选手孟苏平以"
-        android:visibility="visible"/>
+        <RadioGroup
+            android:id="@+id/stroke_color_group"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_item_height_small"
+            android:layout_below="@id/icon"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/stroke_black"
+                android:checked="true"
+                style="@style/StokeRadioStyle"
+                android:button="@drawable/stroke_radio_dark_color"/>
+            <RadioButton
+                android:id="@+id/stroke_red"
+                style="@style/StokeRadioStyle"
+                android:layout_gravity="center"
+                android:button="@drawable/stroke_radio_red_color"/>
+            <RadioButton
+                android:id="@+id/stroke_green"
+                style="@style/StokeRadioStyle"
+                android:button="@drawable/stroke_radio_green_color"/>
+            <RadioButton
+                android:id="@+id/stroke_orange"
+                style="@style/StokeRadioStyle"
+                android:button="@drawable/stroke_radio_orange_color"/>
+            <RadioButton
+                android:id="@+id/stroke_blue"
+                style="@style/StokeRadioStyle"
+                android:button="@drawable/stroke_radio_blue_color"/>
     
-    <!--<ImageView
-        android:id="@+id/iv_img"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tv_content"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:visibility="gone"/>-->
+        </RadioGroup>
+        
+        <ImageButton
+            android:id="@+id/btn_do"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/stroke_color_group"
+            android:layout_marginTop="@dimen/activity_vertical_margin"/>
+        
+        <EditText
+            android:id="@+id/tv_test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/btn_do"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:background="@null"
+            android:text="房间看的风景开发阶段"/>-->
 
-    <Button
-        android:id="@+id/btn_lock"
-        android:layout_width="match_parent"
-        android:layout_marginTop="4dp"
-        android:layout_height="wrap_content"
-        android:text="创建图案密码"/>
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/btn_compare"
-        android:layout_width="match_parent"
-        android:layout_marginTop="4dp"
-        android:layout_height="wrap_content"
-        android:text="图案密码登录"/>
-
-    <Button
-        android:id="@+id/btn_digital_lock"
-        android:layout_width="match_parent"
-        android:layout_marginTop="4dp"
-        android:layout_height="wrap_content"
-        android:text="创建数字密码"/>
-
-    <Button
-        android:id="@+id/btn_digital_compare"
-        android:layout_width="match_parent"
-        android:layout_marginTop="4dp"
-        android:layout_height="wrap_content"
-        android:text="数字密码登录"/>
-
-    <Button
-        android:id="@+id/btn_keyStore"
-        android:layout_width="match_parent"
-        android:layout_marginTop="4dp"
-        android:layout_height="wrap_content"
-        android:text="获取密钥"/>
-
-    <!--<com.yunxinlink.notes.lockpattern.widget.DigitalLockView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tv_content"/>-->
-
-    <!--<ImageView
-        android:id="@+id/icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <RadioGroup
-        android:id="@+id/stroke_color_group"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_item_height_small"
-        android:layout_below="@id/icon"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:orientation="horizontal">
-        <RadioButton
-            android:id="@+id/stroke_black"
-            android:checked="true"
-            style="@style/StokeRadioStyle"
-            android:button="@drawable/stroke_radio_dark_color"/>
-        <RadioButton
-            android:id="@+id/stroke_red"
-            style="@style/StokeRadioStyle"
-            android:layout_gravity="center"
-            android:button="@drawable/stroke_radio_red_color"/>
-        <RadioButton
-            android:id="@+id/stroke_green"
-            style="@style/StokeRadioStyle"
-            android:button="@drawable/stroke_radio_green_color"/>
-        <RadioButton
-            android:id="@+id/stroke_orange"
-            style="@style/StokeRadioStyle"
-            android:button="@drawable/stroke_radio_orange_color"/>
-        <RadioButton
-            android:id="@+id/stroke_blue"
-            style="@style/StokeRadioStyle"
-            android:button="@drawable/stroke_radio_blue_color"/>
-
-    </RadioGroup>
-    
-    <ImageButton
-        android:id="@+id/btn_do"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/stroke_color_group"
-        android:layout_marginTop="@dimen/activity_vertical_margin"/>
-    
-    <EditText
-        android:id="@+id/tv_test"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/btn_do"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:background="@null"
-        android:text="房间看的风景开发阶段"/>-->
-
-</LinearLayout>
+</ScrollView>

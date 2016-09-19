@@ -68,6 +68,7 @@ dependencies {
     compile supportDependencies.klog
     compile supportDependencies.jlog
     compile supportDependencies.gson
+    compile supportDependencies.retrofit
     compile project(':lockpattern')
 /*
     //ADD THESE LINES:

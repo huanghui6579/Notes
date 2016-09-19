@@ -1,18 +1,21 @@
-package com.yunxinlink.notes.ui;
+package com.yunxinlink.notes.test;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
+import android.media.AudioManager;
 import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -20,9 +23,10 @@ import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
 import com.yunxinlink.notes.lock.ui.LockDigitalActivity;
 import com.yunxinlink.notes.lock.ui.LockPatternActivity;
+import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
+import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.ByteArrayInputStream;
@@ -55,13 +59,15 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.security.auth.x500.X500Principal;
 
-public class TestActivity extends BaseActivity {
+public class TestActivity extends BaseActivity implements View.OnClickListener {
     // This is your preferred flag
     private static final int REQ_CREATE_PATTERN = 1;
     private static final int REQ_VERIFY_PATTERN = 2;
     private static final int REQ_VERIFY_CAPTCHA = 3;
     private static final int REQ_CREATE_DIGITAL = 4;
     private static final int REQ_VERIFY_DIGITAL = 5;
+    
+    private TextView tvDeviceInfo;
 
     @Override
     protected int getContentView() {
@@ -147,6 +153,12 @@ public class TestActivity extends BaseActivity {
                             .startForResult(TestActivity.this, REQ_VERIFY_DIGITAL);
                 }
             });
+        }
+        
+        Button btnDeviceInfo = (Button) findViewById(R.id.btn_device_info);
+        tvDeviceInfo = (TextView) findViewById(R.id.tv_device_info);
+        if (btnDeviceInfo != null) {
+            btnDeviceInfo.setOnClickListener(this);
         }
 
         /*
@@ -505,5 +517,135 @@ public class TestActivity extends BaseActivity {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_device_info:
+//                getRingerMode(mContext);
+                String info = getDeviceInfo(mContext);
+                tvDeviceInfo.setText(info);
+                break;
+        }
+    }
+    
+    private String getDeviceInfo(Context context) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("deviceId:" + getDeviceId(context)).append("\n")
+                .append("Android Version：" + getBuildVersion()).append("\n")
+                .append("Phone Model:" + getPhoneModel()).append("\n")
+                .append("Phone Brand:" + getPhoneBrand()).append("\n")
+                .append("Phone Product:" + getPhoneProduct()).append("\n")
+                .append("Phone Board:" + getPhoneBoard()).append("\n")
+                .append("Phone Device:" + Build.DEVICE).append("\n")
+                .append("Phone Display:" + Build.DISPLAY).append("\n")
+                .append("Phone Type:" + Build.TYPE).append("\n");
+                
+        return builder.toString();
+    }
+
+    /**
+     * 获取手机Android 版本（4.4、5.0、5.1 ...）
+     *
+     * @return
+     */
+    public static String getBuildVersion() {
+        return android.os.Build.VERSION.RELEASE;
+    }
+
+    /**
+     * 获取手机型号
+     *
+     * @return
+     */
+    public static String getPhoneModel() {
+        return android.os.Build.MODEL;
+    }
+
+    /**
+     * 获取手机型号
+     *
+     * @return
+     */
+    public static String getPhoneBoard() {
+        return android.os.Build.BOARD;
+    }
+
+    /**
+     * 获取手机品牌
+     *
+     * @return
+     */
+    public static String getPhoneBrand() {
+        return android.os.Build.BRAND;
+    }
+
+    //android 获取当前手机品牌  
+    public static String getPhoneProduct() {
+        return  android.os.Build.PRODUCT;
+    }
+
+    /**
+     * 获取设备的唯一标识，deviceId
+     *
+     * @param context
+     * @return
+     */
+    public static String getDeviceId(Context context) {
+        TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        String deviceId = tm.getDeviceId();
+        if (deviceId == null) {
+            return "";
+        } else {
+            return deviceId;
+        }
+    }
+    
+    public void getRingerMode(Context context) {
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        //获取情景模式
+        switch (audioManager.getRingerMode()) {
+            case AudioManager.RINGER_MODE_SILENT:   //静默模式
+                Log.e("RingerMode", "RINGER_MODE_SILENT");
+                break;
+            case AudioManager.RINGER_MODE_VIBRATE:  //振动模式
+                Log.e("RingerMode", "RINGER_MODE_VIBRATE");
+                break;
+            case AudioManager.RINGER_MODE_NORMAL:   //铃声模式
+                Log.e("RingerMode", "RINGER_MODE_NORMAL");
+                break;
+            default:
+                break;
+        }
+
+        //获取震动模式 分为通知和铃音两种 VIBRATE_TYPE_NOTIFICATION / VIBRATE_TYPE_RINGER
+        switch (audioManager.getVibrateSetting(AudioManager.VIBRATE_TYPE_NOTIFICATION)) {
+            case AudioManager.VIBRATE_SETTING_ON:
+                Log.e("getVibrateSetting NOTIFICATION", "VIBRATE_SETTING_ON");
+                break;
+            case AudioManager.VIBRATE_SETTING_OFF:
+                Log.e("getVibrateSetting NOTIFICATION", "VIBRATE_SETTING_OFF");
+                break;
+            case AudioManager.VIBRATE_SETTING_ONLY_SILENT:
+                Log.e("getVibrateSetting NOTIFICATION", "VIBRATE_SETTING_ONLY_SILENT");
+                break;
+            default:
+                break;
+        }
+
+        switch (audioManager.getVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER)) {
+            case AudioManager.VIBRATE_SETTING_ON:
+                Log.e("getVibrateSetting RINGER", "VIBRATE_SETTING_ON");
+                break;
+            case AudioManager.VIBRATE_SETTING_OFF:
+                Log.e("getVibrateSetting RINGER", "VIBRATE_SETTING_OFF");
+                break;
+            case AudioManager.VIBRATE_SETTING_ONLY_SILENT:
+                Log.e("getVibrateSetting RINGER", "VIBRATE_SETTING_ONLY_SILENT");
+                break;
+            default:
+                break;
+        }
     }
 }

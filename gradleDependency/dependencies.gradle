@@ -21,5 +21,6 @@ ext {
             klog                    : "com.github.zhaokaiqiang.klog:library:1.5.0",
             jlog                    : "com.jiongbull:jlog:1.0.5",
             gson                    : "com.google.code.gson:gson:2.7",
+            retrofit                : "com.squareup.retrofit2:retrofit:2.1.0"
     ]
 }

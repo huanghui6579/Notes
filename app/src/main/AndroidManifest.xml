@@ -30,6 +30,9 @@
     <!-- 获取账号的权限 -->
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
+    <!-- 获取手机信息 -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
     <application
         android:name=".NoteApplication"
         android:allowBackup="true"
@@ -78,12 +81,10 @@
         <service
             android:name=".service.CoreService"
             android:exported="false" />
-
         <service
             android:name=".appwidget.NoteListRemoteViewsService"
             android:exported="false"
-            android:permission="android.permission.BIND_REMOTEVIEWS" >
-        </service>
+            android:permission="android.permission.BIND_REMOTEVIEWS"></service>
 
         <activity
             android:name=".ui.FolderEditActivity"
@@ -147,7 +148,7 @@
             android:exported="true"
             android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-        <activity android:name=".ui.TestActivity" />
+        <activity android:name=".test.TestActivity" />
         <activity
             android:name=".ui.TrashActivity"
             android:label="@string/label_trash" />
@@ -174,7 +175,8 @@
         <activity android:name=".lock.ui.LockDigitalActivity" />
         <activity android:name=".ui.settings.SettingsMoreActivity" />
 
-        <receiver android:name=".appwidget.ShortCreateAppWidget"
+        <receiver
+            android:name=".appwidget.ShortCreateAppWidget"
             android:label="@string/appwidget_short_create_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -193,16 +195,15 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".appwidget.NoteListAppWidget"
+        <receiver
+            android:name=".appwidget.NoteListAppWidget"
             android:label="@string/appwidget_note_list_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="com.yunxinlink.notes.appwidget.action.APPWIDGET_NOTIFY_CHANGE" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="com.yunxinlink.notes.appwidget.action.APPWIDGET_ITEM_CLICK" />
             </intent-filter>
@@ -211,6 +212,8 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/note_list_app_widget_info" />
         </receiver>
+
+        <activity android:name=".test.TestNetActivity"></activity>
     </application>
 
 </manifest>
