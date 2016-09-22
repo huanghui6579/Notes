@@ -130,11 +130,18 @@ public class DBHelper extends SQLiteOpenHelper {
         builder = new StringBuilder();
         builder.append("CREATE TABLE ").append(Provider.UserColumns.TABLE_NAME).append(" (")
                 .append(Provider.UserColumns._ID).append(" INTEGER PRIMARY KEY NOT NULL, ")
-                .append(Provider.UserColumns.USERNAME).append(" TEXT UNIQUE NOT NULL, ")
-                .append(Provider.UserColumns.PASSWORD).append(" TEXT NOT NULL, ")
+                .append(Provider.UserColumns.USERNAME).append(" TEXT UNIQUE, ")
+                .append(Provider.UserColumns.PASSWORD).append(" TEXT , ")
+                .append(Provider.UserColumns.SID).append(" TEXT UNIQUE , ")
+                .append(Provider.UserColumns.MOBILE).append(" TEXT UNIQUE, ")
+                .append(Provider.UserColumns.EMAIL).append(" TEXT UNIQUE, ")
                 .append(Provider.UserColumns.ACCESS_TOKEN).append(" TEXT, ")
+                .append(Provider.UserColumns.AVATAR).append(" TEXT, ")
+                .append(Provider.UserColumns.GENDER).append(" INTEGER, ")
+                .append(Provider.UserColumns.STATE).append(" INTEGER, ")
                 .append(Provider.UserColumns.CREATE_TIME).append(" INTEGER, ")
                 .append(Provider.UserColumns.MODIFY_TIME).append(" INTEGER, ")
+                .append(Provider.UserColumns.OPEN_USER_ID).append(" TEXT, ")
                 .append(Provider.UserColumns.LAST_SYNC_TIME).append(" INTEGER); ");
         db.execSQL(builder.toString());
         

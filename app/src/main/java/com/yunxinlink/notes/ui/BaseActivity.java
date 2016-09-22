@@ -26,7 +26,7 @@ import com.yunxinlink.notes.lock.ILockerActivityDelegate;
 import com.yunxinlink.notes.lock.LockerDelegate;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.User;
-import com.yunxinlink.notes.receiver.ThemeReceiver;
+import com.yunxinlink.notes.receiver.SystemReceiver;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import me.imid.swipebacklayout.app.SwipeBackActivity;
@@ -56,7 +56,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
     private ILockerActivityDelegate mLockerActivityDelegate;
 
     //主题切换的广播
-    private ThemeReceiver mThemeReceiver;
+    private SystemReceiver mThemeReceiver;
 
     public BaseActivity() {
         TAG = this.getClass().getSimpleName();
@@ -132,9 +132,9 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     private void registThemeReceiver() {
         if (mThemeReceiver == null) {
-            mThemeReceiver = new ThemeReceiver(this);
+            mThemeReceiver = new SystemReceiver(this);
         }
-        IntentFilter filter = new IntentFilter(ThemeReceiver.ACTION_THEME_CHANGE);
+        IntentFilter filter = new IntentFilter(SystemReceiver.ACTION_THEME_CHANGE);
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
         localBroadcastManager.registerReceiver(mThemeReceiver, filter);
     }

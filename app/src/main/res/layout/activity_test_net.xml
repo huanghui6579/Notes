@@ -19,7 +19,6 @@
                 android:id="@+id/btn_net1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="testNet1"
                 android:text="基本的网络请求"/>
             
             <TextView

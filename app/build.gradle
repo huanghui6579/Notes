@@ -67,8 +67,10 @@ dependencies {
     compile supportDependencies.permissions
     compile supportDependencies.klog
     compile supportDependencies.jlog
-    compile supportDependencies.gson
+//    compile supportDependencies.gson
     compile supportDependencies.retrofit
+    compile supportDependencies.converterGson
+    compile supportDependencies.loggingInterceptor
     compile project(':lockpattern')
 /*
     //ADD THESE LINES:

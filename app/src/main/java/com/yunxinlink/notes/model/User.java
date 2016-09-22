@@ -7,46 +7,72 @@ package com.yunxinlink.notes.model;
  * @version: 0.0.1
  */
 public class User {
-    /**
-     * id,主键
-     */
-    private int id;
 
     /**
-     * 用户名
+     * 主键
+     */
+    private Integer id;
+
+    /**
+     * 用户的唯一id
      */
     private String username;
 
     /**
-     * 密码
+     * 用户登录密码
      */
     private String password;
 
     /**
-     * 用户登录的鉴权
+     * 用户电话，可登录用
      */
-    private String accectToken;
+    private String mobile;
+
+    /**
+     * 邮箱
+     */
+    private String email;
+
+    /**
+     * 用户的唯一标识，手动生成
+     */
+    private String sid;
+
+    /**
+     * 头像
+     */
+    private String avatar;
+
+    /**
+     * 性别，0：未知，1：男，2：女
+     */
+    private Integer gender;
 
     /**
      * 创建时间
      */
-    private String createTime;
+    private long createTime;
 
     /**
-     * 修改时间
+     * 用户的状态
      */
-    private String modifyTime;
+    private Integer state = State.NORMAL;
 
     /**
-     * 最后同步的时间
+     * 最后一次同步的时间
      */
-    private long lastSyncTime;
+    private Long lastSyncTime;
 
-    public int getId() {
+    /**
+     * 用户的第三方账号id
+     */
+    private String openUserId;
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -66,35 +92,101 @@ public class User {
         this.password = password;
     }
 
-    public String getAccectToken() {
-        return accectToken;
+    public String getMobile() {
+        return mobile;
     }
 
-    public void setAccectToken(String accectToken) {
-        this.accectToken = accectToken;
+    public void setMobile(String mobile) {
+        this.mobile = mobile;
     }
 
-    public String getCreateTime() {
+    public String getSid() {
+        return sid;
+    }
+
+    public void setSid(String sid) {
+        this.sid = sid;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
+    public Integer getGender() {
+        return gender;
+    }
+
+    public void setGender(Integer gender) {
+        this.gender = gender;
+    }
+
+    public long getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(String createTime) {
+    public void setCreateTime(long createTime) {
         this.createTime = createTime;
     }
 
-    public String getModifyTime() {
-        return modifyTime;
-    }
-
-    public void setModifyTime(String modifyTime) {
-        this.modifyTime = modifyTime;
-    }
-
-    public long getLastSyncTime() {
+    public Long getLastSyncTime() {
         return lastSyncTime;
     }
 
-    public void setLastSyncTime(long lastSyncTime) {
+    public void setLastSyncTime(Long lastSyncTime) {
         this.lastSyncTime = lastSyncTime;
+    }
+
+    public Integer getState() {
+        return state;
+    }
+
+    public void setState(Integer state) {
+        this.state = state;
+    }
+
+    public String getOpenUserId() {
+        return openUserId;
+    }
+
+    public void setOpenUserId(String openUserId) {
+        this.openUserId = openUserId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    /**
+     * 检查该用户是否可用
+     * @return
+     */
+    public boolean checkState() {
+        return State.NORMAL == state;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", mobile='" + mobile + '\'' +
+                ", email='" + email + '\'' +
+                ", sid='" + sid + '\'' +
+                ", avatar='" + avatar + '\'' +
+                ", gender=" + gender +
+                ", createTime=" + createTime +
+                ", state=" + state +
+                ", lastSyncTime=" + lastSyncTime +
+                ", openUserId='" + openUserId + '\'' +
+                '}';
     }
 }

@@ -469,6 +469,11 @@ public final class Provider {
         public static final String TABLE_NAME = "user";
 
         /**
+         * 用户的唯一id，手动生成，由服务器端生成
+         */
+        public static final String SID = "sid";
+
+        /**
          * 用户名
          */
         public static final String USERNAME = "username";
@@ -479,9 +484,34 @@ public final class Provider {
         public static final String PASSWORD = "password";
 
         /**
+         * 手机号
+         */
+        public static final String MOBILE = "mobile";
+
+        /**
+         * 邮箱
+         */
+        public static final String EMAIL = "email";
+
+        /**
          * 访问服务器的token
          */
         public static final String ACCESS_TOKEN = "access_token";
+
+        /**
+         * 用户头像
+         */
+        public static final String AVATAR = "avatar";
+
+        /**
+         * 用户性别
+         */
+        public static final String GENDER = "gender";
+
+        /**
+         * 用户的状态，0：可用，1：停用
+         */
+        public static final String STATE = "state";
 
         /**
          * 账户创建时间
@@ -497,6 +527,11 @@ public final class Provider {
          * 最后同步的时间
          */
         public static final String LAST_SYNC_TIME = "last_sync_time";
+
+        /**
+         * 第三方账号的用户id
+         */
+        public static final String OPEN_USER_ID = "open_user_id";
     }
 
     /**

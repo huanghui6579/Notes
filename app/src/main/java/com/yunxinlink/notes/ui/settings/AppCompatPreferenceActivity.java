@@ -20,7 +20,7 @@ import com.socks.library.KLog;
 import com.yunxinlink.notes.lock.ILockerActivityDelegate;
 import com.yunxinlink.notes.lock.LockInfo;
 import com.yunxinlink.notes.lock.LockerDelegate;
-import com.yunxinlink.notes.receiver.ThemeReceiver;
+import com.yunxinlink.notes.receiver.SystemReceiver;
 
 import me.imid.swipebacklayout.app.SwipeBackPreferenceActivity;
 
@@ -42,7 +42,7 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
     private ILockerActivityDelegate mLockerActivityDelegate;
 
     //主题切换的广播
-    private ThemeReceiver mThemeReceiver;
+    private SystemReceiver mThemeReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,9 +65,9 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
      */
     private void registThemeReceiver() {
         if (mThemeReceiver == null) {
-            mThemeReceiver = new ThemeReceiver(this);
+            mThemeReceiver = new SystemReceiver(this);
         }
-        IntentFilter filter = new IntentFilter(ThemeReceiver.ACTION_THEME_CHANGE);
+        IntentFilter filter = new IntentFilter(SystemReceiver.ACTION_THEME_CHANGE);
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
         localBroadcastManager.registerReceiver(mThemeReceiver, filter);
     }

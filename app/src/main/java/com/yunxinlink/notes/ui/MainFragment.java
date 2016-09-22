@@ -329,6 +329,9 @@ public class MainFragment extends BaseFragment {
         doInbackground(new Runnable() {
             @Override
             public void run() {
+                if (mListener == null) {
+                    return;
+                }
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
                 mHasDeleteOpt = sharedPreferences.getBoolean(Constants.PREF_HAS_DELETE_OPT, false);
             }

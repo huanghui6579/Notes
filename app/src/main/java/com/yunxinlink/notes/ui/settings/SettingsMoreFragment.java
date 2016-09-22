@@ -11,7 +11,7 @@ import android.support.v7.app.AppCompatDelegate;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.receiver.ThemeReceiver;
+import com.yunxinlink.notes.receiver.SystemReceiver;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SettingsUtil;
@@ -131,7 +131,7 @@ public class SettingsMoreFragment extends BasePreferenceFragment implements Pref
                         }
                         SettingsUtil.setDefaultNightMode(getActivity(), mode);
                         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getActivity());
-                        localBroadcastManager.sendBroadcast(new Intent(ThemeReceiver.ACTION_THEME_CHANGE));
+                        localBroadcastManager.sendBroadcast(new Intent(SystemReceiver.ACTION_THEME_CHANGE));
                     }
                 })
                 .setPositiveButton(android.R.string.cancel, null)

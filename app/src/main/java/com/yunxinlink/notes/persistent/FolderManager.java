@@ -16,6 +16,7 @@ import com.yunxinlink.notes.db.DBHelper;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.db.observer.Observer;
+import com.yunxinlink.notes.listener.OnLoadCallback;
 import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.SyncState;

@@ -13,7 +13,6 @@ import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.model.Folder;
-import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.ui.SearchActivity;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -36,12 +35,16 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.short_create_app_widget);
 //        views.setTextViewText(R.id.appwidget_text, widgetText);
         
-        Intent mainIntent = new Intent(context, MainActivity.class);
+        String pkgName = context.getPackageName();
+        
+        Intent mainIntent = new Intent("android.intent.action.MAIN");
+        mainIntent.setPackage(pkgName);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent mainPendingIntent = PendingIntent.getActivity(context, REQ_MAIN, mainIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         views.setOnClickPendingIntent(R.id.iv_logo, mainPendingIntent);
         
-        Intent settingsIntent = new Intent(context, ShortCreateAppWidgetConfigure.class);
+        Intent settingsIntent = new Intent(ShortCreateAppWidgetConfigure.ACTION_SHORT_CREATE);
+        settingsIntent.setPackage(pkgName);
         settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Bundle extra = new Bundle();
         extra.putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
@@ -55,7 +58,7 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
 
         WidgetItem[] widgetItems = ShortCreateAppWidgetConfigure.getSelectedItems();
         if (widgetItems != null && widgetItems.length > 0) {
-
+            KLog.d(TAG, "updateAppWidget widgetItems is not null");
             Folder defaultFolder = FolderCache.getInstance().getCacheFolder(defaultFolderSid);
             if (defaultFolder != null) {
                 views.setTextViewText(R.id.tv_header_name, defaultFolder.getName());
@@ -69,10 +72,11 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
                 if (resId != 0) {
                     Intent intent = null;
                     if (item.getType() == WidgetAction.NOTE_SEARCH.ordinal()) { //搜索
-                        intent = new Intent(context, SearchActivity.class);
+                        intent = new Intent(SearchActivity.ACTION_SEARCH);
                     } else {
-                        intent = new Intent(context, NoteEditActivity.class);
+                        intent = new Intent(NoteEditActivity.ACTION_EDIT);
                     }
+                    intent.setPackage(pkgName);
                     intent.putExtra(NoteEditActivity.ARG_NOTE_ADD_TYPE, item.getType());
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, defaultFolderSid);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

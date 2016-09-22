@@ -51,6 +51,9 @@ import java.util.List;
  * @version: 1.0.0
  */
 public class SearchActivity extends BaseActivity implements SearchView.OnQueryTextListener, OnItemClickListener {
+    
+    public static final String ACTION_SEARCH = "com.yunxinlink.notes.action.SEARCH";
+    
     private static final int MSG_SEARCH = 1;
 
     /**

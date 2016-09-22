@@ -26,6 +26,7 @@ import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.lock.ui.LockDigitalActivity;
 import com.yunxinlink.notes.lock.ui.LockPatternActivity;
 import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
+import com.yunxinlink.notes.share.SimplePlatformActionListener;
 import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.log.Log;
 
@@ -50,7 +51,9 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -58,6 +61,13 @@ import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.security.auth.x500.X500Principal;
+
+import cn.sharesdk.framework.Platform;
+import cn.sharesdk.framework.PlatformDb;
+import cn.sharesdk.framework.ShareSDK;
+import cn.sharesdk.sina.weibo.SinaWeibo;
+import cn.sharesdk.tencent.qq.QQ;
+import cn.sharesdk.wechat.friends.Wechat;
 
 public class TestActivity extends BaseActivity implements View.OnClickListener {
     // This is your preferred flag
@@ -160,6 +170,18 @@ public class TestActivity extends BaseActivity implements View.OnClickListener {
         if (btnDeviceInfo != null) {
             btnDeviceInfo.setOnClickListener(this);
         }
+        
+        Button btnWeixinLogin = (Button) findViewById(R.id.btn_wechat_login);
+        btnWeixinLogin.setOnClickListener(this);
+        
+        Button btnWeiboLogin = (Button) findViewById(R.id.btn_weibo_login);
+        btnWeiboLogin.setOnClickListener(this);
+        
+        Button btnQQLogin = (Button) findViewById(R.id.btn_qq_login);
+        btnQQLogin.setOnClickListener(this);
+        
+        Button btnClearAccount = (Button) findViewById(R.id.btn_clear_count);
+        btnClearAccount.setOnClickListener(this);
 
         /*
         Button btnKeyStore = (Button) findViewById(R.id.btn_keyStore);
@@ -527,7 +549,133 @@ public class TestActivity extends BaseActivity implements View.OnClickListener {
                 String info = getDeviceInfo(mContext);
                 tvDeviceInfo.setText(info);
                 break;
+            case R.id.btn_wechat_login:
+                loginWechat();
+                break;
+            case R.id.btn_weibo_login:
+                loginWeibo();
+                break;
+            case R.id.btn_qq_login:
+                loginQQ();
+                break;
+            case R.id.btn_clear_count:
+                clearAccount();
+                break;
         }
+    }
+    
+    private void clearAccount() {
+        Platform weibo = ShareSDK.getPlatform(SinaWeibo.NAME);
+        weibo.removeAccount(true);
+        Platform wechat = ShareSDK.getPlatform(Wechat.NAME);
+        wechat.removeAccount(true);
+        Platform qq = ShareSDK.getPlatform(QQ.NAME);
+        qq.removeAccount(true);
+    }
+    
+    private void loginWeibo() {
+        Platform weibo = ShareSDK.getPlatform(SinaWeibo.NAME);
+        weibo.SSOSetting(false);  //设置false表示使用SSO授权方式
+        weibo.setPlatformActionListener(new SimplePlatformActionListener() {
+            @Override
+            public void onComplete(Platform platform, int action, HashMap<String, Object> hashMap) {
+                KLog.d(TAG, "onComplete action:" + action + ", hashMap:" + hashMap);
+                getUserInfo(platform);
+                super.onComplete(platform, action, hashMap);
+            }
+
+            @Override
+            public void onError(Platform platform, int action, Throwable throwable) {
+                KLog.d(TAG, "onError action:" + action + ", throwable:" + throwable.getMessage());
+                super.onError(platform, action, throwable);
+            }
+
+            @Override
+            public void onCancel(Platform platform, int action) {
+                KLog.d(TAG, "onCancel action:" + action);
+                super.onCancel(platform, action);
+            }
+        });
+//        weibo.authorize();//单独授权
+        weibo.showUser(null);//授权并获取用户信息
+//authorize与showUser单独调用一个即可
+//移除授权
+//weibo.removeAccount(true);
+    }
+    
+    private void loginWechat() {
+        Platform wechat = ShareSDK.getPlatform(Wechat.NAME);
+        wechat.SSOSetting(false);  //设置false表示使用SSO授权方式
+        wechat.setPlatformActionListener(new SimplePlatformActionListener() {
+            @Override
+            public void onComplete(Platform platform, int action, HashMap<String, Object> hashMap) {
+                KLog.d(TAG, "onComplete action:" + action + ", hashMap:" + hashMap);
+                getUserInfo(platform);
+                super.onComplete(platform, action, hashMap);
+            }
+
+            @Override
+            public void onError(Platform platform, int action, Throwable throwable) {
+                KLog.d(TAG, "onError action:" + action + ", throwable:" + throwable.getMessage());
+                super.onError(platform, action, throwable);
+            }
+
+            @Override
+            public void onCancel(Platform platform, int action) {
+                KLog.d(TAG, "onCancel action:" + action);
+                super.onCancel(platform, action);
+            }
+        });
+//        weibo.authorize();//单独授权
+        wechat.showUser(null);//授权并获取用户信息
+//authorize与showUser单独调用一个即可
+//移除授权
+//weibo.removeAccount(true);
+    }
+    
+    private void loginQQ() {
+        Platform qq = ShareSDK.getPlatform(QQ.NAME);
+        qq.SSOSetting(false);  //设置false表示使用SSO授权方式
+        qq.setPlatformActionListener(new SimplePlatformActionListener() {
+            @Override
+            public void onComplete(Platform platform, int action, HashMap<String, Object> hashMap) {
+                KLog.d(TAG, "onComplete action:" + action + ", hashMap:" + hashMap);
+                getUserInfo(platform);
+                super.onComplete(platform, action, hashMap);
+            }
+
+            @Override
+            public void onError(Platform platform, int action, Throwable throwable) {
+                KLog.d(TAG, "onError action:" + action + ", throwable:" + throwable.getMessage());
+                super.onError(platform, action, throwable);
+            }
+
+            @Override
+            public void onCancel(Platform platform, int action) {
+                KLog.d(TAG, "onCancel action:" + action);
+                super.onCancel(platform, action);
+            }
+        });
+//        weibo.authorize();//单独授权
+        qq.showUser(null);//授权并获取用户信息
+//authorize与showUser单独调用一个即可
+//移除授权
+//weibo.removeAccount(true);
+    }
+    
+    private void getUserInfo(Platform platform) {
+        PlatformDb platDB = platform.getDb();//获取数平台数据DB
+        //通过DB获取各种数据
+        String token = platDB.getToken();
+        long expiresIn = platDB.getExpiresIn();
+        long expiresTime = platDB.getExpiresTime();
+        String gender = platDB.getUserGender();
+        String icon = platDB.getUserIcon();
+        String userId = platDB.getUserId();
+        String username = platDB.getUserName();
+        String tokenSecret = platDB.getTokenSecret();
+        Date date = new Date(expiresTime);
+        KLog.d(TAG, "token:" + token + ", gender:" + gender + ", icon:" + icon + ", userId:" + userId + ", username:" + username + ", tokenSecret:" + tokenSecret + ", expiresIn:" + expiresIn + ", expiresTime:" + expiresTime + ", date:" + date);
     }
     
     private String getDeviceInfo(Context context) {

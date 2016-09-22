@@ -27,7 +27,7 @@ import com.yunxinlink.notes.helper.SimpleItemTouchHelperCallback;
 import com.yunxinlink.notes.listener.OnItemClickListener;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.persistent.FolderManager;
-import com.yunxinlink.notes.persistent.OnLoadCallback;
+import com.yunxinlink.notes.listener.OnLoadCallback;
 import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteTask;
@@ -47,6 +47,8 @@ import java.util.Map;
  * @version: 1.0.0
  */
 public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnStartDragListener, OnItemClickListener, View.OnClickListener {
+    
+    public static final String ACTION_SHORT_CREATE = "com.yunxinlink.notes.SHORT_CREATE_ACTION";
     
     private static final int MSG_UPDATE_WIDGET = 1;
     private static final int MSG_UPDATE_WIDGET_ITEMS = 2;

@@ -87,6 +87,8 @@ import java.util.Stack;
 public class NoteEditActivity extends BaseActivity implements View.OnClickListener, TextWatcher, 
         NoteEditFragment.OnFragmentInteractionListener, 
         DetailListFragment.OnDetailInteractionListener {
+    
+    public static final String ACTION_EDIT = "com.yunxinlink.notes.EDIT_ACTION";
 
 
     public static final String ARG_NOTE_ID = "noteId";

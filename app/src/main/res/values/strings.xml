@@ -23,6 +23,7 @@
     <string name="label_note_share">保存到云信笔记</string>
     <string name="label_trash">回收站</string>
     <string name="label_settings">设置</string>
+    <string name="label_login">登录</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -277,4 +278,6 @@
     <string name="appwidget_short_create_label">云信笔记工具</string>
     <string name="add_widget">添加小部件</string>
     <string name="widget_item_max_tip">不能添加更多了哦~</string>
+    
+    <string name="app_desc">记录信息，从此开始</string>
 </resources>

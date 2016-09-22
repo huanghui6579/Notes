@@ -68,6 +68,26 @@ public class Constants {
     public static final String PREF_NOTE_SORT = "note_sort";
 
     /**
+     * 设备是否已经上传了设备信息
+     */
+    public static final String PREF_IS_DEVICE_ACTIVE = "is_device_active";
+
+    /**
+     * 系统版本,如22、23
+     */
+    public static final String PREF_SDK_VERSION = "sdk_version";
+
+    /**
+     * 当前登录的账号类型，0：本账号系统登录，1：微信，2：QQ，3：微博
+     */
+    public static final String PREF_ACCOUNT_TYPE = "account_type";
+
+    /**
+     * 当前登录的账号在本地数据库中的id，0则没有使用本地登录
+     */
+    public static final String PREF_ACCOUNT_ID = "account_id";
+
+    /**
      * 快速创建笔记的桌面小部件id
      */
     public static final String PREF_APPWIDGETID_SHORT_CREATE = "appwidgetid_short_create";

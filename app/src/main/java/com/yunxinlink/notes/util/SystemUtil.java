@@ -21,6 +21,7 @@ import android.provider.MediaStore;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.PopupMenu;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.MenuItem;
@@ -36,6 +37,7 @@ import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.Attach;
+import com.yunxinlink.notes.model.DeviceInfo;
 import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.richtext.AttachText;
 import com.yunxinlink.notes.util.log.Log;
@@ -1428,5 +1430,78 @@ public class SystemUtil {
         int color = a.getColor(0, defaultColor);
         a.recycle();
         return color;
+    }
+
+    /**
+     * 获取手机Android 版本（4.4、5.0、5.1 ...）
+     *
+     * @return
+     */
+    public static String getBuildVersion() {
+        return android.os.Build.VERSION.RELEASE;
+    }
+
+    /**
+     * 获取手机Android 版本号（22、23 ...）
+     *
+     * @return
+     */
+    public static int getBuildSDKInt() {
+        return Build.VERSION.SDK_INT;
+    }
+
+    /**
+     * 获取手机型号
+     *
+     * @return
+     */
+    public static String getPhoneModel() {
+        return android.os.Build.MODEL;
+    }
+
+    /**
+     * 获取手机品牌
+     *
+     * @return
+     */
+    public static String getPhoneBrand() {
+        return android.os.Build.BRAND;
+    }
+
+    /**
+     * 获取设备的唯一标识，deviceId
+     *
+     * @param context
+     * @return
+     */
+    public static String getDeviceId(Context context) {
+        TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        String deviceId = tm.getDeviceId();
+        if (deviceId == null) {
+            return "";
+        } else {
+            return deviceId;
+        }
+    }
+
+    /**
+     * 获取设备信息
+     * @param context
+     * @return
+     */
+    public static DeviceInfo getDeviceInfo(Context context) {
+        DeviceInfo deviceInfo = new DeviceInfo();
+        String imei = getDeviceId(context);
+        String os = "Android";
+        String osVersion = getBuildVersion();
+        String phoneModel = getPhoneModel();
+        String brand = getPhoneBrand();
+
+        deviceInfo.setImei(imei);
+        deviceInfo.setOs(os);
+        deviceInfo.setOsVersion(osVersion);
+        deviceInfo.setPhoneModel(phoneModel);
+        deviceInfo.setBrand(brand);
+        return deviceInfo;
     }
 }

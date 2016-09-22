@@ -617,4 +617,110 @@ public class NoteUtil {
             KLog.d("notifyAppWidgetList invoke failed appwidget id:" + appWidgetId);
         }
     }
+
+    /**
+     * 设备是否已经上传了设备信息
+     * @param context
+     * @return
+     */
+    public static boolean isDeviceActive(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        return preferences.getBoolean(Constants.PREF_IS_DEVICE_ACTIVE, false);
+    }
+
+    /**
+     * 获取系统的版本号，如22、23
+     * @param context
+     * @return
+     */
+    public static int getSdkInt(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        return preferences.getInt(Constants.PREF_SDK_VERSION, 0);
+    }
+
+    /**
+     * 系统是否升级了
+     * @param context
+     * @return
+     */
+    public static boolean isOsUpdated(Context context) {
+        int sdkInt = getSdkInt(context);
+        if (sdkInt != 0) {
+            int curSdkInt = SystemUtil.getBuildSDKInt();
+            return sdkInt == curSdkInt;
+        }
+        return true;
+    }
+    
+    /**
+     * 是否需要激活或者更新设备信息
+     * @param context
+     * @return
+     */
+    public static boolean shouldActive(Context context) {
+        boolean isActive = isDeviceActive(context);
+        boolean isOsUpdated = isOsUpdated(context);
+        //之前没有激活或者系统版本更了
+        return !isActive || isOsUpdated;
+    }
+
+    /**
+     * 保存设备激活的信息
+     * @param context
+     * @param isActive
+     */
+    public static void saveDeviceActive(Context context, boolean isActive) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(Constants.PREF_IS_DEVICE_ACTIVE, isActive);
+        editor.putInt(Constants.PREF_SDK_VERSION, SystemUtil.getBuildSDKInt());
+        editor.apply();
+    }
+
+    /**
+     * 获取用户登录的账号类型
+     * @param context
+     * @return
+     */
+    public static int getAccountType(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        return preferences.getInt(Constants.PREF_ACCOUNT_TYPE, -1);
+    }
+
+    /**
+     * 保存用户登录的账号类型
+     * @param context
+     * @param type
+     * @return
+     */
+    public static void saveAccountType(Context context, int type) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(Constants.PREF_ACCOUNT_TYPE, type);
+        editor.apply();
+    }
+
+    /**
+     * 获取本地当前登录的用户id
+     * @param context
+     * @return
+     */
+    public static int getAccountId(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        return preferences.getInt(Constants.PREF_ACCOUNT_ID, 0);
+    }
+
+    /**
+     * 保存用户登录的账号id
+     * @param context
+     * @param userId
+     * @return
+     */
+    public static void saveAccountId(Context context, int userId) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(Constants.PREF_ACCOUNT_ID, userId);
+        editor.apply();
+    }
+    
 }

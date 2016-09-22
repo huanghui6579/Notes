@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatDelegate;
@@ -18,8 +19,12 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.socks.library.KLog;
+import com.yunxinlink.notes.api.impl.DeviceApiImpl;
+import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
+import com.yunxinlink.notes.model.ActionResult;
+import com.yunxinlink.notes.model.DeviceInfo;
 import com.yunxinlink.notes.model.User;
-import com.yunxinlink.notes.receiver.ThemeReceiver;
+import com.yunxinlink.notes.receiver.SystemReceiver;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -57,14 +62,16 @@ public class NoteApplication extends Application {
     private boolean mShowFolderAll = true;
 
     //主题切换的广播
-    private ThemeReceiver mThemeReceiver;
+    private SystemReceiver mSystemReceiver;
+    
+    private Handler mHandler = new Handler();
 
     @Override
     public void onCreate() {
         super.onCreate();
         mInstance = this;
 
-        registThemeReceiver();
+        registerSystemReceiver();
 
         int nightMode = SettingsUtil.getDefaultNightMode(this);
         if (nightMode == AppCompatDelegate.MODE_NIGHT_YES) {
@@ -73,33 +80,81 @@ public class NoteApplication extends Application {
 
         initLog();
         init(this);
+
+        //初始化设备信息
+        initDeviceInfo(this);
+
+        //app 启动完毕
+        onBootCompleted(this);
+    }
+
+    /**
+     * 初始化设备信息
+     * @param context
+     */
+    public void initDeviceInfo(final Context context) {
+        SystemUtil.getThreadPool().execute(new NoteTask() {
+            @Override
+            public void run() {
+                boolean shouldActive = NoteUtil.shouldActive(context);
+                if (shouldActive) {    //需要激活
+                    KLog.d(TAG, "device will active ...");
+                    DeviceInfo deviceInfo = SystemUtil.getDeviceInfo(context);
+                    DeviceApiImpl.activeDeviceInfo(deviceInfo, new SimpleOnLoadCompletedListener<ActionResult<Void>>() {
+                        @Override
+                        public void onLoadSuccess(ActionResult<Void> result) {
+                            //成功，保存
+                            NoteUtil.saveDeviceActive(context, true);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * app 启动完成
+     * @param context
+     */
+    private void onBootCompleted(final Context context) {
+        //延迟500毫秒执行
+        mHandler.postDelayed(new NoteTask() {
+            @Override
+            public void run() {
+                LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context);
+                Intent intent = new Intent(SystemReceiver.ACTION_AUTHORITY_VERIFY);
+                localBroadcastManager.sendBroadcast(intent);
+            }
+        }, 500);
     }
 
     /**
      * 注册主题变换的广播
      */
-    private void registThemeReceiver() {
-        if (mThemeReceiver == null) {
-            mThemeReceiver = new ThemeReceiver(this);
+    private void registerSystemReceiver() {
+        if (mSystemReceiver == null) {
+            mSystemReceiver = new SystemReceiver(this);
         }
-        IntentFilter filter = new IntentFilter(ThemeReceiver.ACTION_THEME_CHANGE);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(SystemReceiver.ACTION_THEME_CHANGE);
+        filter.addAction(SystemReceiver.ACTION_AUTHORITY_VERIFY);
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
-        localBroadcastManager.registerReceiver(mThemeReceiver, filter);
+        localBroadcastManager.registerReceiver(mSystemReceiver, filter);
     }
 
     /**
      * 注销主题的广播
      */
-    private void unregistThemeReceiver() {
-        if (mThemeReceiver != null) {
+    private void unregisterSystemReceiver() {
+        if (mSystemReceiver != null) {
             LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
-            localBroadcastManager.unregisterReceiver(mThemeReceiver);
+            localBroadcastManager.unregisterReceiver(mSystemReceiver);
         }
     }
 
     @Override
     public void onTerminate() {
-        unregistThemeReceiver();
+        unregisterSystemReceiver();
         super.onTerminate();
     }
 

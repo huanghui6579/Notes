@@ -54,7 +54,7 @@
             android:layout_width="match_parent"
             android:layout_marginTop="4dp"
             android:layout_height="wrap_content"
-            android:text="数字密码登录"/>
+            android:text="数字密码登录" />
 
         <Button
             android:id="@+id/btn_keyStore"
@@ -69,6 +69,30 @@
             android:layout_marginTop="4dp"
             android:layout_height="wrap_content"
             android:text="获取设备信息"/>
+        
+        <Button
+            android:id="@+id/btn_wechat_login"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="微信登录"/>
+        
+        <Button
+            android:id="@+id/btn_qq_login"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="QQ登录"/>
+        
+        <Button
+            android:id="@+id/btn_weibo_login"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="微博登录"/>
+        
+        <Button
+            android:id="@+id/btn_clear_count"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="清除账号"/>
         
         <TextView
             android:id="@+id/tv_device_info"

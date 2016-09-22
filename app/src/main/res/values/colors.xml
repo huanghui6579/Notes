@@ -44,4 +44,7 @@
     <color name="colorPrimaryNightDark">#3D4146</color>
 
     <color name="widget_list_bg_color">#EFEEF1</color>
+    
+    <color name="qq_color">#3299DC</color>
+    <color name="weibo_color">#DC2529</color>
 </resources>
