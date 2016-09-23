@@ -13,6 +13,7 @@ import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.model.Folder;
+import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.ui.SearchActivity;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -35,16 +36,12 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.short_create_app_widget);
 //        views.setTextViewText(R.id.appwidget_text, widgetText);
         
-        String pkgName = context.getPackageName();
-        
-        Intent mainIntent = new Intent("android.intent.action.MAIN");
-        mainIntent.setPackage(pkgName);
+        Intent mainIntent = new Intent(MainActivity.ACTION_MAIN);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent mainPendingIntent = PendingIntent.getActivity(context, REQ_MAIN, mainIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         views.setOnClickPendingIntent(R.id.iv_logo, mainPendingIntent);
         
         Intent settingsIntent = new Intent(ShortCreateAppWidgetConfigure.ACTION_SHORT_CREATE);
-        settingsIntent.setPackage(pkgName);
         settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Bundle extra = new Bundle();
         extra.putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
@@ -76,7 +73,6 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
                     } else {
                         intent = new Intent(NoteEditActivity.ACTION_EDIT);
                     }
-                    intent.setPackage(pkgName);
                     intent.putExtra(NoteEditActivity.ARG_NOTE_ADD_TYPE, item.getType());
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, defaultFolderSid);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

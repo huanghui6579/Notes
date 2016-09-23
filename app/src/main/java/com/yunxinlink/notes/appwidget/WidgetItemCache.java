@@ -1,5 +1,6 @@
 package com.yunxinlink.notes.appwidget;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.ArrayList;
@@ -57,5 +58,19 @@ public class WidgetItemCache {
      */
     public void clear() {
         mWidgetItems.clear();
+    }
+
+    /**
+     * 加载桌面小部件的快速创建工具栏
+     */
+    public List<WidgetItem> loadWidgetItems() {
+        List<WidgetItem> list =  WidgetManager.getInstance().getAllWidgetItems();
+        clear();
+        if (!SystemUtil.isEmpty(list)) {
+            mWidgetItems.addAll(list);
+        } else {
+            KLog.d("load widget items list is null");
+        }
+        return list;
     }
 }

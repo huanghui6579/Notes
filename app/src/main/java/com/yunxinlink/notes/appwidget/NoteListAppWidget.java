@@ -37,14 +37,14 @@ public class NoteListAppWidget extends AppWidgetProvider {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.note_list_app_widget);
 //        views.setTextViewText(R.id.appwidget_text, widgetText);
 
-        Intent mainIntent = new Intent(context, MainActivity.class);
+        Intent mainIntent = new Intent(MainActivity.ACTION_MAIN);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent mainPendingIntent = PendingIntent.getActivity(context, REQ_MAIN, mainIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         views.setOnClickPendingIntent(R.id.iv_logo, mainPendingIntent);
 
         String defaultFolderSid = ((NoteApplication) context.getApplicationContext()).getDefaultFolderSid();
         
-        Intent addIntent = new Intent(context, NoteEditActivity.class);
+        Intent addIntent = new Intent(NoteEditActivity.ACTION_EDIT);
         addIntent.putExtra(NoteEditActivity.ARG_FOLDER_ID, defaultFolderSid);
         addIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent addPendingIntent = PendingIntent.getActivity(context, REQ_ADD, addIntent, PendingIntent.FLAG_CANCEL_CURRENT);
@@ -87,7 +87,7 @@ public class NoteListAppWidget extends AppWidgetProvider {
      * @param context
      */
     void showNote(Context context, Intent intent) {
-        Intent detailIntent = new Intent(context, NoteEditActivity.class);
+        Intent detailIntent = new Intent(NoteEditActivity.ACTION_EDIT);
         detailIntent.putExtra(NoteEditActivity.ARG_NOTE_ID, intent.getIntExtra(NoteEditActivity.ARG_NOTE_ID, -1));
         detailIntent.putExtra(NoteEditActivity.ARG_NOTE_SID, intent.getStringExtra(NoteEditActivity.ARG_NOTE_SID));
         detailIntent.putExtra(NoteEditActivity.ARG_FOLDER_ID, intent.getStringExtra(NoteEditActivity.ARG_FOLDER_ID));

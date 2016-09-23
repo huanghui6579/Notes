@@ -11,6 +11,8 @@ import android.content.res.TypedArray;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -32,6 +34,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
@@ -45,6 +48,7 @@ import com.yunxinlink.notes.util.log.Log;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -77,6 +81,9 @@ public class SystemUtil {
     private static final double COLOR_THRESHOLD = 180.0;
 
     private static ExecutorService cachedThreadPool = null;//可缓存的线程池
+
+    //email的正则表达式
+    public static Pattern VALID_EMAIL_ADDRESS_REGEX = null;
 
     /**
      * 附件的正则表达式
@@ -1503,5 +1510,60 @@ public class SystemUtil {
         deviceInfo.setPhoneModel(phoneModel);
         deviceInfo.setBrand(brand);
         return deviceInfo;
+    }
+
+    /**
+     * 是否是email
+     * @param text
+     * @return
+     */
+    public static boolean isEmail(CharSequence text) {
+        if (VALID_EMAIL_ADDRESS_REGEX == null) {
+            VALID_EMAIL_ADDRESS_REGEX = Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
+        }
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX .matcher(text);
+        return matcher.find();
+    }
+
+    /**
+     * 是否是电话号码
+     * @param number
+     * @return
+     */
+    public static boolean isPhoneNumber(String number) {
+        Class<PhoneNumberUtil> clazz = PhoneNumberUtil.class;
+        boolean isPhone = true;
+        try {
+            Method method = clazz.getDeclaredMethod("isViablePhoneNumber", String.class);
+            if (method != null) {
+                method.setAccessible(true);
+                isPhone = (boolean) method.invoke(clazz, number);
+            }
+        } catch (Exception e) {
+            KLog.d(TAG, "isPhoneNumber number:" + number + ", error:" + e.getMessage());
+            e.printStackTrace();
+        }
+        return isPhone;
+    }
+
+    /**
+     * 检测当的网络（WLAN、3G/2G）状态
+     * @param context Context
+     * @return true 表示网络可用
+     */
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivity = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivity != null) {
+            NetworkInfo info = connectivity.getActiveNetworkInfo();
+            if (info != null && info.isConnected()) {
+                // 当前网络是连接的
+                if (info.getState() == NetworkInfo.State.CONNECTED) {
+                    // 当前所连接的网络可用
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

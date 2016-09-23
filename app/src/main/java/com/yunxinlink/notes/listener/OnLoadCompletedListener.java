@@ -15,7 +15,8 @@ public interface OnLoadCompletedListener<T> {
 
     /**
      * 加载失败
+     * @param errorCode
      * @param reason
      */
-    void onLoadFailed(String reason);
+    void onLoadFailed(int errorCode, String reason);
 }

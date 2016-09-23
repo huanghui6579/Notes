@@ -1,5 +1,7 @@
 package com.yunxinlink.notes.api.impl;
 
+import com.yunxinlink.notes.util.SystemUtil;
+
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -29,4 +31,13 @@ public abstract class BaseApi {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
     }
+
+    /**
+     * 后台处理任务
+     * @param runnable
+     */
+    protected static void doInbackground(Runnable runnable) {
+        SystemUtil.getThreadPool().execute(runnable);
+    }
+    
 }

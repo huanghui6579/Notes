@@ -75,7 +75,7 @@ import java.util.List;
  * @update 2016/8/22 10:20
  * @version: 1.0.0
  */
-public class MainFragment extends BaseFragment {
+public class MainFragment extends BaseFragment implements View.OnClickListener {
     
     public static final String ARG_FOLDER_ID = "folder_id";
     public static final String ARG_IS_TRASH = "is_trash";
@@ -412,11 +412,12 @@ public class MainFragment extends BaseFragment {
         if (mMainEmptyView == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             mMainEmptyView = inflater.inflate(R.layout.main_empty_view, null);
-            
+            Button btnLogin = (Button) mMainEmptyView.findViewById(R.id.btn_login);
+            btnLogin.setOnClickListener(this);
             if (mIsTrash) {
 
                 TextView tvContent = (TextView) mMainEmptyView.findViewById(R.id.tv_content);
-                Button btnLogin = (Button) mMainEmptyView.findViewById(R.id.btn_login);
+                
                 btnLogin.setVisibility(View.GONE);
 
                 tvContent.setText(R.string.tip_note_empty);
@@ -1269,6 +1270,16 @@ public class MainFragment extends BaseFragment {
      */
     public RecyclerView.ViewHolder getViewHolder(int position) {
         return mRecyclerView.findViewHolderForAdapterPosition(position);
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_login:    //登录
+                Intent intent = new Intent(getContext(), AuthorityActivity.class);
+                startActivity(intent);
+                break;
+        }
     }
 
     /**

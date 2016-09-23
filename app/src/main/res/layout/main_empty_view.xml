@@ -19,6 +19,6 @@
         android:layout_marginTop="@dimen/content_padding"
         android:layout_gravity="center_horizontal"
         style="@style/CommonBtnStyle"
-        android:text="@string/main_empty_tip_login"/>
+        android:text="@string/authority_login_text"/>
 
 </LinearLayout>

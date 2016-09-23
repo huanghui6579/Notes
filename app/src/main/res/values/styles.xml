@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
@@ -71,6 +71,14 @@
     <style name="CommonBtnStyle">
         <item name="android:textColor">@android:color/white</item>
         <item name="android:background">@drawable/common_btn_background_selector</item>
+        <item name="android:stateListAnimator" tools:targetApi="lollipop">@null</item>
+    </style>
+    
+    <style name="CommonTextBtnStyle">
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:textColor">@color/text_btn_color</item>
+        <item name="android:textSize">@dimen/content_text_size_middle</item>
     </style>
     
     <style name="ListItemCheckboxStyle">

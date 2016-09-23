@@ -16,7 +16,7 @@ public class SimpleOnLoadCompletedListener<T> implements OnLoadCompletedListener
     }
 
     @Override
-    public void onLoadFailed(String reason) {
-        KLog.w(TAG, "SimpleOnLoadCompletedListener onLoadFailed:" + reason);
+    public void onLoadFailed(int errorCode, String reason) {
+        KLog.w(TAG, "SimpleOnLoadCompletedListener onLoadFailed errorCode:" + errorCode + ", reason:" + reason);
     }
 }

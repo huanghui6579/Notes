@@ -2,6 +2,7 @@
 <resources>
     <color name="colorPrimary">#2196f3</color>
     <color name="colorPrimaryDark">#1976d2</color>
+    <color name="colorPrimaryDisable">#64b5f6</color>
     <color name="colorAccent">#FF4081</color>
     
     <color name="divider_color">#D3D3D3</color>
@@ -46,5 +47,8 @@
     <color name="widget_list_bg_color">#EFEEF1</color>
     
     <color name="qq_color">#3299DC</color>
+    <color name="qq_color_pressed">#0C7ED9</color>
     <color name="weibo_color">#DC2529</color>
+    <color name="weibo_color_pressed">#BC1E22</color>
+    
 </resources>

@@ -26,12 +26,16 @@ import android.widget.TextView;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.adapter.ShareListAdapter;
+import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.appwidget.NoteListAppWidget;
+import com.yunxinlink.notes.model.AccountType;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.share.ShareInfo;
 import com.yunxinlink.notes.share.ShareItem;
 import com.yunxinlink.notes.share.SimplePlatformActionListener;
@@ -43,6 +47,7 @@ import java.util.Collection;
 import java.util.List;
 
 import cn.sharesdk.framework.Platform;
+import cn.sharesdk.framework.PlatformDb;
 import cn.sharesdk.framework.ShareSDK;
 import cn.sharesdk.framework.TitleLayout;
 import cn.sharesdk.sina.weibo.SinaWeibo;
@@ -50,6 +55,8 @@ import cn.sharesdk.tencent.qq.QQ;
 import cn.sharesdk.tencent.qzone.QZone;
 import cn.sharesdk.wechat.friends.Wechat;
 import cn.sharesdk.wechat.moments.WechatMoments;
+
+import static com.yunxinlink.notes.lockpattern.Alp.TAG;
 
 /**
  * @author huanghui1
@@ -721,6 +728,75 @@ public class NoteUtil {
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(Constants.PREF_ACCOUNT_ID, userId);
         editor.apply();
+    }
+
+    /**
+     * 构建用户的登录的参数
+     * @param context
+     * @param user 用户参数，为空时，则可能是第三方账号登录或者本地登录
+     * @param loginType 登录类型，是本地账号登录还是第三方账号登录
+     * @see AccountType                 
+     * @return
+     */
+    public static UserDto buildLoginParams(Context context, User user, Integer loginType) {
+        UserDto userDto = new UserDto();
+
+        int accountType = -1;
+        if (user != null) { //指定账号和密码登录，一般用于登录或者注册界面
+            userDto.setType(AccountType.TYPE_LOCAL);
+            userDto.setUser(user);
+            KLog.d(TAG, "build login param login with local account");
+            return userDto;
+        }
+        if (loginType == null) {
+            accountType = NoteUtil.getAccountType(context);
+        } else {
+            accountType = loginType;
+        }
+        KLog.d(TAG, "build login param login with local open api account:" + accountType);
+        userDto.setType(accountType);
+        if (accountType >= 0) { //用户有登录过，则校验信息
+            //校验以及获取用户信息
+            Platform platform = null;
+            switch (accountType) {
+                case AccountType.TYPE_QQ:   //QQ登录
+                    platform = ShareSDK.getPlatform(context, QQ.NAME);
+                    break;
+                case AccountType.TYPE_WECHAT:   //微信登录
+                    platform = ShareSDK.getPlatform(context, Wechat.NAME);
+                    break;
+                case AccountType.TYPE_WEIBO:   //微博登录
+                    platform = ShareSDK.getPlatform(context, SinaWeibo.NAME);
+                    break;
+            }
+            if (platform != null) {
+                PlatformDb platDB = platform.getDb();//获取数平台数据DB
+                //通过DB获取各种数据
+                String token = platDB.getToken();
+                long expiresTime = platDB.getExpiresTime();
+                String userId = platDB.getUserId();
+
+                userDto.setExpiresTime(expiresTime);
+                userDto.setOpenUserId(userId);
+                userDto.setToken(token);
+
+                user = new User();
+                user.setOpenUserId(userId);
+
+                userDto.setUser(user);
+            } else {
+                return null;
+            }
+        } else {    //则用默认的账号登录，如果账号存在的话
+            KLog.d(TAG, "doAuthorityVerify user not use open api login will use local account login");
+            int userId = NoteUtil.getAccountId(context);
+            user = UserManager.getInstance().getAccountInfo(userId);
+            if (user == null) { //本地没有账号
+                KLog.d(TAG, "doAuthorityVerify user local account not exists ");
+                return null;
+            }
+        }
+        return userDto;
     }
     
 }

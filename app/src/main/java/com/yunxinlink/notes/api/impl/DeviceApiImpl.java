@@ -48,7 +48,9 @@ public class DeviceApiImpl extends BaseApi {
             public void onResponse(Call<ActionResult<Void>> call, Response<ActionResult<Void>> response) {
                 ActionResult<Void> actionResult = response.body();
                 boolean success = false;
+                int code = ActionResult.RESULT_FAILED;
                 if (actionResult != null) {
+                    code = actionResult.getResultCode();
                     if (actionResult.isSuccess()) { //成功
                         success = true;
                     }
@@ -58,7 +60,7 @@ public class DeviceApiImpl extends BaseApi {
                     if (success) {
                         listener.onLoadSuccess(actionResult);
                     } else {
-                        listener.onLoadFailed(null); 
+                        listener.onLoadFailed(code, null); 
                     }
                 }
                 KLog.d(TAG, "active device info result:" + response.body().toString());
@@ -67,7 +69,7 @@ public class DeviceApiImpl extends BaseApi {
             @Override
             public void onFailure(Call<ActionResult<Void>> call, Throwable t) {
                 if (listener != null) {
-                    listener.onLoadFailed(t.getMessage());
+                    listener.onLoadFailed(ActionResult.RESULT_FAILED, t.getMessage());
                 }
                 KLog.d(TAG, "active device info error:" + t);
             }

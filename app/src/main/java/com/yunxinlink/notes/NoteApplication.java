@@ -244,7 +244,7 @@ public class NoteApplication extends Application {
     /**
      * 更新桌面小部件的默认文件夹
      */
-    private void updateWidgetFolder() {
+    public void updateWidgetFolder() {
         int widgetId = NoteUtil.getShortCreateAppWidgetId(this);
         if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {    //widget id 有效
             KLog.d(TAG, "updateWidgetFolder send broadcast ");

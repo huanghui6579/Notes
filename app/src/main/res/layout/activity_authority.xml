@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.yunxinlink.notes.ui.LoginActivity">
+    tools:context="com.yunxinlink.notes.ui.AuthorityActivity">
     <include
         layout="@layout/app_bar_layout"
         android:layout_width="match_parent"
@@ -21,16 +21,6 @@
         android:textSize="@dimen/app_title_text_size"
         android:layout_marginTop="@dimen/activity_vertical_margin"/>
     
-    <TextView
-        android:id="@+id/tv_app_desc"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/app_desc"
-        android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:layout_marginBottom="@dimen/activity_vertical_margin"
-        android:textSize="@dimen/content_text_size_large"/>
-
     <FrameLayout
         android:id="@id/content_container"
         android:layout_width="match_parent"

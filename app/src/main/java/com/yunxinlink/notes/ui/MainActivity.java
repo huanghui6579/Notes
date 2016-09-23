@@ -61,6 +61,8 @@ import cn.sharesdk.framework.ShareSDK;
  */
 public class MainActivity extends BaseActivity implements View.OnClickListener, MainFragment.OnMainFragmentInteractionListener {
     
+    public static final String ACTION_MAIN = "com.yunxinlink.notes.MAIN_ACTION";
+    
     public static final String ARG_EXIT = "arg_exit";
     
     private static final int MSG_SELECT_NAV = 3;
@@ -822,10 +824,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         weibo.authorize();
                     }*/
 
-//                intent = new Intent(mContext, NoteEditActivity.class);
+                intent = new Intent(mContext, NoteEditActivity.class);
 //                intent = new Intent(mContext, TestActivity.class);
 //                intent = new Intent(mContext, TestNetActivity.class);
-                intent = new Intent(mContext, LoginActivity.class);
+//                intent = new Intent(mContext, AuthorityActivity.class);
 //                intent = new Intent(mContext, LockDigitalActivity.class);
 //                intent = new Intent(mContext, ShortCreateAppWidgetConfigure.class);
                 intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, mSelectedFolderId);

@@ -25,11 +25,16 @@ public class ActionResult<T> {
 	 * 数据不存在
 	 */
 	public static final int RESULT_DATA_NOT_EXISTS = 203;
+
+	/**
+	 * 其他错误
+	 */
+	public static final int RESULT_ERROR = 204;
 	
 	/**
 	 * 返回码
 	 */
-	private int resultCode = RESULT_FAILED;
+	private int resultCode = RESULT_ERROR;
 	
 	private T data;
 	
