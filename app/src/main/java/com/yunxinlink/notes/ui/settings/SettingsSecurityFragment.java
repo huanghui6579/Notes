@@ -72,7 +72,7 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
             mListener = (OnSecurityFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
     }
 

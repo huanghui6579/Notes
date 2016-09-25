@@ -745,7 +745,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
             mListener = (OnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
         super.onAttach(context);
     }

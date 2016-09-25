@@ -13,7 +13,6 @@ import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
-import com.yunxinlink.notes.util.NoteUtil;
 
 /**
  * Implementation of App Widget functionality.
@@ -24,9 +23,9 @@ public class NoteListAppWidget extends AppWidgetProvider {
     public static final String ACTION_NOTIFY_CHANGE = "com.yunxinlink.notes.appwidget.action.APPWIDGET_NOTIFY_CHANGE";
     public static final String ACTION_ITEM_CLICK = "com.yunxinlink.notes.appwidget.action.APPWIDGET_ITEM_CLICK";
 
-    private static final int REQ_MAIN = 1;
-    private static final int REQ_ADD = 2;
-    private static final int REQ_CLICK = 3;
+    private static final int REQ_MAIN = 1100;
+    private static final int REQ_ADD = 1101;
+    private static final int REQ_CLICK = 1102;
 
     private static final String TAG = "NoteListAppWidget";
 
@@ -39,7 +38,7 @@ public class NoteListAppWidget extends AppWidgetProvider {
 
         Intent mainIntent = new Intent(MainActivity.ACTION_MAIN);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent mainPendingIntent = PendingIntent.getActivity(context, REQ_MAIN, mainIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        PendingIntent mainPendingIntent = PendingIntent.getActivity(context, appWidgetId + REQ_MAIN, mainIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         views.setOnClickPendingIntent(R.id.iv_logo, mainPendingIntent);
 
         String defaultFolderSid = ((NoteApplication) context.getApplicationContext()).getDefaultFolderSid();
@@ -47,7 +46,7 @@ public class NoteListAppWidget extends AppWidgetProvider {
         Intent addIntent = new Intent(NoteEditActivity.ACTION_EDIT);
         addIntent.putExtra(NoteEditActivity.ARG_FOLDER_ID, defaultFolderSid);
         addIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent addPendingIntent = PendingIntent.getActivity(context, REQ_ADD, addIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        PendingIntent addPendingIntent = PendingIntent.getActivity(context, appWidgetId + REQ_ADD, addIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_add, addPendingIntent);
 
         Intent intent = new Intent(context, NoteListRemoteViewsService.class);
@@ -57,14 +56,12 @@ public class NoteListAppWidget extends AppWidgetProvider {
         views.setRemoteAdapter(R.id.lv_data, intent);
 
         Intent clickIntent = new Intent(ACTION_ITEM_CLICK);
-        PendingIntent pendingIntentTemplate = PendingIntent.getBroadcast(context, REQ_CLICK, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntentTemplate = PendingIntent.getBroadcast(context, appWidgetId + REQ_CLICK, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         views.setPendingIntentTemplate(R.id.lv_data, pendingIntentTemplate);
 
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
 //        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.lv_data);
-
-        NoteUtil.saveListAppWidgetId(context, appWidgetId);
 
         KLog.d(TAG, "updateAppWidget appWidgetId:" + appWidgetId);
     }
@@ -117,7 +114,6 @@ public class NoteListAppWidget extends AppWidgetProvider {
 
     @Override
     public void onDeleted(Context context, int[] appWidgetIds) {
-        NoteUtil.removeListAppWidgetId(context);
         super.onDeleted(context, appWidgetIds);
     }
 

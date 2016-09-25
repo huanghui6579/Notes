@@ -25,13 +25,12 @@ import com.yunxinlink.notes.helper.ItemTouchHelperViewHolder;
 import com.yunxinlink.notes.helper.OnStartDragListener;
 import com.yunxinlink.notes.helper.SimpleItemTouchHelperCallback;
 import com.yunxinlink.notes.listener.OnItemClickListener;
+import com.yunxinlink.notes.listener.OnLoadCallback;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.persistent.FolderManager;
-import com.yunxinlink.notes.listener.OnLoadCallback;
 import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteTask;
-import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.widget.LayoutManagerFactory;
 import com.yunxinlink.notes.widget.SpacesItemDecoration;
@@ -175,7 +174,14 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
      * 初始化初始的widget items
      */
     private void initWidgetItems() {
+        if (mWidgetItems != null && mWidgetItems.size() > 0) {
+            mHandler.sendEmptyMessage(MSG_UPDATE_WIDGET_ITEMS);
+            return;
+        }
         int size = mResArray.length;
+        if (mWidgetItems != null) {
+            mWidgetItems.clear();
+        }
         for (int i = 0; i < size; i++) {
             WidgetItem item = new WidgetItem();
             item.setName(mNameArray[i]);
@@ -188,12 +194,17 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
 
             mWidgetItems.add(item);
         }
-        
+
+        if (mRecyclerView != null) {
+            mRecyclerView.getAdapter().notifyDataSetChanged();
+        }
+
         doInbackground(new NoteTask(mWidgetItems) {
             @Override
             public void run() {
                 List<WidgetItem> list = (List<WidgetItem>) params[0];
                 WidgetManager.getInstance().initWidgets(list);
+                WidgetItemCache.getInstance().setWidgetItems(mWidgetItems);
             }
         });
     }
@@ -310,7 +321,6 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
             //通知 appwidget 的配置已完成  
             Intent result = new Intent();
             result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
-            NoteUtil.saveShortCreateAppWidgetId(mContext, widgetId);
             ShortCreateAppWidget.updateAppWidget(mContext, AppWidgetManager.getInstance(mContext), widgetId);
             setResult(RESULT_OK, result);
             KLog.d(TAG, "onCompletedConfigure invoke");
@@ -330,7 +340,6 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
             //通知 appwidget 的配置已取消  
             Intent result = new Intent();
             result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId);
-            NoteUtil.saveShortCreateAppWidgetId(mContext, 0);
             setResult(RESULT_CANCELED, result);
             KLog.d(TAG, "onCanceledConfigure invoke");
         }
@@ -357,8 +366,14 @@ public class ShortCreateAppWidgetConfigure extends BaseActivity implements OnSta
      */
     static WidgetItem[] getSelectedItems() {
         if (SystemUtil.isEmpty(mWidgetItems)) {
-            KLog.d(TAG, "getSelectedItems mWidgetItems is null");
+            KLog.d(TAG, "getSelectedItems mWidgetItems is null and will load from local");
+            mWidgetItems = WidgetItemCache.getInstance().loadWidgetItems();
+        }
+        if (SystemUtil.isEmpty(mWidgetItems)) { //更新桌面小部件
+            KLog.d(TAG, "getSelectedItems from local but size is 0");
             return null;
+        } else {
+            KLog.d(TAG, "getSelectedItems success and size is not 0");
         }
         WidgetItem[] items = new WidgetItem[Constants.MAX_WIDGET_ITEM_SIZE];
         for (int i = 0; i < Constants.MAX_WIDGET_ITEM_SIZE; i++) {

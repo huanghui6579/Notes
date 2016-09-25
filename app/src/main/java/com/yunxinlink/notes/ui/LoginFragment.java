@@ -1,14 +1,16 @@
 package com.yunxinlink.notes.ui;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -24,8 +26,13 @@ import com.yunxinlink.notes.listener.SimpleTextWatcher;
 import com.yunxinlink.notes.model.AccountType;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.share.SimplePlatformActionListener;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
+import java.util.HashMap;
+
+import cn.sharesdk.framework.Platform;
 import retrofit2.Call;
 
 /**
@@ -33,16 +40,18 @@ import retrofit2.Call;
  */
 public class LoginFragment extends BaseFragment implements View.OnClickListener {
 
+    private static final int MSG_LOGIN = 1;
+
     private OnLoginFragmentInteractionListener mListener;
     
     private EditText mEtAccount;
     private EditText mEtPassword;
     private Button mBtnLogin;
     
-    private ProgressDialog mProgressDialog;
-    
     //网络请求工具
     private Call<?> mCall;
+
+    private Handler mHandler = new MyHandler(this);
 
     public LoginFragment() {
         // Required empty public constructor
@@ -140,7 +149,7 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
             mListener = (OnLoginFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
     }
 
@@ -160,54 +169,45 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_register:  //注册
+                if (mListener != null) {
+                    mListener.actionRegister();
+                }
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public void onClick(View v) {
         UserDto userDto = null;
         User user = null;
+        int loginType = -1;
         switch (v.getId()) {
             case R.id.qq_layout:    //QQ登录
-                userDto = new UserDto();
-                user = new User();
-                userDto.setUser(user);
-                userDto.setType(AccountType.TYPE_QQ);
+                loginType = AccountType.TYPE_QQ;
                 break;
             case R.id.weibo_layout:    //微博登录
-                userDto = new UserDto();
-                user = new User();
-                userDto.setUser(user);
-                userDto.setType(AccountType.TYPE_WEIBO);
+                loginType = AccountType.TYPE_WEIBO;
                 break;
         }
-        if (userDto != null) {
+        if (loginType != -1) {
             if (SystemUtil.isNetworkAvailable(getContext())) {  //网络可用
-                doLogin(userDto);
+                handleLogin(user, loginType);
             } else {    //网络不可用
                 SystemUtil.makeShortToast(R.string.tip_network_not_available);
             }
         }
     }
-
-    /**
-     * 显示对话框
-     * @param msg 提示的消息
-     */
-    private void showLoadingDialog(String msg) {
-        mProgressDialog = ProgressDialog.show(getContext(), null, msg);
-    }
-
-    /**
-     * 取消显示加载对话框
-     */
-    private void dismissLoadingDialog() {
-        if (mProgressDialog != null && mProgressDialog.isShowing()) {
-            mProgressDialog.dismiss();
-        }
-    }
-
     /**
      * 取消登录
      */
     private void cancelLogin() {
-        dismissLoadingDialog();
+        if (mListener != null) {
+            mListener.dismissDialog();
+        }
         if (mCall != null && !mCall.isCanceled()) {
             KLog.d(TAG, "cancelLogin invoke cancel call");
             mCall.cancel();
@@ -215,11 +215,56 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
     }
 
     /**
-     * 处理登录请求
-     * @param userDto 参数
+     * 提交登录请求
+     * @param context
+     * @param userDto
      */
-    private void doLogin(UserDto userDto) {
-        showLoadingDialog(getString(R.string.authority_login_ing));
+    private void postLogin(Context context, UserDto userDto) {
+        Message msg = mHandler.obtainMessage();
+        msg.what = MSG_LOGIN;
+        msg.obj = userDto;
+        mHandler.sendMessage(msg);
+    }
+
+    /**
+     * 处理登录请求
+     * @param user 参数
+     * @param loginType 登录的类型
+     */
+    private void handleLogin(final User user, final Integer loginType) {
+        final UserDto userDto = NoteUtil.buildLoginParams(getContext(), user, loginType);
+        if (userDto == null) {  //参数为空
+            if (loginType > 0) {    //第三方，则需要进行首次登录
+                KLog.d(TAG, "do login user dto params is null loginType is :" + loginType + ", will to authority ui");
+                Platform platform = NoteUtil.getPlatform(getContext(), loginType);
+                platform.SSOSetting(false); //优先使用客户端
+                platform.setPlatformActionListener(new SimplePlatformActionListener() {
+                    @Override
+                    public void onComplete(Platform platform, int action, HashMap<String, Object> hashMap) {
+                        super.onComplete(platform, action, hashMap);
+                        UserDto param = NoteUtil.buildLoginParams(getContext(), user, loginType);
+                        postLogin(getContext(), param);
+                    }
+                });
+                platform.showUser(null);
+            } else {
+                KLog.d(TAG, "do login user dto params is null");
+                SystemUtil.makeShortToast(R.string.authority_login_error);
+            }
+            return;
+        }
+        doLogin(getContext(), userDto);
+    }
+
+    /**
+     * 执行登录操作
+     * @param context
+     * @param userDto
+     */
+    private void doLogin(Context context, UserDto userDto) {
+        if (mListener != null) {
+            mListener.showDialog(getString(R.string.authority_login_ing));
+        }
         mCall = UserApiImpl.loginAsync(getContext(), userDto, new SimpleOnLoadCompletedListener<ActionResult<UserDto>>() {
             @Override
             public void onLoadSuccess(ActionResult<UserDto> result) {
@@ -254,6 +299,32 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
         });
     }
 
+    private void dismissLoadingDialog() {
+        if (mListener != null) {
+            mListener.dismissDialog();
+        }
+    }
+
+    private static class MyHandler extends BaseHandler<LoginFragment> {
+
+        public MyHandler(LoginFragment target) {
+            super(target);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            LoginFragment target = getTarget();
+            if (target != null) {
+                switch (msg.what) {
+                    case MSG_LOGIN:
+                        UserDto userDto = (UserDto) msg.obj;
+                        target.doLogin(target.getContext(), userDto);
+                        break;
+                }
+            }
+        }
+    }
+
     /**
      * This interface must be implemented by activities that contain this
      * fragment to allow an interaction in this fragment to be communicated
@@ -269,5 +340,14 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
          * 登录或注册成功了
          */
         void onAuthoritySuccess();
+
+        void dismissDialog();
+
+        void showDialog(String tip);
+
+        /**
+         * 加载注册界面
+         */
+        void actionRegister();
     }
 }

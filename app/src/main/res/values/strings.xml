@@ -22,7 +22,6 @@
     <string name="label_note_share">保存到云信笔记</string>
     <string name="label_trash">回收站</string>
     <string name="label_settings">设置</string>
-    <string name="label_login">登录</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -281,16 +280,18 @@
 
     <string name="authority_account_tip">电子邮箱</string>
     <string name="authority_password_tip">请输入密码</string>
+    <string name="authority_password_confirm_tip">请输入确认密码</string>
     <string name="authority_login_text">立即登录</string>
     <string name="authority_forget_password_tip">忘记密码？</string>
     <string name="authority_login_qq">QQ登录</string>
     <string name="authority_login_weibo">微博登录</string>
-    
+
     <string name="authority_menu_login_text">登录</string>
     <string name="authority_menu_register_text">注册</string>
-    
+
     <string name="authority_login_failed">用户名或密码不正确</string>
     <string name="authority_login_error">登录失败，请重试</string>
     <string name="authority_login_state_disable">本账号已被禁用</string>
     <string name="authority_login_ing">登录中…</string>
+    <string name="authority_login_success">登录成功</string>
 </resources>

@@ -24,6 +24,11 @@ public class User {
     private String password;
 
     /**
+     * 用户昵称
+     */
+    private String nickname;
+
+    /**
      * 用户电话，可登录用
      */
     private String mobile;
@@ -164,6 +169,14 @@ public class User {
         this.email = email;
     }
 
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
     /**
      * 检查该用户是否可用
      * @return
@@ -172,12 +185,21 @@ public class User {
         return State.NORMAL == state;
     }
 
+    /**
+     * 检查用户的id是否可用，true：可用
+     * @return
+     */
+    public boolean checkId() {
+        return id != null && id > 0;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
+                ", nickname='" + nickname + '\'' +
                 ", mobile='" + mobile + '\'' +
                 ", email='" + email + '\'' +
                 ", sid='" + sid + '\'' +

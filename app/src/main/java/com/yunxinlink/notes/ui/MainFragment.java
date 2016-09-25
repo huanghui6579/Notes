@@ -1435,7 +1435,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             mListener = (OnMainFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
     }
 

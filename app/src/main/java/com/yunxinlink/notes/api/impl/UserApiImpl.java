@@ -1,7 +1,6 @@
 package com.yunxinlink.notes.api.impl;
 
 import android.content.Context;
-import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
@@ -89,16 +88,15 @@ public class UserApiImpl extends BaseApi {
     public static Call<?> loginAsync(final Context context, final UserDto userDto, final OnLoadCompletedListener<ActionResult<UserDto>> listener) {
         KLog.d(TAG, "login async invoke...");
         if (userDto == null) {
+            if (listener != null) {
+                listener.onLoadFailed(ActionResult.RESULT_PARAM_ERROR, "params is null");
+            }
             KLog.d(TAG, "login async failed params is null");
             return null;
         }
         Retrofit retrofit = buildRetrofit();
         UserApi repo = retrofit.create(UserApi.class);
 
-        if (userDto.getType() >= 0 && TextUtils.isEmpty(userDto.getOpenUserId())) {   //第三方账号登录,且没有获取第三方账号
-            
-        }
-        
         Call<ActionResult<UserDto>> call = repo.login(buildLoginParams(userDto));
         call.enqueue(new Callback<ActionResult<UserDto>>() {
             @Override
@@ -136,7 +134,11 @@ public class UserApiImpl extends BaseApi {
 
             @Override
             public void onFailure(Call<ActionResult<UserDto>> call, Throwable t) {
-
+                String reason = t != null ? t.getMessage() : "";
+                KLog.d(TAG, "login async error:" + reason);
+                if (listener != null) {
+                    listener.onLoadFailed(ActionResult.RESULT_ERROR, reason);
+                }
             }
         });
         return call;
@@ -191,8 +193,16 @@ public class UserApiImpl extends BaseApi {
     private static void updateLocalUser(Context context, final UserDto original, final UserDto result) {
         if (result != null && result.getUser() != null) {
 
-            KLog.d(TAG, "login async state disable local user will update");
+            KLog.d(TAG, "login async state local user will update");
             User user = original.getUser();
+            if (user == null) {
+                user = new User();
+            }
+            if (!user.checkId()) {
+                int id = NoteUtil.getAccountId(context);
+                user.setId(id);
+            }
+            user.setOpenUserId(original.getOpenUserId());
             mergeUserInfo(user, result.getUser());
 
             if (context == null) {  //该界面可能已经销毁
@@ -206,8 +216,8 @@ public class UserApiImpl extends BaseApi {
 
             //添加或更新本地账号信息
             boolean success = UserManager.getInstance().insertOrUpdate(user);
-            int localUserId = NoteUtil.getAccountId(context);
-            if (success && localUserId <= 0 || localUserId != user.getId()) {  //该id已在本地不存在
+            int localUserId = user.getId();
+            if (success && localUserId > 0) {  //该id已在本地不存在
                 NoteUtil.saveAccountId(context, localUserId);
             }
             KLog.d(TAG, "login async updateLocalUser result:" + success);
@@ -259,18 +269,36 @@ public class UserApiImpl extends BaseApi {
         User user = userDto.getUser();
         Map<String, String> params = new HashMap<>();
         if (user != null) {
-            params.put("user.mobile", user.getMobile());
-            params.put("user.password", user.getPassword());
-            params.put("user.username", user.getUsername());
-            params.put("user.sid", user.getSid());
+            String mobile = user.getMobile();
+            if (mobile != null) {
+                params.put("user.mobile", mobile);
+            }
+            String password = user.getPassword();
+            if (password != null) {
+                params.put("user.password", password);
+            }
+            String username = user.getUsername();
+            if (username != null) {
+                params.put("user.username", username);
+            }
+            String sid = user.getSid();
+            if (sid != null) {
+                params.put("user.sid", sid);
+            }
         }
-        params.put("token", userDto.getToken());
-        params.put("openUserId", userDto.getOpenUserId());
-        params.put("type", String.valueOf(userDto.getType()));
+        String token = userDto.getToken();
+        if (token != null) {
+            params.put("token", token);
+        }
+        String openUserId = userDto.getOpenUserId();
+        if (openUserId != null) {
+            params.put("openUserId", openUserId);
+        }
         params.put("expiresTime", String.valueOf(userDto.getExpiresTime()));
         Integer type = userDto.getType();
         int autoCreate = 0;
         if (type != null && type > 0) { //若账号不存在，则自动创建
+            params.put("type", String.valueOf(type));
             autoCreate = 1;
         }
         params.put("autoCreate", String.valueOf(autoCreate));

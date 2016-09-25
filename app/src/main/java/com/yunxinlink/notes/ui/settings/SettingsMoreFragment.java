@@ -72,7 +72,7 @@ public class SettingsMoreFragment extends BasePreferenceFragment implements Pref
             mListener = (OnThemeFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
     }
 

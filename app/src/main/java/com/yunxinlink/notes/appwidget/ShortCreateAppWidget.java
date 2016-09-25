@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.widget.RemoteViews;
 
@@ -25,28 +26,28 @@ import com.yunxinlink.notes.util.NoteUtil;
 public class ShortCreateAppWidget extends AppWidgetProvider {
     private static final String TAG = "ShortCreateAppWidget";
 
-    private static final int REQ_MAIN = 10;
-    private static final int REQ_SETTINGS = 11;
+    private static final int REQ_MAIN = 1000;
+    private static final int REQ_SETTINGS = 1001;
     
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
-        KLog.d(TAG, "updateAppWidget invoke appWidgetId:" + appWidgetId);
+        KLog.d(TAG, "updateAppWidget invoke appWidgetId:" + appWidgetId + " package name:" + context.getPackageName());
 //        CharSequence widgetText = context.getString(R.string.appwidget_text);
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.short_create_app_widget);
 //        views.setTextViewText(R.id.appwidget_text, widgetText);
         
-        Intent mainIntent = new Intent(MainActivity.ACTION_MAIN);
+        Intent mainIntent = new Intent(context, MainActivity.class);
         mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent mainPendingIntent = PendingIntent.getActivity(context, REQ_MAIN, mainIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        PendingIntent mainPendingIntent = PendingIntent.getActivity(context, appWidgetId + REQ_MAIN, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         views.setOnClickPendingIntent(R.id.iv_logo, mainPendingIntent);
         
-        Intent settingsIntent = new Intent(ShortCreateAppWidgetConfigure.ACTION_SHORT_CREATE);
+        Intent settingsIntent = new Intent(context, ShortCreateAppWidgetConfigure.class);
         settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         Bundle extra = new Bundle();
         extra.putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         settingsIntent.putExtras(extra);
-        PendingIntent settingsPendingIntent = PendingIntent.getActivity(context, REQ_SETTINGS, settingsIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        PendingIntent settingsPendingIntent = PendingIntent.getActivity(context, appWidgetId + REQ_SETTINGS, settingsIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         views.setOnClickPendingIntent(R.id.btn_settings, settingsPendingIntent);
         
         String defaultFolderSid = ((NoteApplication) context.getApplicationContext()).getDefaultFolderSid();
@@ -69,14 +70,14 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
                 if (resId != 0) {
                     Intent intent = null;
                     if (item.getType() == WidgetAction.NOTE_SEARCH.ordinal()) { //搜索
-                        intent = new Intent(SearchActivity.ACTION_SEARCH);
+                        intent = new Intent(context, SearchActivity.class);
                     } else {
-                        intent = new Intent(NoteEditActivity.ACTION_EDIT);
+                        intent = new Intent(context, NoteEditActivity.class);
                     }
                     intent.putExtra(NoteEditActivity.ARG_NOTE_ADD_TYPE, item.getType());
                     intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, defaultFolderSid);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    PendingIntent pendingIntent = PendingIntent.getActivity(context, i + 1, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+                    PendingIntent pendingIntent = PendingIntent.getActivity(context, appWidgetId + i + 1, intent, PendingIntent.FLAG_UPDATE_CURRENT);
                     views.setImageViewResource(resId, item.getResId());
                     views.setOnClickPendingIntent(resId, pendingIntent);
                 }
@@ -93,9 +94,7 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         // There may be multiple widgets active, so update all of them
         KLog.d(TAG, "ShortCreateAppWidget onUpdate");
-        for (int appWidgetId : appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId);
-        }
+        new WidgetAsyncTask(context, appWidgetManager, appWidgetIds).execute();
     }
 
     @Override
@@ -123,7 +122,6 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
 
     @Override
     public void onDeleted(Context context, int[] appWidgetIds) {
-        NoteUtil.removeShortCreateAppWidgetId(context);
         KLog.d(TAG, "ShortCreateAppWidget onDeleted");
         super.onDeleted(context, appWidgetIds);
     }
@@ -133,5 +131,67 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
         KLog.d(TAG, "ShortCreateAppWidget onRestored");
         super.onRestored(context, oldWidgetIds, newWidgetIds);
     }
+
+    /**
+     * 后台更新widget的任务
+     */
+    class WidgetAsyncTask extends AsyncTask<Void, Void, WidgetItem[]> {
+        private Context context;
+        private AppWidgetManager appWidgetManager;
+        private int[] appWidgetIds;
+
+        public WidgetAsyncTask(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+            this.context = context;
+            this.appWidgetManager = appWidgetManager;
+            this.appWidgetIds = appWidgetIds;
+        }
+
+        @Override
+        protected WidgetItem[] doInBackground(Void... params) {
+            int[] shortWidgetIds = NoteUtil.getShortCreateAppWidgetId(context);
+            if (shortWidgetIds == null || shortWidgetIds.length == 0) {
+                KLog.d(TAG, "WidgetAsyncTask do in background but shortWidgetIds is null or length is 0");
+                return null;
+            }
+            if (appWidgetIds == null || appWidgetIds.length == 0) {
+                KLog.d(TAG, "WidgetAsyncTask do in background but appWidgetIds is null or length is 0");
+                return null;
+            }
+            KLog.d(TAG, "WidgetAsyncTask do in background shortWidgetIds size is:" + shortWidgetIds.length);
+            int shortWidgetId = shortWidgetIds[0];
+            boolean hasId = false;
+            for (int widgetId : appWidgetIds) {
+                if (widgetId == shortWidgetId) {
+                    hasId = true;
+                    break;
+                }
+            }
+            hasId = true;
+            if (hasId) {
+                KLog.d(TAG, "WidgetAsyncTask load widget items do in background");
+                return ShortCreateAppWidgetConfigure.getSelectedItems();
+            } else {
+                KLog.d(TAG, "WidgetAsyncTask load widget items do in background but not is note short create widget id");
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(WidgetItem[] widgetItems) {
+            if (widgetItems == null || widgetItems.length == 0) {
+                KLog.d(TAG, "WidgetAsyncTask result widget items is null or length is 0");
+            } else {
+                if (appWidgetIds == null || appWidgetIds.length == 0) {
+                    KLog.d(TAG, "WidgetAsyncTask result is ok but appwidget ids is null or length is 0");
+                    return;
+                }
+                KLog.d(TAG, "WidgetAsyncTask result is ok and will update widget views");
+                for (int appWidgetId : appWidgetIds) {
+                    updateAppWidget(context, appWidgetManager, appWidgetId);
+                }
+            }
+        }
+    }
+
 }
 

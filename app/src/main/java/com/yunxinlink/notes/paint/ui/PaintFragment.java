@@ -341,7 +341,7 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
             mListener = (OnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
     }
 

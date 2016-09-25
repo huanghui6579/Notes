@@ -228,7 +228,7 @@
 
         <activity android:name=".test.TestNetActivity" />
         <activity android:name=".ui.AuthorityActivity"
-            android:label="@string/label_login"/>
+            android:label="@string/authority_menu_login_text"/>
     </application>
 
 </manifest>

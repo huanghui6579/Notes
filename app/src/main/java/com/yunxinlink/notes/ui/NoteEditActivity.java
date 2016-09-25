@@ -774,6 +774,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (widgetAction == null) {
             return;
         }
+        KLog.d(TAG, "create note widget action:" + widgetAction);
         switch (widgetAction) {
             case NOTE_CAMERA:
                 takePicture();

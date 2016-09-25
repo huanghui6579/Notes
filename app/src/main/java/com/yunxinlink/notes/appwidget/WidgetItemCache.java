@@ -65,11 +65,10 @@ public class WidgetItemCache {
      */
     public List<WidgetItem> loadWidgetItems() {
         List<WidgetItem> list =  WidgetManager.getInstance().getAllWidgetItems();
-        clear();
-        if (!SystemUtil.isEmpty(list)) {
-            mWidgetItems.addAll(list);
-        } else {
+        if (SystemUtil.isEmpty(list)) {
             KLog.d("load widget items list is null");
+        } else {
+            KLog.d("load widget items list is not null");
         }
         return list;
     }

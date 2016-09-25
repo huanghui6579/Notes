@@ -5,9 +5,6 @@ import android.content.Intent;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
-import com.yunxinlink.notes.NoteApplication;
-import com.yunxinlink.notes.appwidget.WidgetItem;
-import com.yunxinlink.notes.appwidget.WidgetItemCache;
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailList;
@@ -122,14 +119,6 @@ public class CoreService extends IntentService {
                             }
                             KLog.d(TAG, "---opt_remove_note_attach---delete--parent---dir--" + parentDir);
                         }
-                    }
-                    break;
-                case Constants.OPT_LOAD_WIDGET_ITEMS:   //记载快速创建笔记的桌面小部件item
-                    List<WidgetItem> widgetItems = WidgetItemCache.getInstance().loadWidgetItems();
-                    if (!SystemUtil.isEmpty(widgetItems)) { //更新桌面小部件
-                        NoteApplication app = (NoteApplication) getApplication();
-                        KLog.d(TAG, "re load widget item in core service and will update widget send broadcast ");
-                        app.updateWidgetFolder();
                     }
                     break;
             }

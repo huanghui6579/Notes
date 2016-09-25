@@ -66,7 +66,32 @@ public class SimplePlatformActionListener implements PlatformActionListener {
 
     @Override
     public void onError(Platform platform, int action, Throwable throwable) {
+        switch (action) {
+            case Platform.ACTION_SHARE: //分享类型
+                handleShareError(platform, action, throwable);
+                break;
+            case Platform.ACTION_USER_INFOR:    //获取用户信息，登录
+                break;
+        }
 
+        //java.lang.Throwable: {"status":400,"error":"{\"error\":\"repeat content!\",\"error_code\":20019,\"request\":\"\/2\/statuses\/update.json\"}"}
+        
+        KLog.d(TAG, "---platform----onError--SimplePlatformActionListener share error:" + throwable);
+    }
+
+    @Override
+    public void onCancel(Platform platform, int action) {
+        KLog.d(TAG, "---platform--onCancel--" + platform.getName() + "---action:" + action);
+    }
+
+    /**
+     * 处理分享失败的方法
+     * @param platform
+     * @param action
+     * @param throwable
+     */
+    private void handleShareError(Platform platform, int action, Throwable throwable) {
+        KLog.d(TAG, "---platform---onError----handleShareError---" + platform.getName() + "---action:" + action + "--throwable:" + throwable);
         Message msg = mHandler.obtainMessage();
         msg.what = Constants.MSG_FAILED;
 
@@ -129,14 +154,5 @@ public class SimplePlatformActionListener implements PlatformActionListener {
         }
 
         mHandler.sendMessage(msg);
-        
-        //java.lang.Throwable: {"status":400,"error":"{\"error\":\"repeat content!\",\"error_code\":20019,\"request\":\"\/2\/statuses\/update.json\"}"}
-        
-        KLog.d(TAG, "---platform----onError--SimplePlatformActionListener share error:" + throwable);
-    }
-
-    @Override
-    public void onCancel(Platform platform, int action) {
-        KLog.d(TAG, "---platform--onCancel--" + platform.getName() + "---action:" + action);
     }
 }

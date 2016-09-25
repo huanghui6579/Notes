@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -28,6 +29,7 @@ import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.adapter.ShareListAdapter;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.appwidget.NoteListAppWidget;
+import com.yunxinlink.notes.appwidget.ShortCreateAppWidget;
 import com.yunxinlink.notes.model.AccountType;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DeleteState;
@@ -542,61 +544,14 @@ public class NoteUtil {
     }
 
     /**
-     * 保存快速创建小部件的id
-     * @param context
-     * @param appWidgetId
-     */
-    public static void saveShortCreateAppWidgetId(Context context, int appWidgetId) {
-        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt(Constants.PREF_APPWIDGETID_SHORT_CREATE, appWidgetId);
-        editor.apply();
-    }
-
-    /**
      * 获取快速创建小部件的id
      * @param context
      * @return
      */
-    public static int getShortCreateAppWidgetId(Context context) {
-        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
-        return preferences.getInt(Constants.PREF_APPWIDGETID_SHORT_CREATE, AppWidgetManager.INVALID_APPWIDGET_ID);
-    }
-
-
-    /**
-     * 移除列表的widgetAppId
-     * @param context
-     */
-    public static void removeShortCreateAppWidgetId(Context context) {
-        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.remove(Constants.PREF_APPWIDGETID_SHORT_CREATE);
-        editor.apply();
-    }
-
-    /**
-     * 保存笔记列表的桌面小部件id
-     * @param context
-     * @param appWidgetId
-     * @return
-     */
-    public static void saveListAppWidgetId(Context context, int appWidgetId) {
-        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt(Constants.PREF_APPWIDGETID_LIST, appWidgetId);
-        editor.apply();
-    }
-
-    /**
-     * 移除列表的widgetAppId
-     * @param context
-     */
-    public static void removeListAppWidgetId(Context context) {
-        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.remove(Constants.PREF_APPWIDGETID_LIST);
-        editor.apply();
+    public static int[] getShortCreateAppWidgetId(Context context) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        ComponentName componentName = new ComponentName(context, ShortCreateAppWidget.class);
+        return appWidgetManager.getAppWidgetIds(componentName);
     }
 
     /**
@@ -604,9 +559,10 @@ public class NoteUtil {
      * @param context
      * @return
      */
-    public static int getListAppWidgetId(Context context) {
-        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
-        return preferences.getInt(Constants.PREF_APPWIDGETID_LIST, AppWidgetManager.INVALID_APPWIDGET_ID);
+    public static int[] getListAppWidgetId(Context context) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        ComponentName componentName = new ComponentName(context, NoteListAppWidget.class);
+        return appWidgetManager.getAppWidgetIds(componentName);
     }
 
     /**
@@ -614,14 +570,14 @@ public class NoteUtil {
      * @param context
      */
     public static void notifyAppWidgetList(Context context) {
-        int appWidgetId = getListAppWidgetId(context);
-        if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+        int[] appWidgetIds = getListAppWidgetId(context);
+        if (appWidgetIds != null && appWidgetIds.length > 0) {
             Intent intent = new Intent(NoteListAppWidget.ACTION_NOTIFY_CHANGE);
-            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds);
             context.sendBroadcast(intent);
-            KLog.d("notifyAppWidgetList invoke appwidget id:" + appWidgetId);
+            KLog.d("notifyAppWidgetList invoke appwidget id:" + appWidgetIds[0] + ", size:" + appWidgetIds.length);
         } else {
-            KLog.d("notifyAppWidgetList invoke failed appwidget id:" + appWidgetId);
+            KLog.d("notifyAppWidgetList invoke failed appwidget id");
         }
     }
 
@@ -665,10 +621,11 @@ public class NoteUtil {
      * @return
      */
     public static boolean shouldActive(Context context) {
-        boolean isActive = isDeviceActive(context);
-        boolean isOsUpdated = isOsUpdated(context);
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        boolean isActive = preferences.getBoolean(Constants.PREF_IS_DEVICE_ACTIVE, false);
+        int sdkInt = preferences.getInt(Constants.PREF_SDK_VERSION, -1);
         //之前没有激活或者系统版本更了
-        return !isActive || isOsUpdated;
+        return !isActive || sdkInt != SystemUtil.getBuildSDKInt();
     }
 
     /**
@@ -757,19 +714,8 @@ public class NoteUtil {
         userDto.setType(accountType);
         if (accountType >= 0) { //用户有登录过，则校验信息
             //校验以及获取用户信息
-            Platform platform = null;
-            switch (accountType) {
-                case AccountType.TYPE_QQ:   //QQ登录
-                    platform = ShareSDK.getPlatform(context, QQ.NAME);
-                    break;
-                case AccountType.TYPE_WECHAT:   //微信登录
-                    platform = ShareSDK.getPlatform(context, Wechat.NAME);
-                    break;
-                case AccountType.TYPE_WEIBO:   //微博登录
-                    platform = ShareSDK.getPlatform(context, SinaWeibo.NAME);
-                    break;
-            }
-            if (platform != null) {
+            Platform platform = getPlatform(context, accountType);
+            if (platform != null && platform.isAuthValid()) {
                 PlatformDb platDB = platform.getDb();//获取数平台数据DB
                 //通过DB获取各种数据
                 String token = platDB.getToken();
@@ -780,10 +726,6 @@ public class NoteUtil {
                 userDto.setOpenUserId(userId);
                 userDto.setToken(token);
 
-                user = new User();
-                user.setOpenUserId(userId);
-
-                userDto.setUser(user);
             } else {
                 return null;
             }
@@ -797,6 +739,28 @@ public class NoteUtil {
             }
         }
         return userDto;
+    }
+
+    /**
+     * 获取不同平台的数据
+     * @param context
+     * @param accountType
+     * @return
+     */
+    public static Platform getPlatform(Context context, int accountType) {
+        Platform platform = null;
+        switch (accountType) {
+            case AccountType.TYPE_QQ:   //QQ登录
+                platform = ShareSDK.getPlatform(context, QQ.NAME);
+                break;
+            case AccountType.TYPE_WECHAT:   //微信登录
+                platform = ShareSDK.getPlatform(context, Wechat.NAME);
+                break;
+            case AccountType.TYPE_WEIBO:   //微博登录
+                platform = ShareSDK.getPlatform(context, SinaWeibo.NAME);
+                break;
+        }
+        return platform;
     }
     
 }

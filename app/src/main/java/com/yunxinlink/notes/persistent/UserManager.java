@@ -220,9 +220,19 @@ public class UserManager {
         if (db == null) {
             db = mDBHelper.getWritableDatabase();
         }
-
         ContentValues values = initValues(user, false);
-        int rowId = db.update(Provider.UserColumns.TABLE_NAME, values, Provider.UserColumns._ID + " = ?", new String[] {String.valueOf(user.getId())});
+        String selection = null;
+        String[] args = null;
+        if (user.checkId()) {   //id可用
+            selection = Provider.UserColumns._ID + " = ?";
+            args = new String[] {String.valueOf(user.getId())};
+            KLog.d(TAG, "update user with user id:" + user.getId());
+        } else {
+            selection = Provider.UserColumns.SID + " = ?";
+            args = new String[] {user.getSid()};
+            KLog.d(TAG, "update user with user sid:" + user.getSid());
+        }
+        int rowId = db.update(Provider.UserColumns.TABLE_NAME, values, selection, args);
         return rowId > 0;
     }
 
@@ -239,7 +249,7 @@ public class UserManager {
         if (db == null) {
             db = mDBHelper.getWritableDatabase();
         }
-
+        user.setCreateTime(System.currentTimeMillis());
         ContentValues values = initValues(user, true);
         long rowId = db.insert(Provider.UserColumns.TABLE_NAME, null, values);
         boolean success = rowId > 0;
@@ -269,7 +279,19 @@ public class UserManager {
             return false;
         }
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
-        Cursor cursor = db.query(Provider.UserColumns.TABLE_NAME, new String[] {"count(*) as count"}, Provider.UserColumns.SID + " = ?", new String[] {user.getSid()}, null, null, null);
+        String openUserId = user.getOpenUserId();
+        String selection = null;
+        String[] args = null;
+        if (TextUtils.isEmpty(openUserId)) {
+            selection = Provider.UserColumns.SID + " = ?";
+            args = new String[] {user.getSid()};
+            KLog.d(TAG, "insert or update check user exists with sid:" + user.getSid());
+        } else {
+            selection = Provider.UserColumns.OPEN_USER_ID + " = ?";
+            args = new String[] {openUserId};
+            KLog.d(TAG, "insert or update check user exists with open user id:" + openUserId);
+        }
+        Cursor cursor = db.query(Provider.UserColumns.TABLE_NAME, new String[] {"count(*) as count"}, selection, args, null, null, null);
         long count = 0;
         if (cursor != null && cursor.moveToFirst()) {
             count = cursor.getLong(0);

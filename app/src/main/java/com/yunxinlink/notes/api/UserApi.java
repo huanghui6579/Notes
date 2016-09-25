@@ -7,6 +7,8 @@ import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.http.FieldMap;
+import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.POST;
 
 /**
  * 用户信息的一些API接口
@@ -20,5 +22,7 @@ public interface UserApi {
      * @param params
      * @return 返回登录后的结果，若登录成功，则返回了该用户的基本信息
      */
+    @FormUrlEncoded
+    @POST("user/login")
     Call<ActionResult<UserDto>> login(@FieldMap Map<String, String> params);
 }

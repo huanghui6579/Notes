@@ -257,7 +257,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
             mListener = (OnDetailInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
     }
 

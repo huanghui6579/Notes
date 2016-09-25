@@ -58,7 +58,7 @@ public class SettingsFragment extends BasePreferenceFragment {
             mListener = (OnSettingsFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+                    + " must implement OnRegisterFragmentInteractionListener");
         }
     }
 

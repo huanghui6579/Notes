@@ -107,6 +107,8 @@ public class NoteApplication extends Application {
                             NoteUtil.saveDeviceActive(context, true);
                         }
                     });
+                } else {
+                    KLog.d(TAG, "device already active ");
                 }
             }
         });
@@ -245,12 +247,15 @@ public class NoteApplication extends Application {
      * 更新桌面小部件的默认文件夹
      */
     public void updateWidgetFolder() {
-        int widgetId = NoteUtil.getShortCreateAppWidgetId(this);
-        if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {    //widget id 有效
+        int[] widgetIds = NoteUtil.getShortCreateAppWidgetId(this);
+        if (widgetIds != null && widgetIds.length > 0) {    //widget id 有效
             KLog.d(TAG, "updateWidgetFolder send broadcast ");
             Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[] {widgetId});
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, widgetIds);
+            intent.setPackage(getPackageName());
             sendBroadcast(intent);
+        } else {
+            KLog.d(TAG, "updateWidgetFolder widgetIds is null or size is 0 ");
         }
     }
 
