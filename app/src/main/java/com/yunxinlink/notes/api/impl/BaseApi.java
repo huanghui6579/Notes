@@ -13,7 +13,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * @version: 0.0.1
  */
 public abstract class BaseApi {
-    private static final String BASE_URL = "http://192.168.0.5:8080/noteapi/";
+//    private static final String BASE_URL = "http://192.168.0.5:8080/noteapi/";
+    private static final String BASE_URL = "http://10.100.80.138:8080/noteapi/";
 
     /**
      * 创建Retrofit

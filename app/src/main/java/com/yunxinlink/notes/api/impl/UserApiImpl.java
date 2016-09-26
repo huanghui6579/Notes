@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.api.impl;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
@@ -145,6 +146,67 @@ public class UserApiImpl extends BaseApi {
     }
 
     /**
+     * 用户注册--异步
+     * @param context
+     * @param userDto
+     * @return
+     */
+    public static Call<?> register(final Context context, final UserDto userDto, String confirmPassword, final OnLoadCompletedListener<ActionResult<UserDto>> listener) {
+        KLog.d(TAG, "register invoke...");
+        if (userDto == null) {
+            if (listener != null) {
+                listener.onLoadFailed(ActionResult.RESULT_PARAM_ERROR, "params is null");
+            }
+            KLog.d(TAG, "register failed params is null");
+            return null;
+        }
+        Retrofit retrofit = buildRetrofit();
+        UserApi repo = retrofit.create(UserApi.class);
+        Call<ActionResult<UserDto>> call = repo.register(buildRegisterParams(userDto, confirmPassword));
+        call.enqueue(new Callback<ActionResult<UserDto>>() {
+            @Override
+            public void onResponse(Call<ActionResult<UserDto>> call, Response<ActionResult<UserDto>> response) {
+                boolean success = false;
+                ActionResult<UserDto> result = null;
+                if (response != null) {
+                    success = response.isSuccessful();
+                    if (success) {  //成功,更新本地用户信息
+                        result = response.body();
+                        KLog.d(TAG, "register success:" + result);
+                    } else {
+                        KLog.d(TAG, "register failed code:" + response.code() + ", msg:" + response.message());
+                    }
+                } else {
+                    KLog.d(TAG, "register failed response is null");
+                }
+                success = false;
+                int code = ActionResult.RESULT_ERROR;
+                //保存用户信息
+                if (result != null) {
+                    code = result.getResultCode();
+                }
+                success = handleRegisterResult(context, userDto, result);
+                if (listener != null) {
+                    if (success) {  //成功
+                        listener.onLoadSuccess(result);
+
+                    } else {
+                        String reason = result == null ? null : result.getReason();
+                        KLog.d(TAG, "user api impl register user error:" + result);
+                        listener.onLoadFailed(code, reason);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ActionResult<UserDto>> call, Throwable t) {
+
+            }
+        });
+        return call;
+    }
+
+    /**
      * 处理登录后的本地数据操作
      * @param context
      * @param userDto 登录的参数，条件
@@ -181,6 +243,25 @@ public class UserApiImpl extends BaseApi {
                 }
                 KLog.d(TAG, "handleLoginResult result code success:" + code + ", reason:" + result);
                 break;
+        }
+        return success;
+    }
+
+    /**
+     * 处理注册后的结果
+     * @param context
+     * @param userDto
+     * @param result
+     * @return
+     */
+    private static boolean handleRegisterResult(Context context, UserDto userDto, ActionResult<UserDto> result) {
+        boolean success = false;
+        //保存用户信息
+        int code = result.getResultCode();
+        UserDto resultUserDto = result.getData();
+        if (resultUserDto != null && code == ActionResult.RESULT_SUCCESS) {  //成功，则保存用户信息到本地
+            updateLocalUserAsync(context, userDto, resultUserDto);
+            success = true;
         }
         return success;
     }
@@ -302,6 +383,33 @@ public class UserApiImpl extends BaseApi {
             autoCreate = 1;
         }
         params.put("autoCreate", String.valueOf(autoCreate));
+        return params;
+    }
+
+    /**
+     * 构建注册的参数
+     * @param userDto
+     * @param confirmPassword 确认密码
+     * @return
+     */
+    private static Map<String, String> buildRegisterParams(UserDto userDto, String confirmPassword) {
+        User user = userDto.getUser();
+        Map<String, String> params = new HashMap<>();
+        String mobile = user.getMobile();
+        if (!TextUtils.isEmpty(mobile)) {
+            params.put("user.mobile", mobile);
+        }
+        String email = user.getEmail();
+        if (!TextUtils.isEmpty(email)) {
+            params.put("user.email", email);
+        }
+        String password = user.getPassword();
+        if (!TextUtils.isEmpty(password)) {
+            params.put("user.password", password);
+        }
+        if (!TextUtils.isEmpty(confirmPassword)) {
+            params.put("confirmPassword", confirmPassword);
+        }
         return params;
     }
 }

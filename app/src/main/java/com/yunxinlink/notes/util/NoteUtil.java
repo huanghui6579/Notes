@@ -748,6 +748,7 @@ public class NoteUtil {
      * @return
      */
     public static Platform getPlatform(Context context, int accountType) {
+        ShareSDK.initSDK(context);
         Platform platform = null;
         switch (accountType) {
             case AccountType.TYPE_QQ:   //QQ登录

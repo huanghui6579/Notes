@@ -110,6 +110,7 @@ public class UserManager {
         }
         String password = user.getPassword();
         if (password != null) {
+//            String encodePwd = SystemUtil.md5Hex(password);
             values.put(Provider.UserColumns.PASSWORD, password);
         }
         Integer state = user.getState();
