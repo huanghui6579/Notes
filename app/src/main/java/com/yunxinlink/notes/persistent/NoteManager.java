@@ -1312,5 +1312,24 @@ public class NoteManager extends Observable<Observer> {
         }
         return list;
     }
+
+    /**
+     * 合并本地的笔记到对应的用户
+     * @param user
+     * @param args
+     * @return
+     */
+    public List<DetailNoteInfo> mergeLocalNotes(User user, Bundle args) {
+        if (user == null || !user.checkId()) {  //用户不可用
+            KLog.d(TAG, "merge local note user is null or id is 0");
+            return null;
+        }
+        int userId = user.getId();
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        db.beginTransaction();
+        //更新文件夹所属的用户
+        return null;
+        
+    }
     
 }

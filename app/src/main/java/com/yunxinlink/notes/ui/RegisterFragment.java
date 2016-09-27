@@ -160,6 +160,7 @@ public class RegisterFragment extends BaseFragment implements View.OnClickListen
     @Override
     public void onDetach() {
         super.onDetach();
+        cancelRegister();
         mListener = null;
     }
 
@@ -187,7 +188,28 @@ public class RegisterFragment extends BaseFragment implements View.OnClickListen
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_register: //注册
+                User user = new User();
+                CharSequence account = mEtAccount.getText();
+                boolean isEmail = SystemUtil.isEmail(account);
+                if (isEmail) {
+                    user.setEmail(account.toString());
+                } else {
+                    user.setMobile(account.toString()); 
+                }
+                user.setPassword(mEtPassword.getText().toString());
+                doRegister(getContext(), user);
                 break;
+        }
+    }
+
+    /**
+     * 取消登录
+     */
+    private void cancelRegister() {
+        dismissLoadingDialog();
+        if (mCall != null && !mCall.isCanceled()) {
+            KLog.d(TAG, "cancelRegister invoke cancel call");
+            mCall.cancel();
         }
     }
 
@@ -229,7 +251,7 @@ public class RegisterFragment extends BaseFragment implements View.OnClickListen
                     if (result != null && result.getData() != null) {
                         user = result.getData().getUser();
                     }
-                    KLog.d(TAG, "do regist success user:" + user);
+                    KLog.d(TAG, "do register success user:" + user);
                     mListener.registerSuccess(user);
                 }
             }
@@ -246,10 +268,11 @@ public class RegisterFragment extends BaseFragment implements View.OnClickListen
                     case ActionResult.RESULT_DATA_REPEAT:   //该账号已存在
                         tipRes = R.string.authority_register_account_repeat;
                         break;
-                    default:
+                    default:    //注册失败
                         tipRes = R.string.authority_register_failed;
                         break;
                 }
+                KLog.d(TAG, "do register failed code:" + errorCode + ", reason:" + reason);
                 SystemUtil.makeShortToast(tipRes);
             }
         });

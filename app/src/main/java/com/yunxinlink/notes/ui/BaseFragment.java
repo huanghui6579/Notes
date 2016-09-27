@@ -43,8 +43,30 @@ public class BaseFragment extends Fragment {
      * @version: 1.0.0
      */
     protected User getCurrentUser() {
+        return getCurrentUser(false);
+    }
+
+    /**
+     * 获取当前的用户
+     * @param fromLocal 如果不存在，则从本地加载
+     * @return
+     */
+    protected User getCurrentUser(boolean fromLocal) {
         NoteApplication app = (NoteApplication) getActivity().getApplication();
-        return app.getCurrentUser();
+        User user = app.getCurrentUser();
+        if (user == null && fromLocal) {
+            user = app.initLocalUser(getContext());
+        }
+        return user;
+    }
+
+    /**
+     * 是否有本地账号
+     * @return
+     */
+    protected boolean hasUser() {
+        User user = getCurrentUser();
+        return user != null;
     }
 
     /**

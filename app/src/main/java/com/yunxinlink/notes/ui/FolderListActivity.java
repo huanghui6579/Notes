@@ -190,7 +190,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                 archive.setName(getString(R.string.default_archive));
                 int count = mFolderManager.getNoteCount(null);
                 archive.setCount(count);
-                List<Folder> list = mFolderManager.getAllFolders(getCurrentUser(), null);
+                List<Folder> list = mFolderManager.getAllFolders(getCurrentUser(true), null);
                 
                 if (!SystemUtil.isEmpty(list)) {
                     list.add(0, archive);

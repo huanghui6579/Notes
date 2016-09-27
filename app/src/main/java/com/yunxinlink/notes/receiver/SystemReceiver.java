@@ -6,8 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.api.impl.UserApiImpl;
 import com.yunxinlink.notes.api.model.UserDto;
+import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -73,7 +75,8 @@ public class SystemReceiver extends BroadcastReceiver {
             @Override
             public void run() {
                 KLog.d(TAG, "doAuthorityVerify invoke");
-                final UserDto userDto = NoteUtil.buildLoginParams(context, null, null);
+                User user = ((NoteApplication) context.getApplicationContext()).getCurrentUser();
+                final UserDto userDto = NoteUtil.buildLoginParams(context, user, null);
                 if (userDto == null) {
                     KLog.d(TAG, "doAuthorityVerify userDto is null");
                     return;

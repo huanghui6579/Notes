@@ -501,8 +501,21 @@ public abstract class BaseActivity extends SwipeBackActivity {
      * @version: 1.0.0
      */
     protected User getCurrentUser() {
+        return getCurrentUser(false);
+    }
+
+    /**
+     * 获取当前的用户
+     * @param fromLocal 如果不存在，则从本地加载
+     * @return
+     */
+    protected User getCurrentUser(boolean fromLocal) {
         NoteApplication app = (NoteApplication) getApplication();
-        return app.getCurrentUser();
+        User user = app.getCurrentUser();
+        if (user == null && fromLocal) {
+            user = app.initLocalUser(this);
+        }
+        return user;
     }
     
     /**

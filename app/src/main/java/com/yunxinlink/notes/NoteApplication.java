@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatDelegate;
+import android.text.TextUtils;
 
 import com.jiongbull.jlog.JLog;
 import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
@@ -24,6 +25,7 @@ import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.DeviceInfo;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.receiver.SystemReceiver;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteTask;
@@ -236,11 +238,44 @@ public class NoteApplication extends Application {
                 if (hasCreateShortcut) {
                     NoteUtil.createNotificationShortcut(getApplicationContext(), Constants.ID_NOTIFY_CREATE_SHORTCUT);
                 }
+                //初始化本地用户
+                initLocalUser(context);
 
                 //初始化图片加载器
                 initImageLoaderConfig();
             }
         });
+    }
+
+    /**
+     * 初始化本地的用户，获取本地用户的数据
+     * @param context
+     * @return
+     */
+    public User initLocalUser(Context context) {
+        //获取本地用户的id
+        User user = null;
+        int userId = NoteUtil.getAccountId(context);
+        if (userId <= 0) {  //如果本地用户id不存在，则看看是否使用的第三方账号登录的
+            KLog.d(TAG, "init local user local user id is <= 0");
+            int accountType = NoteUtil.getAccountType(context);
+            String openUserId = null;
+            if (accountType >= 0) { //非本地账号
+                openUserId = NoteUtil.getOpenUserId(context, accountType);
+            }
+            if (!TextUtils.isEmpty(openUserId)) {   //第三方账号存在
+                KLog.d(TAG, "init local user open by open user id:" + openUserId);
+                user = UserManager.getInstance().getAccountInfo(openUserId);
+            } else {
+                KLog.d(TAG, "init local user open user id is null");
+            }
+        } else {
+            KLog.d(TAG, "init local user open by user id:" + userId);
+            user = UserManager.getInstance().getAccountInfo(userId);
+        }
+        KLog.d(TAG, "init local user result:" + user);
+        setCurrentUser(user);
+        return user;
     }
 
     /**

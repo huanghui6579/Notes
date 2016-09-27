@@ -57,7 +57,8 @@
     <string name="tip_share_attach_max_size">一次最多分享%1$d个文件</string>
     <string name="tip_note_clear_all">清空后，将不可恢复，确定清空吗？</string>
     <string name="tip_note_real_delete">删除后，将不可恢复，确定删除吗？</string>
-    <string name="tip_note_empty">没有数据，很干净哦~</string>
+    <string name="tip_note_empty_trash">没有数据，很干净哦~</string>
+    <string name="tip_note_empty">还没有笔记哦~</string>
     <string name="tip_share_no_text">没有内容是不能分享的哦~</string>
     <string name="tip_network_not_available">网络不可用，请连接网络后再试</string>
 
@@ -83,6 +84,7 @@
     <string name="default_folder">默认文件夹</string>
     <string name="undo">撤销</string>
     <string name="real_delete">彻底删除</string>
+    <string name="do_refresh">刷新</string>
 
     <string name="hint_folder_edit">输入文件夹名称</string>
 
@@ -297,4 +299,5 @@
     <string name="authority_register_failed">注册失败，请稍后再试</string>
     <string name="authority_register_account_repeat">注册失败，该用户已存在</string>
     <string name="authority_login_success">登录成功</string>
+    <string name="authority_register_success">注册成功</string>
 </resources>

@@ -182,7 +182,6 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
 
     @Override
     public void onClick(View v) {
-        UserDto userDto = null;
         User user = null;
         int loginType = -1;
         switch (v.getId()) {
@@ -191,6 +190,20 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                 break;
             case R.id.weibo_layout:    //微博登录
                 loginType = AccountType.TYPE_WEIBO;
+                break;
+            case R.id.btn_login:    //手机或者邮箱登录
+                loginType = AccountType.TYPE_LOCAL;
+                String account = mEtAccount.getText().toString();
+                boolean isEmail = SystemUtil.isEmail(account);
+                user = new User();
+                if (isEmail) {  //邮箱类型
+                    user.setEmail(account);
+                } else if (SystemUtil.isPhoneNumber(account)) { //手机
+                    user.setMobile(account);
+                } else {    //用户名
+                    user.setUsername(account);
+                }
+                user.setPassword(mEtPassword.getText().toString());
                 break;
         }
         if (loginType != -1) {
@@ -201,6 +214,7 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
             }
         }
     }
+    
     /**
      * 取消登录
      */

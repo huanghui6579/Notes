@@ -120,7 +120,7 @@ public class UserApiImpl extends BaseApi {
                 //保存用户信息
                 if (result != null) {
                     code = result.getResultCode();
-                    success = handleLoginResult(context, userDto, result, true);
+                    success = handleLoginResult(context, userDto, result, false);
                 }
                 if (listener != null) {
                     if (success) {  //成功
@@ -200,7 +200,11 @@ public class UserApiImpl extends BaseApi {
 
             @Override
             public void onFailure(Call<ActionResult<UserDto>> call, Throwable t) {
-
+                String reason = t != null ? t.getMessage() : "";
+                KLog.d(TAG, "user api impl register error:" + reason);
+                if (listener != null) {
+                    listener.onLoadFailed(ActionResult.RESULT_ERROR, reason);
+                }
             }
         });
         return call;
@@ -274,7 +278,7 @@ public class UserApiImpl extends BaseApi {
     private static void updateLocalUser(Context context, final UserDto original, final UserDto result) {
         if (result != null && result.getUser() != null) {
 
-            KLog.d(TAG, "login async state local user will update");
+            KLog.d(TAG, "update local user state local user will update");
             User user = original.getUser();
             if (user == null) {
                 user = new User();
@@ -287,7 +291,7 @@ public class UserApiImpl extends BaseApi {
             mergeUserInfo(user, result.getUser());
 
             if (context == null) {  //该界面可能已经销毁
-                KLog.d(TAG, "login async update local user context is null will use app context");
+                KLog.d(TAG, "update local update local user context is null will use app context");
                 context = NoteApplication.getInstance();
             }
 
@@ -301,7 +305,7 @@ public class UserApiImpl extends BaseApi {
             if (success && localUserId > 0) {  //该id已在本地不存在
                 NoteUtil.saveAccountId(context, localUserId);
             }
-            KLog.d(TAG, "login async updateLocalUser result:" + success);
+            KLog.d(TAG, "update local updateLocalUser result:" + success);
         }
     }
     
@@ -353,6 +357,10 @@ public class UserApiImpl extends BaseApi {
             String mobile = user.getMobile();
             if (mobile != null) {
                 params.put("user.mobile", mobile);
+            }
+            String email = user.getEmail();
+            if (email != null) {
+                params.put("user.email", email);
             }
             String password = user.getPassword();
             if (password != null) {

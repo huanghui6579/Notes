@@ -712,7 +712,7 @@ public class NoteUtil {
         }
         KLog.d(TAG, "build login param login with local open api account:" + accountType);
         userDto.setType(accountType);
-        if (accountType >= 0) { //用户有登录过，则校验信息
+        if (accountType > 0) { //用户有登录过，则校验信息
             //校验以及获取用户信息
             Platform platform = getPlatform(context, accountType);
             if (platform != null && platform.isAuthValid()) {
@@ -762,6 +762,22 @@ public class NoteUtil {
                 break;
         }
         return platform;
+    }
+
+    /**
+     * 获取第三方账号的用户id
+     * @param context
+     * @param accountType
+     * @return
+     */
+    public static String getOpenUserId(Context context, int accountType) {
+        String userId = null;
+        Platform platform = getPlatform(context, accountType);
+        if (platform != null && platform.isAuthValid()) {
+            PlatformDb platDB = platform.getDb();//获取数平台数据DB
+            userId = platDB.getUserId();
+        }
+        return userId;
     }
     
 }

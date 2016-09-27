@@ -9,6 +9,8 @@ import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.db.DBHelper;
 import com.yunxinlink.notes.db.Provider;
+import com.yunxinlink.notes.db.observer.Observable;
+import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.model.User;
 
 /**
@@ -17,7 +19,7 @@ import com.yunxinlink.notes.model.User;
  * @update 2016/3/7 17:47
  * @version: 0.0.1
  */
-public class UserManager {
+public class UserManager extends Observable<Observer> {
     private static final String TAG = "UserManager";
     private static UserManager mInstance = null;
 
@@ -94,6 +96,7 @@ public class UserManager {
         user.setEmail(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.EMAIL)));
         user.setSid(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.SID)));
         user.setState(cursor.getInt(cursor.getColumnIndex(Provider.UserColumns.STATE)));
+        user.setOpenUserId(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.OPEN_USER_ID)));
         return user;
     }
 
@@ -180,6 +183,28 @@ public class UserManager {
     }
 
     /**
+     * 获取用户的基本信息
+     * @param openUserId 第三方账号的用户id
+     * @return
+     */
+    public User getAccountInfo(String openUserId) {
+        if (openUserId == null) {
+            KLog.d(TAG, "get account info failed openUserId is null");
+            return null;
+        }
+        User user = null;
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        Cursor cursor = db.query(Provider.UserColumns.TABLE_NAME, null, Provider.UserColumns.OPEN_USER_ID + " = ?", new String[] {openUserId}, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            user = cursor2User(cursor);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return user;
+    }
+
+    /**
      * 修改本地用户的状态
      * @param user
      * @return
@@ -234,7 +259,13 @@ public class UserManager {
             KLog.d(TAG, "update user with user sid:" + user.getSid());
         }
         int rowId = db.update(Provider.UserColumns.TABLE_NAME, values, selection, args);
-        return rowId > 0;
+        boolean success = rowId > 0;
+        NoteApplication.getInstance().setCurrentUser(user);
+        if (success) {
+            //通知界面刷新
+            notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, user);
+        }
+        return success;
     }
 
     /**
@@ -256,6 +287,9 @@ public class UserManager {
         boolean success = rowId > 0;
         if (success) {
             user.setId((int) rowId);
+            NoteApplication.getInstance().setCurrentUser(user);
+            //通知界面刷新
+            notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, user);
         }
         return success;
     }

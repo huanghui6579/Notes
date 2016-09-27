@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -60,6 +61,7 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
      * 搜索的单线程队列
      */
     private Handler mSearchHandler;
+    private HandlerThread mSearchThread;
 
     /**
      * 刷新界面的handler
@@ -107,10 +109,10 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
         mHandler = new MyHandler(this);
 
         //初始化搜索的线程
-        HandlerThread handlerThread = new HandlerThread("SearchThread");
-        handlerThread.start();
+        mSearchThread = new HandlerThread("SearchThread");
+        mSearchThread.start();
 
-        mSearchHandler = new SearchHandler(handlerThread.getLooper());
+        mSearchHandler = new SearchHandler(mSearchThread.getLooper());
     }
 
     /**
@@ -156,6 +158,22 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
     }
 
     @Override
+    protected void onDestroy() {
+        if (mSearchThread != null) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    mSearchThread.quitSafely();
+                } else {
+                    mSearchThread.quit();
+                }
+            } catch (Exception e) {
+                KLog.d(TAG, "search activity search thread will quit");
+            }
+        }
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onQueryTextSubmit(String query) {
         this.mKeyword =  query;
         KLog.d(TAG, "----query----" + query);
@@ -195,7 +213,7 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
      * @return
      */
     private List<DetailNoteInfo> findNotes(String keyword) {
-        User user = getCurrentUser();
+        User user = getCurrentUser(true);
         NoteManager noteManager = NoteManager.getInstance();
         return noteManager.findNotes(user, keyword);
     }

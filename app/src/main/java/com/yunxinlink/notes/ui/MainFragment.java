@@ -64,7 +64,6 @@ import com.yunxinlink.notes.util.TimeUtil;
 import com.yunxinlink.notes.widget.LayoutManagerFactory;
 import com.yunxinlink.notes.widget.NoteItemViewAware;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -320,6 +319,15 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     }
 
     /**
+     * 重新刷新数据
+     */
+    public void reLoadData() {
+        clearEmptyView();
+        //刷新数据
+        pullRefresh();
+    }
+
+    /**
      * 初始化配置文件
      * @author huanghui1
      * @update 2016/6/22 17:32
@@ -395,7 +403,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         }
         args.putInt("sort", mNoteSort);
         args.putBoolean("isRecycle", mIsTrash);
-        List<DetailNoteInfo> list = noteManager.getAllDetailNotes(getCurrentUser(), args);
+        List<DetailNoteInfo> list = noteManager.getAllDetailNotes(getCurrentUser(true), args);
         Message msg = mHandler.obtainMessage();
         msg.what = Constants.MSG_SUCCESS2;
         msg.obj = list;
@@ -414,13 +422,16 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             mMainEmptyView = inflater.inflate(R.layout.main_empty_view, null);
             Button btnLogin = (Button) mMainEmptyView.findViewById(R.id.btn_login);
             btnLogin.setOnClickListener(this);
+            TextView tvContent = (TextView) mMainEmptyView.findViewById(R.id.tv_content);
             if (mIsTrash) {
-
-                TextView tvContent = (TextView) mMainEmptyView.findViewById(R.id.tv_content);
                 
-                btnLogin.setVisibility(View.GONE);
+                SystemUtil.setViewVisibility(btnLogin, View.GONE);
 
+                tvContent.setText(R.string.tip_note_empty_trash);
+            } else if (hasUser()) {    //本地已有账号，但是没有笔记
+                SystemUtil.setViewVisibility(btnLogin, View.VISIBLE);
                 tvContent.setText(R.string.tip_note_empty);
+                btnLogin.setText(R.string.do_refresh);
             }
             
             CoordinatorLayout.LayoutParams layoutParams = new CoordinatorLayout.LayoutParams(CoordinatorLayout.LayoutParams.MATCH_PARENT, CoordinatorLayout.LayoutParams.WRAP_CONTENT);
@@ -446,6 +457,10 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      * @version: 1.0.0
      */
     private void clearEmptyView() {
+        if (mRefresher != null) {
+            //显示recycleView
+            SystemUtil.setViewVisibility(mRefresher, View.VISIBLE);
+        }
         if (mMainEmptyView != null) {
             if (mMainEmptyView.getVisibility() == View.VISIBLE) {
                 mMainEmptyView.setVisibility(View.GONE);
@@ -836,8 +851,6 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     private void refreshUI(List<DetailNoteInfo> list, AdapterRefreshHelper refreshHelper) {
         if (!SystemUtil.isEmpty(list)) {  //有数据
             setShowContentStyle(mIsGridStyle, false, refreshHelper);
-            //显示recycleView
-            SystemUtil.setViewVisibility(mRefresher, View.VISIBLE);
             clearEmptyView();
             configMenuItem(true);
         } else {    //没有数据
@@ -1276,8 +1289,12 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_login:    //登录
-                Intent intent = new Intent(getContext(), AuthorityActivity.class);
-                startActivity(intent);
+                if (hasUser()) {    //有本地用户了，则刷新笔记，优先加载本地笔记
+                    reLoadData();
+                } else {    //本地没有账号，需登录
+                    Intent intent = new Intent(getContext(), AuthorityActivity.class);
+                    startActivity(intent);
+                }
                 break;
         }
     }
@@ -2072,11 +2089,10 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
     }
 
-    private static class MyHandler extends Handler {
-        private final WeakReference<MainFragment> mTarget;
+    private static class MyHandler extends BaseHandler<MainFragment> {
 
         public MyHandler(MainFragment target) {
-            mTarget = new WeakReference<>(target);
+            super(target);
         }
 
         @Override

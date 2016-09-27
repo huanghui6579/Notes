@@ -39,6 +39,7 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.ui.settings.SettingsActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -159,7 +160,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         }
 
         //注册观察者
-        registContentObserver();
+        registerContentObserver();
     }
 
     @Override
@@ -433,7 +434,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      * @version: 1.0.0
      */
     private List<Folder> loadFolder(boolean hasFolderAll) {
-        List<Folder> list = FolderManager.getInstance().getAllFolders(getCurrentUser(), null);
+        List<Folder> list = FolderManager.getInstance().getAllFolders(getCurrentUser(true), null);
         if (!SystemUtil.isEmpty(list)) {
             if (hasFolderAll) {    //显示所有文件夹
                 Folder archive = getFolderAll();
@@ -453,10 +454,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      * @update 2016/3/9 18:10
      * @version: 1.0.0
      */
-    private void registContentObserver() {
+    private void registerContentObserver() {
         mNoteObserver = new NoteContentObserver(mHandler);
         NoteManager.getInstance().addObserver(mNoteObserver);
         FolderManager.getInstance().addObserver(mNoteObserver);
+        UserManager.getInstance().addObserver(mNoteObserver);
     }
     
     /**
@@ -465,10 +467,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      * @update 2016/3/9 18:11
      * @version: 1.0.0
      */
-    private void unRegistContentObserver() {
+    private void unRegisterContentObserver() {
         if (mNoteObserver != null) {
             NoteManager.getInstance().removeObserver(mNoteObserver);
             FolderManager.getInstance().removeObserver(mNoteObserver);
+            UserManager.getInstance().removeObserver(mNoteObserver);
         }
     }
 
@@ -506,7 +509,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         //注销分享的sdk
         ShareSDK.stopSDK(this);
         //注销观察者
-        unRegistContentObserver();
+        unRegisterContentObserver();
         super.onDestroy();
     }
 
@@ -996,10 +999,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
         @Override
         public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data) {
+            MainFragment mainFragment = null;
             switch (notifyFlag) {
                 case Provider.NoteColumns.NOTIFY_FLAG:  //笔记的通知
                     DetailNoteInfo detailNote = null;
-                    MainFragment mainFragment = getMainFragment();
+                    mainFragment = getMainFragment();
                     if (mainFragment == null) {
                         KLog.d(TAG, "--update--observer--mainFragment-is---null--");
                         return;
@@ -1084,6 +1088,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             folder = (Folder) data;
                             KLog.d(TAG, "------deleteFolder----" + folder);
                             deleteFolder(folder);
+                            break;
+                    }
+                    break;
+                case Provider.UserColumns.NOTIFY_FLAG:  //用户的通知
+                    mainFragment = getMainFragment();
+                    if (mainFragment == null) {
+                        KLog.d(TAG, "--update--observer--mainFragment-is---null--");
+                        return;
+                    }
+                    switch (notifyType) {
+                        case ADD:   //用户添加
+                            //加载该用户的笔记,优先加载本地的
+                            KLog.d(TAG, "main activity user added will reload data");
+                            mainFragment.reLoadData();
                             break;
                     }
                     break;

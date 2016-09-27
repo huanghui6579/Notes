@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.SystemUtil;
 
 /**
@@ -77,6 +78,12 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
     @Override
     public void showDialog(String tip) {
         showLoadingDialog(tip);
+    }
+
+    @Override
+    public void registerSuccess(User user) {
+        SystemUtil.makeShortToast(R.string.authority_register_success);
+        finish();
     }
 
     @Override
