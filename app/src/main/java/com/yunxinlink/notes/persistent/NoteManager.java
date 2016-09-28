@@ -1319,17 +1319,53 @@ public class NoteManager extends Observable<Observer> {
      * @param args
      * @return
      */
-    public List<DetailNoteInfo> mergeLocalNotes(User user, Bundle args) {
+    public void mergeLocalNotes(User user, Bundle args) {
         if (user == null || !user.checkId()) {  //用户不可用
             KLog.d(TAG, "merge local note user is null or id is 0");
-            return null;
+            return;
         }
         int userId = user.getId();
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        boolean success = false;
         db.beginTransaction();
-        //更新文件夹所属的用户
-        return null;
-        
+
+        try {
+            long time = System.currentTimeMillis();
+            //更新文件夹所属的用户
+            ContentValues values = new ContentValues();
+            values.put(Provider.FolderColumns.USER_ID, userId);
+            values.put(Provider.FolderColumns.MODIFY_TIME, time);
+            long rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns.USER_ID + " = 0 OR " + Provider.FolderColumns.USER_ID + " IS NULL", null);
+            
+            KLog.d(TAG, "merge local folder size:" + rowId);
+            
+            //更新笔记的所属用户
+            values = new ContentValues();
+            values.put(Provider.NoteColumns.USER_ID, userId);
+            values.put(Provider.NoteColumns.MODIFY_TIME, time);
+            rowId = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL", null);
+
+            KLog.d(TAG, "merge local note size:" + rowId);
+            
+            //更新附件的所属用户
+            values = new ContentValues();
+            values.put(Provider.NoteColumns.USER_ID, userId);
+            values.put(Provider.NoteColumns.MODIFY_TIME, time);
+            rowId = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL", null);
+
+            KLog.d(TAG, "merge local attach size:" + rowId);
+            db.setTransactionSuccessful();
+            success = true;
+        } catch (Exception e) {
+            KLog.e(TAG, "merge local notes error:" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+
+        if (success) {  //通知并刷新界面,一般是重新加载数据
+            KLog.d(TAG, "merge local notes success");
+            notifyObservers(Provider.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE);
+        }
     }
     
 }

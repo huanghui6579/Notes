@@ -320,11 +320,17 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
     /**
      * 重新刷新数据
+     * @param showProgress 是否加载进度条
      */
-    public void reLoadData() {
-        clearEmptyView();
-        //刷新数据
-        pullRefresh();
+    public void reLoadData(boolean showProgress) {
+        if (showProgress) {
+            clearEmptyView();
+            //刷新数据
+            pullRefresh();
+        } else {
+            //加载笔记
+            loadNotes(mFolderId);
+        }
     }
 
     /**
@@ -1290,7 +1296,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         switch (v.getId()) {
             case R.id.btn_login:    //登录
                 if (hasUser()) {    //有本地用户了，则刷新笔记，优先加载本地笔记
-                    reLoadData();
+                    reLoadData(true);
                 } else {    //本地没有账号，需登录
                     Intent intent = new Intent(getContext(), AuthorityActivity.class);
                     startActivity(intent);

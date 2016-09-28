@@ -63,7 +63,7 @@ public class DeviceApiImpl extends BaseApi {
                         listener.onLoadFailed(code, null); 
                     }
                 }
-                KLog.d(TAG, "active device info result:" + response.body().toString());
+                KLog.d(TAG, "active device info result:" + actionResult);
             }
 
             @Override

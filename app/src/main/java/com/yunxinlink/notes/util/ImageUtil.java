@@ -7,16 +7,18 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.widget.ImageView;
 
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
+import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.core.imageaware.ImageAware;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
-
+import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.BufferedOutputStream;
@@ -193,6 +195,32 @@ public class ImageUtil {
     }
 
     /**
+     * 显示图片
+     * @param imagePath
+     * @param imageView 
+     * @param loadingListener
+     */
+    public static void displayImage(String imagePath, ImageView imageView, ImageLoadingListener loadingListener) {
+        displayImage(imagePath, imageView, null, loadingListener);
+    }
+
+    /**
+     * 显示图片
+     * @param imagePath
+     * @param imageView 
+     * @param imageOptions
+     * @param loadingListener
+     */
+    public static void displayImage(String imagePath, ImageView imageView, DisplayImageOptions imageOptions, ImageLoadingListener loadingListener) {
+        String iconUri = wrapImageUri(imagePath);
+        ImageLoader imageLoader = ImageLoader.getInstance();
+        if (imageOptions == null) {
+            imageOptions = getAlbumImageOptions();
+        }
+        imageLoader.displayImage(iconUri, imageView, imageOptions, loadingListener);
+    }
+
+    /**
      * 异步生成缩略图
      * @param uri 原始图片的文件的路径
      * @param imageSize 要生存缩略图的尺寸大小
@@ -245,7 +273,7 @@ public class ImageUtil {
         try {
             if (bitmap != null) {
                 FileOutputStream fos = new FileOutputStream(savePath);
-                return bitmap.compress(Bitmap.CompressFormat.JPEG, quality, fos);
+                return bitmap.compress(Bitmap.CompressFormat.PNG, quality, fos);
             }
         } catch (FileNotFoundException e) {
             Log.e(e.getMessage());
@@ -284,6 +312,26 @@ public class ImageUtil {
         return options;
     }
 
+    /**
+     * 获取用户头像的显示属性,头像是圆的
+     * @return
+     */
+    public static DisplayImageOptions getAvatarOptions(Context context) {
+        int iconSize = context.getResources().getDimensionPixelSize(R.dimen.icon_size_large);
+        DisplayImageOptions options = new DisplayImageOptions.Builder()
+//                .showImageOnLoading(R.drawable.ic_image_default)
+//                .showImageForEmptyUri(R.drawable.ic_image_default)
+//                .showImageOnFail(R.drawable.ic_image_default)
+                .cacheInMemory(true)
+                .cacheOnDisk(false)
+                .displayer(new RoundedBitmapDisplayer(iconSize / 2, 0))
+                .imageScaleType(ImageScaleType.IN_SAMPLE_INT)
+                .bitmapConfig(Bitmap.Config.RGB_565)	//防止内存溢出
+//			.displayer(new FadeInBitmapDisplayer(100))
+                .build();
+        return options;
+    }
+    
     /**
      * 保存bitmap到本地文件
      * @param bitmap 图片对象

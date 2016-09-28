@@ -1,5 +1,7 @@
 package com.yunxinlink.notes.model;
 
+import android.text.TextUtils;
+
 /**
  * 用户实体
  * @author huanghui1
@@ -191,6 +193,24 @@ public class User {
      */
     public boolean checkId() {
         return id != null && id > 0;
+    }
+
+    /**
+     * 获取用户的账号，优先是username--->mobile---->email---->sid
+     * @return
+     */
+    public String getAccount() {
+        String account = null;
+        if (!TextUtils.isEmpty(username)) {
+            account = username;
+        } else if (!TextUtils.isEmpty(mobile)) {
+            account = mobile;
+        } else if (!TextUtils.isEmpty(email)) {
+            account = email;
+        } else {
+            account = sid;
+        }
+        return account;
     }
 
     @Override

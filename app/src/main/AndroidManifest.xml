@@ -50,8 +50,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
-                <action android:name="com.yunxinlink.notes.MAIN_ACTION"/>
-                <category android:name="android.intent.category.DEFAULT"/>
+                <action android:name="com.yunxinlink.notes.MAIN_ACTION" />
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
         <activity
@@ -59,7 +60,8 @@
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="com.yunxinlink.notes.EDIT_ACTION" />
-                <category android:name="android.intent.category.DEFAULT"/>
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -204,7 +206,8 @@
             </intent-filter>
             <intent-filter>
                 <action android:name="com.yunxinlink.notes.SHORT_CREATE_ACTION" />
-                <category android:name="android.intent.category.DEFAULT"/>
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -227,8 +230,10 @@
         </receiver>
 
         <activity android:name=".test.TestNetActivity" />
-        <activity android:name=".ui.AuthorityActivity"
-            android:label="@string/authority_menu_login_text"/>
+        <activity
+            android:name=".ui.AuthorityActivity"
+            android:label="@string/authority_menu_login_text" />
+        <activity android:name=".ui.AccountEditActivity"></activity>
     </application>
 
 </manifest>

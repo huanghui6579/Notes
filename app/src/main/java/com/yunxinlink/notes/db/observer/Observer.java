@@ -33,6 +33,11 @@ public interface Observer {
          * 移出，彻底删除
          */
         REMOVE,
+
+        /**
+         * 刷新，数据加载完毕了
+         */
+        REFRESH,
     }
 
     /**

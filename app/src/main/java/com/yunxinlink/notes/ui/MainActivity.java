@@ -1101,9 +1101,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         case ADD:   //用户添加
                             //加载该用户的笔记,优先加载本地的
                             KLog.d(TAG, "main activity user added will reload data");
-                            mainFragment.reLoadData();
+                            mainFragment.reLoadData(true);
                             break;
                     }
+                    break;
+                case Provider.NOTIFY_FLAG:  //通用的刷新，一般重新加载数据，然后刷新界面
+                    mainFragment = getMainFragment();
+                    if (mainFragment == null) {
+                        KLog.d(TAG, "--update--observer--mainFragment-is---null--");
+                        return;
+                    }
+                    mainFragment.reLoadData(false);
                     break;
             }
         }

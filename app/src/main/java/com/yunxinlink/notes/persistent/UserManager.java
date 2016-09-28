@@ -179,6 +179,9 @@ public class UserManager extends Observable<Observer> {
         if (cursor != null) {
             cursor.close();
         }
+        if (user != null) {
+            notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.REFRESH, user);
+        }
         return user;
     }
 
@@ -200,6 +203,9 @@ public class UserManager extends Observable<Observer> {
         }
         if (cursor != null) {
             cursor.close();
+        }
+        if (user != null) {
+            notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.REFRESH, user);
         }
         return user;
     }

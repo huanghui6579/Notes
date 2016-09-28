@@ -10,6 +10,7 @@ import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.listener.OnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -306,6 +307,14 @@ public class UserApiImpl extends BaseApi {
                 NoteUtil.saveAccountId(context, localUserId);
             }
             KLog.d(TAG, "update local updateLocalUser result:" + success);
+            
+            doInbackground(new NoteTask(user) {
+                @Override
+                public void run() {
+                    KLog.d(TAG, "update local completed and will merge local notes");
+                    NoteManager.getInstance().mergeLocalNotes((User) params[0], null);
+                }
+            });
         }
     }
     

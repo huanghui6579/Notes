@@ -147,6 +147,9 @@
     <string name="action_open">打开</string>
     <string name="action_clear_all">清空</string>
 
+    <string name="action_take_pic">拍照</string>
+    <string name="action_pic_img">从相册中选择</string>
+    
     <string name="stroke_tip_type">画笔类型</string>
     <string name="stroke_tip_size">画笔大小</string>
     <string name="stroke_tip_color">画笔颜色</string>
@@ -287,6 +290,7 @@
     <string name="authority_forget_password_tip">忘记密码？</string>
     <string name="authority_login_qq">QQ登录</string>
     <string name="authority_login_weibo">微博登录</string>
+    <string name="authority_nickname">昵称</string>
 
     <string name="authority_menu_login_text">登录</string>
     <string name="authority_menu_register_text">注册</string>

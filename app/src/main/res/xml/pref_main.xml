@@ -4,7 +4,9 @@
 
     <PreferenceCategory android:title="@string/settings_category_normal"/>
 
-    <Preference android:title="@string/settings_account_title"
+    <Preference 
+        android:key="@string/settings_key_account_in"
+        android:title="@string/settings_account_title"
         android:icon="@drawable/ic_social_person"
         android:summary="@string/settings_account_summary"/>
 

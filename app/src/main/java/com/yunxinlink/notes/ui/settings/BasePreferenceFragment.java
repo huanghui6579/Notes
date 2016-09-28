@@ -3,6 +3,8 @@ package com.yunxinlink.notes.ui.settings;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 
+import com.yunxinlink.notes.NoteApplication;
+
 /**
  * @author huanghui1
  * @update 2016/8/24 17:50
@@ -99,5 +101,13 @@ public abstract class BasePreferenceFragment extends PreferenceFragment {
     protected void bindPreferenceChangeListener(Preference preference, Preference.OnPreferenceChangeListener preferenceChangeListener) {
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(preferenceChangeListener);
+    }
+
+    /**
+     * 获取app
+     * @return
+     */
+    protected NoteApplication getApp() {
+        return (NoteApplication) getActivity().getApplication();
     }
 }

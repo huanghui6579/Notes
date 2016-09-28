@@ -423,10 +423,28 @@ public class SystemUtil {
     }
 
     /**
+     * 获取用户头像在sd卡中的文件夹名称，默认路径为：/mnt/sdcard/YunXinNotes/icon
+     * @return
+     */
+    public static String getNoteAvatarPath() {
+        String rootPath = getAppRootPath();
+        String iconPath = null;
+        if (rootPath != null) {
+            iconPath = rootPath + File.separator + Constants.APP_AVATAR_FOLDER_NAME;
+            File file = new File(iconPath);
+            if (!file.exists()) {
+                file.mkdirs();
+            }
+        }
+        return iconPath;
+    }
+
+    /**
      * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes/notes/#{sid}
      * @param sid 笔记的sid
      * @return
      */
+    @Deprecated
     public static String getNotePath(String sid) {
         String dir = getNotePath();
         if (dir != null) {
@@ -580,6 +598,24 @@ public class SystemUtil {
         String filePath = getAttachFilePath(sid, attachType);
         if (filePath != null) {
             return new File(filePath);
+        }
+        return null;
+    }
+
+    /**
+     * 生成用户头像的文件名称,格式为：456457544542.png
+     * @param sid 用户的sid
+     * @return
+     * @throws IOException
+     */
+    public static File getAvatarFile(String sid) throws IOException {
+        if (TextUtils.isEmpty(sid)) {
+            return null;
+        }
+        String iconPath = getNoteAvatarPath();
+        if (iconPath != null) {
+            String iconName = sid + ".png";
+            return new File(iconPath, iconName);
         }
         return null;
     }

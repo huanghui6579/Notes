@@ -81,4 +81,10 @@
         <item>@string/share_qzone</item>
         <item>@string/share_more</item>
     </string-array>
+    
+    <!-- 账号编辑头像的菜单 -->
+    <string-array name="account_edit_icon_items">
+        <item>@string/action_take_pic</item>
+        <item>@string/action_pic_img</item>
+    </string-array>
 </resources>

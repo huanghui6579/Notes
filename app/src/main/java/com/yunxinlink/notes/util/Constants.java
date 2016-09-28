@@ -16,6 +16,7 @@ public class Constants {
     public static final String APP_PAINT_FOLDER_NAME = "Paint";
     public static final String DATA_MSG_ATT_FOLDER_NAME = "attach";
     public static final String APP_NOTES_FOLDER_NAME = "notes";
+    public static final String APP_AVATAR_FOLDER_NAME = "icon";
 
     //通知栏快捷方式的通知id，1000
     public static final int ID_NOTIFY_CREATE_SHORTCUT = 1000;

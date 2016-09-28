@@ -8,6 +8,9 @@ import android.provider.BaseColumns;
  * @update 2016/3/5 19:34
  */
 public final class Provider {
+    
+    //其他公用的刷新界面的类型
+    public static final int NOTIFY_FLAG = -1;
 
     private interface SyncColumns {
         /**
