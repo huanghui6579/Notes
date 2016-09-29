@@ -1275,11 +1275,18 @@ public class NoteManager extends Observable<Observer> {
         int deleteState = DeleteState.DELETE_NONE.ordinal();
         //是否加载回收站里的笔记
         int userId = 0;
+        int state = 0;
         if (user != null) { //当前用户有登录
             userId = user.getId();
+            state = user.getState();
         }
         
-        if (userId == 0) {  //没有用户登录
+        if (state != 0) {   //用户不可用
+            KLog.d(TAG, "find note but user is disable or offline:" + user);
+            return null;
+        }
+        
+        if (userId == 0) {  //没有用户登录或者用户不可用或者用户退出登录了
             selection = "(" + Provider.NoteColumns.USER_ID + " = ? OR " + Provider.NoteColumns.USER_ID + " IS NULL) ";
         } else {
             selection = Provider.NoteColumns.USER_ID + " = ? ";
