@@ -8,7 +8,7 @@ import android.text.TextUtils;
  * @update 2016/3/7 17:41
  * @version: 0.0.1
  */
-public class User {
+public class User implements Cloneable {
 
     /**
      * 主键
@@ -74,6 +74,11 @@ public class User {
      * 用户的第三方账号id
      */
     private String openUserId;
+
+    /**
+     * 头像的hash值
+     */
+    private String avatarHash;
 
     public Integer getId() {
         return id;
@@ -175,8 +180,26 @@ public class User {
         return nickname;
     }
 
+    public String getAvatarHash() {
+        return avatarHash;
+    }
+
+    public void setAvatarHash(String avatarHash) {
+        this.avatarHash = avatarHash;
+    }
+
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    @Override
+    public Object clone() {
+        try {
+            return super.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -193,6 +216,14 @@ public class User {
      */
     public boolean checkId() {
         return id != null && id > 0;
+    }
+
+    /**
+     * 检查用户状态是否是正常的状态
+     * @return
+     */
+    public boolean checkOnLine() {
+        return state != null && state == State.NORMAL;
     }
 
     /**
@@ -229,6 +260,7 @@ public class User {
                 ", state=" + state +
                 ", lastSyncTime=" + lastSyncTime +
                 ", openUserId='" + openUserId + '\'' +
+                ", avatarHash='" + avatarHash + '\'' +
                 '}';
     }
 }

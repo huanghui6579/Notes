@@ -27,14 +27,6 @@ public class SettingsSyncActivity extends AppCompatPreferenceActivity implements
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean onIsMultiPane() {
-        return isXLargeTablet(this);
-    }
-
-    /**
      * This method stops fragment injection in malicious applications.
      * Make sure to deny any unknown fragments here.
      */

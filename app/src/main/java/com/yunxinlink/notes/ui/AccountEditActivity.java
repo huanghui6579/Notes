@@ -2,16 +2,21 @@ package com.yunxinlink.notes.ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -19,13 +24,17 @@ import android.widget.TextView;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
-import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.db.Provider;
+import com.yunxinlink.notes.db.observer.ContentObserver;
+import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.listener.SimpleTextWatcher;
+import com.yunxinlink.notes.model.TaskParam;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.util.Constants;
-import com.yunxinlink.notes.util.FileUtil;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -39,9 +48,11 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     
     private static final int OPT_SAVE_IMG = 1;
     private static final int OPT_SHOW_IMG = 2;
+    private static final int OPT_SAVE_INFO = 3;
     
     private static final int REQ_TAKE_PIC = 1;
     private static final int REQ_PICK_IMG = 2;
+    private static final int REQ_CROP_IMG = 3;
     
     private ImageView mIvIcon;
     private TextView mTvTitle;
@@ -49,6 +60,10 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     private EditText mEtNickname;
     //头像的文件
     private File mIconFile;
+    
+    protected ProgressDialog mProgressDialog;
+    
+    private UserObserver mUserObserver;
 
     @Override
     protected int getContentView() {
@@ -57,7 +72,11 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
 
     @Override
     protected void initData() {
+        registerObserver();
+        
         User user = getCurrentUser();
+        KLog.d(TAG, "account edit init data user:" + user);
+        
         showAccount(user);
 
         //添加监听器
@@ -85,12 +104,28 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_save:  //保存用户信息
+                saveAccountInfo();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.iv_icon:  //头像
                 showIconMenu();
                 break;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        unregisterObserver();
+        super.onDestroy();
     }
 
     /**
@@ -109,6 +144,91 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
             }
             mTvTitle.setText(nickname);
             mEtNickname.setText(nickname);
+            String iconPath = user.getAvatar();
+            if (!TextUtils.isEmpty(iconPath)) {
+                ImageUtil.displayImage(iconPath, mIvIcon, ImageUtil.getAvatarOptions(mContext), null);
+            }
+        }
+    }
+
+    /**
+     * 注册
+     */
+    private void registerObserver() {
+        if (mUserObserver == null) {
+            mUserObserver = new UserObserver(new Handler());
+        }
+        UserManager.getInstance().addObserver(mUserObserver);
+    }
+
+    /**
+     * 注销用户的观察者
+     */
+    private void unregisterObserver() {
+        if (mUserObserver != null) {
+            UserManager.getInstance().removeObserver(mUserObserver);
+        }
+    }
+
+    /**
+     * 是否有保存提示，如果头像改动或者昵称改动，则用户返回时需要提示是否保存
+     * @return
+     */
+    private boolean hasSaveTip() {
+        User user = getCurrentUser();
+        boolean hasTip = false;
+        if (user != null) {
+            String newNickname = mEtNickname.getText() == null ? null : mEtNickname.getText().toString();
+            String oldNickname = user.getNickname();
+            if (oldNickname != null && !oldNickname.equals(newNickname)) {  //需要保存
+                hasTip = true;
+            } else if (oldNickname == null && newNickname != null) {
+                hasTip = true;
+            }
+            if (mIconFile != null) {
+                hasTip = true;
+            }
+        }
+        KLog.d(TAG, "account edit save account info has tip:" + hasTip);
+        return hasTip;
+    }
+
+    /**
+     * 显示保存信息的提示对话框
+     */
+    private void showSaveDailog() {
+        AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
+        builder.setTitle(R.string.account_save_tip_title)
+                .setMessage(R.string.account_save_tip_content)
+                .setPositiveButton(R.string.action_save, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        saveAccountInfo();
+                    }
+                })
+                .setNegativeButton(R.string.account_save_cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                }).show();
+    }
+
+    @Override
+    protected void onBack() {
+        if (hasSaveTip()) { //有保存提示
+            showSaveDailog();
+        } else {
+            super.onBack();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (hasSaveTip()) { //有保存提示
+            showSaveDailog();
+        } else {
+            super.onBackPressed();
         }
     }
 
@@ -120,6 +240,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
         builder.setItems(R.array.account_edit_icon_items, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
                 switch (which) {
                     case 0: //拍照
                         takePic();
@@ -188,32 +309,81 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
                     if (mIconFile != null) {
                         //file uri
                         Uri fileUri = Uri.fromFile(mIconFile);
-                        saveAndShowImg(fileUri);
+                        cropImg(fileUri);
+//                        saveAndShowImg(fileUri);
+                    } else {
+                        mIconFile = null;
                     }
                     break;
                 case REQ_PICK_IMG:  //图片选择
                     if (data != null) {
                         final Uri uri = data.getData();
-                        saveAndShowImg(uri);
+                        cropImg(uri);
+//                        saveAndShowImg(uri);
+                    } else {
+                        mIconFile = null;
+                    }
+                    break;
+                case REQ_CROP_IMG:  //裁剪的图片
+                    if (data != null && data.getExtras() != null) {
+                        Bundle extras = data.getExtras();
+                        Bitmap photo = extras.getParcelable("data");
+                        if (photo != null) {
+                            saveAndShowImg(photo);
+                        } else {
+                            mIconFile = null;
+                        }
+                    } else {
+                        mIconFile = null;
                     }
                     break;
             }
+        } else {
+            mIconFile = null;
         }
         
         super.onActivityResult(requestCode, resultCode, data);
     }
 
     /**
-     * 裁剪、保存并且显示图片
-     * @param uri
+     * 条用系统相册来裁剪图片
      */
-    private void saveAndShowImg(final Uri uri) {
+    private void cropImg(Uri uri) {
+        Intent intent = new Intent("com.android.camera.action.CROP");
+        //可以选择图片类型，如果是*表明所有类型的图片
+        intent.setDataAndType(uri, "image/*");
+        // 下面这个crop = true是设置在开启的Intent中设置显示的VIEW可裁剪
+        intent.putExtra("crop", "true");
+        // aspectX aspectY 是宽高的比例，这里设置的是正方形（长宽比为1:1）
+        intent.putExtra("aspectX", 1);
+        intent.putExtra("aspectY", 1);
+        int size = Constants.AVATAR_THUMB_WIDTH;
+        // outputX outputY 是裁剪图片宽高
+        intent.putExtra("outputX", size);
+        intent.putExtra("outputY", size);
+        //裁剪时是否保留图片的比例，这里的比例是1:1
+        intent.putExtra("scale", true);
+        //设置输出的格式
+        intent.putExtra("outputFormat", Bitmap.CompressFormat.PNG.toString());
+        //是否将数据保留在Bitmap中返回
+        intent.putExtra("return-data", true);
+        startActivityForResult(intent, REQ_CROP_IMG);
+    }
+
+    /**
+     * 裁剪、保存并且显示图片
+     * @param bitmap 裁剪后的图片
+     */
+    private void saveAndShowImg(final Bitmap bitmap) {
         final String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
         PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissions, new PermissionsResultAction() {
 
             @Override
             public void onGranted() {
-                new LoadImgTask(OPT_SAVE_IMG).execute(uri);
+                TaskParam param = new TaskParam();
+                param.optType = OPT_SAVE_IMG;
+                param.data = bitmap;
+                new LoadImgTask(OPT_SAVE_IMG).execute(param);
             }
 
             @Override
@@ -229,10 +399,10 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
 
     /**
      * 保存图片
-     * @param uri
+     * @param bitmap
      */
-    private File saveImg(Uri uri) {
-        if (uri == null) {
+    private File saveImg(Bitmap bitmap) {
+        if (bitmap == null) {
             return null;
         }
         User user = getCurrentUser();
@@ -249,7 +419,14 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
                 KLog.d(TAG, "account edit save img icon file is null");
                 return null;
             }
-            String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
+            String savePath = mIconFile.getAbsolutePath();
+            boolean success = ImageUtil.saveBitmap(bitmap, mIconFile, Bitmap.CompressFormat.PNG, 80);
+            KLog.d(TAG, "account edt save img result:" + success + ", file path:" + savePath);
+            if (success) {
+                ImageUtil.clearMemoryCache(savePath);
+                iconFile = mIconFile;
+            }
+            /*String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
             KLog.d(TAG, "account edit load img task file:----" + filePath);
             KLog.d(TAG, "account edit save file:----" + mIconFile.getAbsolutePath());
             //压缩并保存文件
@@ -276,11 +453,61 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
 
                 //添加到相册
                 SystemUtil.galleryAddPic(mContext, file);
-            }
+            }*/
         } catch (Exception e) {
             KLog.e(TAG, "account edit icon process img error:" + e.getMessage());
         }
         return iconFile;
+    }
+
+    /**
+     * 构建保存用户信息的参数
+     * @return
+     */
+    private void saveAccountInfo() {
+        User localUser = getCurrentUser();
+        if (localUser == null) {    //用户没有登录
+            KLog.d(TAG, "save account info failed because current user is not login");
+            return;
+        }
+        User user = (User) localUser.clone();
+        if (user == null) {
+            user = new User();
+        }
+        String nickname = mEtNickname.getText() == null ? null : mEtNickname.getText().toString();
+        user.setNickname(nickname);
+        user.setSid(localUser.getSid());
+        user.setId(localUser.getId());
+        if (mIconFile != null && mIconFile.exists()) {
+            user.setAvatar(mIconFile.getAbsolutePath());
+        } else {
+            user.setAvatar(localUser.getAvatar());
+            user.setAvatarHash(localUser.getAvatarHash());
+        }
+        TaskParam param = new TaskParam();
+        param.optType = OPT_SAVE_INFO;
+        param.data = user;
+        mProgressDialog = showLoadingDialog(R.string.save_ing);
+        new LoadImgTask(OPT_SAVE_INFO).execute(param);
+    }
+
+    /**
+     * 保存信息到本地数据库
+     * @param user
+     */
+    private boolean doSaveAccountInfo(User user) {
+        if (user == null) {
+            KLog.d(TAG, "do save account info failed because user is null");
+            return false;
+        }
+        String iconPath = user.getAvatar();
+        if (!TextUtils.isEmpty(iconPath)) { //存在头像，则生成头像文件的hash
+            String iconHash = DigestUtil.md5FileHex(iconPath);
+            if (!TextUtils.isEmpty(iconHash)) {
+                user.setAvatarHash(iconHash);
+            }
+        }
+        return UserManager.getInstance().update(user);
     }
 
     @Override
@@ -290,6 +517,31 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
         KLog.i(TAG, "Activity-onRequestPermissionsResult() PermissionsManager.notifyPermissionsChange()");
         PermissionsManager.getInstance().notifyPermissionsChange(permissions, grantResults);
     }
+
+    /**
+     * 用户信息的观察者
+     */
+    class UserObserver extends ContentObserver {
+
+        public UserObserver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data) {
+            switch (notifyFlag) {
+                case Provider.UserColumns.NOTIFY_FLAG:  //用户信息
+                    switch (notifyType) {
+                        case REFRESH:   //用户信息更新
+                            User user = (User) data;
+                            KLog.d(TAG, "account edit observer user refresh :" + user);
+                            showAccount(user);
+                            break;
+                    }
+                    break;
+            }
+        }
+    }
     
     /**
      * 加载处理图片的后台任务
@@ -297,7 +549,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
      * @update 2016/9/28 18:23
      * @version: 1.0.0
      */
-    class LoadImgTask extends AsyncTask<Uri, Void, File> {
+    class LoadImgTask extends AsyncTask<TaskParam, Void, TaskParam> {
         
         private int optType;
 
@@ -306,25 +558,49 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
         }
 
         @Override
-        protected File doInBackground(Uri... params) {
+        protected TaskParam doInBackground(TaskParam... params) {
+            TaskParam param = params[0];
             File iconFile = null;
+            TaskParam result = new TaskParam();
+            result.optType = optType;
             switch (optType) {
                 case OPT_SAVE_IMG:  //保存图片
-                    Uri uri = params[0];
-                    iconFile = saveImg(uri);
+                    Bitmap bitmap = (Bitmap) param.data;
+                    iconFile = saveImg(bitmap);
+                    result.data = iconFile;
                     KLog.d(TAG, "account edit load img iconFile:" + iconFile);
                     break;
+                case OPT_SAVE_INFO: //保存用户信息
+                    User user = (User) param.data;
+                    result.data = doSaveAccountInfo(user);
+                    break;
             }
-            return iconFile;
+            return result;
         }
 
         @Override
-        protected void onPostExecute(File file) {
+        protected void onPostExecute(TaskParam result) {
+            if (result == null) {
+                return;
+            }
             switch (optType) {
                 case OPT_SAVE_IMG:  //保存图片
+                    File file = (File) result.data;
                     if (file != null && file.exists()) {    //文件存在，则显示图片
                         ImageUtil.displayImage(file.getAbsolutePath(), mIvIcon, ImageUtil.getAvatarOptions(mContext), null);
                     }
+                    break;
+                case OPT_SAVE_INFO: //保存用户信息
+                    dismissDialog(mProgressDialog);
+                    Boolean success = (Boolean) result.data;
+                    int tipRes = 0;
+                    if (success) {
+                        tipRes = R.string.save_success;
+                        finish();
+                    } else {
+                        tipRes = R.string.save_failed;
+                    }
+                    SystemUtil.makeShortToast(tipRes);
                     break;
             }
         }

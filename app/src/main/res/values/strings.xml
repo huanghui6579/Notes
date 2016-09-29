@@ -22,6 +22,7 @@
     <string name="label_note_share">保存到云信笔记</string>
     <string name="label_trash">回收站</string>
     <string name="label_settings">设置</string>
+    <string name="title_settings_account">账户信息</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -72,6 +73,9 @@
     <string name="note_type_list">清单</string>
     <string name="sync_type_none">未同步</string>
     <string name="sync_type_done">已同步</string>
+    
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
 
     <string name="note_type">类型</string>
     <string name="path">路径</string>
@@ -149,7 +153,7 @@
 
     <string name="action_take_pic">拍照</string>
     <string name="action_pic_img">从相册中选择</string>
-    
+
     <string name="stroke_tip_type">画笔类型</string>
     <string name="stroke_tip_size">画笔大小</string>
     <string name="stroke_tip_color">画笔颜色</string>
@@ -304,4 +308,32 @@
     <string name="authority_register_account_repeat">注册失败，该用户已存在</string>
     <string name="authority_login_success">登录成功</string>
     <string name="authority_register_success">注册成功</string>
+
+    <string name="save_ing">保存中…</string>
+    <string name="save_success">保存成功</string>
+    <string name="save_failed">保存失败</string>
+
+    <string name="account_save_tip_title">保存修改？</string>
+    <string name="account_save_tip_content">保存或放弃对个人资料的修改。</string>
+    <string name="account_save_cancel">放弃</string>
+    
+    <string name="account_last_sync_time">上次同步时间</string>
+    <string name="account_logout">退出登录</string>
+    <string name="account_logout_summary">退出或者切换账号</string>
+    <string name="account_logout_msg">退出登录后，该账号的笔记将在该设备上不可见。\n确定退出？</string>
+    <string name="account_no_account">未登录</string>
+
+    <string-array name="list_preference_entries">
+        <item>Entry 1</item>
+        <item>Entry 2</item>
+        <item>Entry 3</item>
+    </string-array>
+
+    <string-array name="list_preference_entry_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="multi_select_list_preference_default_value" />
 </resources>

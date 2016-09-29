@@ -21,6 +21,8 @@ import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.api.impl.DeviceApiImpl;
+import com.yunxinlink.notes.cache.FolderCache;
+import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.DeviceInfo;
@@ -248,6 +250,24 @@ public class NoteApplication extends Application {
     }
 
     /**
+     * 清除一些缓存，主要用于退出登录
+     */
+    public void clearCache() {
+        User user = null;
+        if (mCurrentUser != null) {
+            user = (User) mCurrentUser.clone();
+        }
+        mDefaultFolderSid = null;
+        mCurrentUser = null;
+        updateWidgetFolder();
+        FolderCache.getInstance().clear();
+        NoteCache.getInstance().clear();
+        NoteUtil.clearAccountInfo(this);
+        //观察者通知，用户退出登录了
+        UserManager.getInstance().logoutUser(user);
+    }
+
+    /**
      * 初始化本地的用户，获取本地用户的数据
      * @param context
      * @return
@@ -300,6 +320,7 @@ public class NoteApplication extends Application {
     }
 
     public void setCurrentUser(User currentUser) {
+        KLog.d(TAG, "app set current user:" + currentUser);
         this.mCurrentUser = currentUser;
     }
 

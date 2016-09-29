@@ -11,4 +11,7 @@
     <string name="settings_key_more_theme">more_theme</string>
     <string name="settings_key_theme_mode">theme_mode</string>
     <string name="settings_key_account_in">account_in</string>
+    <string name="settings_key_account_name">account_name</string>
+    <string name="settings_key_account_last_sync_time">account_last_sync_time</string>
+    <string name="settings_key_account_logout">account_logout</string>
 </resources>

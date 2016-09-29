@@ -3,7 +3,6 @@ package com.yunxinlink.notes.lock;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,7 +10,7 @@ import android.os.Message;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
-import com.yunxinlink.notes.ui.MainActivity;
+import com.yunxinlink.notes.util.NoteUtil;
 
 import java.lang.reflect.Method;
 
@@ -304,18 +303,7 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
     }
 
     private void onResultValidateFailed(Activity activity) {
-        if (activity != null) {
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                activity.finishAffinity();
-            } else {
-                Intent home = new Intent(activity, MainActivity.class);
-                home.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                home.putExtra(MainActivity.ARG_EXIT, true);
-                activity.startActivity(home);
-            }
-            activity.finish();
-        }
+        NoteUtil.finishAll(activity);
     }
 
     boolean isActivityTopOfTask(Activity a) {

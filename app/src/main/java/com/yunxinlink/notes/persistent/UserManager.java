@@ -97,6 +97,8 @@ public class UserManager extends Observable<Observer> {
         user.setSid(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.SID)));
         user.setState(cursor.getInt(cursor.getColumnIndex(Provider.UserColumns.STATE)));
         user.setOpenUserId(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.OPEN_USER_ID)));
+        user.setAvatarHash(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.AVATAR_HASH)));
+        user.setNickname(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.NICKNAME)));
         return user;
     }
 
@@ -150,6 +152,16 @@ public class UserManager extends Observable<Observer> {
         String openUserId = user.getOpenUserId();
         if (openUserId != null) {
             values.put(Provider.UserColumns.OPEN_USER_ID, openUserId);
+        }
+        
+        String avatarHash = user.getAvatarHash();
+        if (avatarHash != null) {
+            values.put(Provider.UserColumns.AVATAR_HASH, avatarHash);
+        }
+        
+        String nickname = user.getNickname();
+        if (nickname != null) {
+            values.put(Provider.UserColumns.NICKNAME, nickname);
         }
         
         if (isAdd) {
@@ -211,6 +223,41 @@ public class UserManager extends Observable<Observer> {
     }
 
     /**
+     * 获取用户的基本信息
+     * @param sid 根据用户的sid来查询本地信息
+     * @return
+     */
+    public User getAccountInfoBySid(String sid) {
+        return getAccountInfoBySid(sid, true);
+    }
+
+    /**
+     * 获取用户的基本信息
+     * @param sid 根据用户的sid来查询本地信息
+     * @param notify 是否需要通知           
+     * @return
+     */
+    public User getAccountInfoBySid(String sid, boolean notify) {
+        if (sid == null) {
+            KLog.d(TAG, "get account info by sid failed sid is null");
+            return null;
+        }
+        User user = null;
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        Cursor cursor = db.query(Provider.UserColumns.TABLE_NAME, null, Provider.UserColumns.SID + " = ?", new String[] {sid}, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            user = cursor2User(cursor);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        if (user != null && notify) {
+            notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.REFRESH, user);
+        }
+        return user;
+    }
+
+    /**
      * 修改本地用户的状态
      * @param user
      * @return
@@ -255,6 +302,7 @@ public class UserManager extends Observable<Observer> {
         ContentValues values = initValues(user, false);
         String selection = null;
         String[] args = null;
+        boolean reload = false;
         if (user.checkId()) {   //id可用
             selection = Provider.UserColumns._ID + " = ?";
             args = new String[] {String.valueOf(user.getId())};
@@ -263,9 +311,15 @@ public class UserManager extends Observable<Observer> {
             selection = Provider.UserColumns.SID + " = ?";
             args = new String[] {user.getSid()};
             KLog.d(TAG, "update user with user sid:" + user.getSid());
+            //用户没有id,则需要重新查询
+            reload = true;
         }
         int rowId = db.update(Provider.UserColumns.TABLE_NAME, values, selection, args);
         boolean success = rowId > 0;
+        if (reload) {
+            user = getAccountInfoBySid(user.getSid(), false);
+            KLog.d(TAG, "update user and reload user by sid:" + user);
+        }
         NoteApplication.getInstance().setCurrentUser(user);
         if (success) {
             //通知界面刷新
@@ -348,5 +402,12 @@ public class UserManager extends Observable<Observer> {
         }
         return success;
     }
-    
+
+    /**
+     * 用户退出登录
+     * @param user
+     */
+    public void logoutUser(User user) {
+        UserManager.getInstance().notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.REMOVE, user);
+    }
 }

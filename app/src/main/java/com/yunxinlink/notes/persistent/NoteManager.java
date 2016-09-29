@@ -153,6 +153,10 @@ public class NoteManager extends Observable<Observer> {
         //是否加载回收站里的笔记
         int userId = 0;
         if (user != null) { //当前用户有登录
+            if (!user.checkOnLine()) {  //用户离线或者不可用，退出登录了
+                KLog.d(TAG, "get all detail notes user is offline or disable:" + user);
+                return null;
+            }
             userId = user.getId();
             if (deleteState == 0) {
                 selection = Provider.NoteColumns.USER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
@@ -756,7 +760,7 @@ public class NoteManager extends Observable<Observer> {
                 //批量添加清单项
                 for (DetailList detail : detailNote.getDetailList()) {
                     //设置hash
-                    detail.setHash(DigestUtil.md5Digest(detail.getTitle()));
+                    detail.setHash(DigestUtil.md5Hex(detail.getTitle()));
                     values = initDetailValues(detail);
                     rowId = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
                     detail.setId((int) rowId);
@@ -815,7 +819,7 @@ public class NoteManager extends Observable<Observer> {
                     KLog.d(TAG, "-----updateDetailList--hasDetailList--");
                     for (DetailList detail : detailListList) {
                         //设置hash
-                        detail.setHash(DigestUtil.md5Digest(detail.getTitle()));
+                        detail.setHash(DigestUtil.md5Hex(detail.getTitle()));
                         int id = detail.getId();
 
                         if (id > 0) {   //已有，则更新

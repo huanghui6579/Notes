@@ -34,9 +34,14 @@ public class Constants {
     public static final float MENU_ITEM_COLOR_ALPHA = 0.25F;
 
     /**
-     * 系统默认手动生成的缩略图缩放参造宽度100
+     * 系统默认手动生成的缩略图缩放参造宽度400
      */
     public static final int IMAGE_THUMB_WIDTH = 400;
+
+    /**
+     * 头像的尺寸，100
+     */
+    public static final int AVATAR_THUMB_WIDTH = 100;
 
     /**
      * 系统默认手动生成的缩略图缩放参造高度100

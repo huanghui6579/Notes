@@ -15,4 +15,9 @@ public interface State {
 	 * 用户状态-不可用
 	 */
 	public static final int DISABLE = 1;
+
+	/**
+	 * 用户退出登录了
+	 */
+	public static final int OFFLINE = 2;
 }

@@ -38,7 +38,7 @@ public class TrashActivity extends BaseActivity implements MainFragment.OnMainFr
     @Override
     protected void initData() {
         //注册笔记的观察者
-        registContentObserver();
+        registerContentObserver();
     }
 
     @Override
@@ -69,7 +69,7 @@ public class TrashActivity extends BaseActivity implements MainFragment.OnMainFr
     @Override
     protected void onDestroy() {
         //注销笔记的观察者
-        unRegistContentObserver();
+        unregisterContentObserver();
         super.onDestroy();
     }
 
@@ -79,7 +79,7 @@ public class TrashActivity extends BaseActivity implements MainFragment.OnMainFr
      * @update 2016/3/9 18:10
      * @version: 1.0.0
      */
-    private void registContentObserver() {
+    private void registerContentObserver() {
         mNoteObserver = new NoteContentObserver(mHandler);
         NoteManager.getInstance().addObserver(mNoteObserver);
         FolderManager.getInstance().addObserver(mNoteObserver);
@@ -91,7 +91,7 @@ public class TrashActivity extends BaseActivity implements MainFragment.OnMainFr
      * @update 2016/3/9 18:11
      * @version: 1.0.0
      */
-    private void unRegistContentObserver() {
+    private void unregisterContentObserver() {
         if (mNoteObserver != null) {
             NoteManager.getInstance().removeObserver(mNoteObserver);
             FolderManager.getInstance().removeObserver(mNoteObserver);

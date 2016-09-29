@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AlertDialog;
@@ -765,6 +766,20 @@ public class NoteUtil {
     }
 
     /**
+     * 移除分享平台的数据
+     * @param context
+     */
+    private static void removeSharePlatform(Context context) {
+        ShareSDK.initSDK(context);
+        Platform[] platforms = ShareSDK.getPlatformList(context);
+        if (platforms != null && platforms.length > 0) {
+            for (Platform platform : platforms) {
+                platform.removeAccount();
+            }
+        }
+    }
+
+    /**
      * 获取第三方账号的用户id
      * @param context
      * @param accountType
@@ -778,6 +793,43 @@ public class NoteUtil {
             userId = platDB.getUserId();
         }
         return userId;
+    }
+
+    /**
+     * 结束所有的界面
+     * @param activity
+     */
+    public static void finishAll(Activity activity) {
+        if (activity != null) {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                activity.finishAffinity();
+            } else {
+                Intent home = new Intent(activity, MainActivity.class);
+                home.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                home.putExtra(MainActivity.ARG_EXIT, true);
+                activity.startActivity(home);
+            }
+            activity.finish();
+        }
+    }
+
+    /**
+     * 清除本地的账号信息，一般用于账号退出登录
+     * @param context
+     */
+    public static void clearAccountInfo(Context context) {
+        KLog.d(TAG, "clear local pref account info");
+        //移除分享平台的数据
+        removeSharePlatform(context);
+        //移除本地账户的数据
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.remove(Constants.PREF_ACCOUNT_TYPE);
+        editor.remove(Constants.PREF_ACCOUNT_ID);
+        editor.remove(Constants.SELECTED_FOLDER_ID);
+        editor.remove(Constants.PREF_DEFAULT_FOLDER);
+        editor.apply();
     }
     
 }

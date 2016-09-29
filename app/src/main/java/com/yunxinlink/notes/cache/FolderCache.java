@@ -77,4 +77,13 @@ public class FolderCache {
         return list;
     }
 
+    /**
+     * 清楚缓存
+     */
+    public void clear() {
+        if (mFolderMap != null) {
+            mFolderMap.clear();
+        }
+    }
+
 }

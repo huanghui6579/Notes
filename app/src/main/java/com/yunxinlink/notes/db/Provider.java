@@ -535,6 +535,16 @@ public final class Provider {
          * 第三方账号的用户id
          */
         public static final String OPEN_USER_ID = "open_user_id";
+
+        /**
+         * 用户头像的hash值
+         */
+        public static final String AVATAR_HASH = "avatar_hash";
+
+        /**
+         * 用户昵称
+         */
+        public static final String NICKNAME = "nickname";
     }
 
     /**

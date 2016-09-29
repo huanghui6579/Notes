@@ -2,16 +2,21 @@ package com.yunxinlink.notes.service;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.os.Handler;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.cache.NoteCache;
+import com.yunxinlink.notes.db.Provider;
+import com.yunxinlink.notes.db.observer.ContentObserver;
+import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailList;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.AttachManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.richtext.AttachText;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
@@ -34,9 +39,38 @@ public class CoreService extends IntentService {
     
     private NoteManager mNoteManager;
     
+    private NoteObserver mNoteObserver;
+    
     public CoreService() {
         super("CoreService");
         mNoteManager = NoteManager.getInstance();
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        //注册观察者
+        registerObserver();
+    }
+
+    /**
+     * 注册观察者
+     */
+    private void registerObserver() {
+        if (mNoteObserver == null) {
+            mNoteObserver = new NoteObserver(new Handler());
+        }
+        UserManager.getInstance().addObserver(mNoteObserver);
+    }
+
+    /**
+     * 注销观察者
+     */
+    private void unregisterObserver() {
+        if (mNoteObserver != null) {
+            UserManager.getInstance().removeObserver(mNoteObserver);
+        }
     }
 
     @Override
@@ -61,7 +95,7 @@ public class CoreService extends IntentService {
                         return;
                     }
 
-                    note.setHash(DigestUtil.md5Digest(note.getRealContent().toString()));
+                    note.setHash(DigestUtil.md5Hex(note.getRealContent().toString()));
                     
                     detailNote = noteCache.get();
 //                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
@@ -82,7 +116,7 @@ public class CoreService extends IntentService {
                     //是否更新内容
                     boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
                     if (updateContent) {
-                        note.setHash(DigestUtil.md5Digest(note.getRealContent().toString()));
+                        note.setHash(DigestUtil.md5Hex(note.getRealContent().toString()));
                     }
                     if (!note.isDetailNote()) { //非清单，则将标题设为""
                         note.setTitle("");
@@ -123,6 +157,13 @@ public class CoreService extends IntentService {
                     break;
             }
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        //注销观察者
+        unregisterObserver();
+        super.onDestroy();
     }
 
     /**
@@ -248,5 +289,33 @@ public class CoreService extends IntentService {
             NoteUtil.notifyAppWidgetList(this);
         }
         KLog.d(TAG, "---onHandleIntent---updateNote----result---" + success + "---note---" + sid);
+    }
+
+    /**
+     * 笔记的观察者
+     */
+    private class NoteObserver extends ContentObserver {
+
+        public NoteObserver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data) {
+            switch (notifyFlag) {
+                case Provider.UserColumns.NOTIFY_FLAG:
+                    switch (notifyType) {
+                        case REMOVE:    //用户退出登录了，则移除当前跟用户有关的任务
+                            KLog.d(TAG, "core service user is logout and this service will stop self user:" + data);
+                            stopSelf();
+//                            if (data != null && data instanceof User) {
+//                                User user = (User) data;
+//                                
+//                            }
+                            break;
+                    }
+                    break;
+            }
+        }
     }
 }

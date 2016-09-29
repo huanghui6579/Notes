@@ -57,13 +57,13 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
 //            return;
         }
 
-        registThemeReceiver();
+        registerThemeReceiver();
     }
 
     /**
      * 注册主题变换的广播
      */
-    private void registThemeReceiver() {
+    private void registerThemeReceiver() {
         if (mThemeReceiver == null) {
             mThemeReceiver = new SystemReceiver(this);
         }
@@ -75,7 +75,7 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
     /**
      * 注销主题的广播
      */
-    private void unregistThemeReceiver() {
+    private void unregisterThemeReceiver() {
         if (mThemeReceiver != null) {
             LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
             localBroadcastManager.unregisterReceiver(mThemeReceiver);
@@ -221,7 +221,7 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
         super.onDestroy();
         getDelegate().onDestroy();
 
-        unregistThemeReceiver();
+        unregisterThemeReceiver();
 
         if (hasLockedController() && reLock()) {
             mLockerActivityDelegate.onDestroy(this, null);
@@ -280,6 +280,14 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
     protected boolean isXLargeTablet(Context context) {
         return (context.getResources().getConfiguration().screenLayout
                 & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean onIsMultiPane() {
+        return isXLargeTablet(this);
     }
 
     /**

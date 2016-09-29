@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.db.observer;
 
 import android.os.Handler;
+import android.os.Looper;
 
 /**
  * @author huanghui1
@@ -12,6 +13,9 @@ public abstract class ContentObserver implements Observer {
 
     public ContentObserver(Handler handler) {
         this.mHandler = handler;
+        if (this.mHandler == null) {
+            this.mHandler = new Handler(Looper.getMainLooper());
+        }
     }
 
     class NotificationRunnable implements Runnable {

@@ -352,12 +352,28 @@ public class ImageUtil {
      * @throws IOException
      */
     public static boolean saveBitmap(Bitmap bitmap, File saveFile, Bitmap.CompressFormat format) throws IOException {
+        return saveBitmap(bitmap, saveFile, format, 100);
+    }
+
+    /**
+     * 保存bitmap到本地文件
+     * @param bitmap 图片对象
+     * @param saveFile 本地的文件
+     * @param format 图片的格式     
+     * @param quality 压缩图片的质量              
+     * @return
+     * @throws IOException
+     */
+    public static boolean saveBitmap(Bitmap bitmap, File saveFile, Bitmap.CompressFormat format, int quality) throws IOException {
         if(bitmap == null || saveFile == null) {
             return false;
         }
         try {
+            if (saveFile.exists()) {
+                saveFile.delete();
+            }
             BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(saveFile));
-            bitmap.compress(format, 100, os);
+            bitmap.compress(format, quality, os);
             os.flush();
             os.close();
         } finally {

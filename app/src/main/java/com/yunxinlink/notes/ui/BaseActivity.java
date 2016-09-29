@@ -1,5 +1,7 @@
 package com.yunxinlink.notes.ui;
 
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -264,6 +266,31 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     protected void beforeBack() {
         
+    }
+
+    /**
+     * 显示正在加载的对话框
+     */
+    protected ProgressDialog showLoadingDialog(String tip) {
+        return ProgressDialog.show(this, null, tip, true, true);
+    }
+
+    /**
+     * 显示正在加载的对话框
+     */
+    protected ProgressDialog showLoadingDialog(int tipRes) {
+        String tip = getString(tipRes);
+        return showLoadingDialog(tip);
+    }
+
+    /**
+     * 让对话框消失
+     * @param dialog
+     */
+    protected void dismissDialog(Dialog dialog) {
+        if (dialog != null && dialog.isShowing()) {
+            dialog.dismiss();
+        }
     }
     
     /**

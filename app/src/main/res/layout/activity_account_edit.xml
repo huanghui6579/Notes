@@ -71,6 +71,7 @@
                     android:id="@+id/et_nickname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:maxLength="30"
                     android:hint="@string/authority_nickname"/>
             </android.support.design.widget.TextInputLayout>
         </LinearLayout>

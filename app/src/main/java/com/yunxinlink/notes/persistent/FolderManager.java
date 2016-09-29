@@ -153,6 +153,10 @@ public class FolderManager extends Observable<Observer> {
         }
         int deleteState = isRecycle ? 1 : 0;
         if (user != null) { //当前用户有登录
+            if (!user.checkOnLine()) {  //用户离线、退出登录或者不可用
+                KLog.d(TAG, "get all folder user is offline or disable :" + user);
+                return null;
+            }
             userId = user.getId();
             if (deleteState == 0) {
                 selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " is null or " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;

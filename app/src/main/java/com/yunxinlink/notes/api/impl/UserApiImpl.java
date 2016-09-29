@@ -9,6 +9,7 @@ import com.yunxinlink.notes.api.UserApi;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.listener.OnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
+import com.yunxinlink.notes.model.State;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.persistent.UserManager;
@@ -302,9 +303,9 @@ public class UserApiImpl extends BaseApi {
 
             //添加或更新本地账号信息
             boolean success = UserManager.getInstance().insertOrUpdate(user);
-            int localUserId = user.getId();
-            if (success && localUserId > 0) {  //该id已在本地不存在
-                NoteUtil.saveAccountId(context, localUserId);
+            user = ((NoteApplication) context.getApplicationContext()).getCurrentUser();
+            if (user != null && success && user.getId() > 0) {  //该id已在本地不存在
+                NoteUtil.saveAccountId(context, user.getId());
             }
             KLog.d(TAG, "update local updateLocalUser result:" + success);
             
@@ -343,15 +344,27 @@ public class UserApiImpl extends BaseApi {
      * @param src
      */
     private static void mergeUserInfo(User target, User src) {
-        target.setAvatar(src.getAvatar());
+        String srcAvatar = src.getAvatar();
+        if (srcAvatar != null) {
+            target.setAvatar(src.getAvatar());
+            target.setAvatarHash(src.getAvatarHash());
+        }
         target.setCreateTime(src.getCreateTime());
         target.setGender(src.getGender());
         target.setMobile(src.getMobile());
         target.setPassword(src.getPassword());
         target.setSid(src.getSid());
-        target.setState(src.getState());
+        Integer state = src.getState();
+        if (state == null) {
+            state = State.NORMAL;
+        }
+        target.setState(state);
         target.setUsername(src.getUsername());
         target.setEmail(src.getEmail());
+        String nickname = src.getNickname();
+        if (nickname != null) {
+            target.setNickname(src.getNickname());
+        }
     }
 
     /**

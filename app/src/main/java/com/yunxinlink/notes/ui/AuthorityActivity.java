@@ -95,11 +95,12 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
      * 显示对话框，主要是发送显示的消息
      * @param tip
      */
-    public void showLoadingDialog(String tip) {
+    protected ProgressDialog showLoadingDialog(String tip) {
         Message msg = mHandler.obtainMessage();
         msg.what = MSG_SHOW_LOADING_DIALOG;
         msg.obj = tip;
         mHandler.sendMessage(msg);
+        return null;
     }
 
 
@@ -116,15 +117,6 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
      */
     private void doLoadingDialog(String msg) {
         mProgressDialog = ProgressDialog.show(mContext, null, msg, true, true);
-    }
-
-    /**
-     * 消失进度条
-     */
-    private void doDismissDialog() {
-        if (mProgressDialog != null && mProgressDialog.isShowing()) {
-            mProgressDialog.dismiss();
-        }
     }
 
     @Override
@@ -152,7 +144,7 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
                         }
                         break;
                     case MSG_DISMISS_LOADING_DIALOG:    //消失对话框
-                        target.doDismissDialog();
+                        target.dismissDialog(target.mProgressDialog);
                         break;
                 }
 

@@ -17,7 +17,6 @@ import com.yunxinlink.notes.db.observer.ContentObserver;
 import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.UserManager;
-import com.yunxinlink.notes.ui.AccountEditActivity;
 import com.yunxinlink.notes.ui.AuthorityActivity;
 import com.yunxinlink.notes.ui.BaseHandler;
 import com.yunxinlink.notes.util.Constants;
@@ -132,7 +131,7 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
             User user = app.getCurrentUser();
             Intent intent = null;
             if (user != null && user.checkId()) {   //用户可用
-                intent = new Intent(getActivity(), AccountEditActivity.class);
+                intent = new Intent(getActivity(), SettingsAccountActivity.class);
                 startActivity(intent);
             } else {
                 intent = new Intent(getActivity(), AuthorityActivity.class);
@@ -158,6 +157,10 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
      * @param account
      */
     private void showAccount(String account) {
+        if (mListener == null) {
+            KLog.d(TAG, "settings fragment not attach to the activity");
+            return;
+        }
         if (TextUtils.isEmpty(account)) {   //没有账号
             account = getString(R.string.settings_account_summary);
         }
