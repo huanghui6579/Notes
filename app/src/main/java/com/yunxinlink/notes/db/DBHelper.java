@@ -144,6 +144,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.UserColumns.OPEN_USER_ID).append(" TEXT, ")
                 .append(Provider.UserColumns.AVATAR_HASH).append(" TEXT, ")
                 .append(Provider.UserColumns.NICKNAME).append(" TEXT, ")
+                .append(Provider.UserColumns.SYNC_STATE).append(" INTEGER, ")
                 .append(Provider.UserColumns.LAST_SYNC_TIME).append(" INTEGER); ");
         db.execSQL(builder.toString());
         

@@ -1,7 +1,7 @@
 package com.yunxinlink.notes.api.impl;
 
 import com.socks.library.KLog;
-import com.yunxinlink.notes.api.DeviceApi;
+import com.yunxinlink.notes.api.IDeviceApi;
 import com.yunxinlink.notes.listener.OnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.DeviceInfo;
@@ -19,8 +19,8 @@ import retrofit2.Retrofit;
  * @update 2016/9/20 14:57
  * @version: 0.0.1
  */
-public class DeviceApiImpl extends BaseApi {
-    private static final String TAG = "DeviceApiImpl";
+public class DeviceApi extends BaseApi {
+    private static final String TAG = "DeviceApi";
 
     /**
      * 上传设备信息
@@ -33,7 +33,7 @@ public class DeviceApiImpl extends BaseApi {
             return;
         }
         Retrofit retrofit = buildRetrofit();
-        DeviceApi repo = retrofit.create(DeviceApi.class);
+        IDeviceApi repo = retrofit.create(IDeviceApi.class);
         
         Map<String, String> params = new HashMap<>();
         params.put("imei", deviceInfo.getImei());

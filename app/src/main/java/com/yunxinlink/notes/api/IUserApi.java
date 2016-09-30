@@ -16,7 +16,7 @@ import retrofit2.http.POST;
  * @update 2016/9/21 17:27
  * @version: 0.0.1
  */
-public interface UserApi {
+public interface IUserApi {
     /**
      * 用户登录
      * @param params 登录的参数

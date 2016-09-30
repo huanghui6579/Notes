@@ -16,7 +16,7 @@ import android.widget.EditText;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.api.impl.UserApiImpl;
+import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
 import com.yunxinlink.notes.listener.SimpleTextWatcher;
@@ -241,7 +241,7 @@ public class RegisterFragment extends BaseFragment implements View.OnClickListen
         final UserDto userDto = NoteUtil.buildLoginParams(getContext(), user, AccountType.TYPE_LOCAL);
         showLoadingDialog();
         String confirmPassword = mEtPasswordConfirm.getText().toString();
-        mCall = UserApiImpl.register(context, userDto, confirmPassword, new SimpleOnLoadCompletedListener<ActionResult<UserDto>>() {
+        mCall = UserApi.register(context, userDto, confirmPassword, new SimpleOnLoadCompletedListener<ActionResult<UserDto>>() {
             @Override
             public void onLoadSuccess(ActionResult<UserDto> result) {
                 super.onLoadSuccess(result);

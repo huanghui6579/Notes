@@ -20,7 +20,7 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.socks.library.KLog;
-import com.yunxinlink.notes.api.impl.DeviceApiImpl;
+import com.yunxinlink.notes.api.impl.DeviceApi;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
@@ -104,7 +104,7 @@ public class NoteApplication extends Application {
                 if (shouldActive) {    //需要激活
                     KLog.d(TAG, "device will active ...");
                     DeviceInfo deviceInfo = SystemUtil.getDeviceInfo(context);
-                    DeviceApiImpl.activeDeviceInfo(deviceInfo, new SimpleOnLoadCompletedListener<ActionResult<Void>>() {
+                    DeviceApi.activeDeviceInfo(deviceInfo, new SimpleOnLoadCompletedListener<ActionResult<Void>>() {
                         @Override
                         public void onLoadSuccess(ActionResult<Void> result) {
                             //成功，保存

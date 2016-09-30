@@ -19,7 +19,7 @@ import android.widget.LinearLayout;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.api.impl.UserApiImpl;
+import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
 import com.yunxinlink.notes.listener.SimpleTextWatcher;
@@ -279,7 +279,7 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
         if (mListener != null) {
             mListener.showDialog(getString(R.string.authority_login_ing));
         }
-        mCall = UserApiImpl.loginAsync(getContext(), userDto, new SimpleOnLoadCompletedListener<ActionResult<UserDto>>() {
+        mCall = UserApi.loginAsync(getContext(), userDto, new SimpleOnLoadCompletedListener<ActionResult<UserDto>>() {
             @Override
             public void onLoadSuccess(ActionResult<UserDto> result) {
                 super.onLoadSuccess(result);

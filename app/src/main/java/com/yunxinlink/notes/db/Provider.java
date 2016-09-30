@@ -527,7 +527,7 @@ public final class Provider {
         public static final String MODIFY_TIME = "modify_time";
 
         /**
-         * 最后同步的时间
+         * 笔记的最后同步的时间
          */
         public static final String LAST_SYNC_TIME = "last_sync_time";
 
@@ -545,6 +545,11 @@ public final class Provider {
          * 用户昵称
          */
         public static final String NICKNAME = "nickname";
+
+        /**
+         * 用户信息的同步状态
+         */
+        public static final String SYNC_STATE = "syncState";
     }
 
     /**

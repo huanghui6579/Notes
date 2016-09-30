@@ -5,7 +5,7 @@ import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
-import com.yunxinlink.notes.api.UserApi;
+import com.yunxinlink.notes.api.IUserApi;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.listener.OnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
@@ -31,8 +31,8 @@ import retrofit2.Retrofit;
  * @update 2016/9/21 17:51
  * @version: 0.0.1
  */
-public class UserApiImpl extends BaseApi {
-    private static final String TAG = "UserApiImpl";
+public class UserApi extends BaseApi {
+    private static final String TAG = "UserApi";
 
     /**
      * 用户登录--同步
@@ -45,7 +45,7 @@ public class UserApiImpl extends BaseApi {
             return null;
         }
         Retrofit retrofit = buildRetrofit();
-        UserApi repo = retrofit.create(UserApi.class);
+        IUserApi repo = retrofit.create(IUserApi.class);
         
         Call<ActionResult<UserDto>> call = repo.login(buildLoginParams(userDto));
         boolean success = false;
@@ -98,7 +98,7 @@ public class UserApiImpl extends BaseApi {
             return null;
         }
         Retrofit retrofit = buildRetrofit();
-        UserApi repo = retrofit.create(UserApi.class);
+        IUserApi repo = retrofit.create(IUserApi.class);
 
         Call<ActionResult<UserDto>> call = repo.login(buildLoginParams(userDto));
         call.enqueue(new Callback<ActionResult<UserDto>>() {
@@ -163,7 +163,7 @@ public class UserApiImpl extends BaseApi {
             return null;
         }
         Retrofit retrofit = buildRetrofit();
-        UserApi repo = retrofit.create(UserApi.class);
+        IUserApi repo = retrofit.create(IUserApi.class);
         Call<ActionResult<UserDto>> call = repo.register(buildRegisterParams(userDto, confirmPassword));
         call.enqueue(new Callback<ActionResult<UserDto>>() {
             @Override
@@ -211,6 +211,8 @@ public class UserApiImpl extends BaseApi {
         });
         return call;
     }
+    
+//    public 
 
     /**
      * 处理登录后的本地数据操作

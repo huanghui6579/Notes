@@ -7,7 +7,7 @@ import android.content.Intent;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
-import com.yunxinlink.notes.api.impl.UserApiImpl;
+import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.NoteTask;
@@ -81,7 +81,7 @@ public class SystemReceiver extends BroadcastReceiver {
                     KLog.d(TAG, "doAuthorityVerify userDto is null");
                     return;
                 }
-                UserApiImpl.login(context, userDto, null);
+                UserApi.login(context, userDto, null);
             }
         });
     }

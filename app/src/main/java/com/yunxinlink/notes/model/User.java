@@ -80,6 +80,11 @@ public class User implements Cloneable {
      */
     private String avatarHash;
 
+    /**
+     * 同步的状态
+     */
+    private int syncState;
+
     public Integer getId() {
         return id;
     }
@@ -192,6 +197,14 @@ public class User implements Cloneable {
         this.nickname = nickname;
     }
 
+    public int getSyncState() {
+        return syncState;
+    }
+
+    public void setSyncState(int syncState) {
+        this.syncState = syncState;
+    }
+
     @Override
     public Object clone() {
         try {
@@ -261,6 +274,7 @@ public class User implements Cloneable {
                 ", lastSyncTime=" + lastSyncTime +
                 ", openUserId='" + openUserId + '\'' +
                 ", avatarHash='" + avatarHash + '\'' +
+                ", syncState=" + syncState +
                 '}';
     }
 }

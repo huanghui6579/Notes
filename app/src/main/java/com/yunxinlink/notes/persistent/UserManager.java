@@ -99,6 +99,7 @@ public class UserManager extends Observable<Observer> {
         user.setOpenUserId(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.OPEN_USER_ID)));
         user.setAvatarHash(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.AVATAR_HASH)));
         user.setNickname(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.NICKNAME)));
+        user.setNickname(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.NICKNAME)));
         return user;
     }
 

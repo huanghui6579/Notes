@@ -15,7 +15,7 @@ import retrofit2.http.POST;
  * @update 2016/9/20 14:36
  * @version: 0.0.1
  */
-public interface DeviceApi {
+public interface IDeviceApi {
     /**
      * 激活设备，首次使用此应用时，上传设备的基本信息
      * @param params 上传的参数
