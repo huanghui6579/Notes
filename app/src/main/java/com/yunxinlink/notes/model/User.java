@@ -83,7 +83,7 @@ public class User implements Cloneable {
     /**
      * 同步的状态
      */
-    private int syncState;
+    private Integer syncState;
 
     public Integer getId() {
         return id;
@@ -197,12 +197,20 @@ public class User implements Cloneable {
         this.nickname = nickname;
     }
 
-    public int getSyncState() {
+    public Integer getSyncState() {
         return syncState;
     }
 
-    public void setSyncState(int syncState) {
+    public void setSyncState(Integer syncState) {
         this.syncState = syncState;
+    }
+
+    /**
+     * 是否需要上传用户信息
+     * @return
+     */
+    public boolean checkSyncUp() {
+        return syncState != null && syncState == SyncState.SYNC_UP.ordinal();
     }
 
     @Override

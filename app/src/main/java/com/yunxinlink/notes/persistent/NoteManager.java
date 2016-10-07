@@ -466,6 +466,7 @@ public class NoteManager extends Observable<Observer> {
             values.put(Provider.NoteColumns.SYNC_STATE, syncState.ordinal());
         }
         values.put(Provider.NoteColumns.SID, note.getSId());
+        values.put(Provider.NoteColumns.USER_ID, note.getUserId());
         return values;
     }
     
@@ -576,11 +577,12 @@ public class NoteManager extends Observable<Observer> {
      * 更新附件的笔记id
      * @param db
      * @param list 附件的sid
-     * @param noteId 笔记的id            
+     * @param note 笔记
      */
-    private void updateAttachNote(SQLiteDatabase db, List<String> list, String noteId) {
+    private void updateAttachNote(SQLiteDatabase db, List<String> list, NoteInfo note) {
         ContentValues values = new ContentValues();
-        values.put(Provider.AttachmentColumns.NOTE_ID, noteId);
+        values.put(Provider.AttachmentColumns.NOTE_ID, note.getSId());
+        values.put(Provider.AttachmentColumns.USER_ID, note.getUserId());
         int size = list.size();
         String selection = null;
         String[] selectionArgs = new String[size];
@@ -1113,7 +1115,7 @@ public class NoteManager extends Observable<Observer> {
             if (updateUpdate) {
                 //更新附件的noteid
                 KLog.d(TAG, "--updateAttachNote--list---" + attachList);
-                updateAttachNote(db, attachList, note.getSId());
+                updateAttachNote(db, attachList, note);
             } else {
                 KLog.d(TAG, "--updateTextAttach---not--updateUpdate---attach---note---");
             }

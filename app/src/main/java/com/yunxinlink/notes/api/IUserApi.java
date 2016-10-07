@@ -2,13 +2,20 @@ package com.yunxinlink.notes.api;
 
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.model.ActionResult;
+import com.yunxinlink.notes.model.User;
 
 import java.util.Map;
 
+import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.PartMap;
+import retrofit2.http.Path;
 
 /**
  * 用户信息的一些API接口
@@ -34,4 +41,30 @@ public interface IUserApi {
     @FormUrlEncoded
     @POST("user/register")
     Call<ActionResult<UserDto>> register(@FieldMap Map<String, String> params);
+
+    /**
+     * 修改用户信息，将本地的用户信息上传到服务器
+     * @param sid 用户的sid,唯一值，有服务器生成
+     * @param params 上传的一些参数
+     * @return 服务器的返回结果
+     */
+    @Multipart
+    @POST("user/{sid}/modify")
+    Call<ActionResult<Void>> modify(@Path("sid") String sid, @PartMap Map<String, RequestBody> params);
+
+    /**
+     * 从服务器上获取对应用户的基本信息
+     * @param sid 用户的sid,唯一值，有服务器生成
+     * @return
+     */
+    @GET("user/{sid}/info")
+    Call<ActionResult<User>> downInfo(@Path("sid") String sid);
+
+    /**
+     * 下载用户的头像
+     * @param sid 用户的sid,唯一值，有服务器生成
+     * @return
+     */
+    @GET("user/{sid}/avatar")
+    Call<ResponseBody> downAvatar(@Path("sid") String sid);
 }

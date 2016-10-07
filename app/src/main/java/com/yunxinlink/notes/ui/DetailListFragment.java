@@ -1103,9 +1103,21 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                 if (event == null) {
                     return false;
                 }
-                if(event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_DEL) {   //删除
-                    return removeItem();
+                if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DEL && v instanceof EditText) {
+                    EditText editText = (EditText) v;
+                    if (TextUtils.isEmpty(editText.getText())) {
+                        return removeItem();
+                    }
                 }
+                /*if(event.getAction() == KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_DEL) {   //删除
+                    if (v instanceof EditText) {
+                        EditText editText = (EditText) v;
+                        if (!hasText && TextUtils.isEmpty(editText.getText())) {
+                            return removeItem();
+                        }
+                    }
+                    return false;
+                }*/
                 return false;
             }
         }

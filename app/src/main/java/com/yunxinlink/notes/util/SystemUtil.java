@@ -62,6 +62,8 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import okhttp3.Headers;
+
 /**
  * @author huanghui1
  * @update 2016/2/24 18:04
@@ -617,7 +619,24 @@ public class SystemUtil {
         }
         return null;
     }
-    
+
+    /**
+     * 生成用户头像的文件名称,格式为：456457544542.png
+     * @param filename 文件名
+     * @return
+     * @throws IOException
+     */
+    public static File getAvatarFileByName(String filename) throws IOException {
+        if (TextUtils.isEmpty(filename)) {
+            return null;
+        }
+        String iconPath = getNoteAvatarPath();
+        if (iconPath != null) {
+            return new File(iconPath, filename);
+        }
+        return null;
+    }
+
     /**
      * 获取默认选中的文件夹
      * @author huanghui1
@@ -1528,6 +1547,25 @@ public class SystemUtil {
     }
 
     /**
+     * 获取设备的编译信息
+     * @return
+     */
+    public static String getBuildNumber() {
+        String osBuildNumber = Build.FINGERPRINT;  //"360/QK1505/QK1505:6.0.1/MMB29M/6.0.026.P0.160831.QK1505:userdebug/test-keys"
+        final String forwardSlash = "/";
+        String osReleaseVersion = Build.VERSION.RELEASE + forwardSlash;
+        try {
+            osBuildNumber = osBuildNumber.substring(osBuildNumber.indexOf(osReleaseVersion));  //"6.0.1/MMB29M/6.0.026.P0.160831.QK1505:userdebug/test-keys”
+            osBuildNumber = osBuildNumber.replace(osReleaseVersion, "");  //"MMB29M/6.0.026.P0.160831.QK1505:userdebug/test-keys”
+            osBuildNumber = osBuildNumber.substring(0, osBuildNumber.indexOf(forwardSlash)); //"MMB29M"
+        } catch (Exception e) {
+            osBuildNumber = "";
+            Log.e(TAG, "getBuildNumber Exception while parsing - " + e.getMessage());
+        }
+        return osBuildNumber;
+    }
+
+    /**
      * 获取设备信息
      * @param context
      * @return
@@ -1601,5 +1639,52 @@ public class SystemUtil {
             }
         }
         return false;
+    }
+
+    /**
+     * 判断两个字符串是否相等，
+     * 若都为null，则相等
+     * @param srcStr
+     * @param targetStr
+     * @return
+     */
+    public static boolean equalsStr(String srcStr, String targetStr) {
+        boolean result = false;
+        if (srcStr == null && targetStr == null) {
+            result = true;
+        } else if (srcStr != null) {
+            result = srcStr.equals(targetStr);
+        }
+        return result;
+    }
+
+    /**
+     * 从headers中获取文件的名称
+     * @param headers
+     * @return
+     */
+    public static String getFilename(Headers headers) {
+        String filename = null;
+        if (headers != null) {
+            try {
+                String contentDesc = headers.get("Content-Disposition");
+                KLog.d(TAG, "get filename from  headers content desc:" + contentDesc);
+                if (!TextUtils.isEmpty(contentDesc)) {
+                    String regex = "(filename=\\S+);";
+                    Pattern pattern = Pattern.compile(regex);
+                    Matcher matcher = pattern.matcher(contentDesc);
+                    if (matcher.find()) {
+                        String content = matcher.group(1);
+                        //filename=47447545778754.png
+                        String[] array = content.split("=");
+                        filename = array[1];
+                        KLog.d(TAG, "get filename from headers :" + filename);
+                    }
+                }
+            } catch (Exception e) {
+                KLog.e(TAG, "get filename from headers error:" + e.getMessage());
+            }
+        }
+        return filename;
     }
 }
