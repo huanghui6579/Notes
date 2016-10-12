@@ -44,7 +44,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
     protected void initData() {
         Intent intent = getIntent();
         mFolder = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
-        if (mFolder == null || mFolder.getSId() == null) {  //新建
+        if (mFolder == null || mFolder.getSid() == null) {  //新建
             mIsAdd = true;
         } else {    //编辑，则显示已有的数据
             mEtName.setText(mFolder.getName());
@@ -59,7 +59,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
         if (TextUtils.isEmpty(defaultSid)) {
             return false;
         } else {
-            String sid = folder.getSId();
+            String sid = folder.getSid();
             return defaultSid.equals(sid);
         }
     }
@@ -122,7 +122,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
             if (TextUtils.isEmpty(oldDefaultSid)) {
                 modifyDefault = mCbDefault.isChecked();
             } else {
-                String sid = mFolder.getSId();
+                String sid = mFolder.getSid();
                 if (mCbDefault.isChecked()) {
                     modifyDefault = !oldDefaultSid.equals(sid);
                 } else {
@@ -154,7 +154,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                     if (mIsAdd) {   //添加的
                         mFolder = new Folder();
                         mFolder.setName(name);
-                        mFolder.setSId(SystemUtil.generateFolderSid());
+                        mFolder.setSid(SystemUtil.generateFolderSid());
                         mFolder.setCreateTime(time);
                         mFolder.setModifyTime(time);
                         mFolder.setIsLock(isLock);

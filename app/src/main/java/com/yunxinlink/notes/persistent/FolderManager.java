@@ -67,7 +67,7 @@ public class FolderManager extends Observable<Observer> {
     private Folder cursor2Folder(Cursor cursor) {
         Folder folder = new Folder();
         folder.setId(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns._ID)));
-        folder.setSId(cursor.getString(cursor.getColumnIndex(Provider.FolderColumns.SID)));
+        folder.setSid(cursor.getString(cursor.getColumnIndex(Provider.FolderColumns.SID)));
         folder.setCount(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns._COUNT)));
         folder.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.CREATE_TIME)));
         folder.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.MODIFY_TIME)));
@@ -97,7 +97,7 @@ public class FolderManager extends Observable<Observer> {
             while (cursor.moveToNext()) {
                 Folder folder = cursor2Folder(cursor);
                 list.add(folder);
-                map.put(folder.getSId(), folder);
+                map.put(folder.getSid(), folder);
             }
             FolderCache.getInstance().setFolderMap(map);
             cursor.close();
@@ -188,7 +188,7 @@ public class FolderManager extends Observable<Observer> {
         if (folder != null) {
             int userId = folder.getUserId();
             if (userId == 0) {  //没有登录账号
-                String folderId = folder.getSId();
+                String folderId = folder.getSid();
                 if (folderId == null) { //没有id，则查询所有
                     selection = Provider.NoteColumns.USER_ID + " = 0 AND " + Provider.NoteColumns.DELETE_STATE + " = ?";
                     selectionArgs = new String[] {String.valueOf(DeleteState.DELETE_NONE.ordinal())};
@@ -197,7 +197,7 @@ public class FolderManager extends Observable<Observer> {
                     selectionArgs = new String[] {folderId, String.valueOf(DeleteState.DELETE_NONE.ordinal())};
                 }
             } else {    //有登录账号
-                String folderId = folder.getSId();
+                String folderId = folder.getSid();
                 if (folderId == null) { //没有id，则查询所有
                     selection = Provider.NoteColumns.USER_ID + " = ?" + Provider.NoteColumns.DELETE_STATE + " = ?";
                     selectionArgs = new String[] {String.valueOf(userId), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
@@ -227,7 +227,7 @@ public class FolderManager extends Observable<Observer> {
      */
     private ContentValues initFolderValues(Folder folder) {
         ContentValues values = new ContentValues();
-        values.put(Provider.FolderColumns.SID, folder.getSId());
+        values.put(Provider.FolderColumns.SID, folder.getSid());
         DeleteState deleteState = folder.getDeleteState();
         if (deleteState != null) {
             values.put(Provider.FolderColumns.DELETE_STATE, deleteState.ordinal());
@@ -251,7 +251,7 @@ public class FolderManager extends Observable<Observer> {
      * @param folder
      */
     private void updateFolderCache(Folder folder) {
-        FolderCache.getInstance().getFolderMap().put(folder.getSId(), folder);
+        FolderCache.getInstance().getFolderMap().put(folder.getSid(), folder);
     }
 
     /**
@@ -259,7 +259,7 @@ public class FolderManager extends Observable<Observer> {
      * @param folder
      */
     private void removeFolderCache(Folder folder) {
-        FolderCache.getInstance().getFolderMap().remove(folder.getSId());
+        FolderCache.getInstance().getFolderMap().remove(folder.getSid());
     }
     
     /**
@@ -288,7 +288,7 @@ public class FolderManager extends Observable<Observer> {
             //添加文件夹时由触发器将sort字段更新为id的值
             folder.setSort(id);
             if (folder.isDefault()) {
-                saveDefaultFolder(folder.getSId());
+                saveDefaultFolder(folder.getSid());
             }
             updateFolderCache(folder);
             notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, folder);
@@ -337,7 +337,7 @@ public class FolderManager extends Observable<Observer> {
         }
         if (rowId > 0) {
             if (folder.isDefault()) {
-                saveDefaultFolder(folder.getSId());
+                saveDefaultFolder(folder.getSid());
             }
             updateFolderCache(folder);
             notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, folder);
@@ -368,7 +368,7 @@ public class FolderManager extends Observable<Observer> {
             db.endTransaction();
         }
         if (row > 0) {
-            removeDefaultFolderSid(folder.getSId());
+            removeDefaultFolderSid(folder.getSid());
             removeFolderCache(folder);
             notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, folder);
             return true;

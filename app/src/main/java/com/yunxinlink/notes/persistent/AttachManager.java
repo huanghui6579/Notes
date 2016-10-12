@@ -52,7 +52,7 @@ public class AttachManager extends Observable<Observer> {
      */
     private ContentValues initAttachValues(Attach attach) {
         ContentValues values = new ContentValues();
-        values.put(Provider.AttachmentColumns.SID, attach.getSId());
+        values.put(Provider.AttachmentColumns.SID, attach.getSid());
         DeleteState deleteState = attach.getDeleteState();
         if (deleteState != null) {
             values.put(Provider.AttachmentColumns.DELETE_STATE, deleteState.ordinal());
@@ -119,7 +119,7 @@ public class AttachManager extends Observable<Observer> {
         long rowId = 0;
         try {
             String selection = Provider.AttachmentColumns.SID + " = ?";
-            String[] args = {attach.getSId()};
+            String[] args = {attach.getSid()};
             rowId = db.update(Provider.AttachmentColumns.TABLE_NAME, values, selection, args);
             db.setTransactionSuccessful();
         } catch (Exception e) {

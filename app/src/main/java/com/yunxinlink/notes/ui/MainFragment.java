@@ -790,7 +790,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     private void showNoteInfo(NoteInfo note) {
         Intent intent = new Intent(getContext(), NoteEditActivity.class);
         intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
-        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSId());
+        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSid());
         intent.putExtra(NoteEditActivity.ARG_IS_NOTE_TEXT, !note.isDetailNote());
         intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
         intent.putExtra(NoteEditActivity.ARG_OPT_DELETE, mHasDeleteOpt);
@@ -929,7 +929,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             for (int i = 0; i < size; i++) {
                 Folder folder = list.get(i);
                 items[i] = folder.getName();
-                if (folder.getSId().equals(currentFolderId)) {
+                if (folder.getSid().equals(currentFolderId)) {
                     checkedItem = i;
                     selectedFolder = folder;
                 }
@@ -953,7 +953,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                                             List<DetailNoteInfo> actualList = new ArrayList<>();
                                             for (DetailNoteInfo detailNote : selects) {
                                                 NoteInfo note = detailNote.getNoteInfo();
-                                                if (!newFolder.getSId().equals(note.getFolderId())) {
+                                                if (!newFolder.getSid().equals(note.getFolderId())) {
                                                     actualList.add(detailNote);
                                                 }
                                             }

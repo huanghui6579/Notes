@@ -239,7 +239,7 @@ public class SearchActivity extends BaseActivity implements SearchView.OnQueryTe
         }
         Intent intent = new Intent(mContext, NoteEditActivity.class);
         intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
-        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSId());
+        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSid());
         intent.putExtra(NoteEditActivity.ARG_IS_NOTE_TEXT, !note.isDetailNote());
         intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
         startActivity(intent);

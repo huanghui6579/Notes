@@ -209,7 +209,7 @@ public class DBHelper extends SQLiteOpenHelper {
         /*CREATE TRIGGER tri_insert_note AFTER INSERT ON notes  
         WHEN NEW.folder_id IS NOT NULL BEGIN  
         UPDATE folder SET modify_time = NEW.create_time, _count = _count + 1, 
-        sync_state = 0 WHERE sId = NEW.folder_id;  END;*/
+        sync_state = 0 WHERE sid = NEW.folder_id;  END;*/
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_INSERT_NOTE)
                 .append(" AFTER INSERT ON ").append(Provider.NoteColumns.TABLE_NAME)
@@ -227,7 +227,7 @@ public class DBHelper extends SQLiteOpenHelper {
         /*CREATE TRIGGER tri_note_count_add AFTER UPDATE ON notes
         WHEN NEW.folder_id IS NOT NULL AND OLD.delete_state != 0 AND NEW.delete_state = 0 BEGIN
         UPDATE folder SET modify_time = NEW.modify_time, _count = _count + 1,
-                sync_state = 0 WHERE sId = NEW.folder_id;  END;*/
+                sync_state = 0 WHERE sid = NEW.folder_id;  END;*/
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_ADD)
                 .append(" AFTER UPDATE ON ").append(Provider.NoteColumns.TABLE_NAME)
@@ -246,7 +246,7 @@ public class DBHelper extends SQLiteOpenHelper {
         /*CREATE TRIGGER tri_note_count_minus AFTER UPDATE ON notes
         WHEN NEW.folder_id IS NOT NULL AND OLD.delete_state = 0 AND NEW.delete_state != 0 BEGIN
         UPDATE folder SET modify_time = NEW.modify_time, _count =  _count - 1,
-                sync_state = 0 WHERE sId = NEW.folder_id;  END;*/
+                sync_state = 0 WHERE sid = NEW.folder_id;  END;*/
 
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_NOTE_COUNT_MINUS)
@@ -282,7 +282,7 @@ public class DBHelper extends SQLiteOpenHelper {
         /*CREATE TRIGGER "tri_trash_folder" AFTER UPDATE ON "folder"
         WHEN (OLD.delete_state IS NULL OR OLD.delete_state != 1) AND NEW.delete_state = 1
         BEGIN
-        UPDATE notes SET delete_state = 1, sync_state = 0, modify_time = NEW.modify_time WHERE folder_id = NEW.sId;
+        UPDATE notes SET delete_state = 1, sync_state = 0, modify_time = NEW.modify_time WHERE folder_id = NEW.sid;
         END;*/
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.FolderColumns.TRI_TRASH_FOLDER)
@@ -302,7 +302,7 @@ public class DBHelper extends SQLiteOpenHelper {
         /*CREATE TRIGGER "tri_untrash_folder" AFTER UPDATE ON "folder"
         WHEN (OLD.delete_state IS NOT NULL AND OLD.delete_state != 0) AND NEW.delete_state = 0
         BEGIN
-        UPDATE notes SET delete_state = 0, sync_state = 0, modify_time = NEW.modify_time WHERE folder_id = NEW.sId;
+        UPDATE notes SET delete_state = 0, sync_state = 0, modify_time = NEW.modify_time WHERE folder_id = NEW.sid;
         END;*/
         builder = new StringBuilder();
         builder.append("CREATE TRIGGER ").append(Provider.FolderColumns.TRI_UNTRASH_FOLDER)

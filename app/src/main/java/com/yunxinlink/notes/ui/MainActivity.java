@@ -328,7 +328,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             folder = new Folder();
         }
         
-        String folderId = folder.getSId();
+        String folderId = folder.getSid();
         //笔记本是否相同
         boolean isSame = false;
         if (mSelectedFolderId != null) {
@@ -341,7 +341,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             KLog.d(TAG, "--reLoadFirstFolder----folder---sid--is---same--");
             return;
         }
-        mSelectedFolderId = folder.getSId();
+        mSelectedFolderId = folder.getSid();
         SystemUtil.setSelectedFolder(mContext, mSelectedFolderId);
         MainFragment mainFragment = getMainFragment();
         if (mainFragment != null) {
@@ -379,7 +379,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         mSelectedFolderId = SystemUtil.getSelectedFolder(mContext);
         
         Folder folder = new Folder();
-        folder.setSId(mSelectedFolderId);
+        folder.setSid(mSelectedFolderId);
         
         String subTitle = getSubTitle(mSelectedFolderId);
 
@@ -585,8 +585,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
                 refreshHelper.position = 0;
                 Folder firstFolder = getFirstFolder(mFolders);
-//                mSelectedFolderId = firstFolder.getSId();
-                mNavAdapter.setSelectedItem(firstFolder.getSId());
+//                mSelectedFolderId = firstFolder.getSid();
+                mNavAdapter.setSelectedItem(firstFolder.getSid());
                 refreshNavUI(refreshHelper);
             }
             
@@ -681,7 +681,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         int index = mFolders.indexOf(folder);
         if (index != -1) {  //列表中存在
             
-            String deleteId = folder.getSId();
+            String deleteId = folder.getSid();
 
             mFolders.remove(index);
             
@@ -698,7 +698,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             } else {
                 if (deleteId.equals(mSelectedFolderId)) {    //删除的是当前选中的项，则删除后，选择第一项
                     final Folder firstFolder = mFolders.get(0);
-                    mSelectedFolderId = folder.getSId();
+                    mSelectedFolderId = folder.getSid();
                     doInbackground(new Runnable() {
                         @Override
                         public void run() {
@@ -707,7 +707,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     });
 
                     //选择第一项
-                    mNavAdapter.setSelectedItem(firstFolder.getSId());
+                    mNavAdapter.setSelectedItem(firstFolder.getSid());
 
                     AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
                     refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
@@ -899,7 +899,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     if (mItemClickListener != null) {
                         String folderId = (String) v.getTag(R.integer.item_tag_data);
                         Folder pFolder = new Folder();
-                        pFolder.setSId(mSelectedItem);
+                        pFolder.setSid(mSelectedItem);
                         int preSelectIndex = mFolders.indexOf(pFolder);
                         mSelectedItem = folderId;
                         if (preSelectIndex != -1) {
@@ -915,7 +915,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         @Override
         public void onBindViewHolder(final NavTextViewHolder holder, final int position) {
             Folder folder = mList.get(position);
-            final String folderId = folder.getSId();
+            final String folderId = folder.getSid();
             holder.itemView.setTag(holder.getAdapterPosition());
             holder.itemView.setTag(R.integer.item_tag_data, folderId);
             boolean selected = false;

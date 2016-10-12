@@ -23,7 +23,7 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
     /**
      * 实际的主键
      */
-    private String sId;
+    private String sid;
 
     /**
      * 用户的id
@@ -98,20 +98,20 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
 
         Folder folder = (Folder) o;
 
-        return sId != null ? sId.equals(folder.sId) : folder.sId == null;
+        return sid != null ? sid.equals(folder.sid) : folder.sid == null;
 
     }
 
     @Override
     public int hashCode() {
-        return sId != null ? sId.hashCode() : 0;
+        return sid != null ? sid.hashCode() : 0;
     }
 
     public Folder() {}
 
     public Folder(Parcel in) {
         id = in.readInt();
-        sId = in.readString();
+        sid = in.readString();
         userId = in.readInt();
         name = in.readString();
         isLock = in.readByte() != 0;
@@ -127,13 +127,13 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
      * @return
      */
     public boolean isEmpty() {
-        return id == 0 || TextUtils.isEmpty(sId);
+        return id == 0 || TextUtils.isEmpty(sid);
     }
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(id);
-        dest.writeString(sId);
+        dest.writeString(sid);
         dest.writeInt(userId);
         dest.writeString(name);
         dest.writeByte((byte) (isLock ? 1 : 0));
@@ -177,12 +177,12 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
         this.name = name;
     }
 
-    public String getSId() {
-        return sId;
+    public String getSid() {
+        return sid;
     }
 
-    public void setSId(String sId) {
-        this.sId = sId;
+    public void setSid(String sId) {
+        this.sid = sId;
     }
 
     public boolean isLock() {
@@ -278,7 +278,7 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
         String defaultStr = null;
         String nextLine = "\r\n";
         NoteApplication noteApp = NoteApplication.getInstance();
-        if (sId.equals(noteApp.getDefaultFolderSid())) {    //默认文件夹
+        if (sid.equals(noteApp.getDefaultFolderSid())) {    //默认文件夹
             defaultStr = context.getString(R.string.default_state);
         }
         String colon = context.getString(R.string.colon);
@@ -303,7 +303,7 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
     public String toString() {
         return "Folder{" +
                 "id=" + id +
-                ", sId='" + sId + '\'' +
+                ", sid='" + sid + '\'' +
                 ", userId=" + userId +
                 ", name='" + name + '\'' +
                 ", isLock=" + isLock +

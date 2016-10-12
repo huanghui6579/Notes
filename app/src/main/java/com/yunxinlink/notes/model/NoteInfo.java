@@ -42,7 +42,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     /**
      * 实际唯一标识
      */
-    private String sId;
+    private String sid;
 
     /**
      * 对应的用户id
@@ -125,11 +125,11 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     private Map<String, Attach> attaches;
     
     public NoteInfo() {
-        sId = SystemUtil.generateNoteSid();
+        sid = SystemUtil.generateNoteSid();
     }
     
     public NoteInfo(String sid) {
-        this.sId = sid;
+        this.sid = sid;
     }
     
     public NoteInfo(int id) {
@@ -138,7 +138,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
 
     public NoteInfo(Parcel in) {
         id = in.readInt();
-        sId = in.readString();
+        sid = in.readString();
         userId = in.readInt();
         title = in.readString();
         content = in.readString();
@@ -155,7 +155,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(id);
-        dest.writeString(sId);
+        dest.writeString(sid);
         dest.writeInt(userId);
         dest.writeString(title);
         dest.writeString(content);
@@ -227,7 +227,7 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
     public String toString() {
         return "NoteInfo{" +
                 "id=" + id +
-                ", sId='" + sId + '\'' +
+                ", sid='" + sid + '\'' +
                 ", userId=" + userId +
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
@@ -572,12 +572,12 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         this.modifyTime = modifyTime;
     }
 
-    public String getSId() {
-        return sId;
+    public String getSid() {
+        return sid;
     }
 
-    public void setSId(String sid) {
-        this.sId = sid;
+    public void setSid(String sid) {
+        this.sid = sid;
     }
 
     public int getUserId() {

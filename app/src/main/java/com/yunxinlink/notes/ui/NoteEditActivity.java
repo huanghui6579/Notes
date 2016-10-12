@@ -365,7 +365,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             initNote();
 
             if (!TextUtils.isEmpty(sid)) {
-                mNote.setSId(sid);
+                mNote.setSid(sid);
             }
 
             mNote.setId(noteId);
@@ -875,7 +875,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mNote == null) {
             mNote = new NoteInfo();
         }
-        sid = mNote.getSId(); 
+        sid = mNote.getSid(); 
         return sid;
     }
 
@@ -974,8 +974,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             //获取hash在子线程中完成
 //            mNote.setHash(DigestUtil.md5Digest(content));
             mNote.setKind(noteKind);
-            if (mNote.getSId() == null) {
-                mNote.setSId(SystemUtil.generateNoteSid());
+            if (mNote.getSid() == null) {
+                mNote.setSid(SystemUtil.generateNoteSid());
             }
             int userId = getCurrentUserId();
             if (userId > 0) {
@@ -997,7 +997,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         
         //仅仅传sid
-        intent.putExtra(Constants.ARG_CORE_OBJ, mNote.getSId());
+        intent.putExtra(Constants.ARG_CORE_OBJ, mNote.getSid());
         if (mAttachCache != null && mAttachCache.size() > 0) {
             detailNoteInfo.setExtraObj(mAttachCache);
 //            ArrayList<String> list = new ArrayList<>();
@@ -1566,7 +1566,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         }
         Attach attach = new Attach();
         attach.setType(attachType);
-        attach.setSId(SystemUtil.generateAttachSid());
+        attach.setSid(SystemUtil.generateAttachSid());
         attach.setLocalPath(filePath);
         attach.setFilename(file.getName());
         attach.setSize(file.length());
@@ -1906,7 +1906,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             KLog.d(TAG, "---handleAddAttach---added---not--need--add---");
             return;
         }
-        if (mAttachCache.containsKey(attach.getSId())) {
+        if (mAttachCache.containsKey(attach.getSid())) {
             KLog.d(TAG, "---handleAddAttach---added---not--need--add----mAttachCache--has-----" + filePath);
             return;
         }
@@ -1925,7 +1925,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     att.setUserId(userId);
                 }
                 AttachManager.getInstance().addAttach(att);
-                mAttachCache.put(att.getSId(), att);
+                mAttachCache.put(att.getSid(), att);
                 mDetailNote.setLastAttach(att);
                 KLog.d(TAG, "---handleAddAttach--mAttachCache--has---uri--add--");
             }
@@ -1968,7 +1968,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     tmpAttach.setSize(new File(filePath).length());
 
                     AttachManager.getInstance().updateAttach(tmpAttach);
-                    mAttachCache.put(tmpAttach.getSId(), tmpAttach);
+                    mAttachCache.put(tmpAttach.getSid(), tmpAttach);
                     mDetailNote.setLastAttach(tmpAttach);
                     KLog.d(TAG, "---handleUpdateAttach--mAttachCache--has---uri--update--");
                 } else {

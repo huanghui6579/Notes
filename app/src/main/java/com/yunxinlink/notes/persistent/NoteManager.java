@@ -198,7 +198,7 @@ public class NoteManager extends Observable<Observer> {
                 DetailNoteInfo detailNote = new DetailNoteInfo();
                 detailNote.setNoteInfo(note);
                 
-                String noteSid = note.getSId();
+                String noteSid = note.getSid();
                 
                 if (note.isDetailNote()) {
                     List<DetailList> details = getDetailList(db, noteSid);
@@ -465,14 +465,14 @@ public class NoteManager extends Observable<Observer> {
         if (syncState != null) {
             values.put(Provider.NoteColumns.SYNC_STATE, syncState.ordinal());
         }
-        values.put(Provider.NoteColumns.SID, note.getSId());
+        values.put(Provider.NoteColumns.SID, note.getSid());
         return values;
     }
     
     private NoteInfo cursor2Note(Cursor cursor) {
         NoteInfo note = new NoteInfo();
         note.setId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns._ID)));
-        note.setSId(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.SID)));
+        note.setSid(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.SID)));
         note.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.USER_ID)));
         note.setTitle(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.TITLE)));
         note.setContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.CONTENT)));
@@ -495,7 +495,7 @@ public class NoteManager extends Observable<Observer> {
         DetailNoteInfo detailNote = new DetailNoteInfo();
         NoteInfo note = new NoteInfo();
         note.setId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns._ID)));
-        note.setSId(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.SID)));
+        note.setSid(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.SID)));
         note.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.USER_ID)));
         note.setContent(cursor.getString(cursor.getColumnIndex(Provider.NoteColumns.CONTENT)));
         note.setRemindId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns.REMIND_ID)));
@@ -512,9 +512,9 @@ public class NoteManager extends Observable<Observer> {
         detailNote.setNoteInfo(note);
         if (note.isDetailNote()) {  //清单笔记
             DetailList detail = new DetailList();
-            detail.setNoteId(note.getSId());
+            detail.setNoteId(note.getSid());
             detail.setId(cursor.getInt(cursor.getColumnIndex("did")));
-            detail.setSId(cursor.getString(cursor.getColumnIndex("dsid")));
+            detail.setSid(cursor.getString(cursor.getColumnIndex("dsid")));
             detail.setTitle(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.TITLE)));
             detail.setOldTitle(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.OLD_TITLE)));
             detail.setChecked(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.CHECKED)) == 1);
@@ -532,7 +532,7 @@ public class NoteManager extends Observable<Observer> {
     private Attach cursor2Attach(Cursor cursor) {
         Attach attach = new Attach();
         attach.setId(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns._ID)));
-        attach.setSId(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.SID)));
+        attach.setSid(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.SID)));
         attach.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.USER_ID)));
         attach.setNoteId(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.NOTE_ID)));
         attach.setType(cursor.getInt(cursor.getColumnIndex(Provider.AttachmentColumns.TYPE)));
@@ -711,7 +711,7 @@ public class NoteManager extends Observable<Observer> {
      */
     private ContentValues initDetailValues(DetailList detail) {
         ContentValues values = new ContentValues();
-        values.put(Provider.DetailedListColumns.SID, detail.getSId());
+        values.put(Provider.DetailedListColumns.SID, detail.getSid());
         values.put(Provider.DetailedListColumns.TITLE, detail.getTitle());
         values.put(Provider.DetailedListColumns.OLD_TITLE, detail.getOldTitle());
         values.put(Provider.DetailedListColumns.CHECKED, detail.isChecked() ? 1 : 0);
@@ -902,7 +902,7 @@ public class NoteManager extends Observable<Observer> {
         if (remindTime > 0) {
             values.put(Provider.NoteColumns.REMIND_TIME, remindTime);
         }
-        String sid = note.getSId();
+        String sid = note.getSid();
         if (!TextUtils.isEmpty(sid)) {
             values.put(Provider.NoteColumns.SID, sid);
         }
@@ -1016,7 +1016,7 @@ public class NoteManager extends Observable<Observer> {
     private DetailList cursor2Detail(Cursor cursor) {
         DetailList detail = new DetailList();
         detail.setId(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns._ID)));
-        detail.setSId(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.SID)));
+        detail.setSid(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.SID)));
         detail.setTitle(cursor.getString(cursor.getColumnIndex(Provider.DetailedListColumns.TITLE)));
         detail.setSort(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.SORT)));
         detail.setOldSort(cursor.getInt(cursor.getColumnIndex(Provider.DetailedListColumns.OLD_SORT)));
@@ -1041,7 +1041,7 @@ public class NoteManager extends Observable<Observer> {
         if (note == null) {
             return null;
         }
-        List<DetailList> list = getDetailList(null, note.getSId());
+        List<DetailList> list = getDetailList(null, note.getSid());
         DetailNoteInfo detailNote = new DetailNoteInfo();
         detailNote.setDetailList(list);
         detailNote.setNoteInfo(note);
@@ -1055,7 +1055,7 @@ public class NoteManager extends Observable<Observer> {
      */
     public Map<String, Attach> getAttaches(NoteInfo note, SQLiteDatabase db) {
         String selection = Provider.AttachmentColumns.NOTE_ID + " = ? AND (" + Provider.AttachmentColumns.DELETE_STATE + " IS NULL OR " + Provider.AttachmentColumns.DELETE_STATE + " = ?)";
-        String[] selectionArgs = {note.getSId(), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+        String[] selectionArgs = {note.getSid(), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
         String order = Provider.AttachmentColumns.MODIFY_TIME + " DESC ";
         Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, order, null);
         Map<String, Attach> map = null;
@@ -1064,7 +1064,7 @@ public class NoteManager extends Observable<Observer> {
             while (cursor.moveToNext()) {
                 Attach attach = cursor2Attach(cursor);
                 if (attach != null) {
-                    map.put(attach.getSId(), attach);
+                    map.put(attach.getSid(), attach);
                 }
             }
         }
@@ -1108,12 +1108,12 @@ public class NoteManager extends Observable<Observer> {
         if (db == null) {
             db = mDBHelper.getWritableDatabase();
         }
-        String noteSid = note.hasAttach() ? null : note.getSId();
+        String noteSid = note.hasAttach() ? null : note.getSid();
         if (attachList != null && attachList.size() > 0) {  //有附件，则与缓存中比较
             if (updateUpdate) {
                 //更新附件的noteid
                 KLog.d(TAG, "--updateAttachNote--list---" + attachList);
-                updateAttachNote(db, attachList, note.getSId());
+                updateAttachNote(db, attachList, note.getSid());
             } else {
                 KLog.d(TAG, "--updateTextAttach---not--updateUpdate---attach---note---");
             }
@@ -1219,10 +1219,10 @@ public class NoteManager extends Observable<Observer> {
             List<DetailNoteInfo> noteList = new ArrayList<>();
             for (DetailNoteInfo detailNote : notes) {
                 NoteInfo note = detailNote.getNoteInfo();
-                if (newFolder.getSId().equals(note.getFolderId())) {
+                if (newFolder.getSid().equals(note.getFolderId())) {
                     continue;
                 }
-                ContentValues values = initNoteMoveValues(note, time, newFolder.getSId());
+                ContentValues values = initNoteMoveValues(note, time, newFolder.getSid());
     
                 int row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())});
                 
@@ -1304,7 +1304,7 @@ public class NoteManager extends Observable<Observer> {
                 DetailNoteInfo detailNote = new DetailNoteInfo();
                 detailNote.setNoteInfo(note);
 
-                String noteSid = note.getSId();
+                String noteSid = note.getSid();
 
                 if (note.isDetailNote()) {
                     List<DetailList> details = getDetailList(db, noteSid);
@@ -1312,7 +1312,7 @@ public class NoteManager extends Observable<Observer> {
                 }
                 if (note.hasAttach()) { //有附件
                     
-                    Attach attach = getLastAttach(db, note.getSId());
+                    Attach attach = getLastAttach(db, note.getSid());
 
                     detailNote.setLastAttach(attach);
                 }

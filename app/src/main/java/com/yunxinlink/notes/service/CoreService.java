@@ -137,7 +137,7 @@ public class CoreService extends IntentService {
                         list = new ArrayList<>();
                         List<String> fileList = new ArrayList<>();
                         for (Attach attach : attachList) {
-                            list.add(attach.getSId());
+                            list.add(attach.getSid());
                             fileList.add(attach.getLocalPath());
                         }
                         AttachManager.getInstance().removeAttachs(list, fileList);
@@ -177,8 +177,8 @@ public class CoreService extends IntentService {
             KLog.d(TAG, "-----opt_add_note--sid--is---null---or--note----is--null--note:---" + note + "---sid:--" + sid);
             return false;
         }
-        if (!sid.equals(note.getSId())) {
-            KLog.d(TAG, "-----opt_add_note--sid----does---not--equals---sid---note.sid:---" + note.getSId() + "---sid:---" + sid);
+        if (!sid.equals(note.getSid())) {
+            KLog.d(TAG, "-----opt_add_note--sid----does---not--equals---sid---note.sid:---" + note.getSid() + "---sid:---" + sid);
             return false;
         }
         return true;
@@ -202,7 +202,7 @@ public class CoreService extends IntentService {
         note.setHasAttach(true);
         if (attachMap != null) {
             Attach lastAttach = detailNote.getLastAttach();
-            if (lastAttach == null || !attachSids.contains(lastAttach.getSId())) {
+            if (lastAttach == null || !attachSids.contains(lastAttach.getSid())) {
                 String lastSid = attachSids.get(attachSids.size() - 1);
                 lastAttach = attachMap.get(lastSid);
                 detailNote.setLastAttach(lastAttach);
@@ -233,7 +233,7 @@ public class CoreService extends IntentService {
         NoteInfo note = detailNote.getNoteInfo();
         AttachText attachText = SystemUtil.getAttachSids(note.getContent());
         List<String> attachSids = attachText.getAttachSids();
-        String sid = note.getSId();
+        String sid = note.getSid();
         List<String> attSidList = null;
         if (attachSids != null && attachSids.size() > 0) {
             attSidList = getCacheAttachList(detailNote, attachSids);
@@ -270,7 +270,7 @@ public class CoreService extends IntentService {
         NoteInfo note = detailNote.getNoteInfo();
         AttachText attachText = SystemUtil.getAttachSids(note.getContent());
         List<String> attachSids = attachText.getAttachSids();
-        String sid = note.getSId();
+        String sid = note.getSid();
 
         List<String> attSidList = null;
         if (attachSids != null && attachSids.size() > 0) {

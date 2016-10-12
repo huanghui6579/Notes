@@ -169,7 +169,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
             } else {
                 DetailList detail = new DetailList();
                 if (note != null) {
-                    detail.setNoteId(note.getSId());
+                    detail.setNoteId(note.getSid());
                 }
                 mDetailLists.add(detail);
             }
@@ -301,7 +301,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         int count = adapter.getItemCount();
         DetailList detail = new DetailList();
         if (mNote != null) {
-            detail.setNoteId(mNote.getSId());
+            detail.setNoteId(mNote.getSid());
         }
         if (!TextUtils.isEmpty(text)) {
             detail.setTitle(text.toString());
@@ -471,7 +471,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         if (TextUtils.isEmpty(text)) {
             return;
         }
-        String sid = note == null ? null : note.getSId();
+        String sid = note == null ? null : note.getSid();
         List<DetailList> list = analysisText(text.toString(), sid);
         if (list != null && list.size() > 0) {
             initData(list, note);

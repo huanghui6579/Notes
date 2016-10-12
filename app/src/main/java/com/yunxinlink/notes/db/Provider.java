@@ -16,7 +16,7 @@ public final class Provider {
         /**
          * 主键，uuid策略
          */
-        public static final String SID = "sId";
+        public static final String SID = "sid";
 
         /**
          * 该笔记的删除状态

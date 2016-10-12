@@ -590,7 +590,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             
             holder.mTvName.setText(folder.getName());
             holder.mTvCount.setText(String.valueOf(folder.getCount()));
-            if (!TextUtils.isEmpty(defaultFoldersId) && defaultFoldersId.equals(folder.getSId())) {   //默认的文件夹
+            if (!TextUtils.isEmpty(defaultFoldersId) && defaultFoldersId.equals(folder.getSid())) {   //默认的文件夹
                 holder.mTvName.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
             } else if (mTextColor != 0) {
                 holder.mTvName.setTextColor(mTextColor);

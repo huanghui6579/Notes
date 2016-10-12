@@ -183,7 +183,7 @@ public class NoteTextView extends TextView implements NoteRichSpan {
 
                         Attach attach = new Attach();
                         attach.setNoteId(attachSpec.noteSid);
-                        attach.setSId(attachSpec.sid);
+                        attach.setSid(attachSpec.sid);
                         attach.setLocalPath(attachSpec.filePath);
                         attach.setType(attachSpec.attachType);
 

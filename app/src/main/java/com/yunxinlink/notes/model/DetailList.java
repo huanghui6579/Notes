@@ -21,7 +21,7 @@ public class DetailList implements Comparator<DetailList> {
     /**
      * sid
      */
-    private String sId;
+    private String sid;
 
     /**
      * 标题
@@ -86,12 +86,12 @@ public class DetailList implements Comparator<DetailList> {
         this.id = id;
     }
 
-    public String getSId() {
-        return sId;
+    public String getSid() {
+        return sid;
     }
 
-    public void setSId(String sId) {
-        this.sId = sId;
+    public void setSid(String sId) {
+        this.sid = sId;
     }
 
     public String getTitle() {
@@ -186,7 +186,7 @@ public class DetailList implements Comparator<DetailList> {
      * 会自动生成sid
      */
     public DetailList() {
-        this.sId = SystemUtil.generateDetailSid();
+        this.sid = SystemUtil.generateDetailSid();
     }
 
     @Override
@@ -196,13 +196,13 @@ public class DetailList implements Comparator<DetailList> {
 
         DetailList that = (DetailList) o;
 
-        return sId.equals(that.sId);
+        return sid.equals(that.sid);
 
     }
 
     @Override
     public int hashCode() {
-        return sId.hashCode();
+        return sid.hashCode();
     }
 
     /**
@@ -217,7 +217,7 @@ public class DetailList implements Comparator<DetailList> {
     public String toString() {
         return "DetailList{" +
                 "id=" + id +
-                ", sId='" + sId + '\'' +
+                ", sid='" + sid + '\'' +
                 ", title='" + title + '\'' +
                 ", oldTitle='" + oldTitle + '\'' +
                 ", noteId='" + noteId + '\'' +

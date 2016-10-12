@@ -120,7 +120,7 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
         //与Widget中remoteViews.setPendingIntentTemplate配对使用，共同作用。
         Intent intent = new Intent(NoteListAppWidget.ACTION_ITEM_CLICK);
         intent.putExtra(NoteEditActivity.ARG_NOTE_ID, note.getId());
-        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSId());
+        intent.putExtra(NoteEditActivity.ARG_NOTE_SID, note.getSid());
         intent.putExtra(NoteEditActivity.ARG_FOLDER_ID, note.getFolderId());
         intent.putExtra(NoteEditActivity.ARG_IS_NOTE_TEXT, !note.isDetailNote());
         remoteViews.setOnClickFillInIntent(R.id.slide_layout, intent);

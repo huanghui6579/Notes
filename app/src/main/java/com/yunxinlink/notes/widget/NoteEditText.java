@@ -158,7 +158,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
      */
     public AttachSpan getAttachSpan(Attach attach) {
         int attachType = attach.getType();
-        String fileId = attach.getSId();
+        String fileId = attach.getSid();
         String filePath = attach.getLocalPath();
         
         String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
@@ -361,7 +361,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
 
                         Attach attach = new Attach();
                         attach.setNoteId(attachSpec.noteSid);
-                        attach.setSId(attachSpec.sid);
+                        attach.setSid(attachSpec.sid);
                         attach.setLocalPath(attachSpec.filePath);
                         attach.setType(attachSpec.attachType);
 

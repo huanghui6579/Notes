@@ -50,7 +50,7 @@ public class Attach implements Parcelable {
     /**
      * sid
      */
-    private String sId;
+    private String sid;
 
     /**
      * 笔记的id
@@ -126,7 +126,7 @@ public class Attach implements Parcelable {
 
     protected Attach(Parcel in) {
         id = in.readInt();
-        sId = in.readString();
+        sid = in.readString();
         noteId = in.readString();
         userId = in.readInt();
         filename = in.readString();
@@ -144,7 +144,7 @@ public class Attach implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(id);
-        dest.writeString(sId);
+        dest.writeString(sid);
         dest.writeString(noteId);
         dest.writeInt(userId);
         dest.writeString(filename);
@@ -184,12 +184,12 @@ public class Attach implements Parcelable {
         this.id = id;
     }
 
-    public String getSId() {
-        return sId;
+    public String getSid() {
+        return sid;
     }
 
-    public void setSId(String sId) {
-        this.sId = sId;
+    public void setSid(String sId) {
+        this.sid = sId;
     }
 
     public String getNoteId() {
@@ -353,7 +353,7 @@ public class Attach implements Parcelable {
     public String toString() {
         return "Attach{" +
                 "id=" + id +
-                ", sId='" + sId + '\'' +
+                ", sid='" + sid + '\'' +
                 ", noteId='" + noteId + '\'' +
                 ", userId=" + userId +
                 ", filename='" + filename + '\'' +

@@ -236,7 +236,12 @@
         <activity android:name=".ui.AccountEditActivity" />
         <activity
             android:name=".ui.settings.SettingsAccountActivity"
-            android:label="@string/title_settings_account"/>
+            android:label="@string/title_settings_account" />
+
+        <service
+            android:name=".service.SyncService"
+            android:enabled="true"
+            android:exported="false"/>
     </application>
 
 </manifest>
