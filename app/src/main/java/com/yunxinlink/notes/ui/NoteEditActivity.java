@@ -958,6 +958,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             mNote.setSyncState(SyncState.SYNC_UP);
             intent.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_UPDATE_NOTE);
         } else {    //添加笔记
+            needUpdate = true;
             if (mNote == null) {
                 mNote = new NoteInfo();
             }
@@ -1007,8 +1008,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
         noteCache.set(detailNoteInfo);
         startService(intent);
-        
-        SystemUtil.makeShortToast(R.string.update_result_success);
+
+        if (needUpdate) {
+            SystemUtil.makeShortToast(R.string.update_result_success);
+        }
     }
 
     /**

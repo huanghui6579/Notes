@@ -26,10 +26,12 @@ import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
 import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.listener.SimpleTextWatcher;
+import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.model.TaskParam;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.UserManager;
@@ -86,6 +88,11 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
                 mTvTitle.setText(s);
             }
         });
+
+        //请求sd卡的读写权限
+        requestSdCardPermission();
+        //网络加载用户信息，让信息与本地保持一致
+        UserApi.syncUserInfo(user);
     }
 
     @Override
@@ -126,6 +133,28 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     protected void onDestroy() {
         unregisterObserver();
         super.onDestroy();
+    }
+
+    /**
+     * 请求sd卡的权限
+     */
+    private void requestSdCardPermission() {
+        final String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissions, new PermissionsResultAction() {
+
+            @Override
+            public void onGranted() {
+                KLog.d(TAG, "account edit activity sd card permission granted" + permissions[0]);
+            }
+
+            @Override
+            public void onDenied(String permission) {
+                KLog.d(TAG, "account edit activity on denied permission:" + permission);
+                if (permissions[0].equals(permission)) {
+                    NoteUtil.onPermissionDenied(AccountEditActivity.this, permission, R.string.tip_mkfile_error, R.string.tip_grant_write_storage_failed);
+                }
+            }
+        });
     }
 
     /**
@@ -196,7 +225,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     /**
      * 显示保存信息的提示对话框
      */
-    private void showSaveDailog() {
+    private void showSaveDialog() {
         AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
         builder.setTitle(R.string.account_save_tip_title)
                 .setMessage(R.string.account_save_tip_content)
@@ -217,7 +246,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     @Override
     protected void onBack() {
         if (hasSaveTip()) { //有保存提示
-            showSaveDailog();
+            showSaveDialog();
         } else {
             super.onBack();
         }
@@ -226,7 +255,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     @Override
     public void onBackPressed() {
         if (hasSaveTip()) { //有保存提示
-            showSaveDailog();
+            showSaveDialog();
         } else {
             super.onBackPressed();
         }
@@ -426,34 +455,6 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
                 ImageUtil.clearMemoryCache(savePath);
                 iconFile = mIconFile;
             }
-            /*String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
-            KLog.d(TAG, "account edit load img task file:----" + filePath);
-            KLog.d(TAG, "account edit save file:----" + mIconFile.getAbsolutePath());
-            //压缩并保存文件
-            String savePath = mIconFile.getAbsolutePath();
-            String savePathTmp = savePath + ".tmp";
-            boolean success = ImageUtil.generateThumbImage(filePath, new ImageSize(Constants.IMAGE_THUMB_WIDTH, Constants.IMAGE_THUMB_WIDTH), savePathTmp, false);
-
-            if (success) {
-                File file = new File(savePathTmp);
-                File srcFile = new File(filePath);
-                if (srcFile.length() < file.length()) { //压缩后的文件比原始文件还大，则取原始文件
-                    KLog.d(TAG, "account edit thumb img is large than original img so copy original img to--->" + savePathTmp);
-                    //复制文件
-                    FileUtil.copyFile(srcFile, file);
-                }
-                File renameFile = new File(savePath);
-                if (renameFile.exists()) {
-                    renameFile.delete();
-                }
-                file.renameTo(renameFile);
-                iconFile = renameFile;
-
-                ImageUtil.clearMemoryCache(savePath);
-
-                //添加到相册
-                SystemUtil.galleryAddPic(mContext, file);
-            }*/
         } catch (Exception e) {
             KLog.e(TAG, "account edit icon process img error:" + e.getMessage());
         }
@@ -507,7 +508,12 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
                 user.setAvatarHash(iconHash);
             }
         }
-        return UserManager.getInstance().update(user);
+        user.setSyncState(SyncState.SYNC_UP.ordinal());
+        boolean success = UserManager.getInstance().update(user);
+        if (success) {
+            UserApi.syncUserInfo(user);
+        }
+        return success;
     }
 
     @Override
@@ -521,7 +527,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
     /**
      * 用户信息的观察者
      */
-    class UserObserver extends ContentObserver {
+    private class UserObserver extends ContentObserver {
 
         public UserObserver(Handler handler) {
             super(handler);
@@ -532,6 +538,8 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
             switch (notifyFlag) {
                 case Provider.UserColumns.NOTIFY_FLAG:  //用户信息
                     switch (notifyType) {
+                        case ADD:
+                        case UPDATE:
                         case REFRESH:   //用户信息更新
                             User user = (User) data;
                             KLog.d(TAG, "account edit observer user refresh :" + user);

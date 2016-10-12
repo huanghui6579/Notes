@@ -22,6 +22,6 @@ public interface IDeviceApi {
      * @return
      */
     @FormUrlEncoded
-    @POST("device/registerDevice")
+    @POST("device/activate")
     Call<ActionResult<Void>> activeDeviceInfo(@FieldMap Map<String, String>params);
 }

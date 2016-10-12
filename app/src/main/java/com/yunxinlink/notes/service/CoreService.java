@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
@@ -14,6 +15,7 @@ import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailList;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.AttachManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.persistent.UserManager;
@@ -85,6 +87,7 @@ public class CoreService extends IntentService {
             String sid = null;
             NoteCache noteCache = null;
             DetailNoteInfo detailNote = null;
+            User user = ((NoteApplication) getApplication()).getCurrentUser();
             switch (opt) {
                 case Constants.OPT_ADD_NOTE:    //添加笔记
                     sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
@@ -94,7 +97,9 @@ public class CoreService extends IntentService {
                         KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
                         return;
                     }
-
+                    if (user != null) {
+                        note.setUserId(user.getId());
+                    }
                     note.setHash(DigestUtil.md5Hex(note.getRealContent().toString()));
                     
                     detailNote = noteCache.get();
@@ -110,6 +115,9 @@ public class CoreService extends IntentService {
                     if (!checkNoteInfo(note, sid)) {
                         KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
                         return;
+                    }
+                    if (user != null) {
+                        note.setUserId(user.getId());
                     }
                     detailNote = noteCache.get();
 //                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);

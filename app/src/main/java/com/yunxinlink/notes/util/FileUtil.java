@@ -3,16 +3,21 @@ package com.yunxinlink.notes.util;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import okhttp3.ResponseBody;
 
 /**
  * @author huanghui1
@@ -159,11 +164,83 @@ public class FileUtil {
     }
 
     /**
+     * 获取文件的mime类型 ，针对web类型的,若不存在，则返回null
+     * @param file
+     * @return
+     */
+    public static String getWebMime(File file) {
+        String suffix = getSuffix(file);
+        if (suffix == null) {
+            return null;
+        }
+        String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(suffix);
+        if (type != null && !type.isEmpty()) {
+            return type;
+        }
+        return null;
+    }
+
+    /**
      * 是否是压缩包
      * @param suffix 文件的后缀，如rar
      * @return
      */
     public static boolean isArchive(String suffix) {
         return suffixList.contains(suffix);
+    }
+
+    /**
+     * 将流写入磁盘
+     * @param body
+     * @return
+     */
+    public static boolean writeResponseBodyToDisk(ResponseBody body, File saveFile) {
+        try {
+            // todo change the file location/name according to your needs
+//            File futureStudioIconFile = new File(getExternalFilesDir(null) + File.separator + "Future Studio Icon.png");
+
+            InputStream inputStream = null;
+            OutputStream outputStream = null;
+
+            try {
+                byte[] fileReader = new byte[4096];
+
+                long fileSize = body.contentLength();
+                long fileSizeDownloaded = 0;
+
+                inputStream = body.byteStream();
+                outputStream = new FileOutputStream(saveFile);
+
+                while (true) {
+                    int read = inputStream.read(fileReader);
+
+                    if (read == -1) {
+                        break;
+                    }
+
+                    outputStream.write(fileReader, 0, read);
+
+                    fileSizeDownloaded += read;
+
+                    KLog.d(TAG, "file download: " + fileSizeDownloaded + " of " + fileSize);
+                }
+
+                outputStream.flush();
+
+                return true;
+            } catch (IOException e) {
+                return false;
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
     }
 }

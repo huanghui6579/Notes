@@ -688,8 +688,14 @@ public class TestActivity extends BaseActivity implements View.OnClickListener {
                 .append("Phone Board:" + getPhoneBoard()).append("\n")
                 .append("Phone Device:" + Build.DEVICE).append("\n")
                 .append("Phone Display:" + Build.DISPLAY).append("\n")
+                .append("Phone HARDWARE:" + Build.HARDWARE).append("\n")
+                .append("Phone SERIAL:" + Build.SERIAL).append("\n")
+                .append("Phone TAGS:" + Build.TAGS).append("\n")
+                .append("Phone FINGERPRINT:" + Build.FINGERPRINT).append("\n")
+                .append("Phone MANUFACTURER:" + Build.MANUFACTURER).append("\n")
+                .append("Phone INCREMENTAL:" + Build.VERSION.INCREMENTAL).append("\n")
                 .append("Phone Type:" + Build.TYPE).append("\n");
-                
+        KLog.d(TAG, "device info :" + builder);
         return builder.toString();
     }
 
