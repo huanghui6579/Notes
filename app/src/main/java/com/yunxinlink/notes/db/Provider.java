@@ -296,6 +296,11 @@ public final class Provider {
          * 文件的mime类型
          */
         public static final String MIME_TYPE = "mime_type";
+
+        /**
+         * 文件的hash值
+         */
+        public static final String HASH = "hash";
     }
 
     /**

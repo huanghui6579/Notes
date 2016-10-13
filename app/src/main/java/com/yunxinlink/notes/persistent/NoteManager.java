@@ -24,11 +24,14 @@ import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
+import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static android.R.attr.id;
 
 /**
  * note表的服务层
@@ -284,6 +287,27 @@ public class NoteManager extends Observable<Observer> {
 
         values.put(Provider.NoteColumns.DELETE_STATE, deleteState.ordinal());
         values.put(Provider.NoteColumns.SYNC_STATE, SyncState.SYNC_UP.ordinal());
+        values.put(Provider.NoteColumns.MODIFY_TIME, time);
+        return values;
+    }
+    
+    /**
+     * 返回移动笔记到垃圾桶的数据
+     * @param note 笔记
+     * @return 返回数据
+     */
+    private ContentValues initDeleteValues(NoteInfo note, SyncState syncState) {
+
+        ContentValues values = new ContentValues();
+        
+        long time = System.currentTimeMillis();
+        
+        if (note != null) {
+            note.setSyncState(syncState);
+            note.setModifyTime(time);
+        }
+
+        values.put(Provider.NoteColumns.SYNC_STATE, syncState.ordinal());
         values.put(Provider.NoteColumns.MODIFY_TIME, time);
         return values;
     }
@@ -546,6 +570,7 @@ public class NoteManager extends Observable<Observer> {
         attach.setServerPath(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.SERVER_PATH)));
         attach.setSize(cursor.getLong(cursor.getColumnIndex(Provider.AttachmentColumns.SIZE)));
         attach.setMimeType(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.MIME_TYPE)));
+        attach.setHash(cursor.getString(cursor.getColumnIndex(Provider.AttachmentColumns.HASH)));
         return attach;
     }
     
@@ -850,6 +875,63 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
+     * 更新笔记的状态，一般用于数据同步后的本地更新
+     * @param detailNoteList
+     * @param syncState 同步的状态
+     * @return
+     */
+    public boolean updateDetailNotes(List<DetailNoteInfo> detailNoteList, SyncState syncState) {
+        if (SystemUtil.isEmpty(detailNoteList)) {
+            return false;
+        }
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        long row = 0;
+        List<DetailNoteInfo> successList = new ArrayList<>();
+        for (DetailNoteInfo detailNoteInfo : detailNoteList) {
+            NoteInfo note = detailNoteInfo.getNoteInfo();
+            if (note == null) {
+                continue;
+            }
+            long currentTime = System.currentTimeMillis();
+            note.setModifyTime(currentTime);
+            note.setSyncState(syncState);
+            ContentValues values = initSyncNoteValues(note);
+            db.beginTransaction();
+            try {
+                row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns._ID + " = ?", new String[]{String.valueOf(note.getId())});
+                if (row > 0) {  //笔记本地更新成功，如果有清单，则更新清单，附件的更新得等附件上传完了后才能更新
+                    if (note.isDetailNote() && detailNoteInfo.hasDetailList()) {    //有清单
+                        List<DetailList> detailListList = detailNoteInfo.getDetailList();
+                        KLog.d(TAG, "update detail notes and will update detail list");
+                        for (DetailList detail : detailListList) {
+                            detail.setModifyTime(currentTime);
+                            detail.setSyncState(syncState);
+                            values = initSyncDetailValues(detail);
+                            row = db.update(Provider.DetailedListColumns.TABLE_NAME, values, Provider.DetailedListColumns._ID + " = ?", new String[] {String.valueOf(id)});
+                        }
+                    }
+                }
+                db.setTransactionSuccessful();
+                successList.add(detailNoteInfo);
+            } catch (Exception e) {
+                KLog.d(TAG, "update detail notes error:" + e.getMessage());
+            } finally {
+                db.endTransaction();
+            }
+        }
+        boolean success = row > 0;
+        if (success) {
+            if (successList.size() == 1) {  //单个
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, successList.get(0));
+            } else {    //多个
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, successList);
+            }
+        }
+        KLog.d(TAG, "update detail notes result:" + success);
+        return success;
+    }
+
+    /**
      * 填充更新笔记的values
      * @param note
      * @return
@@ -914,6 +996,27 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
+     * 更新笔记的同步状态
+     * @param note
+     * @return
+     */
+    private ContentValues initSyncNoteValues(NoteInfo note) {
+        ContentValues values = new ContentValues();
+        
+        long time = note.getModifyTime();
+        if (time == 0) {
+            time = System.currentTimeMillis();
+        }
+        values.put(Provider.NoteColumns.MODIFY_TIME, time);
+        
+        SyncState syncState = note.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.NoteColumns.SYNC_STATE, syncState.ordinal());
+        }
+        return values;
+    }
+
+    /**
      * 填充更新清单的values
      * @param detail
      * @return
@@ -942,6 +1045,32 @@ public class NoteManager extends Observable<Observer> {
             values.put(Provider.DetailedListColumns.OLD_TITLE, oldTitle);
         }
         values.put(Provider.DetailedListColumns.CHECKED, detail.isChecked() ? 1 : 0);
+        String hash = detail.getHash();
+        if (hash != null) {
+            values.put(Provider.DetailedListColumns.HASH, hash);
+        }
+        
+        return values;
+    }
+
+    /**
+     * 填充更新清单的values
+     * @param detail
+     * @return
+     */
+    private ContentValues initSyncDetailValues(DetailList detail) {
+        ContentValues values = new ContentValues();
+
+        long time = detail.getModifyTime();
+        if (time == 0) {
+            time = System.currentTimeMillis();
+        }
+        values.put(Provider.DetailedListColumns.MODIFY_TIME, time);
+
+        SyncState syncState = detail.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.DetailedListColumns.SYNC_STATE, syncState.ordinal());
+        }
         return values;
     }
 

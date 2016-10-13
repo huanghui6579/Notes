@@ -121,6 +121,11 @@ public class Attach implements Parcelable {
      * 文件的mime类型
      */
     private String mimeType;
+
+    /**
+     * 文件的hash
+     */
+    private String hash;
     
     public Attach() {}
 
@@ -139,6 +144,7 @@ public class Attach implements Parcelable {
         modifyTime = in.readLong();
         size = in.readLong();
         mimeType = in.readString();
+        hash = in.readString();
     }
 
     @Override
@@ -157,6 +163,7 @@ public class Attach implements Parcelable {
         dest.writeLong(modifyTime);
         dest.writeLong(size);
         dest.writeString(mimeType);
+        dest.writeString(hash);
     }
 
     @Override
@@ -304,6 +311,14 @@ public class Attach implements Parcelable {
         this.mimeType = mimeType;
     }
 
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
     /**
      * 获取可用的uri,优先使用uri
      * @return uri
@@ -367,8 +382,8 @@ public class Attach implements Parcelable {
                 ", createTime=" + createTime +
                 ", modifyTime=" + modifyTime +
                 ", size=" + size +
-                ", mimeType=" + mimeType + 
+                ", mimeType='" + mimeType + '\'' +
+                ", hash='" + hash + '\'' +
                 '}';
     }
-
 }

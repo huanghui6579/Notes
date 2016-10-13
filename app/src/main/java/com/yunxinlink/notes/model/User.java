@@ -224,14 +224,6 @@ public class User implements Cloneable {
     }
 
     /**
-     * 检查该用户是否可用
-     * @return
-     */
-    public boolean checkState() {
-        return State.NORMAL == state;
-    }
-
-    /**
      * 检查用户的id是否可用，true：可用
      * @return
      */
@@ -245,6 +237,14 @@ public class User implements Cloneable {
      */
     public boolean checkOnLine() {
         return state != null && state == State.NORMAL;
+    }
+
+    /**
+     * 判断用户是否可用,true:可用
+     * @return
+     */
+    public boolean isAvailable() {
+        return checkId() && checkOnLine();
     }
 
     /**

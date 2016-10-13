@@ -56,6 +56,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -114,6 +115,19 @@ public class SystemUtil {
             }
         }
         return cachedThreadPool;
+    }
+
+    /**
+     * 停止任务
+     */
+    public static void shutDownExecutor() {
+        if (cachedThreadPool != null && !cachedThreadPool.isShutdown()) {
+            try {
+                cachedThreadPool.shutdown();
+            } catch (Exception e) {
+                KLog.e(TAG, "shut down executor error:" + e.getMessage());
+            }
+        }
     }
     
     /**
@@ -670,6 +684,15 @@ public class SystemUtil {
      */
     public static boolean isEmpty(Collection<?> collection) {
         return collection == null || collection.size() == 0;
+    }
+
+    /**
+     * 判断map是否为空
+     * @param map
+     * @return
+     */
+    public static boolean isEmpty(Map<?, ?> map) {
+        return map == null || map.size() == 0;
     }
 
     /**

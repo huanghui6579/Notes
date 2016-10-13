@@ -247,6 +247,21 @@ public class FolderManager extends Observable<Observer> {
     }
 
     /**
+     * 更新笔记本的同步状态
+     * @param folder
+     * @return
+     */
+    private ContentValues initSyncFolderValues(Folder folder) {
+        ContentValues values = new ContentValues();
+        values.put(Provider.FolderColumns.MODIFY_TIME, folder.getModifyTime());
+        SyncState syncState = folder.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.FolderColumns.SYNC_STATE, syncState.ordinal());
+        }
+        return values;
+    }
+
+    /**
      * 更新文件夹的缓存
      * @param folder
      */
@@ -346,6 +361,69 @@ public class FolderManager extends Observable<Observer> {
             return false;
         }
     }
+
+    /**
+     * 更新笔记本的同步状态
+     * @param folder
+     * @return
+     */
+    public boolean updateSyncFolder(Folder folder) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        long rowId = 0;
+        try {
+            //1、先查询该笔记本下的所有笔记是否都已同步完
+            boolean hasSynced = isAllNoteSynced(folder, db);
+            if (hasSynced) {    //该笔记本下所有的笔记都同步完毕
+                folder.setSyncState(SyncState.SYNC_DONE);
+            }
+            folder.setModifyTime(System.currentTimeMillis());
+            ContentValues values = initSyncFolderValues(folder);
+            rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns._ID + " = ?", new String[] {String.valueOf(folder.getId())});
+        } catch (Exception e) {
+            Log.e(TAG, "----update sync Folder---error----" + e.getMessage());
+        }
+        if (rowId > 0) {
+            Folder cacheFolder = FolderCache.getInstance().getCacheFolder(folder.getSid());
+            if (cacheFolder != null) {
+                cacheFolder.setModifyTime(folder.getModifyTime());
+                cacheFolder.setSyncState(folder.getSyncState());
+            }
+            notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, folder);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 查询该笔记本下的所有笔记是否都已同步完，包括回收站的笔记
+     * @param folder
+     * @return
+     */
+    public boolean isAllNoteSynced(Folder folder, SQLiteDatabase db) {
+        if (db == null) {
+            db = mDBHelper.getReadableDatabase();
+        }
+        boolean hasSynced = false;
+        Cursor cursor = null;
+        try {
+            cursor = db.query(Provider.NoteColumns.TABLE_NAME, new String[] {"count(*) as count"}, Provider.NoteColumns.FOLDER_ID  + " = ? and (" + Provider.NoteColumns.SYNC_STATE + " IS NULL OR " + Provider.NoteColumns.SYNC_STATE + " != ?)", new String[] {folder.getSid(), String.valueOf(SyncState.SYNC_DONE.ordinal())}, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                long count = cursor.getLong(0);
+                hasSynced = count == 0;
+            }
+            
+        } catch (Exception e) {
+            KLog.e(TAG, "is all note synced invoke error:" + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        KLog.d(TAG, "is all note synced result:" + hasSynced + ", folder:" + folder);
+        return hasSynced;
+    }
+    
     
     /**
      * 删除文件夹

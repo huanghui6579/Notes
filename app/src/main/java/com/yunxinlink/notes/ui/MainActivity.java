@@ -1058,6 +1058,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                                 mHandler.sendEmptyMessage(MSG_MOVE_SUCCESS);
                             }
                             break;
+                        case BATCH_UPDATE:  //同时更新了多条记录
+                            if (!SystemUtil.isEmpty(detailNoteList)) {
+                                KLog.d(TAG, "------update note list size:" + detailNoteList.size());
+                                mainFragment.updateNotes(detailNoteList);
+                            }
+                            break;
                     }
                     break;
                 case Provider.FolderColumns.NOTIFY_FLAG:    //文件夹的通知

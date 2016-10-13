@@ -14,6 +14,7 @@ public class AdapterRefreshHelper {
     public static final int TYPE_UPDATE = 2;
     public static final int TYPE_DELETE = 3;
     public static final int TYPE_SWAP = 4;
+    public static final int TYPE_UPDATE_RANGE = 5;
     
     //刷新方式0：全部刷新，1：添加，2：更新单个，3：删除
     public int type;
@@ -55,6 +56,11 @@ public class AdapterRefreshHelper {
                     fromPos = fromPosition > toPosition ? toPosition : fromPosition;
                     adapter.notifyItemRangeChanged(fromPos, Math.abs(toPosition - fromPosition) + 1);
                 }
+                break;
+            case AdapterRefreshHelper.TYPE_UPDATE_RANGE: //从起始区域更新到结束区域，不需要动画，但该区间的数据要刷新
+                //取位置索引小的
+                fromPos = fromPosition > toPosition ? toPosition : fromPosition;
+                adapter.notifyItemRangeChanged(fromPos, Math.abs(toPosition - fromPosition) + 1);
                 break;
             default:
                 adapter.notifyItemRangeChanged(0, adapter.getItemCount());

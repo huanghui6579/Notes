@@ -72,6 +72,7 @@ public class AttachManager extends Observable<Observer> {
         values.put(Provider.AttachmentColumns.TYPE, attach.getType());
         values.put(Provider.AttachmentColumns.USER_ID, attach.getUserId());
         values.put(Provider.AttachmentColumns.MIME_TYPE, attach.getMimeType());
+        values.put(Provider.AttachmentColumns.HASH, attach.getHash());
         return values;
     }
 
@@ -115,6 +116,7 @@ public class AttachManager extends Observable<Observer> {
         values.put(Provider.AttachmentColumns.MODIFY_TIME, attach.getModifyTime());
         values.put(Provider.AttachmentColumns.SIZE, attach.getSize());
         values.put(Provider.AttachmentColumns.USER_ID, attach.getUserId());
+        values.put(Provider.AttachmentColumns.HASH, attach.getHash());
         db.beginTransaction();
         long rowId = 0;
         try {

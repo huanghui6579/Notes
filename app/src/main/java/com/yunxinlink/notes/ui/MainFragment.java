@@ -65,6 +65,7 @@ import com.yunxinlink.notes.widget.LayoutManagerFactory;
 import com.yunxinlink.notes.widget.NoteItemViewAware;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -825,6 +826,48 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             refreshHelper.position = index;
             refreshUI(mNotes, refreshHelper);
             mRecyclerView.scrollToPosition(0);
+        }
+    }
+
+    /**
+     * 刷新笔记，多条记录
+     * @param detailNotes
+     */
+    public void updateNotes(List<DetailNoteInfo> detailNotes) {
+        if (detailNotes.size() == 1) {  //单条记录
+            updateNote(detailNotes.get(0));
+            return;
+        }
+        List<Integer> positionList = new ArrayList<>();
+        for (DetailNoteInfo detailNote : detailNotes) {
+            int index = mNotes.indexOf(detailNote);
+            NoteInfo note = detailNote.getNoteInfo();
+            if (index != -1) {  //列表中存在
+                positionList.add(index);
+                DetailNoteInfo oldDetail = mNotes.get(index);
+                NoteInfo info = oldDetail.getNoteInfo();
+                setupUpdateNote(info, note);
+                oldDetail.setLastAttach(detailNote.getLastAttach());
+                oldDetail.setDetailList(detailNote.getDetailList());
+
+                //先删除原来位置的
+//                mNotes.remove(index);
+                //再添加到0位
+//                mNotes.add(0, oldDetail);
+
+            }
+        }
+        if (positionList.size() > 0) {
+            Collections.sort(positionList);
+            int fromPosition = positionList.get(0);
+            int toPosition = positionList.get(positionList.size() - 1);
+            int fromPos = Math.min(fromPosition, toPosition);
+            int toPos = Math.max(fromPosition, toPosition);
+            AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+            refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE_RANGE;
+            refreshHelper.fromPosition = fromPos;
+            refreshHelper.toPosition = toPos;
+            refreshUI(mNotes, refreshHelper);
         }
     }
 

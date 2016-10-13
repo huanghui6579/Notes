@@ -266,6 +266,14 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
     }
 
     /**
+     * 是否是所有笔记本，即没有归类的笔记都放在此笔记本中
+     * @return
+     */
+    public boolean isRootFolder() {
+        return (id == 0) || TextUtils.isEmpty(sid);
+    }
+
+    /**
      * 获取详细信息
      * @return
      */
