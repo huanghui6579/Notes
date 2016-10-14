@@ -34,10 +34,26 @@ public class SyncData {
     }
 
     /**
+     * 是否有同步的数据
+     * @return
+     */
+    public boolean hasSyncData() {
+        return syncable != null;
+    }
+
+    /**
      * 是否在同步中
      * @return
      */
     public boolean isSyncing() {
         return state == SYNC_ING;
+    }
+
+    @Override
+    public String toString() {
+        return "SyncData{" +
+                "state=" + state +
+                ", syncable=" + syncable +
+                '}';
     }
 }

@@ -13,7 +13,20 @@ public class TaskParam {
     public int optType;
 
     /**
+     * 结果编码
+     */
+    public int code;
+
+    /**
      * 数据
      */
     public Object data;
+
+    /**
+     * 是否有效
+     * @return
+     */
+    public boolean isAvailable() {
+        return code != 0 && data != null;
+    }
 }

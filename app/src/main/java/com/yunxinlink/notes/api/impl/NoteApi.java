@@ -54,6 +54,10 @@ public class NoteApi extends BaseApi {
      */
     public static Call<?> syncUpNote(Context context, Folder folder, List<DetailNoteInfo> noteInfos, OnLoadCompletedListener<ActionResult<Void>> listener) throws IOException {
         KLog.d(TAG, "sync up note invoke...");
+        if (context == null) {
+            KLog.d(TAG, "sync up note invoke but context is null and will return");
+            return null;
+        }
         NoteApplication app = (NoteApplication) context.getApplicationContext();
         User user = app.getCurrentUser();
         if (user == null || !user.isAvailable()) {  //用户不可用

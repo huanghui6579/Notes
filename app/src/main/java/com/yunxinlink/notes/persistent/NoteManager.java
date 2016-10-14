@@ -489,6 +489,7 @@ public class NoteManager extends Observable<Observer> {
         if (syncState != null) {
             values.put(Provider.NoteColumns.SYNC_STATE, syncState.ordinal());
         }
+        values.put(Provider.NoteColumns.USER_ID, note.getUserId());
         values.put(Provider.NoteColumns.SID, note.getSid());
         return values;
     }

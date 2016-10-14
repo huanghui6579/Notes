@@ -1,12 +1,15 @@
 package com.yunxinlink.notes.service;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
+import com.yunxinlink.notes.api.model.NoteParam;
+import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
@@ -14,12 +17,16 @@ import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailList;
 import com.yunxinlink.notes.model.DetailNoteInfo;
+import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.AttachManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.richtext.AttachText;
+import com.yunxinlink.notes.sync.SyncCache;
+import com.yunxinlink.notes.sync.SyncData;
+import com.yunxinlink.notes.sync.service.SyncService;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -27,6 +34,7 @@ import com.yunxinlink.notes.util.SystemUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +115,7 @@ public class CoreService extends IntentService {
 //                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
                     addNote(detailNote);
                     noteCache.clear();
+                    startSync(this, user, detailNote);
                     break;
                 case Constants.OPT_UPDATE_NOTE: //更新笔记
                     sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
@@ -136,6 +145,7 @@ public class CoreService extends IntentService {
                     }
                     updateNote(detailNote, /*list, */updateContent, srcDetails);
                     noteCache.clear();
+                    startSync(this, user, detailNote);
                     break;
                 case Constants.OPT_REMOVE_NOTE_ATTACH:  //移除笔记中的附件数据库记录，彻底删除
                     List<Attach> attachList = intent.getParcelableArrayListExtra(Constants.ARG_CORE_LIST);
@@ -165,6 +175,29 @@ public class CoreService extends IntentService {
                     break;
             }
         }
+    }
+
+    /**
+     * 同步单个笔记
+     * @param context
+     * @param detailNoteInfo
+     */
+    private void startSync(Context context, User user, DetailNoteInfo detailNoteInfo) {
+        NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
+        String folderSid = noteInfo.getFolderId();
+        Folder folder = FolderCache.getInstance().getCacheFolder(folderSid);
+        SyncData syncData = new SyncData();
+        NoteParam noteParam = new NoteParam();
+        noteParam.setDetailNoteInfos(Arrays.asList(detailNoteInfo));
+        noteParam.setFolder(folder);
+        if (user != null) {
+            noteParam.setUserSid(user.getSid());
+        }
+        syncData.setSyncable(noteParam);
+        SyncCache.getInstance().addOrUpdate(noteInfo.getSid(), syncData);
+        Intent service = new Intent(context, SyncService.class);
+        startService(service);
+        KLog.d(TAG, "start sync :" + syncData);
     }
 
     @Override
