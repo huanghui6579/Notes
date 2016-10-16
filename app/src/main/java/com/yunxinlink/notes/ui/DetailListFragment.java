@@ -519,7 +519,9 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                 builder.append(title).append(Constants.TAG_NEXT_LINE);
             }
         }
-        builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_NEXT_LINE));
+        if (builder.length() > 0) {
+            builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_NEXT_LINE));
+        }
         return builder;
     }
 
@@ -579,6 +581,17 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
     @Override
     public void onFindNext() {
 
+    }
+
+    @Override
+    public void clearContent() {
+        mEtTitle.setTextContent("");
+        if (mDetailLists != null) {
+            mDetailLists.clear();
+        }
+        if (mRecyclerView != null) {
+            mRecyclerView.getAdapter().notifyDataSetChanged();
+        }
     }
 
     /**

@@ -819,14 +819,27 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @param detailNote
      */
     private void showNote(DetailNoteInfo detailNote) {
-        if (mFragmentWrapper != null && mFragmentWrapper.getFragment() != null) {
-            ActionFragment actionFragment = mFragmentWrapper.getFragment();
+        ActionFragment actionFragment = getActionFragment();
+        if (actionFragment != null) {
             actionFragment.showNote(detailNote, mAttachCache);
         }
         /*if (mNoteEditFragment != null) {
             mNoteEditFragment.showNote(note, mAttachCache);
         }*/
     }
+
+    /**
+     * 获取当前加载的fragment
+     * @return
+     */
+    private ActionFragment getActionFragment() {
+        ActionFragment actionFragment = null;
+        if (mFragmentWrapper != null && mFragmentWrapper.getFragment() != null) {
+            actionFragment = mFragmentWrapper.getFragment();
+        }
+        return actionFragment;
+    }
+
     
     /**
      * 根据noteid获取note内容
@@ -888,7 +901,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         if (mFragmentWrapper == null) {
             return;
         }
-        ActionFragment actionFragment = mFragmentWrapper.getFragment();
+        ActionFragment actionFragment = getActionFragment();
+        if (actionFragment == null) {
+            KLog.d(TAG, "note edit activity save note but action fragment is null and return");
+            return;
+        }
         NoteInfo.NoteKind noteKind = actionFragment.getNoteType();
 
         String content = null;
@@ -2004,10 +2021,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @param deleteNote 是否手动删除笔记，如果是删除笔记操作，则仅仅是清空内容，然后结束该界面
      */
     private void clearContent(boolean deleteNote) {
+        final ActionFragment actionFragment = getActionFragment();
+        if (actionFragment == null) {
+            KLog.d(TAG, "note edit clear content but action fragment is null");
+            return;
+        }
         if (deleteNote) {
-            if (mNoteEditFragment != null) {
+            actionFragment.clearContent();
+            /*if (mNoteEditFragment != null) {
                 mNoteEditFragment.clearContent();
-            }
+            }*/
             return;
         }
         //给予清空内容非提示
@@ -2017,9 +2040,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        if (mNoteEditFragment != null) {
-                            mNoteEditFragment.clearContent();
-                        }
+                        actionFragment.clearContent();
 
                         //删除附件
                         removeCacheAttach(false);
@@ -2383,7 +2404,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     makeVoice();
                     break;
                 case R.id.action_delete:    //删除
-                    if (mNote != null) {
+                    if (mNote != null && mNote.hasId()) {
                         NoteUtil.handleDeleteNote(mContext, mNote, mHasDeleteOpt);
                     } else {    //清空内容
                         clearContent(false);

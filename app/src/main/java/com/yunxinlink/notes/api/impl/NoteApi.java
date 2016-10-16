@@ -80,10 +80,6 @@ public class NoteApi extends BaseApi {
         
         Retrofit retrofit = buildRetrofit();
         INoteApi repo = retrofit.create(INoteApi.class);
-        
-        if (folder == null) {   //没有指定笔记本，则默认是“所有”笔记本中
-            folder = new Folder();
-        }
 
         NoteDto noteDto = fillNoteInfoDto(noteInfos);
         if (noteDto == null) {
@@ -187,8 +183,15 @@ public class NoteApi extends BaseApi {
             if (noteInfo == null || TextUtils.isEmpty(noteInfo.getSid())) {
                 continue;
             }
+
+            boolean isDetailNote = noteInfo.isDetailNote();
+            if (isDetailNote) { //清单不需要上传笔记的内容
+                infoDto.setContent(null);
+            } else {
+                infoDto.setContent(noteInfo.getContent());
+            }
+
             infoDto.setSid(noteInfo.getSid());
-            infoDto.setContent(noteInfo.getContent());
             infoDto.setCreateTime(noteInfo.getCreateTime());
             infoDto.setDeleteState(noteInfo.getDeleteState() == null ? DeleteState.DELETE_NONE.ordinal() : noteInfo.getDeleteState().ordinal());
             infoDto.setFolderSid(noteInfo.getFolderId());
@@ -235,7 +238,7 @@ public class NoteApi extends BaseApi {
                     attachList.add(attachDto);
                 }
             }
-            if (noteInfo.isDetailNote() && SystemUtil.isEmpty(detailNoteInfo.getDetailList())) {    //清单类笔记
+            if (isDetailNote && !SystemUtil.isEmpty(detailNoteInfo.getDetailList())) {    //清单类笔记
                 List<DetailList> detailLists = detailNoteInfo.getDetailList();
                 detailDtos = new ArrayList<>();
                 for (DetailList detailList : detailLists) {
@@ -272,6 +275,9 @@ public class NoteApi extends BaseApi {
      * @return
      */
     private static FolderDto fillFolderDto(Folder folder) {
+        if (folder == null) {
+            return null;
+        }
         FolderDto folderDto = new FolderDto();
         folderDto.setSid(folder.getSid());
         folderDto.setSort(folder.getSort());

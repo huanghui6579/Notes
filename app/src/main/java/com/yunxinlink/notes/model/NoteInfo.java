@@ -532,6 +532,10 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
         return kind != null && kind == NoteKind.DETAILED_LIST;
     }
 
+    public boolean hasId() {
+        return id > 0;
+    }
+
     /**
      * 判断该笔记是否为空
      * @return

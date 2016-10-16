@@ -70,4 +70,9 @@ public interface ActionFragment {
      * 查看搜索后面的结果
      */
     void onFindNext();
+
+    /**
+     * 清空当前的内容
+     */
+    void clearContent();
 }

@@ -358,8 +358,8 @@ public class NoteManager extends Observable<Observer> {
             notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, notifyType, detailNote);
             return true;
         } else {
-            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, null);
-            KLog.w(TAG, "-------deleteNote---failed----");
+//            notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.DELETE, null);
+            KLog.w(TAG, "-------deleteNote---failed note info:" + detailNote);
             return false;
         }
     }

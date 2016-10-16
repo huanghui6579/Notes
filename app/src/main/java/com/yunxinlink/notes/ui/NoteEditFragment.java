@@ -698,6 +698,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     /**
      * 清除文本内容
      */
+    @Override
     public void clearContent() {
         mEtContent.setText("");
     }
