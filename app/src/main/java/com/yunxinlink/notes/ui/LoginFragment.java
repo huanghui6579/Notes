@@ -27,6 +27,7 @@ import com.yunxinlink.notes.model.AccountType;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.share.SimplePlatformActionListener;
+import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
@@ -40,7 +41,7 @@ import retrofit2.Call;
  */
 public class LoginFragment extends BaseFragment implements View.OnClickListener {
 
-    private static final int MSG_LOGIN = 1;
+    private static final int MSG_LOGIN = 10;
 
     private OnLoginFragmentInteractionListener mListener;
     
@@ -271,6 +272,40 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
     }
 
     /**
+     * 处理登录成功
+     */
+    private void loginSuccess() {
+        dismissLoadingDialog();
+        if (mListener != null) {
+            KLog.d(TAG, "do login success");
+            mListener.onAuthoritySuccess();
+        } else {
+            KLog.d(TAG, "do login success but mListener is null");
+        }
+    }
+
+    /**
+     * 登录失败
+     * @param errorCode
+     */
+    private void loginFailed(int errorCode) {
+        dismissLoadingDialog();
+        int tipRes = 0;
+        switch (errorCode) {
+            case ActionResult.RESULT_STATE_DISABLE: //用户不可用
+                tipRes = R.string.authority_login_state_disable;
+                break;
+            case ActionResult.RESULT_FAILED:    //用户名或密码不正确
+                tipRes = R.string.authority_login_failed;
+                break;
+            default:
+                tipRes = R.string.authority_login_error;
+                break;
+        }
+        SystemUtil.makeShortToast(tipRes);
+    }
+
+    /**
      * 执行登录操作
      * @param context
      * @param userDto
@@ -279,36 +314,20 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
         if (mListener != null) {
             mListener.showDialog(getString(R.string.authority_login_ing));
         }
-        mCall = UserApi.loginAsync(getContext(), userDto, new SimpleOnLoadCompletedListener<ActionResult<UserDto>>() {
+        UserApi.loginAsync(context, userDto, new SimpleOnLoadCompletedListener<ActionResult<UserDto>>() {
             @Override
             public void onLoadSuccess(ActionResult<UserDto> result) {
                 super.onLoadSuccess(result);
-                dismissLoadingDialog();
-                if (mListener != null) {
-                    KLog.d(TAG, "do login success");
-                    mListener.onAuthoritySuccess();
-                } else {
-                    KLog.d(TAG, "do login success but mListener is null");
-                }
+                mHandler.sendEmptyMessage(Constants.MSG_SUCCESS);
             }
 
             @Override
             public void onLoadFailed(int errorCode, String reason) {
                 super.onLoadFailed(errorCode, reason);
-                dismissLoadingDialog();
-                int tipRes = 0;
-                switch (errorCode) {
-                    case ActionResult.RESULT_STATE_DISABLE: //用户不可用
-                        tipRes = R.string.authority_login_state_disable;
-                        break;
-                    case ActionResult.RESULT_FAILED:    //用户名或密码不正确
-                        tipRes = R.string.authority_login_failed;
-                        break;
-                    default:
-                        tipRes = R.string.authority_login_error;
-                        break;
-                }
-                SystemUtil.makeShortToast(tipRes);
+                Message msg = mHandler.obtainMessage();
+                msg.what = Constants.MSG_FAILED;
+                msg.arg1 = errorCode;
+                mHandler.sendMessage(msg);
             }
         });
     }
@@ -333,6 +352,13 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                     case MSG_LOGIN:
                         UserDto userDto = (UserDto) msg.obj;
                         target.doLogin(target.getContext(), userDto);
+                        break;
+                    case Constants.MSG_SUCCESS: //登录成功
+                        target.loginSuccess();
+                        break;
+                    case Constants.MSG_FAILED:  //登录失败
+                        int errorCode = msg.arg1;
+                        target.loginFailed(errorCode);
                         break;
                 }
             }

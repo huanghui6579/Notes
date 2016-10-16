@@ -79,7 +79,7 @@ public class UserApi extends BaseApi {
         //保存用户信息
         if (result != null) {
             code = result.getResultCode();
-            success = handleLoginResult(context, userDto, result, true);
+            success = handleLoginResult(context, userDto, result, false);
         }
         if (listener != null) {
             if (success) {
@@ -96,63 +96,24 @@ public class UserApi extends BaseApi {
      * @param userDto
      * @param listener
      */
-    public static Call<?> loginAsync(final Context context, final UserDto userDto, final OnLoadCompletedListener<ActionResult<UserDto>> listener) {
+    public static void loginAsync(final Context context, final UserDto userDto, final OnLoadCompletedListener<ActionResult<UserDto>> listener) {
         KLog.d(TAG, "login async invoke...");
         if (userDto == null) {
             if (listener != null) {
                 listener.onLoadFailed(ActionResult.RESULT_PARAM_ERROR, "params is null");
             }
             KLog.d(TAG, "login async failed params is null");
-            return null;
+            return;
         }
-        Retrofit retrofit = buildRetrofit();
-        IUserApi repo = retrofit.create(IUserApi.class);
-
-        Call<ActionResult<UserDto>> call = repo.login(buildLoginParams(userDto));
-        call.enqueue(new Callback<ActionResult<UserDto>>() {
+        doInbackground(new NoteTask(context, userDto, listener) {
             @Override
-            public void onResponse(Call<ActionResult<UserDto>> call, Response<ActionResult<UserDto>> response) {
-                boolean success = false;
-                ActionResult<UserDto> result = null;
-                if (response != null) {
-                    success = response.isSuccessful();
-                    if (success) {  //成功,更新本地用户信息
-                        result = response.body();
-                        KLog.d(TAG, "login async success:" + result);
-                    } else {
-                        KLog.d(TAG, "login async failed code:" + response.code() + ", msg:" + response.message());
-                    }
-                } else {
-                    KLog.d(TAG, "login async failed response is null");
-                }
-                success = false;
-                int code = ActionResult.RESULT_ERROR;
-                //保存用户信息
-                if (result != null) {
-                    code = result.getResultCode();
-                    success = handleLoginResult(context, userDto, result, false);
-                }
-                if (listener != null) {
-                    if (success) {  //成功
-                        listener.onLoadSuccess(result);
-
-                    } else {
-                        listener.onLoadFailed(code, null);
-                    }
-                }
-                
-            }
-
-            @Override
-            public void onFailure(Call<ActionResult<UserDto>> call, Throwable t) {
-                String reason = t != null ? t.getMessage() : "";
-                KLog.d(TAG, "login async error:" + reason);
-                if (listener != null) {
-                    listener.onLoadFailed(ActionResult.RESULT_ERROR, reason);
-                }
+            public void run() {
+                Context ctx = (Context) params[0];
+                UserDto userParam = (UserDto) params[1];
+                OnLoadCompletedListener<ActionResult<UserDto>> onListener = (OnLoadCompletedListener<ActionResult<UserDto>>) params[2];
+                login(ctx, userParam, onListener);
             }
         });
-        return call;
     }
 
     /**
@@ -478,10 +439,6 @@ public class UserApi extends BaseApi {
             User user = original.getUser();
             if (user == null) {
                 user = new User();
-            }
-            if (!user.checkId()) {
-                int id = NoteUtil.getAccountId(context);
-                user.setId(id);
             }
             user.setOpenUserId(original.getOpenUserId());
             mergeUserInfo(user, result.getUser());

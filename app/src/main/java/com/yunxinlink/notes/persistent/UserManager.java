@@ -13,6 +13,9 @@ import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.model.User;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 用户账号的服务层
  * @author huanghui1
@@ -309,8 +312,23 @@ public class UserManager extends Observable<Observer> {
             args = new String[] {String.valueOf(user.getId())};
             KLog.d(TAG, "update user with user id:" + user.getId());
         } else {
+            List<String> argList = new ArrayList<>();
             selection = Provider.UserColumns.SID + " = ?";
-            args = new String[] {user.getSid()};
+            argList.add(user.getSid());
+            if (!TextUtils.isEmpty(user.getEmail())) {
+                selection += " or " + Provider.UserColumns.EMAIL + " = ?";
+                argList.add(user.getEmail());
+            }
+            if (!TextUtils.isEmpty(user.getMobile())) {
+                selection += " or " + Provider.UserColumns.MOBILE + " = ?";
+                argList.add(user.getMobile());
+            }
+            if (!TextUtils.isEmpty(user.getUsername())) {
+                selection += " or " + Provider.UserColumns.USERNAME + " = ?";
+                argList.add(user.getUsername());
+            }
+            args = new String[argList.size()];
+            args = argList.toArray(args);
             KLog.d(TAG, "update user with user sid:" + user.getSid());
             //用户没有id,则需要重新查询
             reload = true;
@@ -379,8 +397,23 @@ public class UserManager extends Observable<Observer> {
         String selection = null;
         String[] args = null;
         if (TextUtils.isEmpty(openUserId)) {
-            selection = Provider.UserColumns.SID + " = ?";
-            args = new String[] {user.getSid()};
+            List<String> argList = new ArrayList<>();
+            selection = Provider.UserColumns.SID + " = ? or " + Provider.UserColumns.EMAIL + " = ? or " + Provider.UserColumns.MOBILE + " = ? or " + Provider.UserColumns.USERNAME + " = ?";
+            argList.add(user.getSid());
+            if (!TextUtils.isEmpty(user.getEmail())) {
+                selection += " or " + Provider.UserColumns.EMAIL + " = ?";
+                argList.add(user.getEmail());
+            }
+            if (!TextUtils.isEmpty(user.getMobile())) {
+                selection += " or " + Provider.UserColumns.MOBILE + " = ?";
+                argList.add(user.getMobile());
+            }
+            if (!TextUtils.isEmpty(user.getUsername())) {
+                selection += " or " + Provider.UserColumns.USERNAME + " = ?";
+                argList.add(user.getUsername());
+            }
+            args = new String[argList.size()];
+            args = argList.toArray(args);
             KLog.d(TAG, "insert or update check user exists with sid:" + user.getSid());
         } else {
             selection = Provider.UserColumns.OPEN_USER_ID + " = ?";

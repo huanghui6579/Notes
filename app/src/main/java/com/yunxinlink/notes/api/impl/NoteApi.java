@@ -146,6 +146,10 @@ public class NoteApi extends BaseApi {
         return call;
     }
 
+    public static Call<ActionResult<Void>> uploadAttach(Attach attach) {
+        return null;
+    }
+
     /**
      * 同步更新本地的数据
      * @param folder 笔记本
