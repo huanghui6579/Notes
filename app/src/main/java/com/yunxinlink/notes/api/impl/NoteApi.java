@@ -158,10 +158,10 @@ public class NoteApi extends BaseApi {
      */
     private static boolean updateNative(Folder folder, List<DetailNoteInfo> noteInfos) {
         KLog.d(TAG, "update native note and folder data...");
+        //先更新笔记
+        boolean success = NoteManager.getInstance().updateDetailNotes(noteInfos, SyncState.SYNC_DONE);
+        KLog.d(TAG, "update native detail note info list result:" + success + ", size:" + noteInfos.size());
         if (folder != null && !folder.isRootFolder()) { //非“所有”笔记本
-            //先更新笔记
-            boolean success = NoteManager.getInstance().updateDetailNotes(noteInfos, SyncState.SYNC_DONE);
-            KLog.d(TAG, "update native detail note info list result:" + success + ", size:" + noteInfos.size());
             success = FolderManager.getInstance().updateSyncFolder(folder);
             KLog.d(TAG, "update native folder result:" + success + ", folder:" + folder);
             return success;

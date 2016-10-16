@@ -196,6 +196,8 @@ public class CoreService extends IntentService {
         syncData.setSyncable(noteParam);
         SyncCache.getInstance().addOrUpdate(noteInfo.getSid(), syncData);
         Intent service = new Intent(context, SyncService.class);
+        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_UP_NOTE);
+        service.putExtra(Constants.ARG_CORE_OBJ, noteInfo.getSid());
         startService(service);
         KLog.d(TAG, "start sync :" + syncData);
     }

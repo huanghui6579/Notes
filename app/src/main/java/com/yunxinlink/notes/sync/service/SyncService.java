@@ -52,8 +52,8 @@ public class SyncService extends Service {
             String sid = null;
             switch (syncType) {
                 case Constants.SYNC_UP_NOTE:    //向服务器上传笔记信息
-                    KLog.d(TAG, "sync service will start sync up note info sid : " + sid);
                     sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+                    KLog.d(TAG, "sync service will start sync up note info sid : " + sid);
                     if (!TextUtils.isEmpty(sid)) {
                         param.data = sid;
                         //开始同步
@@ -161,7 +161,7 @@ public class SyncService extends Service {
                         break;
                 }
             } else {
-                KLog.d(TAG, "sync service on post execute result param is null or is not avaia");
+                KLog.d(TAG, "sync service on post execute result param is null or is not available");
             }
         }
     }

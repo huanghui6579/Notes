@@ -22,6 +22,6 @@ public interface INoteApi {
      * @param noteDto 笔记数据
      * @return
      */
-    @POST("{userSid}/up")
+    @POST("note/{userSid}/up")
     public Call<ActionResult<Void>> syncUpNote(@Path("userSid") String userSid, @Body NoteDto noteDto);
 }

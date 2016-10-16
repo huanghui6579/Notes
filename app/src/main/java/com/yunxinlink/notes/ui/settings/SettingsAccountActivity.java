@@ -49,7 +49,10 @@ public class SettingsAccountActivity extends AppCompatPreferenceActivity impleme
     public void logout() {
         new LogoutTask().execute();
     }
-    
+
+    /**
+     * 注销登录
+     */
     private void doLogout() {
         NoteUtil.finishAll(this);
         ((NoteApplication) getApplication()).clearCache();
@@ -58,6 +61,7 @@ public class SettingsAccountActivity extends AppCompatPreferenceActivity impleme
             @Override
             public void run() {
                 Intent intent = new Intent(SettingsAccountActivity.this, AuthorityActivity.class);
+                intent.putExtra(AuthorityActivity.ARG_RELOGIN, true);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();

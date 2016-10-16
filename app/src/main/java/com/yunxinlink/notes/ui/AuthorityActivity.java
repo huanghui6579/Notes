@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.ui;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.Fragment;
@@ -21,7 +22,14 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
     private static final int MSG_SHOW_LOADING_DIALOG = 10;
     private static final int MSG_DISMISS_LOADING_DIALOG = 11;
 
+    public static final String ARG_RELOGIN = "relogin";
+
     private ProgressDialog mProgressDialog;
+
+    /**
+     * 是否是注销账户后再进入的登录界面
+     */
+    private boolean mIsRelogin;
 
     private Handler mHandler = new MyHandler(this);
 
@@ -37,7 +45,10 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
 
     @Override
     protected void initData() {
-
+        Intent intent = getIntent();
+        if (intent != null) {
+            mIsRelogin = intent.getBooleanExtra(ARG_RELOGIN, false);
+        }
     }
 
     @Override
@@ -64,10 +75,22 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
         fragmentTransaction.commit();
     }
 
+    /**
+     * 跳转到主界面
+     */
+    private void toMainActivity() {
+        if (mIsRelogin) {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        }
+        finish();
+    }
+
     @Override
     public void onAuthoritySuccess() {
         SystemUtil.makeShortToast(R.string.authority_login_success);
-        finish();
+        toMainActivity();
     }
 
     @Override
@@ -83,7 +106,7 @@ public class AuthorityActivity extends BaseActivity implements LoginFragment.OnL
     @Override
     public void registerSuccess(User user) {
         SystemUtil.makeShortToast(R.string.authority_register_success);
-        finish();
+        toMainActivity();
     }
 
     @Override

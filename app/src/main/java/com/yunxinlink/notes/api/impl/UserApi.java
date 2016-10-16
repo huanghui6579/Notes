@@ -546,7 +546,10 @@ public class UserApi extends BaseApi {
         target.setCreateTime(src.getCreateTime());
         target.setGender(src.getGender());
         target.setMobile(src.getMobile());
-        target.setPassword(src.getPassword());
+        String pwd = src.getPassword();
+        if (pwd != null) {
+            target.setPassword(src.getPassword());
+        }
         target.setSid(src.getSid());
         Integer state = src.getState();
         if (state == null) {
