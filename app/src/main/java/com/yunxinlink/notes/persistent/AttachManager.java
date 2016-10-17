@@ -138,6 +138,30 @@ public class AttachManager extends Observable<Observer> {
     }
 
     /**
+     * 更新笔记附件的同步状态
+     * @param attach
+     * @return
+     */
+    public boolean updateAttachSyncState(Attach attach) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(Provider.AttachmentColumns.SYNC_STATE, attach.getSyncState().ordinal());
+        long rowId = 0;
+        try {
+            String selection = Provider.AttachmentColumns.SID + " = ?";
+            String[] args = {attach.getSid()};
+            rowId = db.update(Provider.AttachmentColumns.TABLE_NAME, values, selection, args);
+        } catch (Exception e) {
+            Log.e(TAG, "---updateAttach-sync-error--" + e.getMessage());
+        }
+        boolean success = rowId > 0;
+        if (success) {
+            notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, attach);
+        }
+        return success;
+    }
+
+    /**
      * 删除附件，仅仅是设为删除状态
      * @author huanghui1
      * @update 2016/6/25 11:46

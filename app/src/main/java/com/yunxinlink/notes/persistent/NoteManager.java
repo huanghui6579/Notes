@@ -894,7 +894,9 @@ public class NoteManager extends Observable<Observer> {
                 continue;
             }
             long currentTime = System.currentTimeMillis();
-            note.setModifyTime(currentTime);
+            if (note.getModifyTime() == 0) {
+                note.setModifyTime(currentTime);
+            }
             note.setSyncState(syncState);
             ContentValues values = initSyncNoteValues(note);
             db.beginTransaction();
@@ -905,7 +907,9 @@ public class NoteManager extends Observable<Observer> {
                         List<DetailList> detailListList = detailNoteInfo.getDetailList();
                         KLog.d(TAG, "update detail notes and will update detail list");
                         for (DetailList detail : detailListList) {
-                            detail.setModifyTime(currentTime);
+                            if (detail.getModifyTime() == 0) {
+                                detail.setModifyTime(currentTime);
+                            }
                             detail.setSyncState(syncState);
                             values = initSyncDetailValues(detail);
                             row = db.update(Provider.DetailedListColumns.TABLE_NAME, values, Provider.DetailedListColumns._ID + " = ?", new String[] {String.valueOf(id)});

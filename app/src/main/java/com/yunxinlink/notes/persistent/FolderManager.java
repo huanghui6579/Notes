@@ -376,7 +376,7 @@ public class FolderManager extends Observable<Observer> {
             if (hasSynced) {    //该笔记本下所有的笔记都同步完毕
                 folder.setSyncState(SyncState.SYNC_DONE);
             }
-            folder.setModifyTime(System.currentTimeMillis());
+//            folder.setModifyTime(System.currentTimeMillis());
             ContentValues values = initSyncFolderValues(folder);
             rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns._ID + " = ?", new String[] {String.valueOf(folder.getId())});
         } catch (Exception e) {

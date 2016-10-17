@@ -364,6 +364,14 @@ public class Attach implements Parcelable {
         return type == IMAGE || type == PAINT;
     }
 
+    /**
+     * 是否已同步完毕
+     * @return
+     */
+    public boolean isSynced() {
+        return syncState != null && syncState == SyncState.SYNC_DONE;
+    }
+
     @Override
     public String toString() {
         return "Attach{" +

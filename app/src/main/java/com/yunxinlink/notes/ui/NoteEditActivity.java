@@ -60,6 +60,7 @@ import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.service.CoreService;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteTask;
@@ -1933,12 +1934,16 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         doInbackground(new NoteTask(filePath, attach) {
             @Override
             public void run() {
+                String fileLocalPath = (String) params[0];
                 Attach att = (Attach) params[1];
-                att.setUri((String) params[0]);
+                att.setUri(fileLocalPath);
+
+                String hash = DigestUtil.md5FileHex(fileLocalPath);
 
                 long time = System.currentTimeMillis();
                 att.setCreateTime(time);
                 att.setModifyTime(time);
+                att.setHash(hash);
 
                 int userId = getCurrentUserId();
                 if (userId > 0) {
@@ -1976,6 +1981,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                 if (filePath != null) {
                     tmpAttach.setUri(filePath);
+                    String hash = DigestUtil.md5FileHex(filePath);
+
+                    tmpAttach.setHash(hash);
 
                     long time = System.currentTimeMillis();
                     tmpAttach.setModifyTime(time);

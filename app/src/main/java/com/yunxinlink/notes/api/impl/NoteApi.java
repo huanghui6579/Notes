@@ -21,16 +21,22 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.persistent.AttachManager;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -106,6 +112,20 @@ public class NoteApi extends BaseApi {
             if (actionResult.isSuccess()) { //成功
                 KLog.d(TAG, "sync up note data success and save or up data to local");
                 updateNative(folder, noteInfos);
+                for (DetailNoteInfo detailNoteInfo : noteInfos) {
+                    NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
+                    Map<String, Attach> attachMap = noteInfo.getAttaches();
+                    if (noteInfo.hasAttach() && !SystemUtil.isEmpty(attachMap)) {   //有附件
+                        Set<String> keys = attachMap.keySet();
+                        for (String key : keys) {
+                            Attach attach = attachMap.get(key);
+                            if (attach.isSynced()) {
+                                continue;
+                            }
+                            uploadAttach(attach, null);
+                        }
+                    }
+                }
                 if (listener != null) {
                     listener.onLoadSuccess(actionResult);
                 }
@@ -146,8 +166,115 @@ public class NoteApi extends BaseApi {
         return call;
     }
 
-    public static Call<ActionResult<Void>> uploadAttach(Attach attach) {
+    /**
+     * 上传附件
+     * @param attach
+     * @param listener
+     * @return
+     * @throws IOException
+     */
+    public static Call<ActionResult<Void>> uploadAttach(Attach attach, OnLoadCompletedListener<ActionResult<Void>> listener) throws IOException {
+        if (attach == null || TextUtils.isEmpty(attach.getSid()) || TextUtils.isEmpty(attach.getLocalPath())) {   //文件路径为null
+            KLog.d(TAG, "note api upload attach but attach is null or or attach sid is null or local path is empty");
+            return null;
+        }
+        String localPath = attach.getLocalPath();
+        File file = new File(localPath);
+        
+        if (!file.exists()) {   //文件不存在
+            KLog.d(TAG, "note api upload attach local file is not exists");
+            return null;
+        }
+
+        KLog.d(TAG, "note api upload attach :" + attach);
+        
+        Map<String, RequestBody> map = new HashMap<>();
+        String sid = attach.getSid();
+        String noteSid = attach.getNoteId();
+        
+        map.put("sid", RequestBody.create(null, sid));
+        map.put("noteSid", RequestBody.create(null, noteSid));
+        String mime = attach.getMimeType();
+        if (!TextUtils.isEmpty(mime)) {
+            map.put("mimeType", RequestBody.create(null, mime));
+        }
+        String hash = attach.getHash();
+        
+        if (TextUtils.isEmpty(hash)) {  //生成hash
+            hash = DigestUtil.md5FileHex(file);
+            if (!TextUtils.isEmpty(hash)) {
+                map.put("hash", RequestBody.create(null, hash));
+            }
+        } else {
+            map.put("hash", RequestBody.create(null, hash));
+        }
+        map.put("size", RequestBody.create(null, String.valueOf(file.length())));
+        map.put("createTime", RequestBody.create(null, String.valueOf(attach.getCreateTime())));
+        map.put("modifyTime", RequestBody.create(null, String.valueOf(attach.getModifyTime())));
+        DeleteState deleteState = attach.getDeleteState();
+        if (deleteState != null) {
+            map.put("deleteState", RequestBody.create(null, String.valueOf(deleteState.ordinal())));
+        }
+        int type = attach.getType();
+        String filename = file.getName();
+        map.put("type", RequestBody.create(null, String.valueOf(type)));
+        RequestBody attachFile = RequestBody.create(MediaType.parse(mime), file);
+        //attFile: 与服务器端的参数名相同
+        map.put("attFile\"; filename=\"" + filename + "", attachFile);
+
+        Retrofit retrofit = buildRetrofit();
+        INoteApi noteApi = retrofit.create(INoteApi.class);
+        Call<ActionResult<Void>> call = noteApi.uploadAttach(map);
+        Response<ActionResult<Void>> responseBody = call.execute();
+        if (responseBody != null && responseBody.isSuccessful()) {  //请求成功了
+            ActionResult<Void> actionResult = responseBody.body();
+            if (actionResult != null) {
+                if (actionResult.isSuccess()) {
+                    updateNativeAttach(attach);
+                    KLog.d(TAG, "upload attach success:" + attach);
+                } else {
+                    int resultCode = actionResult.getResultCode();
+                    String reason = actionResult.getReason();
+                    switch (resultCode) {
+                        case ActionResult.RESULT_FAILED:    //结果失败
+                            KLog.d(TAG, "upload attach action result is not null but result code is failed:" + attach);
+                            break;
+                        case ActionResult.RESULT_PARAM_ERROR:   //参数错误
+                            KLog.d(TAG, "upload attach action result is not null but result code is param error:" + attach);
+                            break;
+                        default:
+                            KLog.d(TAG, "upload attach action result is not null but result code is default failed:" + attach);
+                            break;
+                    }
+                    if (listener != null) {
+                        listener.onLoadFailed(resultCode, reason);
+                    }
+                }
+            } else {    //action result is null
+                KLog.d(TAG, "upload attach response is success but action result is null :" + attach);
+                if (listener != null) {
+                    listener.onLoadFailed(ActionResult.RESULT_FAILED, null);
+                }
+            }
+        } else {
+            if (listener != null) {
+                listener.onLoadFailed(ActionResult.RESULT_FAILED, "responseBody is not successful");
+            }
+            KLog.d(TAG, "upload attach failed is not successful:" + attach);
+            return null;
+        }
         return null;
+    }
+
+    /**
+     * 更新本地的附件信息
+     * @param attach 附件信息
+     * @return
+     */
+    private static boolean updateNativeAttach(Attach attach) {
+        KLog.d(TAG, "update native attach data...");
+        attach.setSyncState(SyncState.SYNC_DONE);
+        return AttachManager.getInstance().updateAttachSyncState(attach);
     }
 
     /**
