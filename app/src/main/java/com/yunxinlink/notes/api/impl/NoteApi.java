@@ -199,8 +199,8 @@ public class NoteApi extends BaseApi {
             map.put("mimeType", RequestBody.create(null, mime));
         }
         String hash = attach.getHash();
-        
-        if (TextUtils.isEmpty(hash)) {  //生成hash
+
+        if (TextUtils.isEmpty(hash)) {  //生成Thash
             hash = DigestUtil.md5FileHex(file);
             if (!TextUtils.isEmpty(hash)) {
                 map.put("hash", RequestBody.create(null, hash));
@@ -211,20 +211,20 @@ public class NoteApi extends BaseApi {
         map.put("size", RequestBody.create(null, String.valueOf(file.length())));
         map.put("createTime", RequestBody.create(null, String.valueOf(attach.getCreateTime())));
         map.put("modifyTime", RequestBody.create(null, String.valueOf(attach.getModifyTime())));
-        DeleteState deleteState = attach.getDeleteState();
-        if (deleteState != null) {
-            map.put("deleteState", RequestBody.create(null, String.valueOf(deleteState.ordinal())));
-        }
+//        DeleteState deleteState = attach.getDeleteState();
+//        if (deleteState != null) {
+//            map.put("deleteState", RequestBody.create(null, String.valueOf(deleteState.ordinal())));
+//        }
         int type = attach.getType();
         String filename = file.getName();
-        map.put("type", RequestBody.create(null, String.valueOf(type)));
+//        map.put("type", RequestBody.create(null, String.valueOf(type)));
         RequestBody attachFile = RequestBody.create(MediaType.parse(mime), file);
         //attFile: 与服务器端的参数名相同
-        map.put("attFile\"; filename=\"" + filename + "", attachFile);
+//        map.put("attFile\"; filename=\"" + filename + "", attachFile);
 
         Retrofit retrofit = buildRetrofit();
-        INoteApi noteApi = retrofit.create(INoteApi.class);
-        Call<ActionResult<Void>> call = noteApi.uploadAttach(map);
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Call<ActionResult<Void>> call = repo.uploadAttach(map);
         Response<ActionResult<Void>> responseBody = call.execute();
         if (responseBody != null && responseBody.isSuccessful()) {  //请求成功了
             ActionResult<Void> actionResult = responseBody.body();
