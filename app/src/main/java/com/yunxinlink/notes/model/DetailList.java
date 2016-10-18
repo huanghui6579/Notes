@@ -212,6 +212,10 @@ public class DetailList implements Comparator<DetailList> {
     public boolean isEmptyText() {
         return TextUtils.isEmpty(title);
     }
+    
+    public boolean isSynced() {
+        return syncState != null && syncState == SyncState.SYNC_DONE;
+    }
 
     @Override
     public String toString() {

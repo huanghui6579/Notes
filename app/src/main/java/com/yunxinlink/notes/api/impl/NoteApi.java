@@ -211,16 +211,16 @@ public class NoteApi extends BaseApi {
         map.put("size", RequestBody.create(null, String.valueOf(file.length())));
         map.put("createTime", RequestBody.create(null, String.valueOf(attach.getCreateTime())));
         map.put("modifyTime", RequestBody.create(null, String.valueOf(attach.getModifyTime())));
-//        DeleteState deleteState = attach.getDeleteState();
-//        if (deleteState != null) {
-//            map.put("deleteState", RequestBody.create(null, String.valueOf(deleteState.ordinal())));
-//        }
+        DeleteState deleteState = attach.getDeleteState();
+        if (deleteState != null) {
+            map.put("deleteState", RequestBody.create(null, String.valueOf(deleteState.ordinal())));
+        }
         int type = attach.getType();
         String filename = file.getName();
-//        map.put("type", RequestBody.create(null, String.valueOf(type)));
+        map.put("type", RequestBody.create(null, String.valueOf(type)));
         RequestBody attachFile = RequestBody.create(MediaType.parse(mime), file);
         //attFile: 与服务器端的参数名相同
-//        map.put("attFile\"; filename=\"" + filename + "", attachFile);
+        map.put("attFile\"; filename=\"" + filename + "", attachFile);
 
         Retrofit retrofit = buildRetrofit();
         INoteApi repo = retrofit.create(INoteApi.class);
@@ -346,7 +346,7 @@ public class NoteApi extends BaseApi {
                 Set<String> keySet = attachMap.keySet();
                 for (String key : keySet) {
                     Attach attach = attachMap.get(key);
-                    if (attach == null) {
+                    if (attach == null || attach.isSynced()) {  //附件为空或者附件已同步
                         continue;
                     }
                     AttachDto attachDto = new AttachDto();
