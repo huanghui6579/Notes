@@ -28,6 +28,7 @@ public class ExampleUnitTest {
 
     @Test
     public void aesEncod() {
+    	/*
         //需要加密的内容
         String content = "的安全组件，其中的安全加密功能提供了开发者密钥的安全管理与加密算法实现，保证密钥的安全性，实现安全的加解密操作。同时从应用层、运行层、native层\n" +
                 "提供多层次全方位立体防护，还有安全沙箱、白盒加密、底层加固\n" +
@@ -55,9 +56,11 @@ public class ExampleUnitTest {
         // 解密
         byte[] decrypt = decrypt(encrypt, password);
         System.out.println("解密后的内容：" + new String(decrypt));
+        */
     }
 
     public static byte[] encrypt(String content, String password) {
+        /*
         try {
             //需要加密的内容
 
@@ -88,11 +91,12 @@ public class ExampleUnitTest {
             e.printStackTrace();
         } catch (IllegalBlockSizeException e) {
             e.printStackTrace();
-        }
+        }*/
         return null;
     }
 
     public static byte[] decrypt(byte[] content, String password) {
+        /*
         try {
             KeyGenerator kgen = KeyGenerator.getInstance("AES");// 创建AES的Key生产者
             kgen.init(128, new SecureRandom(password.getBytes()));
@@ -112,7 +116,7 @@ public class ExampleUnitTest {
             e.printStackTrace();
         } catch (IllegalBlockSizeException e) {
             e.printStackTrace();
-        }
+        }*/
         return null;
     }
 }
