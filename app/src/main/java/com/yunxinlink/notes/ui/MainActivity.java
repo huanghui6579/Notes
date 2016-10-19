@@ -630,7 +630,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         oldFolder.setDeleteState(newFolder.getDeleteState());
         oldFolder.setSort(newFolder.getSort());
         oldFolder.setName(newFolder.getName());
-        oldFolder.setIsLock(newFolder.isLock());
+        oldFolder.setLock(newFolder.isLock());
         oldFolder.setModifyTime(newFolder.getModifyTime());
     }
     

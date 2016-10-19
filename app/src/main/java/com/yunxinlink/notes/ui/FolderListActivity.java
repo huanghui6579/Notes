@@ -399,7 +399,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             tFolder.setDeleteState(folder.getDeleteState());
             tFolder.setSort(folder.getSort());
             tFolder.setName(folder.getName());
-            tFolder.setIsLock(folder.isLock());
+            tFolder.setLock(folder.isLock());
             tFolder.setModifyTime(folder.getModifyTime());
             
             AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();

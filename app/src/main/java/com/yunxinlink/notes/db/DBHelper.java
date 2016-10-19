@@ -63,6 +63,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.FolderColumns.DELETE_STATE).append(" INTEGER, ")
                 .append(Provider.FolderColumns.CREATE_TIME).append(" INTEGER, ")
                 .append(Provider.FolderColumns.MODIFY_TIME).append(" INTEGER, ")
+                .append(Provider.FolderColumns.HASH).append(" TEXT, ")
                 .append(Provider.FolderColumns._COUNT).append(" INTEGER);");
         db.execSQL(builder.toString());
 

@@ -216,6 +216,11 @@ public final class Provider {
         public static final String MODIFY_TIME = "modify_time";
 
         /**
+         * 笔记本的hash值
+         */
+        public static final String HASH = "hash";
+
+        /**
          * 默认的排序，升序
          */
         public static final String DEFAULT_SORT = SORT + " asc";

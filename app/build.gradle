@@ -16,6 +16,9 @@ android {
             storePassword '13266665769'
         }
     }
+//    lintOptions {
+//        abortOnError false
+//    }
     compileSdkVersion globalConfiguration.getAt("compileSdkVersion")
     buildToolsVersion globalConfiguration.getAt("buildToolsVersion")
     defaultConfig {

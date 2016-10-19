@@ -72,10 +72,11 @@ public class FolderManager extends Observable<Observer> {
         folder.setCreateTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.CREATE_TIME)));
         folder.setModifyTime(cursor.getLong(cursor.getColumnIndex(Provider.FolderColumns.MODIFY_TIME)));
         folder.setDeleteState(DeleteState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.DELETE_STATE))));
-        folder.setIsLock(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.IS_LOCK)) == 1);
+        folder.setLock(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.IS_LOCK)) == 1);
         folder.setName(cursor.getString(cursor.getColumnIndex(Provider.FolderColumns.NAME)));
         folder.setSort(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.SORT)));
         folder.setSyncState(SyncState.valueOf(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.SYNC_STATE))));
+        folder.setHash(cursor.getString(cursor.getColumnIndex(Provider.FolderColumns.HASH)));
         folder.setUserId(cursor.getInt(cursor.getColumnIndex(Provider.FolderColumns.USER_ID)));
         return folder;
     }
@@ -241,6 +242,7 @@ public class FolderManager extends Observable<Observer> {
         values.put(Provider.FolderColumns.IS_LOCK, folder.isLock());
         values.put(Provider.FolderColumns.NAME, folder.getName());
         values.put(Provider.FolderColumns.SORT, folder.getSort());
+        values.put(Provider.FolderColumns.HASH, folder.getHash());
         values.put(Provider.FolderColumns.USER_ID, folder.getUserId());
         values.put(Provider.FolderColumns._COUNT, folder.getCount());
         return values;
@@ -286,6 +288,8 @@ public class FolderManager extends Observable<Observer> {
      */
     public Folder addFolder(Folder folder) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        String hash = folder.generateHash();
+        folder.setHash(hash);
         ContentValues values = initFolderValues(folder);
         db.beginTransaction();
         long rowId = 0;
@@ -340,6 +344,10 @@ public class FolderManager extends Observable<Observer> {
         }
         values.put(Provider.FolderColumns.IS_LOCK, folder.isLock() ? 1 : 0);
         values.put(Provider.FolderColumns.MODIFY_TIME, folder.getModifyTime());
+        
+        String hash = folder.generateHash();
+        folder.setHash(hash);
+        
         db.beginTransaction();
         long rowId = 0;
         try {
@@ -434,6 +442,8 @@ public class FolderManager extends Observable<Observer> {
     public boolean deleteFolder(Folder folder) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
+        String hash = folder.generateHash();
+        folder.setHash(hash);
         values.put(Provider.FolderColumns.DELETE_STATE, DeleteState.DELETE_TRASH.ordinal());
         db.beginTransaction();
         int row = 0;

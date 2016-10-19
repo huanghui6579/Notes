@@ -157,7 +157,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                         mFolder.setSid(SystemUtil.generateFolderSid());
                         mFolder.setCreateTime(time);
                         mFolder.setModifyTime(time);
-                        mFolder.setIsLock(isLock);
+                        mFolder.setLock(isLock);
                         mFolder.setDefault(isDefault);
                         mFolder.setUserId(getCurrentUserId());
                         mFolder = FolderManager.getInstance().addFolder(mFolder);
@@ -167,7 +167,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                     } else {    //更新
                         mFolder.setName(name);
                         mFolder.setModifyTime(time);
-                        mFolder.setIsLock(isLock);
+                        mFolder.setLock(isLock);
                         mFolder.setDefault(isDefault);
                         boolean result = FolderManager.getInstance().updateFolder(mFolder);
                         if (!result) {

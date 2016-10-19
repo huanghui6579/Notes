@@ -7,6 +7,8 @@ import android.text.TextUtils;
 
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.TimeUtil;
 
 import java.util.Comparator;
@@ -79,6 +81,11 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
      * 是否显示，改字段不存到数据库中
      */
     private boolean isShow;
+
+    /**
+     * 笔记本的hash,由name;isLock;sort;deleteState的格式组成，顺序不能错
+     */
+    private String hash;
 
     @Override
     public int compare(Folder lhs, Folder rhs) {
@@ -189,7 +196,7 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
         return isLock;
     }
 
-    public void setIsLock(boolean isLock) {
+    public void setLock(boolean isLock) {
         this.isLock = isLock;
     }
 
@@ -265,6 +272,29 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
         isShow = show;
     }
 
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
+    /**
+     * 生成hash，由name;isLock;sort;deleteState的格式组成，顺序不能错
+     * @return
+     */
+    public String generateHash() {
+        String spliter = Constants.TAG_SEMICOLON;
+        int deleteState = this.deleteState == null ? 0 : this.deleteState.ordinal();
+        StringBuilder builder = new StringBuilder();
+        builder.append(name).append(spliter)
+                .append(isLock).append(spliter)
+                .append(sort).append(spliter)
+                .append(deleteState);
+        return DigestUtil.md5Hex(builder.toString());
+    }
+
     /**
      * 是否是所有笔记本，即没有归类的笔记都放在此笔记本中
      * @return
@@ -272,7 +302,7 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
     public boolean isRootFolder() {
         return (id == 0) || TextUtils.isEmpty(sid);
     }
-
+    
     /**
      * 获取详细信息
      * @return
