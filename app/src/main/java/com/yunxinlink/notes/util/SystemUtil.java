@@ -196,13 +196,31 @@ public class SystemUtil {
      */
     public static String generateSid() {
         int hashCodeV = UUID.randomUUID().toString().hashCode();
-        if (hashCodeV < 0) {// 有可能是负数
-            hashCodeV = -hashCodeV;
+        return formatSid(hashCodeV);
+    }
+
+    /**
+     * 生成同步的sid,该sid是固定的
+     * @return
+     */
+    public static String generateSyncSid() {
+        int hashCodeV = 0;
+        return formatSid(hashCodeV);
+    }
+
+    /**
+     * 格式化sid
+     * @param hashCode
+     * @return
+     */
+    private static String formatSid(int hashCode) {
+        if (hashCode < 0) {// 有可能是负数
+            hashCode = -hashCode;
         }
         // 0 代表前面补充0
         // 15 代表长度为15
         // d 代表参数为正数型
-        return /*machineId + */String.format("%018d", hashCodeV);
+        return /*machineId + */String.format("%018d", hashCode);
     }
 
     /**
@@ -718,7 +736,7 @@ public class SystemUtil {
             return;
         }
         ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clipData = ClipData.newPlainText(Constants.CLIP_TEXT_LABLE, text);
+        ClipData clipData = ClipData.newPlainText(Constants.CLIP_TEXT_LABEL, text);
         clipboard.setPrimaryClip(clipData);
         
         if (showTip) {  //显示提示语

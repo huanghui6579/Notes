@@ -48,7 +48,12 @@ public class Constants {
      */
     public static final int IMAGE_THUMB_HEIGHT = 400;
 
-    public static final String CLIP_TEXT_LABLE = "text";
+    /**
+     * 默认分页大小，20条数据
+     */
+    public static final int PAGE_SIZE_DEFAULT = 20;
+
+    public static final String CLIP_TEXT_LABEL = "text";
     
     public static final String PREF_HAS_DELETE_OPT = "has_delete_opt";
     /**
@@ -145,6 +150,11 @@ public class Constants {
     public static final String ARG_CORE_OBJ = "arg_core_obj";
     public static final String ARG_CORE_LIST = "arg_core_list";
     public static final String ARG_SUB_OBJ = "arg_sub_obj";
+    
+    //是否包含回收站的内容
+    public static final String ARG_ISRECYCLE = "isRecycle";
+    public static final String ARG_ISFOLDER = "folderId";
+    public static final String ARG_SORT = "sort";
 
     public static final String ATTACH_PREFIX = "attach";
     

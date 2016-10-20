@@ -332,6 +332,31 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
         return builder.toString();
     }
 
+    /**
+     * 判断该笔记本是否在回收站
+     * @return
+     */
+    public boolean isTrashed() {
+        return deleteState != null && deleteState == DeleteState.DELETE_TRASH;
+    }
+
+    /**
+     * 判断该笔记本是否正常，即，没有在回收站或者删除
+     * @return
+     */
+    public boolean isNormal() {
+        return deleteState == null || deleteState == DeleteState.DELETE_NONE;
+    }
+
+    /**
+     * 是否需要上服务器端同步
+     * @return
+     */
+    public boolean isSyncUp() {
+        return syncState != null && syncState == SyncState.SYNC_UP;
+    }
+    
+    
     @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();

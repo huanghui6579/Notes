@@ -55,6 +55,7 @@ import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.sync.service.SyncService;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteTask;
@@ -304,6 +305,20 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
         //加载笔记
         loadNotes(mFolderId);
+        
+        //同步笔记
+        startSyncNote();
+    }
+
+    /**
+     * 开始同步笔记
+     */
+    private void startSyncNote() {
+        Intent service = new Intent(getContext(), SyncService.class);
+        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_DOWN_NOTE);
+        String syncSid = SystemUtil.generateSyncSid();
+        service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
+        getActivity().startService(service);
     }
 
     /**

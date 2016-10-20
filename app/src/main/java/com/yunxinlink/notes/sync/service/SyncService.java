@@ -49,26 +49,38 @@ public class SyncService extends Service {
             int syncType = intent.getIntExtra(Constants.ARG_CORE_OPT, 0);
             TaskParam param = new TaskParam();
             param.optType = syncType;
-            String sid = null;
             switch (syncType) {
                 case Constants.SYNC_UP_NOTE:    //向服务器上传笔记信息
-                    sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
-                    KLog.d(TAG, "sync service will start sync up note info sid : " + sid);
-                    if (!TextUtils.isEmpty(sid)) {
-                        param.data = sid;
-                        //开始同步
-                        KLog.d(TAG, "sync service start sync up sid is :" + sid);
-                        executeTask(param);
-                    } else {
-                        KLog.d(TAG, "sync service not start sync up because sid is null");
-                    }
+                    KLog.d(TAG, "sync service will start sync up note info");
+                    handleSyncCommand(intent, param);
                     break;
                 case Constants.SYNC_DOWN_NOTE:  //从服务器下载笔记信息
                     //从服务器上下载笔记本的hash值，并本地的比较
+                    KLog.d(TAG, "sync service will start sync down note info");
+                    handleSyncCommand(intent, param);
                     break;
             }
         }
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    /**
+     * 处理同步的命令
+     * @param intent
+     * @param param
+     */
+    private void handleSyncCommand(Intent intent, TaskParam param) {
+        //同步任务的编号
+        String syncSid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+        KLog.d(TAG, "sync service will start sync task sid : " + syncSid);
+        if (!TextUtils.isEmpty(syncSid)) {
+            param.data = syncSid;
+            //开始同步
+            KLog.d(TAG, "sync service start sync task sid is :" + syncSid);
+            executeTask(param);
+        } else {
+            KLog.d(TAG, "sync service not start sync task because sid is null");
+        }
     }
 
     /**
@@ -86,11 +98,11 @@ public class SyncService extends Service {
 
     /**
      * 上传笔记
-     * @param sid 笔记的sid
+     * @param syncSid 同步任务的编号
      */
-    private TaskParam syncUpNotes(String sid) {
+    private TaskParam syncUpNotes(String syncSid) {
         final TaskParam resultParam = new TaskParam();
-        SyncData syncData = SyncCache.getInstance().getSyncData(sid);
+        SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
         if (syncData == null || syncData.isSyncing()
                 || !syncData.hasSyncData() || !(syncData.getSyncable() instanceof NoteParam)) {
             KLog.d(TAG, "sync service sync up note info but sync data is null or is syncing or not has sync data:" + syncData);
@@ -117,9 +129,35 @@ public class SyncService extends Service {
             } catch (Exception e) {
                 KLog.e(TAG, "sync service sync up note info error:" + e.getMessage());
             }
+            //移除该同步记录
+            SyncCache.getInstance().remove(syncSid);
         }
         return resultParam;
     }
+
+    /**
+     * 向下同步笔记
+     * @param syncSid 向下同步任务的编号
+     * @return
+     */
+    private TaskParam syncDownNote(String syncSid) {
+        SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
+        if (syncData == null) { //没有同步数据
+            syncData = new SyncData();
+            syncData.setState(SyncData.SYNC_NONE);
+        }
+        if (syncData.isSyncing()) { //已经有任务在同步了，则不必处理了
+            KLog.d(TAG, "sync service sync down note already hash sync task so do nothing syncSid:" + syncSid);
+            return null;
+        }
+        syncData.setState(SyncData.SYNC_ING);
+        final TaskParam resultParam = new TaskParam();
+        resultParam.optType = Constants.SYNC_DOWN_NOTE;
+        List<String> folderSidList = NoteApi.downFolderSids(mContext);
+        KLog.d(TAG, "sync down note folder sid list:" + folderSidList);
+        SyncCache.getInstance().remove(syncSid);
+        return resultParam;
+    } 
 
     /**
      * 处理向上同步的结果
@@ -157,17 +195,20 @@ public class SyncService extends Service {
                 return null;
             }
             TaskParam param = params[0];
-            String sid = (String) param.data;
-            if (TextUtils.isEmpty(sid)) {
+            String syncSid = (String) param.data;
+            if (TextUtils.isEmpty(syncSid)) {
                 KLog.d(TAG, "sync service sync task sid is null");
                 return null;
             }
             TaskParam resultParam = null;
-            KLog.d(TAG, "sync service sync task do in background sid :" + sid);
+            KLog.d(TAG, "sync service sync task do in background syncSid :" + syncSid);
             int syncType = param.optType;
             switch (syncType) {
-                case Constants.SYNC_UP_NOTE:    //向上同步笔记信息
-                    resultParam = syncUpNotes(sid);
+                case Constants.SYNC_UP_NOTE:    //向上同步笔记信息，即上传笔记
+                    resultParam = syncUpNotes(syncSid);
+                    break;
+                case Constants.SYNC_DOWN_NOTE:  //向下同步笔记，即下载笔记
+                    resultParam = syncDownNote(syncSid);
                     break;
             }
             return resultParam;

@@ -11,6 +11,7 @@ import com.yunxinlink.notes.api.model.DetailListDto;
 import com.yunxinlink.notes.api.model.FolderDto;
 import com.yunxinlink.notes.api.model.NoteDto;
 import com.yunxinlink.notes.api.model.NoteInfoDto;
+import com.yunxinlink.notes.api.model.PageInfo;
 import com.yunxinlink.notes.listener.OnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.Attach;
@@ -24,6 +25,7 @@ import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.AttachManager;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
@@ -264,6 +266,94 @@ public class NoteApi extends BaseApi {
             return null;
         }
         return null;
+    }
+
+    /**
+     * 获取需要下载笔记本信息的笔记本sid集合，该方法在主线程中运行
+     * @param context
+     * @return
+     */
+    public static List<String> downFolderSids(Context context) {
+        NoteApplication app = (NoteApplication) context.getApplicationContext();
+        User user = app.getCurrentUser();
+        if (user == null || TextUtils.isEmpty(user.getSid()) || !user.checkOnLine()) { //用户不可用
+            KLog.d(TAG, "down folder sid but user is null or sid is empty or disabled:" + user);
+            return null;
+        }
+        List<String> list = new ArrayList<>();
+        //递归执行
+        try {
+            obtainFolderSidForPage(list, user, 1);
+        } catch (IOException e) {
+            KLog.d(TAG, "down folder sid list error:" + e.getMessage());
+            e.printStackTrace();
+        }
+        KLog.d(TAG, "down folder sid list:" + list);
+        return list;
+    }
+
+    /**
+     * 循环的获取笔记本的sid
+     * @param user
+     * @param pageNumber 从第几页开始获取,默认为1
+     * @return
+     */
+    private static void obtainFolderSidForPage(List<String> list, User user, int pageNumber) throws IOException {
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> queryMap = new HashMap<>();
+        int pageSize = Constants.PAGE_SIZE_DEFAULT;
+        queryMap.put("offset", String.valueOf(pageNumber));
+        queryMap.put("limit", String.valueOf(pageSize));
+        KLog.d(TAG, "obtain folder sid page number is:" + pageNumber + "and page size is:" + pageSize);
+        Call<ActionResult<PageInfo<List<Folder>>>> call = repo.downFolderSid(user.getSid(), queryMap);
+        Response<ActionResult<PageInfo<List<Folder>>>> response = call.execute();
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "obtain folder sid response is failed");
+            return;
+        }
+        ActionResult<PageInfo<List<Folder>>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "obtain folder sid response is failed");
+            return;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "obtain folder sid response is success but action result is not success:" + actionResult);
+            return;
+        }
+        PageInfo<List<Folder>> pageInfo = actionResult.getData();
+        if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
+            KLog.d(TAG, "obtain folder sid response is success and action result is success but no folder");
+            return;
+        }
+        KLog.d(TAG, "obtain folder sid response is success and action result is success:" + actionResult);
+        List<Folder> folderList = pageInfo.getData();
+        Map<String, Folder> folderMap = FolderManager.getInstance().getFolders(user, null);
+        if (SystemUtil.isEmpty(folderMap)) {    //本地没有笔记本，则直接全部同步服务器上的
+            for (Folder folder : folderList) {
+                list.add(folder.getSid());
+            }
+        } else {
+            for (Folder folder : folderList) {
+                Folder tFolder = folderMap.get(folder.getSid());
+                if (tFolder == null || (!SystemUtil.equalsStr(folder.getHash(), tFolder.getHash()) && !tFolder.isSyncUp())) {    //本地笔记不存在或者hash不一致
+                    list.add(folder.getSid());
+                }
+            }
+        }
+        KLog.d(TAG, "obtain folder sid list:" + list);
+        //已加载过的数据
+        long loadCount = (pageNumber - 1) * pageSize + folderList.size();
+        long totalRecord = pageInfo.getCount();
+        KLog.d(TAG, "obtain folder sid loadCount:" + loadCount + ", and totalCount:" + totalRecord);
+        if (totalRecord > loadCount) { //需要继续加载下一页
+            KLog.d(TAG, "obtain folder sid will load next page:" + (pageNumber + 1));
+            try {
+                obtainFolderSidForPage(list, user, pageNumber + 1);
+            } catch (IOException e) {
+                KLog.e(TAG, "obtain folder sid list: error:" + e.getMessage());
+            }
+        }
     }
 
     /**

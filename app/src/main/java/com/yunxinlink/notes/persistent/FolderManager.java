@@ -91,14 +91,29 @@ public class FolderManager extends Observable<Observer> {
      */
     public List<Folder> getAllFolders(User user, Bundle args) {
         List<Folder> list = null;
+        //加载的笔记本的类型，true：只加载回收站的笔记本，false，只加载非回收站的笔记本
+        boolean isRecycle = false;
+        if (args != null) {
+            isRecycle = args.getBoolean(Constants.ARG_ISRECYCLE, false);
+        }
+
         Cursor cursor = getAllFolderCursor(user, args);
         if (cursor != null) {
             list = new ArrayList<>();
             Map<String, Folder> map = new HashMap<>();
             while (cursor.moveToNext()) {
                 Folder folder = cursor2Folder(cursor);
-                list.add(folder);
                 map.put(folder.getSid(), folder);
+                if (isRecycle) {//只加载回收站的笔记本
+                    if (folder.isTrashed()) {
+                        list.add(folder);
+                    }
+                } else {    //只加载没有被删除的笔记本
+                    if (folder.isNormal()) {
+                        list.add(folder);
+                    }
+                }
+                
             }
             FolderCache.getInstance().setFolderMap(map);
             cursor.close();
@@ -148,30 +163,30 @@ public class FolderManager extends Observable<Observer> {
         String selection = null;
         String[] selectionArgs = null;
         int userId = 0;
-        boolean isRecycle = false;
-        if (args != null) {
-            isRecycle = args.getBoolean("isRecycle", false);
-        }
-        int deleteState = isRecycle ? 1 : 0;
         if (user != null) { //当前用户有登录
             if (!user.checkOnLine()) {  //用户离线、退出登录或者不可用
                 KLog.d(TAG, "get all folder user is offline or disable :" + user);
                 return null;
             }
             userId = user.getId();
-            if (deleteState == 0) {
-                selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " is null or " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+            selection = Provider.FolderColumns.USER_ID + " = ?";
+            /*if (filterRecycle) {    //需要过滤掉回收站中的数据
+                if (deleteState == 0) {
+                    selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " is null or " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+                } else {
+                    selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
+                }
             } else {
-                selection = Provider.FolderColumns.USER_ID + " = ? AND " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
-            }
+                
+            }*/
             selectionArgs = new String[] {String.valueOf(userId)};
-        } else {
+        }/* else {
             if (deleteState == 0) {
                 selection = Provider.FolderColumns.DELETE_STATE + " is null or " + Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
             } else {
                 selection = Provider.FolderColumns.DELETE_STATE + " = " + deleteState;
             }
-        }
+        }*/
         return db.query(Provider.FolderColumns.TABLE_NAME, null, selection, selectionArgs, null, null, Provider.FolderColumns.DEFAULT_SORT);
     }
     
@@ -557,5 +572,19 @@ public class FolderManager extends Observable<Observer> {
             noteApp.setDefaultFolderSid(null);
         }
     }
-    
+
+    /**
+     * 获取笔记本的集合，优先从缓存中获取，若缓存中不存在，则从数据库中获取，key：folder的sid，value：folder
+     * @param user 用户
+     * @param args
+     * @return
+     */
+    public Map<String, Folder> getFolders(User user, Bundle args) {
+        Map<String, Folder> map = FolderCache.getInstance().getFolderMap();
+        if (SystemUtil.isEmpty(map)) {  //缓存中为空，则从数据库中获取
+            getAllFolders(user, args);
+            map = FolderCache.getInstance().getFolderMap();
+        }
+        return map;
+    }
 }

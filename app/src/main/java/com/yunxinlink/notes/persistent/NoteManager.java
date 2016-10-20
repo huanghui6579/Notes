@@ -83,8 +83,8 @@ public class NoteManager extends Observable<Observer> {
         String folder = null;
         boolean isRecycle = false;
         if (args != null) {
-            folder = args.getString("folderId", null);
-            isRecycle = args.getBoolean("isRecycle", false);
+            folder = args.getString(Constants.ARG_ISFOLDER, null);
+            isRecycle = args.getBoolean(Constants.ARG_ISRECYCLE, false);
         }
         int deleteState = isRecycle ? 1 : 0;
         //是否加载回收站里的笔记
@@ -148,9 +148,9 @@ public class NoteManager extends Observable<Observer> {
         boolean isRecycle = false;
         int sort = 0;
         if (args != null) {
-            folder = args.getString("folderId", null);
-            isRecycle = args.getBoolean("isRecycle", false);
-            sort = args.getInt("sort", 0);
+            folder = args.getString(Constants.ARG_ISFOLDER, null);
+            isRecycle = args.getBoolean(Constants.ARG_ISRECYCLE, false);
+            sort = args.getInt(Constants.ARG_SORT, 0);
         }
         int deleteState = isRecycle ? 1 : 0;
         //是否加载回收站里的笔记
