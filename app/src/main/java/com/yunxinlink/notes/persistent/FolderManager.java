@@ -7,7 +7,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
@@ -57,6 +56,44 @@ public class FolderManager extends Observable<Observer> {
             }
         }
         return mInstance;
+    }
+
+    /**
+     * 根据Folder的查询条件来获取笔记本的信息
+     * @param param
+     * @return
+     */
+    private Folder getFolderInfo(Folder param, SQLiteDatabase db) {
+        if (db == null) {
+            db = mDBHelper.getReadableDatabase();
+        }
+        Folder folder = null;
+        String selection = null;
+        String[] args = null;
+        if (param.checkId()) {  //有id
+            selection = Provider.FolderColumns._ID + " = ?";
+            args = new String[] {String.valueOf(param.getId())};
+        } else {
+            selection = Provider.FolderColumns.SID + " = ?";
+            args = new String[] {param.getSid()};
+        }
+        Cursor cursor = db.query(Provider.FolderColumns.TABLE_NAME, null, selection, args, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            folder = cursor2Folder(cursor);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return folder;
+    }
+
+    /**
+     * 根据Folder的查询条件来获取笔记本的信息
+     * @param param
+     * @return
+     */
+    public Folder getFolderInfo(Folder param) {
+        return getFolderInfo(param, null);
     }
 
     /**
@@ -201,7 +238,7 @@ public class FolderManager extends Observable<Observer> {
         SQLiteDatabase db = mDBHelper.getReadableDatabase();
         String selection = null;
         String[] selectionArgs = null;
-        if (folder != null) {
+        if (folder != null && !folder.isEmpty()) {
             int userId = folder.getUserId();
             if (userId == 0) {  //没有登录账号
                 String folderId = folder.getSid();
@@ -223,8 +260,9 @@ public class FolderManager extends Observable<Observer> {
                 }
             }
         } else {    //查询所有没有用户id的且没有被删除的
-            selection = Provider.NoteColumns.USER_ID + " = 0 AND " + Provider.NoteColumns.DELETE_STATE + " = ?";
-            selectionArgs = new String[] {String.valueOf(DeleteState.DELETE_NONE.ordinal())};
+            int userId = folder == null ? 0 : folder.getUserId();
+            selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = ?";
+            selectionArgs = new String[] {String.valueOf(userId), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
         }
         Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, new String[] {"count(*)"}, selection, selectionArgs, null, null, null);
         if (cursor != null && cursor.moveToNext()) {
@@ -243,7 +281,10 @@ public class FolderManager extends Observable<Observer> {
      */
     private ContentValues initFolderValues(Folder folder) {
         ContentValues values = new ContentValues();
-        values.put(Provider.FolderColumns.SID, folder.getSid());
+        String sid = folder.getSid();
+        if (sid != null) {
+            values.put(Provider.FolderColumns.SID, folder.getSid());
+        }
         DeleteState deleteState = folder.getDeleteState();
         if (deleteState != null) {
             values.put(Provider.FolderColumns.DELETE_STATE, deleteState.ordinal());
@@ -252,13 +293,32 @@ public class FolderManager extends Observable<Observer> {
         if (syncState != null) {
             values.put(Provider.FolderColumns.SYNC_STATE, syncState.ordinal());
         }
-        values.put(Provider.FolderColumns.CREATE_TIME, folder.getCreateTime());
-        values.put(Provider.FolderColumns.MODIFY_TIME, folder.getModifyTime());
-        values.put(Provider.FolderColumns.IS_LOCK, folder.isLock());
-        values.put(Provider.FolderColumns.NAME, folder.getName());
-        values.put(Provider.FolderColumns.SORT, folder.getSort());
-        values.put(Provider.FolderColumns.HASH, folder.getHash());
-        values.put(Provider.FolderColumns.USER_ID, folder.getUserId());
+        long createTime = folder.getCreateTime();
+        if (createTime != 0) {
+            values.put(Provider.FolderColumns.CREATE_TIME, createTime);
+        }
+        long modifyTime = folder.getModifyTime();
+        if (modifyTime == 0) {
+            modifyTime = System.currentTimeMillis();
+        }
+        values.put(Provider.FolderColumns.MODIFY_TIME, modifyTime);
+        values.put(Provider.FolderColumns.IS_LOCK, folder.isLock() ? 1 : 0);
+        String name = folder.getName();
+        if (name != null) {
+            values.put(Provider.FolderColumns.NAME, name);
+        }
+        int sort = folder.getSort();
+        if (sort != 0) {
+            values.put(Provider.FolderColumns.SORT, sort);
+        }
+        String hash = folder.getHash();
+        if (hash != null) {
+            values.put(Provider.FolderColumns.HASH, hash);
+        }
+        int userId = folder.getUserId();
+        if (userId != 0) {
+            values.put(Provider.FolderColumns.USER_ID, userId);
+        }
         values.put(Provider.FolderColumns._COUNT, folder.getCount());
         return values;
     }
@@ -293,6 +353,25 @@ public class FolderManager extends Observable<Observer> {
     private void removeFolderCache(Folder folder) {
         FolderCache.getInstance().getFolderMap().remove(folder.getSid());
     }
+
+    /**
+     * 为Folder设置sort
+     * @param folder
+     * @return
+     */
+    private int setSort(Folder folder) {
+        int sort = folder.getSort();
+        if (sort == 0) {    //没有设置排序
+            List<Folder> sortList = FolderCache.getInstance().getSortFolders();
+            if (SystemUtil.isEmpty(sortList)) {
+                sort = 1;
+            } else {
+                sort = sortList.get(sortList.size() - 1).getSort() + 1;
+            }
+            folder.setSort(sort);
+        }
+        return sort;
+    }
     
     /**
      * 添加笔记本文件夹
@@ -303,18 +382,15 @@ public class FolderManager extends Observable<Observer> {
      */
     public Folder addFolder(Folder folder) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        setSort(folder);
         String hash = folder.generateHash();
         folder.setHash(hash);
         ContentValues values = initFolderValues(folder);
-        db.beginTransaction();
         long rowId = 0;
         try {
             rowId = db.insert(Provider.FolderColumns.TABLE_NAME, null, values);
-            db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "----addFolder---error----" + e.getMessage());
-        } finally {
-            db.endTransaction();
         }
         if (rowId > 0) {
             int id = (int) rowId;
@@ -340,38 +416,16 @@ public class FolderManager extends Observable<Observer> {
      */
     public boolean updateFolder(Folder folder) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        if (folder.getUserId() > 0) {
-            values.put(Provider.FolderColumns.USER_ID, folder.getUserId());
-        }
-        DeleteState deleteState = folder.getDeleteState();
-        if (deleteState != null) {
-            values.put(Provider.FolderColumns.DELETE_STATE, deleteState.ordinal());
-        }
-        SyncState syncState = folder.getSyncState();
-        if (syncState != null) {
-            values.put(Provider.FolderColumns.SYNC_STATE, syncState.ordinal());
-        }
-        values.put(Provider.FolderColumns._COUNT, folder.getCount());
-        values.put(Provider.FolderColumns.SORT, folder.getSort());
-        if (!TextUtils.isEmpty(folder.getName())) {
-            values.put(Provider.FolderColumns.NAME, folder.getName());
-        }
-        values.put(Provider.FolderColumns.IS_LOCK, folder.isLock() ? 1 : 0);
-        values.put(Provider.FolderColumns.MODIFY_TIME, folder.getModifyTime());
-        
+        setSort(folder);
         String hash = folder.generateHash();
         folder.setHash(hash);
-        
-        db.beginTransaction();
+        ContentValues values = initFolderValues(folder);
+
         long rowId = 0;
         try {
             rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns._ID + " = ?", new String[] {String.valueOf(folder.getId())});
-            db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "----updateFolder---error----" + e.getMessage());
-        } finally {
-            db.endTransaction();
         }
         if (rowId > 0) {
             if (folder.isDefault()) {
@@ -386,6 +440,103 @@ public class FolderManager extends Observable<Observer> {
     }
 
     /**
+     * 添加或更新笔记本，若数据不存在，则更新
+     * @param folderList
+     */
+    public void addOrUpdate(List<Folder> folderList) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        List<Folder> changeList = new ArrayList<>();
+        db.beginTransaction();
+        try {
+            for (Folder folder : folderList) {
+                if (!folder.hasId()) {    //该问加你是“所有”，不存到数据库里
+                    KLog.d(TAG, "add or update folder but folder not has id or sid:" + folder);
+                    continue;
+                }
+
+                String selection = null;
+                String[] args = null;
+                if (folder.checkId()) { //id可用
+                    selection = Provider.FolderColumns._ID + " = ?";
+                    args = new String[] {String.valueOf(folder.getId())};
+                } else {
+                    selection = Provider.FolderColumns.SID + " = ?";
+                    args = new String[] {folder.getSid()};
+                }
+                ContentValues values = initFolderValues(folder);
+                long rowId = 0;
+                try {
+                    rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, selection, args);
+                } catch (Exception e) {
+                    KLog.e(TAG, "add or update folder update error error:" + e.getMessage());
+                }
+                if (rowId <= 0) {   //没有成功，则添加
+                    KLog.d(TAG, "add or update folder update failed and will add folder");
+                    try {
+                        rowId = db.insert(Provider.FolderColumns.TABLE_NAME, null, values);
+                    } catch (Exception e) {
+                        KLog.e(TAG, "add or update folder add failed error:" + e.getMessage());
+                    }
+                    if (rowId > 0) {    //添加成功，则添加到缓存
+                        folder.setId((int) rowId);
+                        FolderCache folderCache = FolderCache.getInstance();
+                        folderCache.addFolder(folder.getSid(), folder);
+                        changeList.add(folder);
+                    }
+                } else {    //更新成功，则更新到缓存
+                    KLog.d(TAG, "add or update folder update success:" + folder);
+                    FolderCache folderCache = FolderCache.getInstance();
+                    Folder tFolder = folderCache.getCacheFolder(folder.getSid());
+                    if (tFolder != null) {  //更新缓存数据
+                        String name = folder.getName();
+                        if (name != null) {
+                            tFolder.setName(name);
+                        }
+                        int sort = folder.getSort();
+                        if (sort != 0) {
+                            tFolder.setSort(sort);
+                        }
+                        String hash = folder.getHash();
+                        if (hash != null) {
+                            tFolder.setHash(hash);
+                        }
+                        DeleteState deleteState = folder.getDeleteState();
+                        if (deleteState != null) {
+                            tFolder.setDeleteState(deleteState);
+                        }
+                        tFolder.setSyncState(SyncState.SYNC_DONE);
+                        long modifyTime = folder.getModifyTime();
+                        if (modifyTime == 0) {
+                            modifyTime = System.currentTimeMillis();
+                        }
+                        tFolder.setModifyTime(modifyTime);
+                        tFolder.setLock(folder.isLock());
+                        int userId = folder.getUserId();
+                        if (userId != 0) {
+                            tFolder.setUserId(userId);
+                        }
+
+                    } else {    //缓存中不存在，则查询该记录，然后添加到缓存中
+                        tFolder = getFolderInfo(folder, db);
+                        folderCache.addFolder(tFolder.getSid(), tFolder);
+                    }
+                    changeList.add(tFolder);
+                }
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            KLog.e(TAG, "add or update folder error:" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        if (changeList.size() == 1) {   //只有一条记录
+            notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, changeList.get(0));
+        } else {    //多条
+            notifyObservers(Provider.FolderColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, changeList);
+        }
+    }
+
+    /**
      * 更新笔记本的同步状态
      * @param folder
      * @return
@@ -395,10 +546,12 @@ public class FolderManager extends Observable<Observer> {
         long rowId = 0;
         try {
             //1、先查询该笔记本下的所有笔记是否都已同步完
-            boolean hasSynced = isAllNoteSynced(folder, db);
+            /*boolean hasSynced = isAllNoteSynced(folder, db);
             if (hasSynced) {    //该笔记本下所有的笔记都同步完毕
                 folder.setSyncState(SyncState.SYNC_DONE);
-            }
+            } else {
+                KLog.d(TAG, "update sync folder but has notes not sync done");
+            }*/
 //            folder.setModifyTime(System.currentTimeMillis());
             ContentValues values = initSyncFolderValues(folder);
             rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns._ID + " = ?", new String[] {String.valueOf(folder.getId())});

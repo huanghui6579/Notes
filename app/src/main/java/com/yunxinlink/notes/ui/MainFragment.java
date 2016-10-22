@@ -55,7 +55,6 @@ import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
-import com.yunxinlink.notes.sync.service.SyncService;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteTask;
@@ -96,7 +95,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
     private List<DetailNoteInfo> mNotes;
 
-    private SwipeRefreshLayout.OnRefreshListener mOnRefreshListener;
+    private OnRefreshListenerImpl mOnRefreshListener;
 
     /**
      * 主界面右上角菜单
@@ -216,7 +215,9 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
         mNoteManager = NoteManager.getInstance();
 
-        mOnRefreshListener = new SwipeRefreshLayout.OnRefreshListener() {
+        mOnRefreshListener = new OnRefreshListenerImpl(true);
+
+        /*mOnRefreshListener = new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
 
@@ -228,7 +229,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                 });
 
             }
-        };
+        };*/
 
         mRefresher.setColorSchemeResources(R.color.colorPrimary);
         mRefresher.setOnRefreshListener(mOnRefreshListener);
@@ -293,8 +294,9 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
     /**
      * 刷新数据
+     * @param isFirstLoad 是否是第一次进入界面时加载数据，若刚开始进入界面则，则进行同步到服务器的操作
      */
-    private void doOnRefresh() {
+    private void doOnRefresh(boolean isFirstLoad) {
         if (mListener == null) {
             KLog.d(TAG, "-----mListener--is--null---can--not---doOnRefresh----");
             return;
@@ -305,20 +307,15 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
         //加载笔记
         loadNotes(mFolderId);
-        
-        //同步笔记
-        startSyncNote();
-    }
 
-    /**
-     * 开始同步笔记
-     */
-    private void startSyncNote() {
-        Intent service = new Intent(getContext(), SyncService.class);
-        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_DOWN_NOTE);
-        String syncSid = SystemUtil.generateSyncSid();
-        service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
-        getActivity().startService(service);
+        if (!isFirstLoad && !mIsTrash) {    //不是首次进入界面或者不是加载回收站的数据，则需同步数据
+            KLog.d(TAG, "main fragment do on refresh and will start sync down notes");
+            NoteUtil.startSyncNote(getContext());
+        }
+
+        if (mOnRefreshListener != null) {
+            mOnRefreshListener.setIsFirstLoad(false);
+        }
     }
 
     /**
@@ -346,6 +343,11 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         } else {
             //加载笔记
             loadNotes(mFolderId);
+        }
+
+        if (mOnRefreshListener != null && !mOnRefreshListener.isIsFirstLoad() && !mIsTrash) {    //不是首次进入界面或者不是加载回收站的数据，则需同步数据
+            KLog.d(TAG, "main fragment reload data and will start sync down notes");
+            NoteUtil.startSyncNote(getContext());
         }
     }
 
@@ -2151,6 +2153,38 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             }
         }
 
+    }
+
+    /**
+     * 刷新的监听器
+     */
+    class OnRefreshListenerImpl implements SwipeRefreshLayout.OnRefreshListener {
+        /**
+         * 是否是第一次加载
+         */
+        private boolean mIsFirstLoad;
+
+        public OnRefreshListenerImpl(boolean mIsFirstLoad) {
+            this.mIsFirstLoad = mIsFirstLoad;
+        }
+
+        public boolean isIsFirstLoad() {
+            return mIsFirstLoad;
+        }
+
+        public void setIsFirstLoad(boolean isFirstLoad) {
+            this.mIsFirstLoad = isFirstLoad;
+        }
+
+        @Override
+        public void onRefresh() {
+            doInbackground(new NoteTask(mIsFirstLoad) {
+                @Override
+                public void run() {
+                    doOnRefresh((Boolean) params[0]);
+                }
+            });
+        }
     }
 
     private static class MyHandler extends BaseHandler<MainFragment> {

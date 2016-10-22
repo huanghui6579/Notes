@@ -45,12 +45,12 @@ public class UserApi extends BaseApi {
     /**
      * 用户登录--同步
      * @param userDto
-     * @param listener
+     * @return 是否登录成功
      */
-    public static Call<?> login(Context context, UserDto userDto, OnLoadCompletedListener<ActionResult<UserDto>> listener) {
+    public static boolean login(Context context, UserDto userDto, OnLoadCompletedListener<ActionResult<UserDto>> listener) {
         if (userDto == null) {
             KLog.d(TAG, "login failed params is null");
-            return null;
+            return false;
         }
         Retrofit retrofit = buildRetrofit();
         IUserApi repo = retrofit.create(IUserApi.class);
@@ -88,7 +88,7 @@ public class UserApi extends BaseApi {
                 listener.onLoadFailed(code, null);
             }
         }
-        return call;
+        return success;
     }
 
     /**

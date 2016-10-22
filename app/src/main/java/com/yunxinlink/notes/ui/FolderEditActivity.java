@@ -2,6 +2,8 @@ package com.yunxinlink.notes.ui;
 
 import android.content.Intent;
 import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -10,7 +12,9 @@ import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.api.model.NoteParam;
 import com.yunxinlink.notes.model.Folder;
+import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -101,6 +105,35 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.data_edit, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_save:  //保存
+                saveFolder();
+                finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void beforeBack() {
+        super.beforeBack();
+        saveFolder();
+    }
+
+    @Override
+    public void onBackPressed() {
+        beforeBack();
+        super.onBackPressed();
+    }
+
     /**
      * 是否需要保存，如果没有修改则
      * @return
@@ -151,6 +184,7 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                     boolean isLock = mCbLock.isChecked();
                     boolean isDefault = mCbDefault.isChecked();
                     long time = System.currentTimeMillis();
+                    boolean success = false;
                     if (mIsAdd) {   //添加的
                         mFolder = new Folder();
                         mFolder.setName(name);
@@ -161,7 +195,8 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                         mFolder.setDefault(isDefault);
                         mFolder.setUserId(getCurrentUserId());
                         mFolder = FolderManager.getInstance().addFolder(mFolder);
-                        if (mFolder == null) {
+                        success = mFolder != null;
+                        if (!success) {
                             KLog.w(TAG, "---saveFolder----addFolder----error--");
                         }
                     } else {    //更新
@@ -169,19 +204,20 @@ public class FolderEditActivity extends BaseActivity implements View.OnClickList
                         mFolder.setModifyTime(time);
                         mFolder.setLock(isLock);
                         mFolder.setDefault(isDefault);
-                        boolean result = FolderManager.getInstance().updateFolder(mFolder);
-                        if (!result) {
+                        success = FolderManager.getInstance().updateFolder(mFolder);
+                        if (!success) {
                             KLog.w(TAG, "---saveFolder----updateFolder----error--");
                         }
+                    }
+                    User user = getCurrentUser();
+                    if (success && user.isAvailable()) {
+                        KLog.d(TAG, "folder edit save or update success and will sync up folder");
+                        NoteParam noteParam = new NoteParam();
+                        noteParam.setFolder(mFolder);
+                        startSyncUpNote(mFolder.getSid(), noteParam);
                     }
                 }
             });
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        saveFolder();
-        super.onDestroy();
     }
 }

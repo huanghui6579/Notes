@@ -42,6 +42,7 @@ import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.share.ShareInfo;
 import com.yunxinlink.notes.share.ShareItem;
 import com.yunxinlink.notes.share.SimplePlatformActionListener;
+import com.yunxinlink.notes.sync.service.SyncService;
 import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 
@@ -830,6 +831,17 @@ public class NoteUtil {
         editor.remove(Constants.SELECTED_FOLDER_ID);
         editor.remove(Constants.PREF_DEFAULT_FOLDER);
         editor.apply();
+    }
+
+    /**
+     * 开始同步笔记
+     */
+    public static void startSyncNote(Context context) {
+        Intent service = new Intent(context, SyncService.class);
+        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_DOWN_NOTE);
+        String syncSid = SystemUtil.generateSyncSid();
+        service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
+        context.startService(service);
     }
     
 }

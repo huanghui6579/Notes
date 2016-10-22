@@ -1,5 +1,10 @@
 package com.yunxinlink.notes.api.model;
 
+import com.yunxinlink.notes.model.DeleteState;
+import com.yunxinlink.notes.model.Folder;
+import com.yunxinlink.notes.model.SyncState;
+import com.yunxinlink.notes.model.User;
+
 /**
  * 对应服务器的Folder
  * @author huanghui1
@@ -53,6 +58,11 @@ public class FolderDto {
      * 该文件夹下笔记的数量
      */
     private int count;
+
+    /**
+     * hash 值
+     */
+    private String hash;
 
     public int getId() {
         return id;
@@ -132,5 +142,52 @@ public class FolderDto {
 
     public void setCount(int count) {
         this.count = count;
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
+    /**
+     * 转换成笔记本
+     * @return
+     */
+    public Folder convert2Folder(User user) {
+        Folder folder = new Folder();
+        folder.setSid(sid);
+        folder.setSyncState(SyncState.SYNC_DONE);
+        folder.setSort(sort);
+//        folder.setCount(count);
+        folder.setCreateTime(createTime);
+        folder.setModifyTime(modifyTime);
+        folder.setDeleteState(DeleteState.valueOf(deleteState));
+        folder.setHash(hash);
+        folder.setLock(isLock);
+        folder.setName(name);
+        if (user != null) {
+            folder.setUserId(user.getId());
+        }
+        return folder;
+    }
+
+    @Override
+    public String toString() {
+        return "FolderDto{" +
+                "id=" + id +
+                ", sid='" + sid + '\'' +
+                ", userId=" + userId +
+                ", name='" + name + '\'' +
+                ", isLock=" + isLock +
+                ", sort=" + sort +
+                ", deleteState=" + deleteState +
+                ", createTime=" + createTime +
+                ", modifyTime=" + modifyTime +
+                ", count=" + count +
+                ", hash='" + hash + '\'' +
+                '}';
     }
 }

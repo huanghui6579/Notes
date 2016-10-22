@@ -24,7 +24,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
@@ -123,7 +122,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         }
 
         //注册观察者
-        registContentObserver();
+        registerContentObserver();
     }
 
     @Override
@@ -146,7 +145,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
     @Override
     protected void onDestroy() {
         //注销
-        unregistContentObserver();
+        unregisterContentObserver();
         super.onDestroy();
     }
 
@@ -156,7 +155,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
      * @update 2016/6/23 16:02
      * @version: 1.0.0
      */
-    private void registContentObserver() {
+    private void registerContentObserver() {
         if (mFolderObserver == null) {
             mFolderObserver = new FolderContentObserver(mHandler);
         }
@@ -169,7 +168,7 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
      * @update 2016/6/23 16:03
      * @version: 1.0.0
      */
-    private void unregistContentObserver() {
+    private void unregisterContentObserver() {
         if (mFolderObserver != null) {
             mFolderManager.removeObserver(mFolderObserver);
         }
@@ -188,7 +187,8 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             public void run() {
                 Folder archive = new Folder();
                 archive.setName(getString(R.string.default_archive));
-                int count = mFolderManager.getNoteCount(null);
+                archive.setUserId(getCurrentUserId());
+                int count = mFolderManager.getNoteCount(archive);
                 archive.setCount(count);
                 List<Folder> list = mFolderManager.getAllFolders(getCurrentUser(true), null);
                 
@@ -410,6 +410,22 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             }
             refreshHelper.position = index;
             refreshUI(mFolders, refreshHelper);
+        } else if (folder.isNormal()) {
+            addFolder(folder);
+        }
+    }
+
+    /**
+     * 批量更新笔记本信息
+     * @param folderList
+     */
+    private void batchUpdateFolder(List<Folder> folderList) {
+        if (SystemUtil.isEmpty(folderList)) {
+            KLog.d(TAG, "folder list activity batch update folder list is empty");
+            return;
+        }
+        for (Folder folder : folderList) {
+            updateFolder(folder);
         }
     }
 
@@ -559,8 +575,6 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                 return;
             }
 
-            KLog.d(TAG, "---onBindViewHolder---position--" + position);
-            
             holder.itemView.setTag(holder);
             holder.itemView.setTag(R.integer.item_tag_data, holder.getAdapterPosition());
             //是否是保存在数据库的文件夹，false：没有保存，如比“所有文件夹”
@@ -672,24 +686,43 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
             Folder folder = null;
             switch (notifyFlag) {
                 case Provider.FolderColumns.NOTIFY_FLAG:    //笔记文件夹的添加
-                    if (data == null || !(data instanceof Folder)) {
+                    if (data == null) {
                         return;
                     }
-                    folder = (Folder) data;
                     switch (notifyType) {
                         case ADD:   //笔记添加
+                            if (!(data instanceof Folder)) {
+                                return;
+                            }
+                            folder = (Folder) data;
                             Log.d(TAG, "---addFolder--" + folder);
                             addFolder(folder);
                             break;
                         case UPDATE:    //更新
+                            if (!(data instanceof Folder)) {
+                                return;
+                            }
+                            folder = (Folder) data;
                             if (!folder.isEmpty()) {
                                 Log.d(TAG, "---updateFolder--" + folder);
                                 updateFolder(folder);
                             }
                             break;
                         case DELETE:    //删除
+                            if (!(data instanceof Folder)) {
+                                return;
+                            }
+                            folder = (Folder) data;
                             Log.d(TAG, "---deleteFolder--" + folder);
                             deleteFolder(folder);
+                            break;
+                        case BATCH_UPDATE:  //批量添加或者更新
+                            if (!(data instanceof List)) {
+                                return;
+                            }
+                            List<Folder> folderList = (List<Folder>) data;
+                            Log.d(TAG, "folder list activity batch update folder");
+                            batchUpdateFolder(folderList);
                             break;
                     }
                     break;

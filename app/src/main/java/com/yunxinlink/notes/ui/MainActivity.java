@@ -600,22 +600,54 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                 });
             }
         } else {
-            int index = mFolders.indexOf(folder);
-
-            if (index != -1) {
-                Folder tFolder = mFolders.get(index);
-                setUpNewFolder(tFolder, folder);
-
-                AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
-                refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
-                refreshHelper.position = index;
-                
-                refreshNavUI(refreshHelper);
+            boolean result = updateRefresh(folder);
+            if (!result && folder.isNormal()) { //且是普通的笔记本
+                addFolder(folder);
             }
         }
         
         //更新子标题
         updateSubTitle(getSubTitle(mSelectedFolderId));
+    }
+
+    /**
+     * 刷新一条记录
+     * @param folder
+     * @return 在列表中有没有找到要刷新的项
+     */
+    private boolean updateRefresh(Folder folder) {
+        int index = mFolders.indexOf(folder);
+
+        if (index != -1) {  //有找到
+            Folder tFolder = mFolders.get(index);
+            setUpNewFolder(tFolder, folder);
+
+            AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+            refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
+            refreshHelper.position = index;
+
+            refreshNavUI(refreshHelper);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 批量添加或者更新笔记本
+     * @param folderList
+     */
+    private void batchUpdate(List<Folder> folderList) {
+        if (SystemUtil.isEmpty(folderList)) {
+            KLog.d(TAG, "main activity batch update but list is empty");
+            return;
+        }
+        for (Folder folder : folderList) {
+            boolean result = updateRefresh(folder);
+            if (!result && folder.isNormal()) { //且是普通的笔记本
+                addFolder(folder);
+            }
+        }
     }
     
     /**
@@ -1094,6 +1126,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             folder = (Folder) data;
                             KLog.d(TAG, "------deleteFolder----" + folder);
                             deleteFolder(folder);
+                            break;
+                        case BATCH_UPDATE:  //批量更新或者添加，若数据不存在，则添加
+                            if (data instanceof List) {
+                                List<Folder> folderList = (List<Folder>) data;
+                                batchUpdate(folderList);
+                            }
                             break;
                     }
                     break;

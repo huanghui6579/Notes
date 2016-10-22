@@ -883,7 +883,7 @@ public class NoteManager extends Observable<Observer> {
      */
     public boolean updateDetailNotes(List<DetailNoteInfo> detailNoteList, SyncState syncState) {
         if (SystemUtil.isEmpty(detailNoteList)) {
-            return false;
+            return true;
         }
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         long row = 0;

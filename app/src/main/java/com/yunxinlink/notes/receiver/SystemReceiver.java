@@ -14,6 +14,8 @@ import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
+import static com.yunxinlink.notes.util.NoteUtil.startSyncNote;
+
 /**
  * 主题切换的广播
  */
@@ -81,7 +83,11 @@ public class SystemReceiver extends BroadcastReceiver {
                     KLog.d(TAG, "doAuthorityVerify userDto is null");
                     return;
                 }
-                UserApi.login(context, userDto, null);
+                boolean success = UserApi.login(context, userDto, null);
+                if (success) {
+                    KLog.d(TAG, "app init completed user login success and will start sync down notes");
+                    startSyncNote(context);
+                }
             }
         });
     }

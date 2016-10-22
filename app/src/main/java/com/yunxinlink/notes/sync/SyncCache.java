@@ -36,7 +36,7 @@ public class SyncCache {
      * @param sid 同步的sid
      * @param syncData
      */
-    public void add(String sid, SyncData syncData) {
+    private void add(String sid, SyncData syncData) {
         mMap.put(sid, syncData);
     }
 
@@ -44,7 +44,7 @@ public class SyncCache {
      * 移除
      * @param sid
      */
-    public void remove(String sid) {
+    public synchronized void remove(String sid) {
         mMap.remove(sid);
     }
 
@@ -54,7 +54,7 @@ public class SyncCache {
      * @param syncData
      * @return
      */
-    public String addOrUpdate(String sid, SyncData syncData) {
+    public synchronized String addOrUpdate(String sid, SyncData syncData) {
         //检查是否已经有存在的任务了
         SyncData oldSyncData = getSyncData(sid);
         if (oldSyncData != null) {  //存在了
@@ -94,7 +94,7 @@ public class SyncCache {
     /**
      * 清空
      */
-    public void clear() {
+    public synchronized void clear() {
         mMap.clear();
     }
 

@@ -8,6 +8,7 @@ import android.os.IBinder;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.api.model.NoteParam;
 import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
@@ -15,12 +16,15 @@ import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.TaskParam;
+import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.sync.SyncData;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.yunxinlink.notes.lockpattern.Alp.TAG;
 
@@ -74,6 +78,12 @@ public class SyncService extends Service {
         String syncSid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
         KLog.d(TAG, "sync service will start sync task sid : " + syncSid);
         if (!TextUtils.isEmpty(syncSid)) {
+
+            if (isSyncIng(syncSid)) {   //该任务已在同步中
+                KLog.d(TAG, "sync service start sync task but this task is syncing sync sid is :" + syncSid);
+                return;
+            }
+
             param.data = syncSid;
             //开始同步
             KLog.d(TAG, "sync service start sync task sid is :" + syncSid);
@@ -94,6 +104,15 @@ public class SyncService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    /**
+     * 获取当前的用户
+     * @return
+     */
+    private User getCurrentUser() {
+        NoteApplication app = (NoteApplication) getApplicationContext();
+        return app.getCurrentUser();
     }
 
     /**
@@ -136,28 +155,80 @@ public class SyncService extends Service {
     }
 
     /**
+     * 检测该同步任务的状态
+     * @param syncSid 同步任务的id
+     * @return true:可以继续执行该同步任务，false：该任务已经在执行了
+     */
+    private boolean checkSyncState(String syncSid) {
+        SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
+        KLog.d(TAG, "sync service sync down note task in cache:" + syncData);
+        if (syncData == null) { //没有同步数据
+            KLog.d(TAG, "sync service sync down note task is null and will add to task cache syncSid:" + syncSid);
+            syncData = new SyncData();
+            syncData.setState(SyncData.SYNC_NONE);
+            SyncCache.getInstance().addOrUpdate(syncSid, syncData);
+        }
+        if (syncData.isSyncing()) { //已经有任务在同步了，则不必处理了
+            KLog.d(TAG, "sync service sync down note already hash sync task so do nothing syncSid:" + syncSid);
+            return false;
+        }
+        syncData.setState(SyncData.SYNC_ING);
+        return true;
+    }
+
+    /**
      * 向下同步笔记
      * @param syncSid 向下同步任务的编号
      * @return
      */
     private TaskParam syncDownNote(String syncSid) {
-        SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
-        if (syncData == null) { //没有同步数据
-            syncData = new SyncData();
-            syncData.setState(SyncData.SYNC_NONE);
-        }
-        if (syncData.isSyncing()) { //已经有任务在同步了，则不必处理了
-            KLog.d(TAG, "sync service sync down note already hash sync task so do nothing syncSid:" + syncSid);
+        User user = getCurrentUser();
+        if (user == null || !user.isAvailable()) {
+            KLog.d(TAG, "sync service sync down note user is null or user is not available user:" + user);
             return null;
         }
-        syncData.setState(SyncData.SYNC_ING);
+
+        if (!checkSyncState(syncSid)) {
+            return null;
+        }
+
         final TaskParam resultParam = new TaskParam();
         resultParam.optType = Constants.SYNC_DOWN_NOTE;
-        List<String> folderSidList = NoteApi.downFolderSids(mContext);
-        KLog.d(TAG, "sync down note folder sid list:" + folderSidList);
+        //同步笔记本
+        syncDownFolder(user);
+
         SyncCache.getInstance().remove(syncSid);
         return resultParam;
-    } 
+    }
+
+    /**
+     * 同步笔记本
+     * @param user 当前登录的用户
+     */
+    private void syncDownFolder(User user) {
+        //同步笔记本
+        Map<String, Folder> folderMap = FolderManager.getInstance().getFolders(user, null);
+        if (SystemUtil.isEmpty(folderMap)) {  //本地没有笔记本，则直接下载服务器的笔记本
+            KLog.d(TAG, "down folders all local folder is empty");
+            NoteApi.downFolders(mContext);
+        } else {
+            KLog.d(TAG, "down folders any local has folder");
+            List<Integer> folderIdList = NoteApi.downFolderIds(mContext);
+            KLog.d(TAG, "sync down note folder id list:" + folderIdList);
+            //获取该组id对应的笔记本的数据，也是分页请求数据，每页20条
+            NoteApi.downFolders(folderIdList, mContext);
+        }
+    }
+
+    /**
+     * 检测同步的任务是否在进行中，如果进行中，则不做处理
+     * @param syncSid
+     * @return
+     */
+    private boolean isSyncIng(String syncSid) {
+        SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
+        return syncData != null && syncData.isSyncing();
+    }
 
     /**
      * 处理向上同步的结果

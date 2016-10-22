@@ -106,7 +106,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.account_edit, menu);
+        getMenuInflater().inflate(R.menu.data_edit, menu);
         return super.onCreateOptionsMenu(menu);
     }
 

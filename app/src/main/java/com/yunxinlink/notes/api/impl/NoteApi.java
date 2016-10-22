@@ -78,25 +78,25 @@ public class NoteApi extends BaseApi {
         
         String userSid = user.getSid();
         
-        if (SystemUtil.isEmpty(noteInfos)) {    //笔记为空
+        /*if (SystemUtil.isEmpty(noteInfos)) {    //笔记为空
             if (listener != null) {
                 listener.onLoadFailed(ActionResult.RESULT_PARAM_ERROR, "params is null");
             }
             KLog.d(TAG, "sync up note failed params is null");
             return null;
-        }
+        }*/
         
         Retrofit retrofit = buildRetrofit();
         INoteApi repo = retrofit.create(INoteApi.class);
 
         NoteDto noteDto = fillNoteInfoDto(noteInfos);
-        if (noteDto == null) {
+        /*if (noteDto == null) {
             if (listener != null) {
                 listener.onLoadFailed(ActionResult.RESULT_PARAM_ERROR, "params noteDto is null");
             }
             KLog.d(TAG, "sync up note failed params noteDto is null");
             return null;
-        }
+        }*/
         
         noteDto.setUserSid(userSid);
         noteDto.setFolder(fillFolderDto(folder));
@@ -114,17 +114,19 @@ public class NoteApi extends BaseApi {
             if (actionResult.isSuccess()) { //成功
                 KLog.d(TAG, "sync up note data success and save or up data to local");
                 updateNative(folder, noteInfos);
-                for (DetailNoteInfo detailNoteInfo : noteInfos) {
-                    NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
-                    Map<String, Attach> attachMap = noteInfo.getAttaches();
-                    if (noteInfo.hasAttach() && !SystemUtil.isEmpty(attachMap)) {   //有附件
-                        Set<String> keys = attachMap.keySet();
-                        for (String key : keys) {
-                            Attach attach = attachMap.get(key);
-                            if (attach.isSynced()) {
-                                continue;
+                if (!SystemUtil.isEmpty(noteInfos)) {   //有笔记
+                    for (DetailNoteInfo detailNoteInfo : noteInfos) {
+                        NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
+                        Map<String, Attach> attachMap = noteInfo.getAttaches();
+                        if (noteInfo.hasAttach() && !SystemUtil.isEmpty(attachMap)) {   //有附件
+                            Set<String> keys = attachMap.keySet();
+                            for (String key : keys) {
+                                Attach attach = attachMap.get(key);
+                                if (attach.isSynced()) {
+                                    continue;
+                                }
+                                uploadAttach(attach, null);
                             }
-                            uploadAttach(attach, null);
                         }
                     }
                 }
@@ -202,7 +204,7 @@ public class NoteApi extends BaseApi {
         }
         String hash = attach.getHash();
 
-        if (TextUtils.isEmpty(hash)) {  //生成Thash
+        if (TextUtils.isEmpty(hash)) {  //生成hash
             hash = DigestUtil.md5FileHex(file);
             if (!TextUtils.isEmpty(hash)) {
                 map.put("hash", RequestBody.create(null, hash));
@@ -269,18 +271,18 @@ public class NoteApi extends BaseApi {
     }
 
     /**
-     * 获取需要下载笔记本信息的笔记本sid集合，该方法在主线程中运行
+     * 获取需要下载笔记本信息的笔记本id集合，该方法在主线程中运行
      * @param context
      * @return
      */
-    public static List<String> downFolderSids(Context context) {
+    public static List<Integer> downFolderIds(Context context) {
         NoteApplication app = (NoteApplication) context.getApplicationContext();
         User user = app.getCurrentUser();
         if (user == null || TextUtils.isEmpty(user.getSid()) || !user.checkOnLine()) { //用户不可用
             KLog.d(TAG, "down folder sid but user is null or sid is empty or disabled:" + user);
             return null;
         }
-        List<String> list = new ArrayList<>();
+        List<Integer> list = new ArrayList<>();
         //递归执行
         try {
             obtainFolderSidForPage(list, user, 1);
@@ -298,14 +300,14 @@ public class NoteApi extends BaseApi {
      * @param pageNumber 从第几页开始获取,默认为1
      * @return
      */
-    private static void obtainFolderSidForPage(List<String> list, User user, int pageNumber) throws IOException {
+    private static void obtainFolderSidForPage(List<Integer> list, User user, int pageNumber) throws IOException {
         Retrofit retrofit = buildRetrofit();
         INoteApi repo = retrofit.create(INoteApi.class);
         Map<String, String> queryMap = new HashMap<>();
         int pageSize = Constants.PAGE_SIZE_DEFAULT;
         queryMap.put("offset", String.valueOf(pageNumber));
         queryMap.put("limit", String.valueOf(pageSize));
-        KLog.d(TAG, "obtain folder sid page number is:" + pageNumber + "and page size is:" + pageSize);
+        KLog.d(TAG, "obtain folder sid page number is:" + pageNumber + " and page size is:" + pageSize);
         Call<ActionResult<PageInfo<List<Folder>>>> call = repo.downFolderSid(user.getSid(), queryMap);
         Response<ActionResult<PageInfo<List<Folder>>>> response = call.execute();
         if (response == null || !response.isSuccessful()) { //http 请求失败
@@ -331,13 +333,13 @@ public class NoteApi extends BaseApi {
         Map<String, Folder> folderMap = FolderManager.getInstance().getFolders(user, null);
         if (SystemUtil.isEmpty(folderMap)) {    //本地没有笔记本，则直接全部同步服务器上的
             for (Folder folder : folderList) {
-                list.add(folder.getSid());
+                list.add(folder.getId());
             }
         } else {
             for (Folder folder : folderList) {
                 Folder tFolder = folderMap.get(folder.getSid());
                 if (tFolder == null || (!SystemUtil.equalsStr(folder.getHash(), tFolder.getHash()) && !tFolder.isSyncUp())) {    //本地笔记不存在或者hash不一致
-                    list.add(folder.getSid());
+                    list.add(folder.getId());
                 }
             }
         }
@@ -354,6 +356,185 @@ public class NoteApi extends BaseApi {
                 KLog.e(TAG, "obtain folder sid list: error:" + e.getMessage());
             }
         }
+    }
+
+    /**
+     * 下载服务器的全部笔记本数据，分页下载，每页20条
+     * @param context
+     * @return
+     */
+    public static void downFolders(Context context) {
+        NoteApplication app = (NoteApplication) context.getApplicationContext();
+        User user = app.getCurrentUser();
+        if (user == null || TextUtils.isEmpty(user.getSid()) || !user.checkOnLine()) { //用户不可用
+            KLog.d(TAG, "down folders but user is null or sid is empty or disabled:" + user);
+            return;
+        }
+        //递归执行
+        try {
+            obtainFolders(user, 1);
+        } catch (IOException e) {
+            KLog.d(TAG, "down folders list error:" + e.getMessage());
+            e.printStackTrace();
+        }
+        KLog.d(TAG, "down folders end");
+    }
+
+    /**
+     * 递归获取服务器的笔记本信息,该方法在主线程中运行，调用者需另开线程
+     * @param user 用户
+     * @param pageNumber 获取笔记本信息的页码
+     */
+    private static void obtainFolders(User user, int pageNumber) throws IOException {
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> queryMap = new HashMap<>();
+        int pageSize = Constants.PAGE_SIZE_DEFAULT;
+        queryMap.put("offset", String.valueOf(pageNumber));
+        queryMap.put("limit", String.valueOf(pageSize));
+        KLog.d(TAG, "obtain folders page number is:" + pageNumber + " and page size is:" + pageSize);
+        Call<ActionResult<PageInfo<List<FolderDto>>>> call = repo.downFolders(user.getSid(), queryMap);
+        Response<ActionResult<PageInfo<List<FolderDto>>>> response = call.execute();
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "obtain folders response is failed");
+            return;
+        }
+        ActionResult<PageInfo<List<FolderDto>>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "obtain folder response is failed");
+            return;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "obtain folder response is success but action result is not success:" + actionResult);
+            return;
+        }
+        PageInfo<List<FolderDto>> pageInfo = actionResult.getData();
+        if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
+            KLog.d(TAG, "obtain folders response is success and action result is success but no folder");
+            return;
+        }
+        KLog.d(TAG, "obtain folders response is success and action result is success:" + actionResult);
+        List<FolderDto> folderDtoList = pageInfo.getData();
+        //本地保存笔记本
+        saveFolders(user, folderDtoList);
+
+        //已加载过的数据
+        long loadCount = (pageNumber - 1) * pageSize + folderDtoList.size();
+        long totalRecord = pageInfo.getCount();
+        if (totalRecord > loadCount) { //需要继续加载下一页
+            KLog.d(TAG, "obtain folders will load next page:" + (pageNumber + 1));
+            try {
+                obtainFolders(user, pageNumber + 1);
+            } catch (IOException e) {
+                KLog.e(TAG, "obtain folders list: error:" + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 循环获取对应列表的笔记本信息
+     * @param folderIdList
+     * @param context
+     */
+    public static void downFolders(List<Integer> folderIdList, Context context) {
+        NoteApplication app = (NoteApplication) context.getApplicationContext();
+        User user = app.getCurrentUser();
+        if (user == null || !user.isAvailable()) {  //用户不可用
+            KLog.e(TAG, "down folders but user is null or not available");
+            return;
+        }
+        //开始为第一页
+        int pageNumber = 1;
+        int pageSize = Constants.PAGE_SIZE_DEFAULT;
+        int size = folderIdList.size();
+        if (size <= pageSize) {
+            try {
+                downFolders(folderIdList, user);
+            } catch (IOException e) {
+                KLog.e(TAG, "down folders error:" + e.getMessage());
+            }
+        } else {
+            int count = size % pageSize == 0 ? (size / pageSize) : (size / pageSize + 1);
+            KLog.e(TAG, "down folders by page count:" + count);
+            for (int i = 0; i < count; i++) {
+                int start = (pageNumber - 1) * pageSize;
+                int end = start + pageSize;
+                try {
+                    List<Integer> idList = folderIdList.subList(start, end);
+                    KLog.e(TAG, "down folders by page number:" + pageNumber + ", sub list:" + idList);
+                    downFolders(idList, user);
+                } catch (Exception e) {
+                    KLog.e(TAG, "down folders by page error:" + e.getMessage());
+                }
+                pageNumber ++;
+            }
+            KLog.e(TAG, "down folders by page end");
+        }
+    }
+
+    /**
+     * 根据一组id获取对应笔记本的数据,该方法在主线程中运行，调用时需另开线程
+     * @param idList 笔记本的id列表，该id是服务器的id
+     * @param user
+     * @return
+     */
+    private static void downFolders(List<Integer> idList, User user) throws IOException {
+        if (SystemUtil.isEmpty(idList)) {
+            KLog.d(TAG, "down folder id list is empty:" + idList);
+            return;
+        }
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> paramMap = new HashMap<>();
+        StringBuilder builder = new StringBuilder();
+        for (Integer id : idList) {
+            builder.append(id).append(Constants.TAG_COMMA);
+        }
+        int length = builder.length();
+        if (length == 0) {
+            KLog.d(TAG, "down folder id builder length is 0:" + builder);
+            return;
+        }
+        builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_COMMA));
+        paramMap.put("idStr", builder.toString());
+        Call<ActionResult<List<FolderDto>>> call = repo.downFoldersFilter(user.getSid(), paramMap);
+        Response<ActionResult<List<FolderDto>>> response = call.execute();
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "down folder response is failed");
+            return;
+        }
+        ActionResult<List<FolderDto>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "down folder response is failed");
+            return;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "down folder response is success but action result is not success:" + actionResult);
+            return;
+        }
+        List<FolderDto> folderDtoList = actionResult.getData();
+        if (SystemUtil.isEmpty(folderDtoList)) {   //没有数据了
+            KLog.d(TAG, "down folder response is success and action result is success but no folder");
+            return;
+        }
+        //本地保存笔记本
+        saveFolders(user, folderDtoList);
+
+    }
+
+    /**
+     * 本地保存笔记本数据
+     * @param user 用户
+     * @param folderDtoList 笔记本的集合
+     */
+    private static void saveFolders(User user, List<FolderDto> folderDtoList) {
+        List<Folder> folderList = new ArrayList<>();
+        for (FolderDto folderDto : folderDtoList) {
+            Folder folder = folderDto.convert2Folder(user);
+            folderList.add(folder);
+        }
+        //保存并更新到本地
+        FolderManager.getInstance().addOrUpdate(folderList);
     }
 
     /**
@@ -376,9 +557,13 @@ public class NoteApi extends BaseApi {
     private static boolean updateNative(Folder folder, List<DetailNoteInfo> noteInfos) {
         KLog.d(TAG, "update native note and folder data...");
         //先更新笔记
-        boolean success = NoteManager.getInstance().updateDetailNotes(noteInfos, SyncState.SYNC_DONE);
-        KLog.d(TAG, "update native detail note info list result:" + success + ", size:" + noteInfos.size());
-        if (folder != null && !folder.isRootFolder()) { //非“所有”笔记本
+        boolean success = false;
+        if (!SystemUtil.isEmpty(noteInfos)) {
+            success = NoteManager.getInstance().updateDetailNotes(noteInfos, SyncState.SYNC_DONE);
+            KLog.d(TAG, "update native detail note info list result:" + success + ", size:" + noteInfos.size());
+        }
+        if (folder != null && !folder.isEmpty()) { //非“所有”笔记本
+            folder.setSyncState(SyncState.SYNC_DONE);
             success = FolderManager.getInstance().updateSyncFolder(folder);
             KLog.d(TAG, "update native folder result:" + success + ", folder:" + folder);
             return success;
@@ -393,10 +578,10 @@ public class NoteApi extends BaseApi {
      * @return
      */
     private static NoteDto fillNoteInfoDto(List<DetailNoteInfo> detailNoteInfoList) {
-        if (SystemUtil.isEmpty(detailNoteInfoList)) {
-            return null;
-        }
         NoteDto noteDto = new NoteDto();
+        if (SystemUtil.isEmpty(detailNoteInfoList)) {
+            return noteDto;
+        }
         List<NoteInfoDto> noteInfoDtos = new ArrayList<>();
         for (DetailNoteInfo detailNoteInfo : detailNoteInfoList) {
             NoteInfoDto infoDto = new NoteInfoDto();
@@ -505,11 +690,14 @@ public class NoteApi extends BaseApi {
         folderDto.setDeleteState(folder.getDeleteState() == null ? DeleteState.DELETE_NONE.ordinal() : folder.getDeleteState().ordinal());
         folderDto.setCount(folder.getCount());
         folderDto.setCreateTime(folder.getCreateTime());
-        if (folder.getModifyTime() == 0) {
-            folderDto.setModifyTime(System.currentTimeMillis());
+        long modifyTime = folder.getModifyTime();
+        if (modifyTime == 0) {
+            modifyTime = System.currentTimeMillis();
         }
+        folderDto.setModifyTime(modifyTime);
         folderDto.setLock(folder.isLock());
         folderDto.setName(folder.getName());
+        folderDto.setHash(folder.getHash());
         return folderDto;
     }
 }
