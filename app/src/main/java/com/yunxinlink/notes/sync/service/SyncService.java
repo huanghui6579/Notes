@@ -188,6 +188,7 @@ public class SyncService extends Service {
             return null;
         }
 
+        //根据同步的sid来检查该同步任务是否正在进行
         if (!checkSyncState(syncSid)) {
             return null;
         }
@@ -196,6 +197,9 @@ public class SyncService extends Service {
         resultParam.optType = Constants.SYNC_DOWN_NOTE;
         //同步笔记本
         syncDownFolder(user);
+
+        //检查本地是否有笔记，如果没有，则下载服务器的全部笔记
+        //获取需要下载的笔记的id
 
         SyncCache.getInstance().remove(syncSid);
         return resultParam;

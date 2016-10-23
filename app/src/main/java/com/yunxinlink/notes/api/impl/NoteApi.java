@@ -66,9 +66,8 @@ public class NoteApi extends BaseApi {
             KLog.d(TAG, "sync up note invoke but context is null and will return");
             return null;
         }
-        NoteApplication app = (NoteApplication) context.getApplicationContext();
-        User user = app.getCurrentUser();
-        if (user == null || !user.isAvailable()) {  //用户不可用
+        User user = getUser(context);
+        if (user == null) {  //用户不可用
             KLog.d(TAG, "sync up note failed user is not available");
             if (listener != null) {
                 listener.onLoadFailed(ActionResult.RESULT_DATA_NOT_EXISTS, "user is null or not available");
@@ -276,9 +275,8 @@ public class NoteApi extends BaseApi {
      * @return
      */
     public static List<Integer> downFolderIds(Context context) {
-        NoteApplication app = (NoteApplication) context.getApplicationContext();
-        User user = app.getCurrentUser();
-        if (user == null || TextUtils.isEmpty(user.getSid()) || !user.checkOnLine()) { //用户不可用
+        User user = getUser(context);
+        if (user == null) { //用户不可用
             KLog.d(TAG, "down folder sid but user is null or sid is empty or disabled:" + user);
             return null;
         }
@@ -364,10 +362,9 @@ public class NoteApi extends BaseApi {
      * @return
      */
     public static void downFolders(Context context) {
-        NoteApplication app = (NoteApplication) context.getApplicationContext();
-        User user = app.getCurrentUser();
-        if (user == null || TextUtils.isEmpty(user.getSid()) || !user.checkOnLine()) { //用户不可用
-            KLog.d(TAG, "down folders but user is null or sid is empty or disabled:" + user);
+        User user = getUser(context);
+        if (user == null) { //用户不可用
+            KLog.d(TAG, "down folders but user is null or sid is empty or disabled");
             return;
         }
         //递归执行
@@ -437,9 +434,8 @@ public class NoteApi extends BaseApi {
      * @param context
      */
     public static void downFolders(List<Integer> folderIdList, Context context) {
-        NoteApplication app = (NoteApplication) context.getApplicationContext();
-        User user = app.getCurrentUser();
-        if (user == null || !user.isAvailable()) {  //用户不可用
+        User user = getUser(context);
+        if (user == null) {  //用户不可用
             KLog.e(TAG, "down folders but user is null or not available");
             return;
         }
@@ -520,6 +516,21 @@ public class NoteApi extends BaseApi {
         //本地保存笔记本
         saveFolders(user, folderDtoList);
 
+    }
+
+    /**
+     * 下载笔记
+     * @param context
+     * @return
+     */
+    public static List<NoteInfoDto> downNotes(Context context) {
+        User user = getUser(context);
+        if (user == null) { //用户不可用
+            KLog.d(TAG, "down notes but user is null or not available");
+            return null;
+        }
+        int pageNumber = 1;
+        int pageSize = Constants.PAGE_SIZE_DEFAULT;
     }
 
     /**
@@ -699,5 +710,20 @@ public class NoteApi extends BaseApi {
         folderDto.setName(folder.getName());
         folderDto.setHash(folder.getHash());
         return folderDto;
+    }
+
+    /**
+     * 获取当前的用户
+     * @param context
+     * @return
+     */
+    private static User getUser(Context context) {
+        NoteApplication app = (NoteApplication) context.getApplicationContext();
+        User user = app.getCurrentUser();
+        if (user == null || !user.isAvailable()) {  //用户不可用
+            KLog.d(TAG, "sync task get user is not available");
+            return null;
+        }
+        return user;
     }
 }

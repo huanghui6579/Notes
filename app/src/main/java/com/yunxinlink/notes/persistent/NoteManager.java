@@ -1512,5 +1512,31 @@ public class NoteManager extends Observable<Observer> {
             notifyObservers(Provider.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE);
         }
     }
+
+    /**
+     * 查询本地笔记的数量
+     * @param user 当前登录的用户
+     * @param args 参数
+     * @return 笔记的数量
+     */
+    public long getNoteCount(User user, Bundle args) {
+        long count = 0;
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query(Provider.NoteColumns.TABLE_NAME, new String[] {"count(*) as count"}, Provider.NoteColumns.USER_ID + " = ?", new String[] {String.valueOf(user.getId())}, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                count = cursor.getLong(0);
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "get note count error:" + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return count;
+    }
     
 }

@@ -60,7 +60,7 @@ public class SyncCache {
         if (oldSyncData != null) {  //存在了
             boolean hasSync = oldSyncData.isSyncing();
             if (hasSync) {  //则重新添加
-                sid = SystemUtil.generateSid();
+                sid = SystemUtil.generateNoteSid();
                 KLog.d(TAG, "sync cache add sync data old is exists and is syncing so new sid is:" + sid);
             } else {
                 KLog.d(TAG, "sync cache add sync data old is exists and is not syncing sid is:" + sid);
