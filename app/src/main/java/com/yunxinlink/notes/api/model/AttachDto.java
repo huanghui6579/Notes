@@ -1,5 +1,11 @@
 package com.yunxinlink.notes.api.model;
 
+import com.yunxinlink.notes.model.Attach;
+import com.yunxinlink.notes.model.DeleteState;
+import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.model.SyncState;
+import com.yunxinlink.notes.util.FileUtil;
+
 /**
  * 对应服务器的Attach
  * @author huanghui1
@@ -200,5 +206,34 @@ public class AttachDto {
 
     public void setHash(String hash) {
         this.hash = hash;
+    }
+
+    /**
+     * 转换成附件
+     * @param noteInfo 附件所属的笔记
+     * @return 返回转换后的附件信息
+     */
+    public Attach convert2Attach(NoteInfo noteInfo) {
+        Attach attach = new Attach();
+        attach.setSid(sid);
+        attach.setModifyTime(modifyTime);
+        attach.setCreateTime(createTime);
+        attach.setHash(hash);
+        attach.setDeleteState(DeleteState.valueOf(deleteState));
+        attach.setDescription(description);
+        attach.setFilename(filename);
+        attach.setLocalPath(localPath);
+        attach.setSize(size);
+        if (FileUtil.isFileExists(localPath)) {
+            attach.setSyncState(SyncState.SYNC_DONE);
+        } else {//需要下载附件
+            attach.setSyncState(SyncState.SYNC_DOWN);
+        }
+        attach.setMimeType(mimeType);
+        attach.setUserId(noteInfo.getUserId());
+        attach.setNoteId(noteInfo.getSid());
+        attach.setType(type);
+        
+        return attach;
     }
 }

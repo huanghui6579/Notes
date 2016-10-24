@@ -181,6 +181,26 @@ public class FileUtil {
     }
 
     /**
+     * 判断附件是否存在
+     * @param localPath 本地附件的全路径
+     * @return
+     */
+    public static boolean isFileExists(String localPath) {
+        if (TextUtils.isEmpty(localPath)) {
+            return false;
+        } else {
+            File file = new File(localPath);
+            boolean exists = false;
+            try {
+                exists = file.exists();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return exists;
+        }
+    }
+
+    /**
      * 是否是压缩包
      * @param suffix 文件的后缀，如rar
      * @return

@@ -519,11 +519,11 @@ public class NoteApi extends BaseApi {
     }
 
     /**
-     * 下载笔记
+     * 下载笔记,该方法在主线程中执行，调用处需要开线程
      * @param context
      * @return
      */
-    public static List<NoteInfoDto> downNotes(Context context) {
+    public static List<NoteInfoDto> downNotes(Context context) throws IOException {
         User user = getUser(context);
         if (user == null) { //用户不可用
             KLog.d(TAG, "down notes but user is null or not available");
@@ -531,6 +531,58 @@ public class NoteApi extends BaseApi {
         }
         int pageNumber = 1;
         int pageSize = Constants.PAGE_SIZE_DEFAULT;
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("offset", String.valueOf(pageNumber));
+        queryMap.put("limit", String.valueOf(pageSize));
+        queryMap.put("countSize", String.valueOf(1));
+
+        Call<ActionResult<PageInfo<List<NoteInfoDto>>>> call = repo.downNotes(user.getSid(), queryMap);
+
+        Response<ActionResult<PageInfo<List<NoteInfoDto>>>> response = call.execute();
+
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "down notes response is failed");
+            return null;
+        }
+        ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "down notes response is failed");
+            return null;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "down notes response is success but action result is not success:" + actionResult);
+            return null;
+        }
+        PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
+        if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
+            KLog.d(TAG, "down notes response is success and no data");
+            return null;
+        }
+        List<NoteInfoDto> noteInfoDtoList = pageInfo.getData();
+        long count = pageInfo.getCount();
+        //保存内容到本地
+        
+        
+        
+        if (noteInfoDtoList.size() <= count) {   //已经加载完毕，不需要继续加载了
+        }
+        return null;
+    }
+
+    /**
+     * 保存笔记到本地
+     * @param user 当前登录的用户
+     * @param noteInfoDtoList 笔记列表
+     */
+    private static void saveNotes(User user, List<NoteInfoDto> noteInfoDtoList) {
+        List<DetailNoteInfo> detailNoteInfoList = new ArrayList<>();
+        for (NoteInfoDto noteInfoDto : noteInfoDtoList) {
+            DetailNoteInfo detailNoteInfo = noteInfoDto.convert2NoteInfo(user);
+            detailNoteInfoList.add(detailNoteInfo);
+        }
+        
     }
 
     /**

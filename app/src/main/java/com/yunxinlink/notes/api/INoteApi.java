@@ -2,6 +2,7 @@ package com.yunxinlink.notes.api;
 
 import com.yunxinlink.notes.api.model.FolderDto;
 import com.yunxinlink.notes.api.model.NoteDto;
+import com.yunxinlink.notes.api.model.NoteInfoDto;
 import com.yunxinlink.notes.api.model.PageInfo;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.Folder;
@@ -74,4 +75,13 @@ public interface INoteApi {
      */
     @GET("note/{userSid}/folders")
     Call<ActionResult<PageInfo<List<FolderDto>>>> downFolders(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
+
+    /**
+     * 分页获取笔记的数据
+     * @param userSid list
+     * @param params 参数
+     * @return 笔记的数据
+     */
+    @GET("note/{userSid}/list")
+    Call<ActionResult<PageInfo<List<NoteInfoDto>>>> downNotes(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
 }

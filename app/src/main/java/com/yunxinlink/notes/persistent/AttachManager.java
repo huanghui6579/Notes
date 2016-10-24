@@ -77,6 +77,30 @@ public class AttachManager extends Observable<Observer> {
     }
 
     /**
+     * 设置更新附件的参数
+     * @param attach
+     * @return
+     */
+    private ContentValues initUpdateAttachValues(Attach attach) {
+        ContentValues values = new ContentValues();
+        SyncState syncState = attach.getSyncState();
+        if (syncState != null) {
+            values.put(Provider.AttachmentColumns.SYNC_STATE, syncState.ordinal());
+        }
+        long modifyTime = attach.getModifyTime();
+        if (modifyTime == 0) {
+            modifyTime = System.currentTimeMillis();
+        }
+        values.put(Provider.AttachmentColumns.MODIFY_TIME, modifyTime);
+        values.put(Provider.AttachmentColumns.SIZE, attach.getSize());
+        values.put(Provider.AttachmentColumns.USER_ID, attach.getUserId());
+        String hash = attach.getHash();
+        if (hash != null) {
+            values.put(Provider.AttachmentColumns.HASH, attach.getHash());
+        }
+    }
+
+    /**
      * 添加附件
      * @param attach 附件
      * @return 返回添加后的附件
@@ -108,15 +132,7 @@ public class AttachManager extends Observable<Observer> {
      */
     public Attach updateAttach(Attach attach) {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        SyncState syncState = attach.getSyncState();
-        if (syncState != null) {
-            values.put(Provider.AttachmentColumns.SYNC_STATE, syncState.ordinal());
-        }
-        values.put(Provider.AttachmentColumns.MODIFY_TIME, attach.getModifyTime());
-        values.put(Provider.AttachmentColumns.SIZE, attach.getSize());
-        values.put(Provider.AttachmentColumns.USER_ID, attach.getUserId());
-        values.put(Provider.AttachmentColumns.HASH, attach.getHash());
+        ContentValues values = initUpdateAttachValues(attach);
         db.beginTransaction();
         long rowId = 0;
         try {
@@ -135,6 +151,15 @@ public class AttachManager extends Observable<Observer> {
         } else {
             return null;
         }
+    }
+
+    /**
+     * 添加或者更新附件
+     * @param attach 附件信息
+     * @return 是否更新成功
+     */
+    public boolean addOrUpdateAttach(Attach attach, SQLiteDatabase db) {
+        
     }
 
     /**

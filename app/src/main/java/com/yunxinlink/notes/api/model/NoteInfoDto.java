@@ -1,6 +1,19 @@
 package com.yunxinlink.notes.api.model;
 
+import com.yunxinlink.notes.model.Attach;
+import com.yunxinlink.notes.model.DeleteState;
+import com.yunxinlink.notes.model.DetailList;
+import com.yunxinlink.notes.model.DetailNoteInfo;
+import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.model.SyncState;
+import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.richtext.AttachText;
+import com.yunxinlink.notes.util.SystemUtil;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 对应服务器的NoteInfo
@@ -200,5 +213,63 @@ public class NoteInfoDto {
 
     public void setDetails(List<DetailListDto> details) {
         this.details = details;
+    }
+    
+    /**
+     * 转换成笔记
+     * @return
+     */
+    public DetailNoteInfo convert2NoteInfo(User user) {
+        DetailNoteInfo detailNoteInfo = new DetailNoteInfo();
+
+        int userId = user.getId();
+        
+        boolean hasAttach = attachs != null && attachs.size() > 0;
+        
+        NoteInfo noteInfo = new NoteInfo();
+        noteInfo.setSid(sid);
+        noteInfo.setUserId(userId);
+        noteInfo.setHash(hash);
+        noteInfo.setModifyTime(modifyTime);
+        noteInfo.setSyncState(SyncState.SYNC_DONE);
+        noteInfo.setContent(content);
+        noteInfo.setCreateTime(createTime);
+        noteInfo.setDeleteState(DeleteState.valueOf(deleteState));
+        noteInfo.setFolderId(folderSid);
+        noteInfo.setHasAttach(hasAttach);
+        noteInfo.setKind(NoteInfo.NoteKind.valueOf(kind));
+        noteInfo.setRemindId(remindId);
+        noteInfo.setRemindTime(remindTime);
+        noteInfo.setTitle(title);
+
+        AttachText attachText = SystemUtil.getAttachSids(content);
+
+        noteInfo.setShowContent(attachText.getText());
+        
+        if (hasAttach) {
+            Map<String, Attach> attachesMap = new HashMap<>();
+            Attach lastAttach = null;
+            for (AttachDto attachDto : attachs) {
+                Attach attach = attachDto.convert2Attach(noteInfo);
+                lastAttach = attach;
+                attachesMap.put(attach.getSid(), attach);
+            }
+            detailNoteInfo.setLastAttach(lastAttach);
+            noteInfo.setAttaches(attachesMap);
+        }
+
+        detailNoteInfo.setNoteInfo(noteInfo);
+        
+        if (noteInfo.isDetailNote() && !SystemUtil.isEmpty(details)) {  //清单笔记,且有清单
+            List<DetailList> detailLists = new ArrayList<>();
+            for (DetailListDto detailListDto : details) {
+                DetailList detailList = detailListDto.convert2DetailList(noteInfo);
+                detailLists.add(detailList);
+            }
+            
+            detailNoteInfo.setDetailList(detailLists);
+        }
+        
+        return detailNoteInfo;
     }
 }

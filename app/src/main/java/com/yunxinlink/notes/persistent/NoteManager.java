@@ -30,8 +30,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static android.R.attr.id;
+import static android.R.string.no;
 
 /**
  * note表的服务层
@@ -925,8 +927,9 @@ public class NoteManager extends Observable<Observer> {
             }
         }
         boolean success = row > 0;
-        if (success) {
-            if (successList.size() == 1) {  //单个
+        int size = successList.size();
+        if (size > 0) {
+            if (size == 1) {  //单个
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, successList.get(0));
             } else {    //多个
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, successList);
@@ -934,6 +937,46 @@ public class NoteManager extends Observable<Observer> {
         }
         KLog.d(TAG, "update detail notes result:" + success);
         return success;
+    }
+
+    /**
+     * 添加或者更新笔记列表
+     * @param detailNoteInfoList 笔记的列表
+     * @return 是否操作成功
+     */
+    public boolean addOrUpdateNotes(List<DetailNoteInfo> detailNoteInfoList) {
+        if (SystemUtil.isEmpty(detailNoteInfoList)) {
+            return true;
+        }
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        long row = 0;
+        for (DetailNoteInfo detailNoteInfo : detailNoteInfoList) {
+            //将事物放到循环里是因为同步一条成功就少一条，如果将事物放到循环外面，若有一条失败，则全都失败了
+            NoteInfo note = detailNoteInfo.getNoteInfo();
+            if (note == null) {
+                continue;
+            }
+            ContentValues values = initUpdateNoteValues(note);
+            db.beginTransaction();
+            try {
+                row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.SID + " = ?", new String[] {note.getSid()});
+                if (row > 0) {  //更新成功
+                    //更新附件
+                    if (note.hasAttach() && !SystemUtil.isEmpty(note.getAttaches())) {  //有附件
+                        Map<String, Attach> attachMap = note.getAttaches();
+                        Set<String> keys = attachMap.keySet();
+                        for (String key : keys) {
+                            Attach attach = attachMap.get(key);
+                        }
+                    }
+                }
+                db.setTransactionSuccessful();
+            } catch (Exception e) {
+                KLog.e(TAG, "add or update notes error:" + e.getMessage());
+            } finally {
+                db.endTransaction();
+            }
+        }
     }
 
     /**

@@ -1,5 +1,10 @@
 package com.yunxinlink.notes.api.model;
 
+import com.yunxinlink.notes.model.DeleteState;
+import com.yunxinlink.notes.model.DetailList;
+import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.model.SyncState;
+
 /**
  * 对应服务器的DetailList
  * @author huanghui1
@@ -135,5 +140,25 @@ public class DetailListDto {
 
     public void setHash(String hash) {
         this.hash = hash;
+    }
+
+    /**
+     * 转换成清单
+     * @param noteInfo 笔记信息
+     * @return 清单
+     */
+    public DetailList convert2DetailList(NoteInfo noteInfo) {
+        DetailList detailList = new DetailList();
+        detailList.setSid(sid);
+        detailList.setTitle(title);
+        detailList.setNoteId(noteInfo.getSid());
+        detailList.setDeleteState(DeleteState.valueOf(deleteState));
+        detailList.setChecked(checked);
+        detailList.setCreateTime(createTime);
+        detailList.setModifyTime(modifyTime);
+        detailList.setSort(sort);
+        detailList.setOldSort(sort);
+        detailList.setSyncState(SyncState.SYNC_DONE);
+        return detailList;
     }
 }

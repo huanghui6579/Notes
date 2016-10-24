@@ -262,6 +262,17 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
          * 清单笔记
          */
         DETAILED_LIST;
+        
+        public static NoteKind valueOf(int value) {
+            switch (value) {
+                case 0:
+                    return TEXT;
+                case 1:
+                    return DETAILED_LIST;
+                default:
+                    return TEXT;
+            }
+        }
     }
 
     /**
