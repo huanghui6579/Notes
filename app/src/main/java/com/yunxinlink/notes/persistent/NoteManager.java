@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static android.R.attr.id;
-import static android.R.string.no;
 
 /**
  * note表的服务层
@@ -761,6 +760,87 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
+     * 添加清单
+     * @param detail 清单
+     * @return
+     */
+    private DetailList addDetailList(DetailList detail, SQLiteDatabase db) {
+        if (db == null) {
+            db = mDBHelper.getWritableDatabase();
+        }
+        String hash = detail.getHash();
+        if (TextUtils.isEmpty(hash)) {
+            //设置hash
+            detail.setHash(DigestUtil.md5Hex(detail.getTitle()));
+        }
+        ContentValues values = initDetailValues(detail);
+        long rowId = 0;
+        try {
+            rowId = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
+        } catch (Exception e) {
+            KLog.d(TAG, "add detail list error:" + e.getMessage());
+        }
+        if (rowId > 0) {
+            detail.setId((int) rowId);
+            return detail;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 更新清单
+     * @param detail 清单
+     * @param db 数据库
+     * @return
+     */
+    private DetailList updateDetailList(DetailList detail, SQLiteDatabase db) {
+        if (db == null) {
+            db = mDBHelper.getWritableDatabase();
+        }
+        //设置hash
+        detail.setHash(DigestUtil.md5Hex(detail.getTitle()));
+        int id = detail.getId();
+        ContentValues values = initUpdateDetailValues(detail);
+        long rowId = 0;
+        
+        String selection = null;
+        String[] args = null;
+        if (id > 0) {   //已有，则更新
+            selection = Provider.DetailedListColumns._ID + " = ?";
+            args = new String[] {String.valueOf(id)};
+        } else {
+            selection = Provider.DetailedListColumns.SID + " = ?";
+            args = new String[] {detail.getSid()};
+        }
+        try {
+            rowId = db.update(Provider.DetailedListColumns.TABLE_NAME, values, selection, args);
+        } catch (Exception e) {
+            KLog.d(TAG, "update detail list error:" + e.getMessage());
+        }
+        if (rowId > 0) {
+            return detail;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 添加或者更新清单
+     * @param detail 清单
+     * @return
+     */
+    private boolean addOrUpdateDetailList(DetailList detail, SQLiteDatabase db) {
+        boolean result = updateDetailList(detail, db) != null;
+        if (!result) {  //更新失败，则添加
+            KLog.d(TAG, "add or update detail list update failed and will add:" + detail);
+            result = addDetailList(detail, db) != null;
+        }
+        KLog.d(TAG, "add or update detail list result:" + result);
+        return result;
+    }
+    
+    /**
      * 添加有清单的笔记
      * @param detailNote
      * @return
@@ -787,11 +867,7 @@ public class NoteManager extends Observable<Observer> {
                 KLog.d(TAG, "-----addDetailNote--hasDetailList--");
                 //批量添加清单项
                 for (DetailList detail : detailNote.getDetailList()) {
-                    //设置hash
-                    detail.setHash(DigestUtil.md5Hex(detail.getTitle()));
-                    values = initDetailValues(detail);
-                    rowId = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
-                    detail.setId((int) rowId);
+                    addDetailList(detail, db);
                 }
             }
 
@@ -851,12 +927,10 @@ public class NoteManager extends Observable<Observer> {
                         int id = detail.getId();
 
                         if (id > 0) {   //已有，则更新
-                            values = initUpdateDetailValues(detail);
-                            row = db.update(Provider.DetailedListColumns.TABLE_NAME, values, Provider.DetailedListColumns._ID + " = ?", new String[] {String.valueOf(id)});
+                            updateDetailList(detail, db);
                         } else {    //添加清单
                             KLog.d(TAG, "--insert---detail---" + detail);
-                            values = initDetailValues(detail);
-                            row = db.insert(Provider.DetailedListColumns.TABLE_NAME, null, values);
+                            addDetailList(detail, db);
                             KLog.d(TAG, "-----insert--detail---row---:" + row);
                         }
 
@@ -950,6 +1024,7 @@ public class NoteManager extends Observable<Observer> {
         }
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         long row = 0;
+        List<DetailNoteInfo> changedList = new ArrayList<>();
         for (DetailNoteInfo detailNoteInfo : detailNoteInfoList) {
             //将事物放到循环里是因为同步一条成功就少一条，如果将事物放到循环外面，若有一条失败，则全都失败了
             NoteInfo note = detailNoteInfo.getNoteInfo();
@@ -959,24 +1034,59 @@ public class NoteManager extends Observable<Observer> {
             ContentValues values = initUpdateNoteValues(note);
             db.beginTransaction();
             try {
+                boolean canUpdate = false;
                 row = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.SID + " = ?", new String[] {note.getSid()});
-                if (row > 0) {  //更新成功
+                if (row <= 0) {  //更新失败
+                    //添加笔记
+                    values = initNoteValues(note);
+                    row = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
+                    if (row > 0) {
+                        canUpdate = true;
+                        note.setRemindId((int) row);
+                    }
+                } else {
+                    canUpdate = true;
+                }
+                if (canUpdate) {
+
                     //更新附件
                     if (note.hasAttach() && !SystemUtil.isEmpty(note.getAttaches())) {  //有附件
                         Map<String, Attach> attachMap = note.getAttaches();
                         Set<String> keys = attachMap.keySet();
                         for (String key : keys) {
                             Attach attach = attachMap.get(key);
+                            //更新附件
+                            AttachManager.getInstance().addOrUpdateAttach(attach, db);
+                        }
+                    }
+                    //更新清单
+                    if (note.isDetailNote() && detailNoteInfo.hasDetailList()) {    //是清单笔记且有清单
+                        List<DetailList> detailLists = detailNoteInfo.getDetailList();
+                        for (DetailList detailList : detailLists) {
+                            addOrUpdateDetailList(detailList, db);
                         }
                     }
                 }
                 db.setTransactionSuccessful();
+                changedList.add(detailNoteInfo);
             } catch (Exception e) {
                 KLog.e(TAG, "add or update notes error:" + e.getMessage());
             } finally {
                 db.endTransaction();
             }
         }
+        int size = changedList.size();
+        boolean success = false;
+        if (size > 0) {
+            success = true;
+            KLog.e(TAG, "add or update notes result:true, size:" + size);
+            if (size == 1) {    //只有一条记录
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, changedList.get(0));
+            } else {    //多条记录
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, changedList);
+            }
+        }
+        return success;
     }
 
     /**

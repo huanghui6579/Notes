@@ -3,6 +3,7 @@ package com.yunxinlink.notes.persistent;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.db.DBHelper;
 import com.yunxinlink.notes.db.Provider;
@@ -98,6 +99,7 @@ public class AttachManager extends Observable<Observer> {
         if (hash != null) {
             values.put(Provider.AttachmentColumns.HASH, attach.getHash());
         }
+        return values;
     }
 
     /**
@@ -106,7 +108,20 @@ public class AttachManager extends Observable<Observer> {
      * @return 返回添加后的附件
      */
     public Attach addAttach(Attach attach) {
-        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        return addAttach(attach, null, true);
+    }
+
+    /**
+     * 添加附件
+     * @param attach 附件
+     * @param db 数据库，如果为null，则创建
+     * @param notify 是否通知刷新界面
+     * @return
+     */
+    private Attach addAttach(Attach attach, SQLiteDatabase db, boolean notify) {
+        if (db == null) {
+            db = mDBHelper.getWritableDatabase();
+        }
         ContentValues values = initAttachValues(attach);
         long rowId = 0;
         try {
@@ -115,10 +130,10 @@ public class AttachManager extends Observable<Observer> {
             Log.e(TAG, "---addAttach--error--" + e.getMessage());
         }
         if (rowId > 0) {
-            if (rowId > 0) {
-                attach.setId((int) rowId);
+            attach.setId((int) rowId);
+            if (notify) {
+                notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, attach);
             }
-            notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, attach);
             return attach;
         } else {
             return null;
@@ -131,22 +146,33 @@ public class AttachManager extends Observable<Observer> {
      * @return
      */
     public Attach updateAttach(Attach attach) {
-        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        return updateAttach(attach, null, true);
+    }
+
+    /**
+     * 更新附件信息
+     * @param attach 附件
+     * @param db 数据库，如果为null，则创建
+     * @param notify 是否通知刷新界面
+     * @return
+     */
+    private Attach updateAttach(Attach attach, SQLiteDatabase db, boolean notify) {
+        if (db == null) {
+            db = mDBHelper.getWritableDatabase();
+        }
         ContentValues values = initUpdateAttachValues(attach);
-        db.beginTransaction();
         long rowId = 0;
         try {
             String selection = Provider.AttachmentColumns.SID + " = ?";
             String[] args = {attach.getSid()};
             rowId = db.update(Provider.AttachmentColumns.TABLE_NAME, values, selection, args);
-            db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.e(TAG, "---updateAttach--error--" + e.getMessage());
-        } finally {
-            db.endTransaction();
         }
         if (rowId > 0) {
-            notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, attach);
+            if (notify) {
+                notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, attach);
+            }
             return attach;
         } else {
             return null;
@@ -159,7 +185,14 @@ public class AttachManager extends Observable<Observer> {
      * @return 是否更新成功
      */
     public boolean addOrUpdateAttach(Attach attach, SQLiteDatabase db) {
-        
+        //先更新附件，如果更新行数为0，则添加
+        boolean result = updateAttach(attach, db, false) != null;
+        if (!result) {  //更新失败，则添加
+            KLog.d(TAG, "add or update attach update failed and will add:" + attach);
+            result = addAttach(attach, db, false) != null;
+        }
+        KLog.d(TAG, "add or update attach result:" + result);
+        return result;
     }
 
     /**
