@@ -84,4 +84,23 @@ public interface INoteApi {
      */
     @GET("note/{userSid}/list")
     Call<ActionResult<PageInfo<List<NoteInfoDto>>>> downNotes(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
+
+    /**
+     * 分页获取笔记的sid、hash等数据
+     * @param userSid list
+     * @param params 参数
+     * @return 笔记的数据
+     */
+    @GET("note/{userSid}/list")
+    Call<ActionResult<PageInfo<List<NoteInfoDto>>>> downNoteSids(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
+
+    /**
+     * 根据指定的id数组获取笔记的列表
+     * @param userSid 用户的sid
+     * @param params 参数
+     * @return 笔记的数据
+     */
+    @FormUrlEncoded
+    @POST("note/{userSid}/list/filter")
+    Call<ActionResult<List<NoteInfoDto>>> downNotesFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
 }

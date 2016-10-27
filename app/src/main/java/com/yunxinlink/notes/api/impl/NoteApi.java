@@ -543,7 +543,7 @@ public class NoteApi extends BaseApi {
      * @param totalCount 总页数， -1表示需要从服务器获取总记录数              
      * @return
      */
-    public static void downNotes(User user, int pageNumber, long totalCount) throws IOException {
+    private static void downNotes(User user, int pageNumber, long totalCount) throws IOException {
         KLog.d(TAG, "down notes page：" + pageNumber);
         int pageSize = Constants.PAGE_SIZE_DEFAULT;
         Retrofit retrofit = buildRetrofit();
@@ -559,7 +559,7 @@ public class NoteApi extends BaseApi {
 
         Response<ActionResult<PageInfo<List<NoteInfoDto>>>> response = call.execute();
 
-        if (response == null || !response.isSuccessful()) { //http 请求失败
+        /*if (response == null || !response.isSuccessful()) { //http 请求失败
             KLog.d(TAG, "down notes response is failed");
             return;
         }
@@ -576,7 +576,16 @@ public class NoteApi extends BaseApi {
         if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
             KLog.d(TAG, "down notes response is success and no data");
             return;
+        }*/
+
+        boolean result = checkNoteList(response);
+        
+        if (!result) {
+            return;
         }
+        
+        ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
+        PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
         List<NoteInfoDto> noteInfoDtoList = pageInfo.getData();
         if (totalCount == -1) {
             totalCount = pageInfo.getCount();
@@ -598,6 +607,181 @@ public class NoteApi extends BaseApi {
         } else {
             KLog.d(TAG, "down notes completed...");
         }
+    }
+
+    /**
+     * 下载笔记服务器的笔记的ID集合，并带有hash等数据
+     * @param user 当前登录用户
+     * @param noteIdList 笔记ID集合，用于循环的存放数据
+     * @param pageNumber 第几页
+     * @param totalCount 总页数
+     * @throws IOException
+     */
+    private static void downNoteIds(User user, List<Integer> noteIdList, int pageNumber, long totalCount) throws IOException {
+        KLog.d(TAG, "down note sids page：" + pageNumber);
+        int pageSize = Constants.PAGE_SIZE_DEFAULT;
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("offset", String.valueOf(pageNumber));
+        queryMap.put("limit", String.valueOf(pageSize));
+        if (totalCount == -1) { //需要获取总记录数
+            queryMap.put("countSize", String.valueOf(1));
+        }
+        String userSid = user.getSid();
+        Call<ActionResult<PageInfo<List<NoteInfoDto>>>> call = repo.downNoteSids(userSid, queryMap);
+
+        Response<ActionResult<PageInfo<List<NoteInfoDto>>>> response = call.execute();
+
+        /*if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "down notes response is failed");
+            return;
+        }
+        ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "down notes response is failed");
+            return;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "down notes response is success but action result is not success:" + actionResult);
+            return;
+        }
+        PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
+        if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
+            KLog.d(TAG, "down notes response is success and no data");
+            return;
+        }*/
+
+        boolean result = checkNoteList(response);
+
+        if (!result) {
+            return;
+        }
+
+        ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
+        PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
+        
+        List<NoteInfoDto> noteInfoDtoList = pageInfo.getData();
+        if (totalCount == -1) {
+            totalCount = pageInfo.getCount();
+        }
+        //与本地比较，是否需要下载同步
+        //根据下载的sid查询本地对应的sid的笔记，本地没有或者hash不一样，则都需要下载
+        String sidStr = checkLocalNotes(noteInfoDtoList);
+        
+        if (!TextUtils.isEmpty(sidStr)) {   //这20条记录中有一部分需要下载更新
+            
+        }
+
+        //已加载的数量
+        long loadSize = noteInfoDtoList.size() + (pageNumber - 1) * pageSize;
+        
+        boolean loadCompleted = loadSize >= totalCount;
+
+        if (!loadCompleted) {   //没有加载完毕，需要继续加载
+            pageNumber = pageNumber + 1;
+            KLog.d(TAG, "down note sids next page：" + pageNumber);
+            try {
+                downNoteIds(user, noteIdList, pageNumber, totalCount);
+            } catch (IOException e) {
+                KLog.e(TAG, "down note sids error page number:" + pageNumber + ", error:" + e.getMessage());
+            }
+        } else {
+            KLog.d(TAG, "down note sids completed...");
+        }
+    }
+
+    /**
+     * 下载指定的 id的笔记，该id是服务器端的笔记id ,字符串id用","分隔
+     * @param user 当前登录的用户
+     * @param idStr ID的字符串，用","分隔
+     * @throws IOException
+     */
+    private static void downNotes(User user, String idStr) throws IOException {
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> map = new HashMap<>();
+        map.put("idStr", idStr);
+        Call<ActionResult<List<NoteInfoDto>>> call = repo.downNotesFilter(user.getSid(), map);
+        Response<ActionResult<List<NoteInfoDto>>> response = call.execute();
+
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "down note filter sid response is failed");
+            return;
+        }
+
+        ActionResult<List<NoteInfoDto>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "down note filter sid response is failed");
+            return;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "down notes filter sid response is success but action result is not success:" + actionResult);
+            return;
+        }
+
+        List<NoteInfoDto> noteInfoDtoList = actionResult.getData();
+        if (SystemUtil.isEmpty(noteInfoDtoList)) {
+            KLog.d(TAG, "down notes filter sid response is success but note dto list is empty");
+            return;
+        }
+    }
+
+    /**
+     * 检查返回笔记数据的可用性
+     * @param response 服务器返回的数据
+     * @return
+     */
+    private static boolean checkNoteList(Response<ActionResult<PageInfo<List<NoteInfoDto>>>> response) {
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "down notes response is failed");
+            return false;
+        }
+        ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "down notes response is failed");
+            return false;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "down notes response is success but action result is not success:" + actionResult);
+            return false;
+        }
+        PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
+        if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
+            KLog.d(TAG, "down notes response is success and no data");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 检测本地笔记是否有需要下载更新的
+     * @param noteInfoDtoList 服务器的笔记sid集合
+     * @return 需要下载更新的笔记的ID字符串，用","分隔，且该ID是<strong>服务器的ID</strong>
+     */
+    private static String checkLocalNotes(List<NoteInfoDto> noteInfoDtoList) {
+        //先根据sid的集合查询本地的笔记
+        List<String> sidList = new ArrayList<>();
+        for (NoteInfoDto noteInfoDto : noteInfoDtoList) {
+            sidList.add(noteInfoDto.getSid());
+        }
+        //根据sid的集合获取本地对应笔记的基本信息
+        StringBuilder builder = new StringBuilder();
+        Map<String, NoteInfo> map = NoteManager.getInstance().getBasicNoteList(sidList);
+        for (NoteInfoDto noteInfoDto : noteInfoDtoList) {
+            String sid = noteInfoDto.getSid();
+            int id = noteInfoDto.getId();
+            NoteInfo noteInfo = map.get(sid);
+            if (noteInfo == null || !SystemUtil.equalsStr(noteInfo.getHash(), noteInfoDto.getHash())) { //本地不存在，则需下载
+                builder.append(id).append(Constants.TAG_COMMA);
+            }
+        }
+        if (builder.length() > 0) {
+            builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_COMMA));
+        }
+        String sids = builder.toString();
+        KLog.d(TAG, "check local note sid str is:" + sids);
+        return sids;
     }
 
     /**

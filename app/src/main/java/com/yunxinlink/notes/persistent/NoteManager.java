@@ -27,6 +27,7 @@ import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -1547,6 +1548,66 @@ public class NoteManager extends Observable<Observer> {
     public NoteInfo getNote(int noteId) {
         NoteInfo info = new NoteInfo(noteId);
         return getNote(info);
+    }
+
+    /**
+     * 根据sid集合获取对应的笔记的基本信息列表，紧包含hash值
+     * @param sidList 笔记的sid列表
+     * @return 仅包含hash值的集合
+     */
+    public Map<String, NoteInfo> getBasicNoteList(List<String> sidList) {
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String[] projection = {Provider.NoteColumns.HASH, Provider.NoteColumns.SYNC_STATE, Provider.NoteColumns.SID};
+        Cursor cursor = null;
+        Map<String, NoteInfo> map = new HashMap<>();
+        try {
+            if (sidList.size() == 1) {  //只有一条记录
+                String sid = sidList.get(0);
+                //查询可能需要下载同步的笔记
+                cursor = db.query(Provider.NoteColumns.TABLE_NAME, projection, Provider.NoteColumns.SID + " = ? and " + 
+                        Provider.NoteColumns.SYNC_STATE + " is not null and " + Provider.NoteColumns.SYNC_STATE + " != ?", 
+                        new String[] {sid, String.valueOf(SyncState.SYNC_UP.ordinal())}, null, null, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    NoteInfo noteInfo = new NoteInfo();
+                    noteInfo.setSid(sid);
+                    noteInfo.setHash(cursor.getString(0));
+                    noteInfo.setSyncState(SyncState.valueOf(cursor.getInt(1)));
+                    map.put(sid, noteInfo);
+                }
+            } else {    //多条记录
+                StringBuilder selection = new StringBuilder(Provider.NoteColumns.SYNC_STATE + " is not null and " + Provider.NoteColumns.SYNC_STATE + " != ? and " + Provider.NoteColumns.SID + " in (");
+                List<String> argList = new ArrayList<>();
+                argList.add(String.valueOf(SyncState.SYNC_UP.ordinal()));
+                for (String sid : sidList) {
+                    map.put(sid, null);
+                    selection.append(sid).append(Constants.TAG_COMMA);
+                    argList.add(sid);
+                }
+                selection.deleteCharAt(selection.lastIndexOf(Constants.TAG_COMMA));
+                selection.append(")");
+                String[] args = new String[argList.size()];
+                args = argList.toArray(args);
+                cursor = db.query(Provider.NoteColumns.TABLE_NAME, projection, selection.toString(),
+                        args, null, null, null);
+                
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        NoteInfo noteInfo = new NoteInfo();
+                        noteInfo.setHash(cursor.getString(0));
+                        noteInfo.setSyncState(SyncState.valueOf(cursor.getInt(1)));
+                        noteInfo.setSid(cursor.getString(2));
+                        map.put(noteInfo.getSid(), noteInfo);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "get basic not info error:" + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return map;
     }
 
     /**
