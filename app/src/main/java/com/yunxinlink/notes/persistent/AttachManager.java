@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.persistent;
 
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.socks.library.KLog;
@@ -16,7 +17,10 @@ import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.log.Log;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 附件的数据库服务层
@@ -290,5 +294,64 @@ public class AttachManager extends Observable<Observer> {
         }
         return success;
 
+    }
+
+    /**
+     * 获取基本的附件信息
+     * @param sidList 附件的sid集合
+     * @return
+     */
+    public Map<String, Attach> getBasicAttachList(List<String> sidList) {
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String[] projection = {Provider.AttachmentColumns.HASH, Provider.AttachmentColumns.SYNC_STATE, Provider.AttachmentColumns.SID};
+        Cursor cursor = null;
+        Map<String, Attach> map = new HashMap<>();
+        try {
+            if (sidList.size() == 1) {  //只有一条记录
+                String sid = sidList.get(0);
+                cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, projection, Provider.AttachmentColumns.SID + " = ? and " +
+                                Provider.AttachmentColumns.SYNC_STATE + " is not null and " + Provider.AttachmentColumns.SYNC_STATE + " != ?",
+                        new String[] {sid, String.valueOf(SyncState.SYNC_UP.ordinal())}, null, null, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    Attach attach = new Attach();
+                    attach.setSid(sid);
+                    attach.setHash(cursor.getString(0));
+                    attach.setSyncState(SyncState.valueOf(cursor.getInt(1)));
+                    map.put(sid, attach);
+                }
+            } else {    //多条记录
+                StringBuilder selection = new StringBuilder(Provider.AttachmentColumns.SYNC_STATE + " is not null and " + Provider.AttachmentColumns.SYNC_STATE + " != ? and " + Provider.AttachmentColumns.SID + " in (");
+                List<String> argList = new ArrayList<>();
+                argList.add(String.valueOf(SyncState.SYNC_UP.ordinal()));
+                for (String sid : sidList) {
+                    map.put(sid, null);
+                    selection.append(sid).append(Constants.TAG_COMMA);
+                    argList.add(sid);
+                }
+                selection.deleteCharAt(selection.lastIndexOf(Constants.TAG_COMMA));
+                selection.append(")");
+                String[] args = new String[argList.size()];
+                args = argList.toArray(args);
+                cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, projection, selection.toString(),
+                        args, null, null, null);
+    
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        Attach attach = new Attach();
+                        attach.setHash(cursor.getString(0));
+                        attach.setSyncState(SyncState.valueOf(cursor.getInt(1)));
+                        attach.setSid(cursor.getString(2));
+                        map.put(attach.getSid(), attach);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "get basic attach error:" + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return map;
     }
 }

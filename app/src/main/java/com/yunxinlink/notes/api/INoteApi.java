@@ -1,5 +1,7 @@
 package com.yunxinlink.notes.api;
 
+import com.yunxinlink.notes.api.model.AttachDto;
+import com.yunxinlink.notes.api.model.DetailListDto;
 import com.yunxinlink.notes.api.model.FolderDto;
 import com.yunxinlink.notes.api.model.NoteDto;
 import com.yunxinlink.notes.api.model.NoteInfoDto;
@@ -103,4 +105,24 @@ public interface INoteApi {
     @FormUrlEncoded
     @POST("note/{userSid}/list/filter")
     Call<ActionResult<List<NoteInfoDto>>> downNotesFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
+
+    /**
+     * 根据指定的id数组获取清单的列表
+     * @param userSid 用户的sid
+     * @param params 参数
+     * @return 清单的数据
+     */
+    @FormUrlEncoded
+    @POST("note/{userSid}/detaillist/filter")
+    Call<ActionResult<List<DetailListDto>>> downDetailListFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
+
+    /**
+     * 根据指定的id数组获取附件的列表
+     * @param userSid 用户的sid
+     * @param params 参数
+     * @return 附件的数据
+     */
+    @FormUrlEncoded
+    @POST("note/{userSid}/attach/filter")
+    Call<ActionResult<List<AttachDto>>> downAttachFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
 }

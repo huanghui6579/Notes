@@ -1611,6 +1611,67 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
+     * 获取清单的基本信息
+     * @param sidList 清单的sid列表
+     * @return
+     */
+    public Map<String, DetailList> getBasicDetailLists(List<String> sidList) {
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String[] projection = {Provider.DetailedListColumns.HASH, Provider.DetailedListColumns.SYNC_STATE, Provider.DetailedListColumns.SID};
+        Cursor cursor = null;
+        Map<String, DetailList> map = new HashMap<>();
+        try {
+            if (sidList.size() == 1) {  //只有一条记录
+                String sid = sidList.get(0);
+                //查询可能需要下载同步的清单
+                cursor = db.query(Provider.DetailedListColumns.TABLE_NAME, projection, Provider.DetailedListColumns.SID + " = ? and " +
+                                Provider.DetailedListColumns.SYNC_STATE + " is not null and " + Provider.DetailedListColumns.SYNC_STATE + " != ?",
+                        new String[] {sid, String.valueOf(SyncState.SYNC_UP.ordinal())}, null, null, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    DetailList detailList = new DetailList();
+                    detailList.setSid(sid);
+                    detailList.setHash(cursor.getString(0));
+                    detailList.setSyncState(SyncState.valueOf(cursor.getInt(1)));
+                    map.put(sid, detailList);
+                }
+            } else {    //多条记录
+                StringBuilder selection = new StringBuilder(Provider.DetailedListColumns.SYNC_STATE + " is not null and " + Provider.DetailedListColumns.SYNC_STATE + " != ? and " + Provider.DetailedListColumns.SID + " in (");
+                List<String> argList = new ArrayList<>();
+                argList.add(String.valueOf(SyncState.SYNC_UP.ordinal()));
+                for (String sid : sidList) {
+                    map.put(sid, null);
+                    selection.append(sid).append(Constants.TAG_COMMA);
+                    argList.add(sid);
+                }
+                selection.deleteCharAt(selection.lastIndexOf(Constants.TAG_COMMA));
+                selection.append(")");
+                String[] args = new String[argList.size()];
+                args = argList.toArray(args);
+                cursor = db.query(Provider.DetailedListColumns.TABLE_NAME, projection, selection.toString(),
+                        args, null, null, null);
+    
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        DetailList detailList = new DetailList();
+                        detailList.setHash(cursor.getString(0));
+                        detailList.setSyncState(SyncState.valueOf(cursor.getInt(1)));
+                        detailList.setSid(cursor.getString(2));
+                        map.put(detailList.getSid(), detailList);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "get basic detail list error:" + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return map;
+    }
+    
+
+    /**
      * 搜索笔记
      * @param keyword 关键字
      * @return

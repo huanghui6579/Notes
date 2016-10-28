@@ -32,6 +32,7 @@ import com.yunxinlink.notes.util.SystemUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -667,9 +668,46 @@ public class NoteApi extends BaseApi {
         }
         //与本地比较，是否需要下载同步
         //根据下载的sid查询本地对应的sid的笔记，本地没有或者hash不一样，则都需要下载
-        String sidStr = checkLocalNotes(noteInfoDtoList);
+        //[0]:笔记的ID集合
+        //[1]:清单的ID集合
+        //[2]:附件的ID集合
+        //该集合包含这段记录中的笔记、附件和清单的id
+        Map<Integer, String> idMap = checkLocalNotes(noteInfoDtoList);
         
-        if (!TextUtils.isEmpty(sidStr)) {   //这20条记录中有一部分需要下载更新
+        String noteIdStr = idMap.get(0);
+        if (!TextUtils.isEmpty(noteIdStr)) {   //这20条记录中有一部分需要下载更新
+            //仅下载笔记的基本数据，不包含清单、附件
+            List<NoteInfoDto> downNoteDtoList = downNotes(user, noteIdStr);
+            if (downNoteDtoList != null) {  //网络请求是OK的，但是没有数据，说明这组ID
+                if (downNoteDtoList.size() > 0) {
+                    //转换成映射的集合
+                    Map<String, NoteInfoDto> noteDtoMap = new HashMap<>();
+
+                    for (NoteInfoDto noteInfoDto : downNoteDtoList) {
+                        noteDtoMap.put(noteInfoDto.getSid(), noteInfoDto);
+                    }
+
+                    //下载清单数据
+                    String detailIdStr = idMap.get(1);
+                    if (!TextUtils.isEmpty(detailIdStr)) {  //有清单数据
+                        //TODO 下载清单数据
+                        List<DetailListDto> detailListDtoList = downDetailLists(user, detailIdStr);
+                        if (!SystemUtil.isEmpty(detailListDtoList)) {   //有清单
+
+                        }
+                    }
+                    String attIdStr = idMap.get(2);
+                    if (!TextUtils.isEmpty(attIdStr)) {
+                        //下载附件的信息
+                        List<AttachDto> attachDtoList = downAttachs(user, attIdStr);
+                    }
+                } else {
+                    //TODO 删除该组ID对应本地数据
+                    //网络请求是OK的，但是没有数据，说明这组ID对应的笔记在服务器不存在，则删除本地的，彻底删除
+                }
+            } else {
+                KLog.d(TAG, "down notes but no notes noteIdStr:" + noteIdStr);
+            }
             
         }
 
@@ -697,34 +735,109 @@ public class NoteApi extends BaseApi {
      * @param idStr ID的字符串，用","分隔
      * @throws IOException
      */
-    private static void downNotes(User user, String idStr) throws IOException {
+    private static List<NoteInfoDto> downNotes(User user, String idStr) throws IOException {
+        KLog.d(TAG, "down notes by ids:" + idStr);
         Retrofit retrofit = buildRetrofit();
         INoteApi repo = retrofit.create(INoteApi.class);
         Map<String, String> map = new HashMap<>();
         map.put("idStr", idStr);
+        map.put("simple", String.valueOf(true));
         Call<ActionResult<List<NoteInfoDto>>> call = repo.downNotesFilter(user.getSid(), map);
         Response<ActionResult<List<NoteInfoDto>>> response = call.execute();
 
         if (response == null || !response.isSuccessful()) { //http 请求失败
             KLog.d(TAG, "down note filter sid response is failed");
-            return;
+            return null;
         }
 
         ActionResult<List<NoteInfoDto>> actionResult = response.body();
         if (actionResult == null) {
             KLog.d(TAG, "down note filter sid response is failed");
-            return;
+            return null;
         }
         if (!actionResult.isSuccess()) {    //结果是失败的
             KLog.d(TAG, "down notes filter sid response is success but action result is not success:" + actionResult);
-            return;
+            return null;
+        }
+        List<NoteInfoDto> list = actionResult.getData();
+        if (list == null) {
+            list = Collections.emptyList();
+        }
+        return list;
+    }
+
+    /**
+     * 下载指定的 id的清单，该id是服务器端的清单id ,字符串id用","分隔
+     * @param user 当前登录的用户
+     * @param idStr ID的字符串，用","分隔
+     * @throws IOException
+     */
+    private static List<DetailListDto> downDetailLists(User user, String idStr) throws IOException {
+        KLog.d(TAG, "down detail list by ids:" + idStr);
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> map = new HashMap<>();
+        map.put("idStr", idStr);
+        Call<ActionResult<List<DetailListDto>>> call = repo.downDetailListFilter(user.getSid(), map);
+        Response<ActionResult<List<DetailListDto>>> response = call.execute();
+
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "down detail list filter sid response is failed");
+            return null;
         }
 
-        List<NoteInfoDto> noteInfoDtoList = actionResult.getData();
-        if (SystemUtil.isEmpty(noteInfoDtoList)) {
-            KLog.d(TAG, "down notes filter sid response is success but note dto list is empty");
-            return;
+        ActionResult<List<DetailListDto>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "down detail list filter sid response is failed");
+            return null;
         }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "down detail list filter sid response is success but action result is not success:" + actionResult);
+            return null;
+        }
+
+        List<DetailListDto> list = actionResult.getData();
+        if (list == null) {
+            list = Collections.emptyList();
+        }
+        return list;
+    }
+
+    /**
+     * 下载指定的 id的清单，该id是服务器端的清单id ,字符串id用","分隔
+     * @param user 当前登录的用户
+     * @param idStr ID的字符串，用","分隔
+     * @throws IOException
+     */
+    private static List<AttachDto> downAttachs(User user, String idStr) throws IOException {
+        KLog.d(TAG, "down attach list by ids:" + idStr);
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, String> map = new HashMap<>();
+        map.put("idStr", idStr);
+        Call<ActionResult<List<AttachDto>>> call = repo.downAttachFilter(user.getSid(), map);
+        Response<ActionResult<List<AttachDto>>> response = call.execute();
+
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "down attach list filter sid response is failed");
+            return null;
+        }
+
+        ActionResult<List<AttachDto>> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "down attach list filter sid response is failed");
+            return null;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "down attach list filter sid response is success but action result is not success:" + actionResult);
+            return null;
+        }
+
+        List<AttachDto> list = actionResult.getData();
+        if (list == null) {
+            list = Collections.emptyList();
+        }
+        return list;
     }
 
     /**
@@ -739,7 +852,7 @@ public class NoteApi extends BaseApi {
         }
         ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
         if (actionResult == null) {
-            KLog.d(TAG, "down notes response is failed");
+            KLog.d(TAG, "down notes response action result is null");
             return false;
         }
         if (!actionResult.isSuccess()) {    //结果是失败的
@@ -758,16 +871,48 @@ public class NoteApi extends BaseApi {
      * 检测本地笔记是否有需要下载更新的
      * @param noteInfoDtoList 服务器的笔记sid集合
      * @return 需要下载更新的笔记的ID字符串，用","分隔，且该ID是<strong>服务器的ID</strong>
+     * <pre>
+     *     [0]:笔记的ID集合
+     *     [1]:清单的ID集合
+     *     [2]:附件的ID集合
+     * </pre>
      */
-    private static String checkLocalNotes(List<NoteInfoDto> noteInfoDtoList) {
+    private static Map<Integer, String> checkLocalNotes(List<NoteInfoDto> noteInfoDtoList) {
         //先根据sid的集合查询本地的笔记
         List<String> sidList = new ArrayList<>();
+        //附件的sid集合
+        List<String> attSidList = new ArrayList<>();
+        List<String> detailSidList = new ArrayList<>();
         for (NoteInfoDto noteInfoDto : noteInfoDtoList) {
             sidList.add(noteInfoDto.getSid());
+            //附件
+            if (!SystemUtil.isEmpty(noteInfoDto.getAttachs())) {
+                List<AttachDto> attachDtoList = noteInfoDto.getAttachs();
+                for (AttachDto attachDto : attachDtoList) {
+                    attSidList.add(attachDto.getSid());
+                }
+            }
+            //清单
+            if (noteInfoDto.isDetailListNote() && !SystemUtil.isEmpty(noteInfoDto.getDetails())) {
+                List<DetailListDto> detailListDtoList = noteInfoDto.getDetails();
+                for (DetailListDto detailListDto : detailListDtoList) {
+                    detailSidList.add(detailListDto.getSid());
+                }
+            }
         }
         //根据sid的集合获取本地对应笔记的基本信息
         StringBuilder builder = new StringBuilder();
         Map<String, NoteInfo> map = NoteManager.getInstance().getBasicNoteList(sidList);
+        Map<String, Attach> attachMap = null;
+        if (!SystemUtil.isEmpty(attSidList)) {   //这段记录中有附件
+            attachMap = AttachManager.getInstance().getBasicAttachList(attSidList);
+        }
+        Map<String, DetailList> detailMap = null;
+        if (!SystemUtil.isEmpty(detailSidList)) {
+            detailMap = NoteManager.getInstance().getBasicDetailLists(detailSidList);
+        }
+        StringBuilder attBuilder = new StringBuilder();
+        StringBuilder detailBuilder = new StringBuilder();
         for (NoteInfoDto noteInfoDto : noteInfoDtoList) {
             String sid = noteInfoDto.getSid();
             int id = noteInfoDto.getId();
@@ -775,13 +920,64 @@ public class NoteApi extends BaseApi {
             if (noteInfo == null || !SystemUtil.equalsStr(noteInfo.getHash(), noteInfoDto.getHash())) { //本地不存在，则需下载
                 builder.append(id).append(Constants.TAG_COMMA);
             }
+
+            //附件
+            if (!SystemUtil.isEmpty(noteInfoDto.getAttachs())) {
+                List<AttachDto> attachDtoList = noteInfoDto.getAttachs();
+                for (AttachDto attachDto : attachDtoList) {
+                    int attId = attachDto.getId();
+                    String attSid = attachDto.getSid();
+                    if (SystemUtil.isEmpty(attachMap)) {
+                        attBuilder.append(attId).append(Constants.TAG_COMMA);
+                        continue;
+                    }
+                    Attach att = attachMap.get(attSid);
+                    if (att == null || !SystemUtil.equalsStr(att.getHash(), attachDto.getHash())) { //本地不存在，则需下载
+                        attBuilder.append(attId).append(Constants.TAG_COMMA);
+                    }
+                }
+                if (attBuilder.length() > 0) {
+                    attBuilder.deleteCharAt(attBuilder.lastIndexOf(Constants.TAG_COMMA));
+                }
+            }
+            //清单
+            if (noteInfoDto.isDetailListNote() && !SystemUtil.isEmpty(noteInfoDto.getDetails())) {
+                List<DetailListDto> detailListDtoList = noteInfoDto.getDetails();
+                for (DetailListDto detailListDto : detailListDtoList) {
+                    int detailId = detailListDto.getId();
+                    String detailSid = detailListDto.getSid();
+                    if (SystemUtil.isEmpty(detailMap)) {
+                        detailBuilder.append(detailId).append(Constants.TAG_COMMA);
+                        continue;
+                    }
+                    DetailList detail = detailMap.get(detailSid);
+                    if (detail == null || !SystemUtil.equalsStr(detail.getHash(), detailListDto.getHash())) { //本地不存在，则需下载
+                        detailBuilder.append(detailId).append(Constants.TAG_COMMA);
+                    }
+                }
+                if (detailBuilder.length() > 0) {
+                    detailBuilder.deleteCharAt(detailBuilder.lastIndexOf(Constants.TAG_COMMA));
+                }
+            }
         }
         if (builder.length() > 0) {
             builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_COMMA));
         }
-        String sids = builder.toString();
-        KLog.d(TAG, "check local note sid str is:" + sids);
-        return sids;
+        String ids = builder.toString();
+        Map<Integer, String> idMap = new HashMap<>();
+        if (!TextUtils.isEmpty(ids)) {
+            idMap.put(0, ids);
+        }
+        String attIds = attBuilder.toString();
+        if (!TextUtils.isEmpty(attIds)) {
+            idMap.put(0, attIds);
+        }
+        String detailIds = detailBuilder.toString();
+        if (!TextUtils.isEmpty(detailIds)) {
+            idMap.put(0, detailIds);
+        }
+        KLog.d(TAG, "check local note sid str is:" + idMap);
+        return idMap;
     }
 
     /**
@@ -798,7 +994,7 @@ public class NoteApi extends BaseApi {
         KLog.d(TAG, "save notes invoke...");
         NoteManager.getInstance().addOrUpdateNotes(detailNoteInfoList);
     }
-
+    
     /**
      * 本地保存笔记本数据
      * @param user 用户

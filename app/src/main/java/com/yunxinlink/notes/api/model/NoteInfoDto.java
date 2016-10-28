@@ -214,6 +214,14 @@ public class NoteInfoDto {
     public void setDetails(List<DetailListDto> details) {
         this.details = details;
     }
+
+    /**
+     * 是否是清单类笔记
+     * @return
+     */
+    public boolean isDetailListNote() {
+        return kind == NoteInfo.NoteKind.DETAILED_LIST.ordinal();
+    }
     
     /**
      * 转换成笔记
