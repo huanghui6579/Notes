@@ -18,6 +18,7 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.TaskParam;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.FolderManager;
+import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.sync.SyncData;
 import com.yunxinlink.notes.util.Constants;
@@ -198,8 +199,8 @@ public class SyncService extends Service {
         //同步笔记本
         syncDownFolder(user);
 
-        //检查本地是否有笔记，如果没有，则下载服务器的全部笔记
-        //获取需要下载的笔记的id
+        //下载笔记
+        downNotes(user);
 
         SyncCache.getInstance().remove(syncSid);
         return resultParam;
@@ -221,6 +222,22 @@ public class SyncService extends Service {
             KLog.d(TAG, "sync down note folder id list:" + folderIdList);
             //获取该组id对应的笔记本的数据，也是分页请求数据，每页20条
             NoteApi.downFolders(folderIdList, mContext);
+        }
+    }
+
+    /**
+     * 下载笔记
+     * @param user
+     */
+    private void downNotes(User user) {
+        //先检查本地是否有
+        long count = NoteManager.getInstance().getNoteCount(user, null);
+        if (count == 0) {   //本地没有笔记，则下载服务器的全部笔记
+            KLog.d(TAG, "down notes all local note is empty");
+            NoteApi.downNotes(mContext);
+        } else {    //本地有部分笔记则按sid来匹配下载
+            KLog.d(TAG, "down notes any local has note will down with ids");
+            NoteApi.downNotesWithIds(mContext);
         }
     }
 

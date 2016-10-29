@@ -560,25 +560,6 @@ public class NoteApi extends BaseApi {
 
         Response<ActionResult<PageInfo<List<NoteInfoDto>>>> response = call.execute();
 
-        /*if (response == null || !response.isSuccessful()) { //http 请求失败
-            KLog.d(TAG, "down notes response is failed");
-            return;
-        }
-        ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
-        if (actionResult == null) {
-            KLog.d(TAG, "down notes response is failed");
-            return;
-        }
-        if (!actionResult.isSuccess()) {    //结果是失败的
-            KLog.d(TAG, "down notes response is success but action result is not success:" + actionResult);
-            return;
-        }
-        PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
-        if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
-            KLog.d(TAG, "down notes response is success and no data");
-            return;
-        }*/
-
         boolean result = checkNoteList(response);
         
         if (!result) {
@@ -611,14 +592,30 @@ public class NoteApi extends BaseApi {
     }
 
     /**
+     * 根据笔记的id来分页下载笔记
+     * @param context
+     */
+    public static void downNotesWithIds(Context context) {
+        User user = getUser(context);
+        if (user == null || !user.isAvailable()) {  //用户不可用
+            KLog.d(TAG, "down note width id but user is null or not available");
+            return;
+        }
+        try {
+            downNoteByIds(user, 1, -1);
+        } catch (IOException e) {
+            KLog.e(TAG, "down notes with ids error :" + e.getMessage());
+        }
+    }
+
+    /**
      * 下载笔记服务器的笔记的ID集合，并带有hash等数据
      * @param user 当前登录用户
-     * @param noteIdList 笔记ID集合，用于循环的存放数据
      * @param pageNumber 第几页
      * @param totalCount 总页数
      * @throws IOException
      */
-    private static void downNoteIds(User user, List<Integer> noteIdList, int pageNumber, long totalCount) throws IOException {
+    private static void downNoteByIds(User user, int pageNumber, long totalCount) throws IOException {
         KLog.d(TAG, "down note sids page：" + pageNumber);
         int pageSize = Constants.PAGE_SIZE_DEFAULT;
         Retrofit retrofit = buildRetrofit();
@@ -633,25 +630,6 @@ public class NoteApi extends BaseApi {
         Call<ActionResult<PageInfo<List<NoteInfoDto>>>> call = repo.downNoteSids(userSid, queryMap);
 
         Response<ActionResult<PageInfo<List<NoteInfoDto>>>> response = call.execute();
-
-        /*if (response == null || !response.isSuccessful()) { //http 请求失败
-            KLog.d(TAG, "down notes response is failed");
-            return;
-        }
-        ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
-        if (actionResult == null) {
-            KLog.d(TAG, "down notes response is failed");
-            return;
-        }
-        if (!actionResult.isSuccess()) {    //结果是失败的
-            KLog.d(TAG, "down notes response is success but action result is not success:" + actionResult);
-            return;
-        }
-        PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
-        if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
-            KLog.d(TAG, "down notes response is success and no data");
-            return;
-        }*/
 
         boolean result = checkNoteList(response);
 
@@ -678,33 +656,64 @@ public class NoteApi extends BaseApi {
         if (!TextUtils.isEmpty(noteIdStr)) {   //这20条记录中有一部分需要下载更新
             //仅下载笔记的基本数据，不包含清单、附件
             List<NoteInfoDto> downNoteDtoList = downNotes(user, noteIdStr);
-            if (downNoteDtoList != null) {  //网络请求是OK的，但是没有数据，说明这组ID
-                if (downNoteDtoList.size() > 0) {
-                    //转换成映射的集合
-                    Map<String, NoteInfoDto> noteDtoMap = new HashMap<>();
+            if (!SystemUtil.isEmpty(downNoteDtoList)) {  //网络请求是OK的，但是没有数据，说明这组ID
+                //转换成映射的集合,key 为noteSid
+                Map<String, NoteInfoDto> noteDtoMap = new HashMap<>();
 
-                    for (NoteInfoDto noteInfoDto : downNoteDtoList) {
-                        noteDtoMap.put(noteInfoDto.getSid(), noteInfoDto);
-                    }
+                for (NoteInfoDto noteInfoDto : downNoteDtoList) {
+                    noteDtoMap.put(noteInfoDto.getSid(), noteInfoDto);
+                }
 
-                    //下载清单数据
-                    String detailIdStr = idMap.get(1);
-                    if (!TextUtils.isEmpty(detailIdStr)) {  //有清单数据
-                        //TODO 下载清单数据
-                        List<DetailListDto> detailListDtoList = downDetailLists(user, detailIdStr);
-                        if (!SystemUtil.isEmpty(detailListDtoList)) {   //有清单
-
+                //下载清单数据
+                String detailIdStr = idMap.get(1);
+                if (!TextUtils.isEmpty(detailIdStr)) {  //有清单数据
+                    //TODO 下载清单数据
+                    List<DetailListDto> detailListDtoList = downDetailLists(user, detailIdStr);
+                    if (!SystemUtil.isEmpty(detailListDtoList)) {   //有清单，则填充清单
+                        for (DetailListDto detailListDto : detailListDtoList) {
+                            String noteSid = detailListDto.getNoteSid();
+                            if (noteSid == null) {
+                                continue;
+                            }
+                            NoteInfoDto noteInfoDto = noteDtoMap.get(noteSid);
+                            if (noteInfoDto == null) {
+                                continue;
+                            }
+                            List<DetailListDto> detailListDtos = noteInfoDto.getDetails();
+                            if (detailListDtos == null) {
+                                detailListDtos = new ArrayList<>();
+                                noteInfoDto.setDetails(detailListDtos);
+                            }
+                            detailListDtos.add(detailListDto);
                         }
                     }
-                    String attIdStr = idMap.get(2);
-                    if (!TextUtils.isEmpty(attIdStr)) {
-                        //下载附件的信息
-                        List<AttachDto> attachDtoList = downAttachs(user, attIdStr);
-                    }
-                } else {
-                    //TODO 删除该组ID对应本地数据
-                    //网络请求是OK的，但是没有数据，说明这组ID对应的笔记在服务器不存在，则删除本地的，彻底删除
                 }
+                String attIdStr = idMap.get(2);
+                if (!TextUtils.isEmpty(attIdStr)) {
+                    //下载附件的信息
+                    List<AttachDto> attachDtoList = downAttachs(user, attIdStr);
+                    if (!SystemUtil.isEmpty(attachDtoList)) {   //有附件
+                        for (AttachDto attachDto : attachDtoList) {
+                            String noteSid = attachDto.getNoteSid();
+                            if (noteSid == null) {
+                                continue;
+                            }
+                            NoteInfoDto noteInfoDto = noteDtoMap.get(noteSid);
+                            if (noteInfoDto == null) {
+                                continue;
+                            }
+                            List<AttachDto> attachDtos = noteInfoDto.getAttachs();
+                            if (attachDtos == null) {
+                                attachDtos = new ArrayList<>();
+                                noteInfoDto.setAttachs(attachDtos);
+                            }
+                            attachDtos.add(attachDto);
+                        }
+                    }
+                }
+
+                //保存到本地
+                saveNotes(user, downNoteDtoList);
             } else {
                 KLog.d(TAG, "down notes but no notes noteIdStr:" + noteIdStr);
             }
@@ -720,7 +729,7 @@ public class NoteApi extends BaseApi {
             pageNumber = pageNumber + 1;
             KLog.d(TAG, "down note sids next page：" + pageNumber);
             try {
-                downNoteIds(user, noteIdList, pageNumber, totalCount);
+                downNoteByIds(user, pageNumber, totalCount);
             } catch (IOException e) {
                 KLog.e(TAG, "down note sids error page number:" + pageNumber + ", error:" + e.getMessage());
             }
@@ -759,11 +768,7 @@ public class NoteApi extends BaseApi {
             KLog.d(TAG, "down notes filter sid response is success but action result is not success:" + actionResult);
             return null;
         }
-        List<NoteInfoDto> list = actionResult.getData();
-        if (list == null) {
-            list = Collections.emptyList();
-        }
-        return list;
+        return actionResult.getData();
     }
 
     /**
@@ -795,12 +800,7 @@ public class NoteApi extends BaseApi {
             KLog.d(TAG, "down detail list filter sid response is success but action result is not success:" + actionResult);
             return null;
         }
-
-        List<DetailListDto> list = actionResult.getData();
-        if (list == null) {
-            list = Collections.emptyList();
-        }
-        return list;
+        return actionResult.getData();
     }
 
     /**
@@ -832,12 +832,7 @@ public class NoteApi extends BaseApi {
             KLog.d(TAG, "down attach list filter sid response is success but action result is not success:" + actionResult);
             return null;
         }
-
-        List<AttachDto> list = actionResult.getData();
-        if (list == null) {
-            list = Collections.emptyList();
-        }
-        return list;
+        return actionResult.getData();
     }
 
     /**
