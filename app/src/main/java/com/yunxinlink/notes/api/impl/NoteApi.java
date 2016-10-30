@@ -32,7 +32,6 @@ import com.yunxinlink.notes.util.SystemUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -652,10 +651,14 @@ public class NoteApi extends BaseApi {
         //该集合包含这段记录中的笔记、附件和清单的id
         Map<Integer, String> idMap = checkLocalNotes(noteInfoDtoList);
         
-        String noteIdStr = idMap.get(0);
-        if (!TextUtils.isEmpty(noteIdStr)) {   //这20条记录中有一部分需要下载更新
+        if (!SystemUtil.isEmpty(idMap)) {   //这20条记录中有一部分需要下载更新
+            String noteIdStr = idMap.get(0);
             //仅下载笔记的基本数据，不包含清单、附件
-            List<NoteInfoDto> downNoteDtoList = downNotes(user, noteIdStr);
+            //TODO 修改下载笔记的逻辑
+            List<NoteInfoDto> downNoteDtoList = null;
+            if (!TextUtils.isEmpty(noteIdStr)) {
+                downNoteDtoList = downNotes(user, noteIdStr);
+            }
             if (!SystemUtil.isEmpty(downNoteDtoList)) {  //网络请求是OK的，但是没有数据，说明这组ID
                 //转换成映射的集合,key 为noteSid
                 Map<String, NoteInfoDto> noteDtoMap = new HashMap<>();
@@ -718,6 +721,8 @@ public class NoteApi extends BaseApi {
                 KLog.d(TAG, "down notes but no notes noteIdStr:" + noteIdStr);
             }
             
+        } else {
+            KLog.d(TAG, "down note by ids but not id need down or update will do next page");
         }
 
         //已加载的数量
@@ -739,7 +744,7 @@ public class NoteApi extends BaseApi {
     }
 
     /**
-     * 下载指定的 id的笔记，该id是服务器端的笔记id ,字符串id用","分隔
+     * 下载指定的 id的笔记，仅下载笔记的数据，不下载该笔记拥有的附件和清单，该id是服务器端的笔记id ,字符串id用","分隔
      * @param user 当前登录的用户
      * @param idStr ID的字符串，用","分隔
      * @throws IOException
@@ -897,7 +902,9 @@ public class NoteApi extends BaseApi {
         }
         //根据sid的集合获取本地对应笔记的基本信息
         StringBuilder builder = new StringBuilder();
+        KLog.d(TAG, "note sidList:" + sidList);
         Map<String, NoteInfo> map = NoteManager.getInstance().getBasicNoteList(sidList);
+        KLog.d(TAG, "note key set:" + map.keySet());
         Map<String, Attach> attachMap = null;
         if (!SystemUtil.isEmpty(attSidList)) {   //这段记录中有附件
             attachMap = AttachManager.getInstance().getBasicAttachList(attSidList);
@@ -931,17 +938,15 @@ public class NoteApi extends BaseApi {
                         attBuilder.append(attId).append(Constants.TAG_COMMA);
                     }
                 }
-                if (attBuilder.length() > 0) {
-                    attBuilder.deleteCharAt(attBuilder.lastIndexOf(Constants.TAG_COMMA));
-                }
             }
+            boolean noDetail = SystemUtil.isEmpty(detailMap);
             //清单
             if (noteInfoDto.isDetailListNote() && !SystemUtil.isEmpty(noteInfoDto.getDetails())) {
                 List<DetailListDto> detailListDtoList = noteInfoDto.getDetails();
                 for (DetailListDto detailListDto : detailListDtoList) {
                     int detailId = detailListDto.getId();
                     String detailSid = detailListDto.getSid();
-                    if (SystemUtil.isEmpty(detailMap)) {
+                    if (noDetail) {
                         detailBuilder.append(detailId).append(Constants.TAG_COMMA);
                         continue;
                     }
@@ -950,26 +955,30 @@ public class NoteApi extends BaseApi {
                         detailBuilder.append(detailId).append(Constants.TAG_COMMA);
                     }
                 }
-                if (detailBuilder.length() > 0) {
-                    detailBuilder.deleteCharAt(detailBuilder.lastIndexOf(Constants.TAG_COMMA));
-                }
             }
+
         }
         if (builder.length() > 0) {
             builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_COMMA));
+        }
+        if (detailBuilder.length() > 0) {
+            detailBuilder.deleteCharAt(detailBuilder.lastIndexOf(Constants.TAG_COMMA));
+        }
+        if (attBuilder.length() > 0) {
+            attBuilder.deleteCharAt(attBuilder.lastIndexOf(Constants.TAG_COMMA));
         }
         String ids = builder.toString();
         Map<Integer, String> idMap = new HashMap<>();
         if (!TextUtils.isEmpty(ids)) {
             idMap.put(0, ids);
         }
-        String attIds = attBuilder.toString();
-        if (!TextUtils.isEmpty(attIds)) {
-            idMap.put(0, attIds);
-        }
         String detailIds = detailBuilder.toString();
         if (!TextUtils.isEmpty(detailIds)) {
-            idMap.put(0, detailIds);
+            idMap.put(1, detailIds);
+        }
+        String attIds = attBuilder.toString();
+        if (!TextUtils.isEmpty(attIds)) {
+            idMap.put(2, attIds);
         }
         KLog.d(TAG, "check local note sid str is:" + idMap);
         return idMap;

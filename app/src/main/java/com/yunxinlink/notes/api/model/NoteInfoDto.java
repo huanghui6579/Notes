@@ -251,9 +251,10 @@ public class NoteInfoDto {
         noteInfo.setTitle(title);
 
         AttachText attachText = SystemUtil.getAttachSids(content);
+        if (attachText != null) {
+            noteInfo.setShowContent(attachText.getText());
+        }
 
-        noteInfo.setShowContent(attachText.getText());
-        
         if (hasAttach) {
             Map<String, Attach> attachesMap = new HashMap<>();
             Attach lastAttach = null;

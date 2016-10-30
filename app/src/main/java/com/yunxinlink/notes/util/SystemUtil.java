@@ -1012,6 +1012,9 @@ public class SystemUtil {
      * @return
      */
     public static AttachText getAttachSids(CharSequence text) {
+        if (TextUtils.isEmpty(text)) {
+            return null;
+        }
         if (mPattern == null) {
             mPattern = Pattern.compile(mAttachRegEx);
         }

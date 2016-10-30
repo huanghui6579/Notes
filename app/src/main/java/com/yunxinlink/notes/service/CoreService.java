@@ -108,7 +108,7 @@ public class CoreService extends IntentService {
                     if (user != null) {
                         note.setUserId(user.getId());
                     }
-                    note.setHash(DigestUtil.md5Hex(note.getRealContent().toString()));
+                    note.setHash(DigestUtil.md5Hex(note.generateHash()));
                     
                     detailNote = noteCache.get();
 //                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
@@ -133,7 +133,7 @@ public class CoreService extends IntentService {
                     //是否更新内容
                     boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
                     if (updateContent) {
-                        note.setHash(DigestUtil.md5Hex(note.getRealContent().toString()));
+                        note.setHash(note.generateHash());
                     }
                     if (!note.isDetailNote()) { //非清单，则将标题设为""
                         note.setTitle("");

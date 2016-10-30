@@ -14,6 +14,7 @@ import android.text.style.StrikethroughSpan;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
 
@@ -689,5 +690,26 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
 
     public void setShowContent(String showContent) {
         this.showContent = showContent;
+    }
+
+    /**
+     * 生成hash值
+     * 该hash值由title;content;folderSid;kind;deleteState的格式组成，顺序不能错,如果为null,则用""代替
+     * @return
+     */
+    public String generateHash() {
+        String spliter = Constants.TAG_SEMICOLON;
+        String title = this.title == null ? "" : this.title;
+        String content = this.content == null ? "" : this.content;
+        String folderSid = this.folderId == null ? "" : this.folderId;
+        int kind = this.kind == null ? NoteKind.TEXT.ordinal() : this.kind.ordinal();
+        int deleteState = this.deleteState == null ? 0 : this.deleteState.ordinal();
+        StringBuilder builder = new StringBuilder();
+        builder.append(title).append(spliter)
+                .append(content).append(spliter)
+                .append(folderSid).append(spliter)
+                .append(kind).append(spliter)
+                .append(deleteState);
+        return DigestUtil.md5Hex(builder.toString());
     }
 }

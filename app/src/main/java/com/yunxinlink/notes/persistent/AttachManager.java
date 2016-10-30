@@ -325,7 +325,7 @@ public class AttachManager extends Observable<Observer> {
                 argList.add(String.valueOf(SyncState.SYNC_UP.ordinal()));
                 for (String sid : sidList) {
                     map.put(sid, null);
-                    selection.append(sid).append(Constants.TAG_COMMA);
+                    selection.append("?").append(Constants.TAG_COMMA);
                     argList.add(sid);
                 }
                 selection.deleteCharAt(selection.lastIndexOf(Constants.TAG_COMMA));

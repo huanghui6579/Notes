@@ -1080,7 +1080,7 @@ public class NoteManager extends Observable<Observer> {
         boolean success = false;
         if (size > 0) {
             success = true;
-            KLog.e(TAG, "add or update notes result:true, size:" + size);
+            KLog.d(TAG, "add or update notes result:true, size:" + size);
             if (size == 1) {    //只有一条记录
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, changedList.get(0));
             } else {    //多条记录
@@ -1551,7 +1551,7 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
-     * 根据sid集合获取对应的笔记的基本信息列表，紧包含hash值
+     * 根据sid集合获取对应的笔记的基本信息列表，仅包含hash值
      * @param sidList 笔记的sid列表
      * @return 仅包含hash值的集合
      */
@@ -1580,13 +1580,14 @@ public class NoteManager extends Observable<Observer> {
                 argList.add(String.valueOf(SyncState.SYNC_UP.ordinal()));
                 for (String sid : sidList) {
                     map.put(sid, null);
-                    selection.append(sid).append(Constants.TAG_COMMA);
+                    selection.append("?").append(Constants.TAG_COMMA);
                     argList.add(sid);
                 }
                 selection.deleteCharAt(selection.lastIndexOf(Constants.TAG_COMMA));
                 selection.append(")");
                 String[] args = new String[argList.size()];
                 args = argList.toArray(args);
+                KLog.d(TAG, "notes selection :" + selection.toString());
                 cursor = db.query(Provider.NoteColumns.TABLE_NAME, projection, selection.toString(),
                         args, null, null, null);
                 
@@ -1601,7 +1602,7 @@ public class NoteManager extends Observable<Observer> {
                 }
             }
         } catch (Exception e) {
-            KLog.e(TAG, "get basic not info error:" + e.getMessage());
+            KLog.e(TAG, "get basic note info error:" + e.getMessage());
         } finally {
             if (cursor != null) {
                 cursor.close();
@@ -1640,7 +1641,7 @@ public class NoteManager extends Observable<Observer> {
                 argList.add(String.valueOf(SyncState.SYNC_UP.ordinal()));
                 for (String sid : sidList) {
                     map.put(sid, null);
-                    selection.append(sid).append(Constants.TAG_COMMA);
+                    selection.append("?").append(Constants.TAG_COMMA);
                     argList.add(sid);
                 }
                 selection.deleteCharAt(selection.lastIndexOf(Constants.TAG_COMMA));
