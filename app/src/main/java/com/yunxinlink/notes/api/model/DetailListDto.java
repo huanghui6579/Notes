@@ -148,10 +148,19 @@ public class DetailListDto {
      * @return 清单
      */
     public DetailList convert2DetailList(NoteInfo noteInfo) {
+        return convert2DetailList(noteInfo.getSid());
+    }
+
+    /**
+     * 转换成清单
+     * @param noteSid 笔记的sid
+     * @return 清单
+     */
+    public DetailList convert2DetailList(String noteSid) {
         DetailList detailList = new DetailList();
         detailList.setSid(sid);
         detailList.setTitle(title);
-        detailList.setNoteId(noteInfo.getSid());
+        detailList.setNoteId(noteSid);
         detailList.setDeleteState(DeleteState.valueOf(deleteState));
         detailList.setChecked(checked);
         detailList.setCreateTime(createTime);

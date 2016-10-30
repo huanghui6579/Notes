@@ -200,6 +200,29 @@ public class AttachManager extends Observable<Observer> {
     }
 
     /**
+     * 保存或者更新附件
+     * @param attachList 附件的列表
+     * @return 是否更新成功
+     */
+    public boolean addOrUpdateAttachs(List<Attach> attachList) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        boolean success = false;
+        db.beginTransaction();
+        try {
+            for (Attach attach : attachList) {
+                addOrUpdateAttach(attach, db);
+            }
+            db.setTransactionSuccessful();
+            success = true;
+        } catch (Exception e) {
+            KLog.e(TAG, "add or update attach list error:" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        return success;
+    }
+
+    /**
      * 更新笔记附件的同步状态
      * @param attach
      * @return

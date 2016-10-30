@@ -772,7 +772,7 @@ public class NoteManager extends Observable<Observer> {
         String hash = detail.getHash();
         if (TextUtils.isEmpty(hash)) {
             //设置hash
-            detail.setHash(DigestUtil.md5Hex(detail.getTitle()));
+            detail.setHash(detail.generateHash());
         }
         ContentValues values = initDetailValues(detail);
         long rowId = 0;
@@ -800,7 +800,7 @@ public class NoteManager extends Observable<Observer> {
             db = mDBHelper.getWritableDatabase();
         }
         //设置hash
-        detail.setHash(DigestUtil.md5Hex(detail.getTitle()));
+        detail.setHash(detail.generateHash());
         int id = detail.getId();
         ContentValues values = initUpdateDetailValues(detail);
         long rowId = 0;
@@ -1086,6 +1086,30 @@ public class NoteManager extends Observable<Observer> {
             } else {    //多条记录
                 notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, changedList);
             }
+        }
+        return success;
+    }
+
+    /**
+     * 添加或者更新一组清单
+     * @param detailLists 清单的集合
+     * @return 是否更新成功，true:更新成功，false:更新失败
+     */
+    public boolean addOrUpdateDetailList(List<DetailList> detailLists) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        boolean success = false;
+        db.beginTransaction();
+        try {
+            for (DetailList detailList : detailLists) {
+                //先更新，若根系失败，则添加
+                addOrUpdateDetailList(detailList, db);
+            }
+            db.setTransactionSuccessful();
+            success = true;
+        } catch (Exception e) {
+            KLog.e(TAG, "add or update detail lists error:" + e.getMessage());
+        } finally {
+            db.endTransaction();
         }
         return success;
     }

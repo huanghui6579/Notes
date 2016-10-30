@@ -2,6 +2,8 @@ package com.yunxinlink.notes.model;
 
 import android.text.TextUtils;
 
+import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.Comparator;
@@ -215,6 +217,22 @@ public class DetailList implements Comparator<DetailList> {
     
     public boolean isSynced() {
         return syncState != null && syncState == SyncState.SYNC_DONE;
+    }
+
+    /**
+     * 生成hash,值由title;sort;checked;deleteState的格式组成，顺序不能错,如果为null,则用""代替
+     * @return
+     */
+    public String generateHash() {
+        String spliter = Constants.TAG_SEMICOLON;
+        String title = this.title == null ? "" : this.title;
+        int deleteState = this.deleteState == null ? 0 : this.deleteState.ordinal();
+        StringBuilder builder = new StringBuilder();
+        builder.append(title).append(spliter)
+                .append(sort).append(spliter)
+                .append(checked).append(spliter)
+                .append(deleteState);
+        return DigestUtil.md5Hex(builder.toString());
     }
 
     @Override

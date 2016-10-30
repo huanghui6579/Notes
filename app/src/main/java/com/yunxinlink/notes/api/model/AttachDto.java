@@ -214,6 +214,17 @@ public class AttachDto {
      * @return 返回转换后的附件信息
      */
     public Attach convert2Attach(NoteInfo noteInfo) {
+
+        return convert2Attach(noteInfo.getUserId(), noteInfo.getSid());
+    }
+
+    /**
+     * 转换成附件
+     * @param userId 本地用户的id
+     * @param noteSid 附件所属的笔记sid
+     * @return 返回转换后的附件信息
+     */
+    public Attach convert2Attach(int userId, String noteSid) {
         Attach attach = new Attach();
         attach.setSid(sid);
         attach.setModifyTime(modifyTime);
@@ -230,10 +241,10 @@ public class AttachDto {
             attach.setSyncState(SyncState.SYNC_DOWN);
         }
         attach.setMimeType(mimeType);
-        attach.setUserId(noteInfo.getUserId());
-        attach.setNoteId(noteInfo.getSid());
+        attach.setUserId(userId);
+        attach.setNoteId(noteSid);
         attach.setType(type);
-        
+
         return attach;
     }
 }

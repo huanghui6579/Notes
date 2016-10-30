@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -656,23 +657,40 @@ public class NoteApi extends BaseApi {
             //仅下载笔记的基本数据，不包含清单、附件
             //TODO 修改下载笔记的逻辑
             List<NoteInfoDto> downNoteDtoList = null;
+            Map<String, NoteInfoDto> noteDtoMap = null;
             if (!TextUtils.isEmpty(noteIdStr)) {
                 downNoteDtoList = downNotes(user, noteIdStr);
-            }
-            if (!SystemUtil.isEmpty(downNoteDtoList)) {  //网络请求是OK的，但是没有数据，说明这组ID
                 //转换成映射的集合,key 为noteSid
-                Map<String, NoteInfoDto> noteDtoMap = new HashMap<>();
+                noteDtoMap = new HashMap<>();
 
-                for (NoteInfoDto noteInfoDto : downNoteDtoList) {
-                    noteDtoMap.put(noteInfoDto.getSid(), noteInfoDto);
+                if (!SystemUtil.isEmpty(downNoteDtoList)) {
+                    for (NoteInfoDto noteInfoDto : downNoteDtoList) {
+                        noteDtoMap.put(noteInfoDto.getSid(), noteInfoDto);
+                    }
                 }
+            }
+            //这一组清单所属的笔记集合
+            Set<String> noteSidSet = new HashSet<>();
+            //下载清单数据
+            String detailIdStr = idMap.get(1);
+            if (!TextUtils.isEmpty(detailIdStr)) {  //有清单数据
+                //TODO 下载清单数据
+                List<DetailListDto> detailListDtoList = downDetailLists(user, detailIdStr);
+                List<DetailList> detailListList = new ArrayList<>();
+                if (!SystemUtil.isEmpty(detailListDtoList)) {   //有清单，则填充清单
+                    if (SystemUtil.isEmpty(noteDtoMap)) {   //没有笔记，则说明单独下载的清单，则查询这一组清单所属的笔记
 
-                //下载清单数据
-                String detailIdStr = idMap.get(1);
-                if (!TextUtils.isEmpty(detailIdStr)) {  //有清单数据
-                    //TODO 下载清单数据
-                    List<DetailListDto> detailListDtoList = downDetailLists(user, detailIdStr);
-                    if (!SystemUtil.isEmpty(detailListDtoList)) {   //有清单，则填充清单
+                        for (DetailListDto detailListDto : detailListDtoList) {
+                            String noteSid = detailListDto.getNoteSid();
+                            if (noteSid == null) {
+                                continue;
+                            }
+                            noteSidSet.add(noteSid);
+                            DetailList detailList = detailListDto.convert2DetailList(noteSid);
+                            detailListList.add(detailList);
+                        }
+
+                    } else {
                         for (DetailListDto detailListDto : detailListDtoList) {
                             String noteSid = detailListDto.getNoteSid();
                             if (noteSid == null) {
@@ -680,6 +698,10 @@ public class NoteApi extends BaseApi {
                             }
                             NoteInfoDto noteInfoDto = noteDtoMap.get(noteSid);
                             if (noteInfoDto == null) {
+                                //该清单是单独更新，所属的笔记已经更新完毕了
+                                noteSidSet.add(noteSid);
+                                DetailList detailList = detailListDto.convert2DetailList(detailListDto.getNoteSid());
+                                detailListList.add(detailList);
                                 continue;
                             }
                             List<DetailListDto> detailListDtos = noteInfoDto.getDetails();
@@ -690,12 +712,29 @@ public class NoteApi extends BaseApi {
                             detailListDtos.add(detailListDto);
                         }
                     }
+                    if (!SystemUtil.isEmpty(detailListList)) {  //有清单需要单独更新
+                        //保存清单到本地，但没有刷新，后面一起刷新
+                        saveDetailList(detailListList);
+                    }
                 }
-                String attIdStr = idMap.get(2);
-                if (!TextUtils.isEmpty(attIdStr)) {
-                    //下载附件的信息
-                    List<AttachDto> attachDtoList = downAttachs(user, attIdStr);
-                    if (!SystemUtil.isEmpty(attachDtoList)) {   //有附件
+            }
+            String attIdStr = idMap.get(2);
+            if (!TextUtils.isEmpty(attIdStr)) {
+                //下载附件的信息
+                List<AttachDto> attachDtoList = downAttachs(user, attIdStr);
+                if (!SystemUtil.isEmpty(attachDtoList)) {   //有附件
+                    List<Attach> attachList = new ArrayList<>();
+                    if (SystemUtil.isEmpty(noteDtoMap)) {   //没有更新笔记，则单独更新附件
+                        for (AttachDto attachDto : attachDtoList) {
+                            String noteSid = attachDto.getNoteSid();
+                            if (noteSid == null) {
+                                continue;
+                            }
+                            noteSidSet.add(noteSid);
+                            Attach attach = attachDto.convert2Attach(user.getId(), noteSid);
+                            attachList.add(attach);
+                        }
+                    } else {
                         for (AttachDto attachDto : attachDtoList) {
                             String noteSid = attachDto.getNoteSid();
                             if (noteSid == null) {
@@ -703,6 +742,10 @@ public class NoteApi extends BaseApi {
                             }
                             NoteInfoDto noteInfoDto = noteDtoMap.get(noteSid);
                             if (noteInfoDto == null) {
+                                //该附件是单独更新了，所属的笔记已经更新了
+                                noteSidSet.add(noteSid);
+                                Attach attach = attachDto.convert2Attach(user.getId(), noteSid);
+                                attachList.add(attach);
                                 continue;
                             }
                             List<AttachDto> attachDtos = noteInfoDto.getAttachs();
@@ -713,7 +756,13 @@ public class NoteApi extends BaseApi {
                             attachDtos.add(attachDto);
                         }
                     }
+                    if (!SystemUtil.isEmpty(attachList)) {  //保存该附件集合
+                        AttachManager.getInstance().addOrUpdateAttachs(attachList);
+                    }
                 }
+            }
+            //TODO 还需修改笔记的刷新逻辑
+            if (!SystemUtil.isEmpty(downNoteDtoList)) {  //网络请求是OK的，但是没有数据，说明这组ID
 
                 //保存到本地
                 saveNotes(user, downNoteDtoList);
@@ -998,7 +1047,25 @@ public class NoteApi extends BaseApi {
         KLog.d(TAG, "save notes invoke...");
         NoteManager.getInstance().addOrUpdateNotes(detailNoteInfoList);
     }
-    
+
+    /**
+     * 保存一组清单，暂时不刷新界面
+     * @param detailLists 要保存的清单列表
+     */
+    private static void saveDetailList(List<DetailList> detailLists) {
+        KLog.d(TAG, "save detail lists invoke...");
+        NoteManager.getInstance().addOrUpdateDetailList(detailLists);
+    }
+
+    /**
+     * 保存一组附件信息，暂时不刷新界面
+     * @param attachList 要保存的附件列表
+     */
+    private static void saveAttachList(List<Attach> attachList) {
+        KLog.d(TAG, "save attach lists invoke...");
+        AttachManager.getInstance().addOrUpdateAttachs(attachList);
+    }
+
     /**
      * 本地保存笔记本数据
      * @param user 用户
