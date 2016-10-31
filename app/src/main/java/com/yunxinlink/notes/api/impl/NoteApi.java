@@ -573,7 +573,7 @@ public class NoteApi extends BaseApi {
             totalCount = pageInfo.getCount();
         }
         //保存内容到本地
-        saveNotes(user, noteInfoDtoList);
+        saveNotes(user, noteInfoDtoList, true, null);
         
         //已加载的数量
         long loadSize = noteInfoDtoList.size() + (pageNumber - 1) * pageSize;
@@ -651,7 +651,6 @@ public class NoteApi extends BaseApi {
         //[2]:附件的ID集合
         //该集合包含这段记录中的笔记、附件和清单的id
         Map<Integer, String> idMap = checkLocalNotes(noteInfoDtoList);
-        
         if (!SystemUtil.isEmpty(idMap)) {   //这20条记录中有一部分需要下载更新
             String noteIdStr = idMap.get(0);
             //仅下载笔记的基本数据，不包含清单、附件
@@ -761,17 +760,11 @@ public class NoteApi extends BaseApi {
                     }
                 }
             }
-            //TODO 还需修改笔记的刷新逻辑
-            if (!SystemUtil.isEmpty(downNoteDtoList)) {  //网络请求是OK的，但是没有数据，说明这组ID
-
-                //保存到本地
-                saveNotes(user, downNoteDtoList);
-            } else {
-                KLog.d(TAG, "down notes but no notes noteIdStr:" + noteIdStr);
-            }
+            //保存到本地
+            saveNotes(user, downNoteDtoList, false, noteSidSet);
             
         } else {
-            KLog.d(TAG, "down note by ids but not id need down or update will do next page");
+            KLog.d(TAG, "down note by ids but not need down or update will do next page");
         }
 
         //已加载的数量
@@ -1037,15 +1030,36 @@ public class NoteApi extends BaseApi {
      * 保存笔记到本地
      * @param user 当前登录的用户
      * @param noteInfoDtoList 笔记列表
+     * @param hasExtraData 笔记是否自带附件、清单等信息                       
+     * @param noteSidSet 若果有清单、附件单独更新，则这些清单和附件所属的笔记sid集合                       
      */
-    private static void saveNotes(User user, List<NoteInfoDto> noteInfoDtoList) {
-        List<DetailNoteInfo> detailNoteInfoList = new ArrayList<>();
-        for (NoteInfoDto noteInfoDto : noteInfoDtoList) {
-            DetailNoteInfo detailNoteInfo = noteInfoDto.convert2NoteInfo(user);
-            detailNoteInfoList.add(detailNoteInfo);
+    private static void saveNotes(User user, List<NoteInfoDto> noteInfoDtoList, boolean hasExtraData, Set<String> noteSidSet) {
+        if (SystemUtil.isEmpty(noteInfoDtoList)) {  //没有更新笔记
+            if (!SystemUtil.isEmpty(noteSidSet)) {  //有需要更新的笔记
+                //查询这些笔记的的信息，然后刷新
+                NoteManager.getInstance().refreshNotes(noteSidSet);
+            } else {
+                KLog.d(TAG, "save notes no data or note sid set id empty");
+            }
+        } else {    //有笔记保存
+            if (noteSidSet == null) {
+                noteSidSet = new HashSet<>();
+            }
+            List<DetailNoteInfo> detailNoteInfoList = new ArrayList<>();
+            for (NoteInfoDto noteInfoDto : noteInfoDtoList) {
+                DetailNoteInfo detailNoteInfo = noteInfoDto.convert2NoteInfo(user);
+                detailNoteInfoList.add(detailNoteInfo);
+
+                if (!hasExtraData) {
+                    noteSidSet.add(noteInfoDto.getSid());
+                }
+            }
+            KLog.d(TAG, "save notes invoke...");
+            NoteManager.getInstance().addOrUpdateNotes(detailNoteInfoList, hasExtraData);
+            if (!hasExtraData) {    //手动刷界面
+                NoteManager.getInstance().refreshNotes(noteSidSet);
+            }
         }
-        KLog.d(TAG, "save notes invoke...");
-        NoteManager.getInstance().addOrUpdateNotes(detailNoteInfoList);
     }
 
     /**

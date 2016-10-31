@@ -143,7 +143,6 @@ public class NoteManager extends Observable<Observer> {
      * @version: 1.0.0
      */
     public List<DetailNoteInfo> getAllDetailNotes(User user, Bundle args) {
-        SQLiteDatabase db = mDBHelper.getReadableDatabase();
         String selection = null;
         String[] selectionArgs = null;
         String folder = null;
@@ -193,8 +192,20 @@ public class NoteManager extends Observable<Observer> {
                 selectionArgs = new String[] {String.valueOf(deleteState)};
             }
         }
-        List<DetailNoteInfo> list = null;
         String orderBy = getNoteSort(sort);
+        return queryNotes(selection, selectionArgs, orderBy);
+    }
+
+    /**
+     * 根据条件查询笔记列表
+     * @param selection
+     * @param selectionArgs
+     * @param orderBy
+     * @return
+     */
+    private List<DetailNoteInfo> queryNotes(String selection, String[] selectionArgs, String orderBy) {
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        List<DetailNoteInfo> list = null;
         Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, selection, selectionArgs, null, null, orderBy);
         if (cursor != null) {
             list = new ArrayList<>();
@@ -202,9 +213,9 @@ public class NoteManager extends Observable<Observer> {
                 NoteInfo note = cursor2Note(cursor);
                 DetailNoteInfo detailNote = new DetailNoteInfo();
                 detailNote.setNoteInfo(note);
-                
+
                 String noteSid = note.getSid();
-                
+
                 if (note.isDetailNote()) {
                     List<DetailList> details = getDetailList(db, noteSid);
                     detailNote.setDetailList(details);
@@ -218,12 +229,58 @@ public class NoteManager extends Observable<Observer> {
                     }
                     note.setAttaches(attachMap);
                 }
-                
+
                 list.add(detailNote);
             }
             cursor.close();
         }
         return list;
+    }
+
+    /**
+     * 重新获取指定笔记的所有数据，然后刷新界面
+     * @param noteSidSet
+     * @return
+     */
+    public void refreshNotes(Set<String> noteSidSet) {
+        if (SystemUtil.isEmpty(noteSidSet)) {
+            KLog.d(TAG, "note manager refresh notes list but note sid set is empty");
+            return;
+        }
+        KLog.d(TAG, "note manager refresh note set:" + noteSidSet.size());
+        String selection = null;
+        String[] args = null;
+        if (noteSidSet.size() == 1) {   //只有一条记录
+            String sid = noteSidSet.iterator().next();
+            selection = Provider.NoteColumns.SID + " = ?";
+            args = new String[] {sid};
+        } else {
+            List<String> argsList = new ArrayList<>();
+            StringBuilder builder = new StringBuilder();
+            builder.append(Provider.NoteColumns.SID).append("in (");
+            for (String sid : noteSidSet) {
+                argsList.add(sid);
+                builder.append("?").append(Constants.TAG_COMMA);
+            }
+            builder.deleteCharAt(builder.lastIndexOf(Constants.TAG_COMMA));
+            builder.append(")");
+            selection = builder.toString();
+            args = new String[argsList.size()];
+            args = argsList.toArray(args);
+        }
+        String orderBy = getNoteSort(0);
+        List<DetailNoteInfo> list = queryNotes(selection, args, orderBy);
+        if (!SystemUtil.isEmpty(list)) {
+            int size = list.size();
+            KLog.d(TAG, "note manager refresh notes size:" + size);
+            if (size == 1) {
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, list.get(0));
+            } else {
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, list);
+            }
+        } else {
+            KLog.d(TAG, "note manager refresh notes list is empty:");
+        }
     }
 
     /**
@@ -1017,9 +1074,10 @@ public class NoteManager extends Observable<Observer> {
     /**
      * 添加或者更新笔记列表
      * @param detailNoteInfoList 笔记的列表
+     * @param notify 是否刷新界面                          
      * @return 是否操作成功
      */
-    public boolean addOrUpdateNotes(List<DetailNoteInfo> detailNoteInfoList) {
+    public boolean addOrUpdateNotes(List<DetailNoteInfo> detailNoteInfoList, boolean notify) {
         if (SystemUtil.isEmpty(detailNoteInfoList)) {
             return true;
         }
@@ -1081,10 +1139,12 @@ public class NoteManager extends Observable<Observer> {
         if (size > 0) {
             success = true;
             KLog.d(TAG, "add or update notes result:true, size:" + size);
-            if (size == 1) {    //只有一条记录
-                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, changedList.get(0));
-            } else {    //多条记录
-                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, changedList);
+            if (notify) {
+                if (size == 1) {    //只有一条记录
+                    notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, changedList.get(0));
+                } else {    //多条记录
+                    notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, changedList);
+                }
             }
         }
         return success;
