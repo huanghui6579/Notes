@@ -12,11 +12,9 @@ import android.text.style.BulletSpan;
 import android.text.style.StrikethroughSpan;
 
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.SystemUtil;
-import com.yunxinlink.notes.util.TimeUtil;
 
 import java.util.Comparator;
 import java.util.List;
@@ -202,13 +200,13 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
 
         NoteInfo noteInfo = (NoteInfo) o;
 
-        return id == noteInfo.id;
+        return sid != null ? sid.equals(noteInfo.sid) : noteInfo.sid == null;
 
     }
 
     @Override
     public int hashCode() {
-        return id;
+        return sid != null ? sid.hashCode() : 0;
     }
 
     @Override
@@ -274,45 +272,6 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                     return TEXT;
             }
         }
-    }
-
-    /**
-     * 获取笔记的详细信息
-     * @return
-     */
-    public String getNoteInfo(Context context) {
-        StringBuilder builder = new StringBuilder();
-        String colon = context.getString(R.string.colon);
-        String typeStr = "";
-        switch (kind) {
-            case TEXT:
-                typeStr = context.getString(R.string.note_type_text);
-                break;
-            case DETAILED_LIST:
-                typeStr = context.getString(R.string.note_type_list);
-                break;
-        }
-        String syncStateStr = context.getString(R.string.sync_type_none);
-        if (syncState != null && syncState.ordinal() == SyncState.SYNC_DONE.ordinal()) {
-            syncStateStr = context.getString(R.string.sync_type_done);
-        }
-        String foldername = null;
-        if (!TextUtils.isEmpty(folderId)) {
-            Folder folder = FolderCache.getInstance().getFolderMap().get(folderId);
-            if (folder != null) {
-                foldername = folder.getName();
-            }
-        }
-        String nextLine = "\r\n";
-        builder.append(context.getString(R.string.note_type)).append(colon).append(typeStr).append(nextLine);
-        if (!TextUtils.isEmpty(foldername)) {
-            builder.append(context.getString(R.string.action_folder)).append(colon).append(foldername).append(nextLine);
-        }
-        builder.append(context.getString(R.string.note_words)).append(colon).append(content.length()).append(nextLine)
-                .append(context.getString(R.string.create_time)).append(colon).append(TimeUtil.formatNoteTime(createTime)).append(nextLine)
-                .append(context.getString(R.string.modify_time)).append(colon).append(TimeUtil.formatNoteTime(modifyTime)).append(nextLine)
-                .append(context.getString(R.string.sync_state)).append(colon).append(syncStateStr);
-        return builder.toString();
     }
 
     /**
@@ -711,5 +670,26 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
                 .append(kind).append(spliter)
                 .append(deleteState);
         return DigestUtil.md5Hex(builder.toString());
+    }
+
+    /**
+     * 是否没有被删除
+     * @return
+     */
+    public boolean isNoneDelete() {
+        return deleteState == null || deleteState == DeleteState.DELETE_NONE;
+    }
+
+    /**
+     * 检验笔记的删除状态
+     * @param deleteState
+     * @return
+     */
+    public boolean checkDeleteState(DeleteState deleteState) {
+        if (this.deleteState == null && (deleteState == null || deleteState == DeleteState.DELETE_NONE)) {
+            return true;
+        } else {
+            return deleteState == this.deleteState;
+        }
     }
 }

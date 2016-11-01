@@ -9,12 +9,14 @@ import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.view.View;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.richtext.AttachSpec;
 import com.yunxinlink.notes.ui.HandWritingActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
@@ -109,8 +111,18 @@ public class AttachSpan extends ClickableSpan {
     @Override
     public void onClick(View widget) {
         Context context = widget.getContext();
-        doAction(context, attachSpec.filePath);
         Log.d(TAG, "--AttachSpan--onClick----");
+        if (TextUtils.isEmpty(attachSpec.filePath)) {
+            SystemUtil.makeShortToast(R.string.tip_file_not_download);
+            KLog.d(TAG, "attach span file path is empty");
+        } else {
+            if (!FileUtil.isFileExists(attachSpec.filePath)) {
+                SystemUtil.makeShortToast(R.string.tip_file_not_exists);
+                KLog.d(TAG, "attach span file path is not exists:" + attachSpec.filePath);
+            } else {
+                doAction(context, attachSpec.filePath);
+            }
+        }
     }
 
     /**
@@ -221,6 +233,7 @@ public class AttachSpan extends ClickableSpan {
      * @param filePath
      */
     private void showInfo(Context context, String filePath, String mimeType) {
+        //TODO 有报错
         StringBuilder sb = new StringBuilder();
         File file = new File(filePath);
         String colon = context.getString(R.string.colon);

@@ -531,7 +531,7 @@ public class NoteApi extends BaseApi {
             return;
         }
         try {
-            downNotes(user, 1, -1);
+            downNotes(user, 1);
         } catch (IOException e) {
             KLog.e(TAG, "down notes error:" + e.getMessage());
         }
@@ -541,10 +541,9 @@ public class NoteApi extends BaseApi {
      * 下载笔记,该方法在主线程中执行，调用处需要开线程
      * @param user 用户
      * @param pageNumber 第几页，从1开始
-     * @param totalCount 总页数， -1表示需要从服务器获取总记录数              
      * @return
      */
-    private static void downNotes(User user, int pageNumber, long totalCount) throws IOException {
+    private static void downNotes(User user, int pageNumber) throws IOException {
         KLog.d(TAG, "down notes page：" + pageNumber);
         int pageSize = Constants.PAGE_SIZE_DEFAULT;
         Retrofit retrofit = buildRetrofit();
@@ -552,9 +551,6 @@ public class NoteApi extends BaseApi {
         Map<String, String> queryMap = new HashMap<>();
         queryMap.put("offset", String.valueOf(pageNumber));
         queryMap.put("limit", String.valueOf(pageSize));
-        if (totalCount == -1) { //需要获取总记录数
-            queryMap.put("countSize", String.valueOf(1));
-        }
 
         Call<ActionResult<PageInfo<List<NoteInfoDto>>>> call = repo.downNotes(user.getSid(), queryMap);
 
@@ -562,32 +558,22 @@ public class NoteApi extends BaseApi {
 
         boolean result = checkNoteList(response);
         
-        if (!result) {
+        if (!result) {  //没有数据了，加载完毕
             return;
         }
         
         ActionResult<PageInfo<List<NoteInfoDto>>> actionResult = response.body();
         PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
         List<NoteInfoDto> noteInfoDtoList = pageInfo.getData();
-        if (totalCount == -1) {
-            totalCount = pageInfo.getCount();
-        }
         //保存内容到本地
         saveNotes(user, noteInfoDtoList, true, null);
         
-        //已加载的数量
-        long loadSize = noteInfoDtoList.size() + (pageNumber - 1) * pageSize;
-        
-        if (loadSize < totalCount) {   //没有加载完毕，需要继续加载
-            pageNumber = pageNumber + 1;
-            KLog.d(TAG, "down notes next page：" + pageNumber);
-            try {
-                downNotes(user, pageNumber, totalCount);
-            } catch (IOException e) {
-                KLog.e(TAG, "down notes error page number:" + pageNumber + ", error:" + e.getMessage());
-            }
-        } else {
-            KLog.d(TAG, "down notes completed...");
+        pageNumber = pageNumber + 1;
+        KLog.d(TAG, "down notes next page：" + pageNumber);
+        try {
+            downNotes(user, pageNumber);
+        } catch (IOException e) {
+            KLog.e(TAG, "down notes error page number:" + pageNumber + ", error:" + e.getMessage());
         }
     }
 
@@ -602,7 +588,7 @@ public class NoteApi extends BaseApi {
             return;
         }
         try {
-            downNoteByIds(user, 1, -1);
+            downNoteByIds(user, 1);
         } catch (IOException e) {
             KLog.e(TAG, "down notes with ids error :" + e.getMessage());
         }
@@ -612,10 +598,9 @@ public class NoteApi extends BaseApi {
      * 下载笔记服务器的笔记的ID集合，并带有hash等数据
      * @param user 当前登录用户
      * @param pageNumber 第几页
-     * @param totalCount 总页数
      * @throws IOException
      */
-    private static void downNoteByIds(User user, int pageNumber, long totalCount) throws IOException {
+    private static void downNoteByIds(User user, int pageNumber) throws IOException {
         KLog.d(TAG, "down note sids page：" + pageNumber);
         int pageSize = Constants.PAGE_SIZE_DEFAULT;
         Retrofit retrofit = buildRetrofit();
@@ -623,9 +608,6 @@ public class NoteApi extends BaseApi {
         Map<String, String> queryMap = new HashMap<>();
         queryMap.put("offset", String.valueOf(pageNumber));
         queryMap.put("limit", String.valueOf(pageSize));
-        if (totalCount == -1) { //需要获取总记录数
-            queryMap.put("countSize", String.valueOf(1));
-        }
         String userSid = user.getSid();
         Call<ActionResult<PageInfo<List<NoteInfoDto>>>> call = repo.downNoteSids(userSid, queryMap);
 
@@ -633,7 +615,7 @@ public class NoteApi extends BaseApi {
 
         boolean result = checkNoteList(response);
 
-        if (!result) {
+        if (!result) {  //加载完毕了
             return;
         }
 
@@ -641,9 +623,6 @@ public class NoteApi extends BaseApi {
         PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
         
         List<NoteInfoDto> noteInfoDtoList = pageInfo.getData();
-        if (totalCount == -1) {
-            totalCount = pageInfo.getCount();
-        }
         //与本地比较，是否需要下载同步
         //根据下载的sid查询本地对应的sid的笔记，本地没有或者hash不一样，则都需要下载
         //[0]:笔记的ID集合
@@ -654,7 +633,6 @@ public class NoteApi extends BaseApi {
         if (!SystemUtil.isEmpty(idMap)) {   //这20条记录中有一部分需要下载更新
             String noteIdStr = idMap.get(0);
             //仅下载笔记的基本数据，不包含清单、附件
-            //TODO 修改下载笔记的逻辑
             List<NoteInfoDto> downNoteDtoList = null;
             Map<String, NoteInfoDto> noteDtoMap = null;
             if (!TextUtils.isEmpty(noteIdStr)) {
@@ -673,7 +651,6 @@ public class NoteApi extends BaseApi {
             //下载清单数据
             String detailIdStr = idMap.get(1);
             if (!TextUtils.isEmpty(detailIdStr)) {  //有清单数据
-                //TODO 下载清单数据
                 List<DetailListDto> detailListDtoList = downDetailLists(user, detailIdStr);
                 List<DetailList> detailListList = new ArrayList<>();
                 if (!SystemUtil.isEmpty(detailListDtoList)) {   //有清单，则填充清单
@@ -756,7 +733,7 @@ public class NoteApi extends BaseApi {
                         }
                     }
                     if (!SystemUtil.isEmpty(attachList)) {  //保存该附件集合
-                        AttachManager.getInstance().addOrUpdateAttachs(attachList);
+                        saveAttachList(attachList);
                     }
                 }
             }
@@ -767,21 +744,12 @@ public class NoteApi extends BaseApi {
             KLog.d(TAG, "down note by ids but not need down or update will do next page");
         }
 
-        //已加载的数量
-        long loadSize = noteInfoDtoList.size() + (pageNumber - 1) * pageSize;
-        
-        boolean loadCompleted = loadSize >= totalCount;
-
-        if (!loadCompleted) {   //没有加载完毕，需要继续加载
-            pageNumber = pageNumber + 1;
-            KLog.d(TAG, "down note sids next page：" + pageNumber);
-            try {
-                downNoteByIds(user, pageNumber, totalCount);
-            } catch (IOException e) {
-                KLog.e(TAG, "down note sids error page number:" + pageNumber + ", error:" + e.getMessage());
-            }
-        } else {
-            KLog.d(TAG, "down note sids completed...");
+        pageNumber = pageNumber + 1;
+        KLog.d(TAG, "down note sids next page：" + pageNumber);
+        try {
+            downNoteByIds(user, pageNumber);
+        } catch (IOException e) {
+            KLog.e(TAG, "down note sids error page number:" + pageNumber + ", error:" + e.getMessage());
         }
     }
 
@@ -903,7 +871,7 @@ public class NoteApi extends BaseApi {
         }
         PageInfo<List<NoteInfoDto>> pageInfo = actionResult.getData();
         if (pageInfo == null || SystemUtil.isEmpty(pageInfo.getData())) {   //没有数据了
-            KLog.d(TAG, "down notes response is success and no data");
+            KLog.d(TAG, "down notes response is success and no data or load completed");
             return false;
         }
         return true;
@@ -1022,7 +990,7 @@ public class NoteApi extends BaseApi {
         if (!TextUtils.isEmpty(attIds)) {
             idMap.put(2, attIds);
         }
-        KLog.d(TAG, "check local note sid str is:" + idMap);
+        KLog.d(TAG, "check local note id str is:" + idMap);
         return idMap;
     }
 

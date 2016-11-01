@@ -145,7 +145,9 @@ public class CoreService extends IntentService {
                     }
                     updateNote(detailNote, /*list, */updateContent, srcDetails);
                     noteCache.clear();
-                    startSync(this, user, detailNote);
+                    if (updateContent) {
+                        startSync(this, user, detailNote);
+                    }
                     break;
                 case Constants.OPT_REMOVE_NOTE_ATTACH:  //移除笔记中的附件数据库记录，彻底删除
                     List<Attach> attachList = intent.getParcelableArrayListExtra(Constants.ARG_CORE_LIST);
@@ -267,6 +269,18 @@ public class CoreService extends IntentService {
         }
         return cacheList;
     }
+
+    /**
+     * 设置清单的hash
+     * @param list
+     */
+    private void setDetailListHash(List<DetailList> list) {
+        KLog.d(TAG, "-----setDetailListHash----");
+        //批量添加清单项
+        for (DetailList detail : list) {
+            detail.setHash(detail.generateHash());
+        }
+    }
     
     /**
      * 添加笔记
@@ -282,6 +296,11 @@ public class CoreService extends IntentService {
             attSidList = getCacheAttachList(detailNote, attachSids);
         }
         note.setShowContent(attachText.getText());
+
+        if (detailNote.hasDetailList()) {   //有清单项
+            setDetailListHash(detailNote.getDetailList());
+        }
+        
         detailNote = mNoteManager.addDetailNote(detailNote, attSidList, attachSids);
         boolean success = detailNote != null;
         if (success) {
@@ -320,6 +339,9 @@ public class CoreService extends IntentService {
             attSidList = getCacheAttachList(detailNote, attachSids);
         }
         note.setShowContent(attachText.getText());
+        if (detailNote.hasDetailList()) {   //有清单项
+            setDetailListHash(detailNote.getDetailList());
+        }
         boolean success = false;
         if (updateContent) {
             success = mNoteManager.updateDetailNote(detailNote, attSidList, attachSids, detailLists);

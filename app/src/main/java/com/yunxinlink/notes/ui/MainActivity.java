@@ -1096,6 +1096,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                                 mainFragment.updateNotes(detailNoteList);
                             }
                             break;
+                        case MERGE: //合并笔记
+                            if (!SystemUtil.isEmpty(detailNoteList)) {
+                                KLog.d(TAG, "------merge note list size:" + detailNoteList.size());
+                                mainFragment.mergeNotes(detailNoteList);
+                            }
+                            break;
                     }
                     break;
                 case Provider.FolderColumns.NOTIFY_FLAG:    //文件夹的通知

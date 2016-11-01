@@ -167,6 +167,7 @@ public class DetailListDto {
         detailList.setModifyTime(modifyTime);
         detailList.setSort(sort);
         detailList.setOldSort(sort);
+        detailList.setHash(hash);
         detailList.setSyncState(SyncState.SYNC_DONE);
         return detailList;
     }

@@ -27,7 +27,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
-
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.helper.ItemTouchHelperAdapter;
 import com.yunxinlink.notes.helper.ItemTouchHelperViewHolder;
@@ -38,6 +37,7 @@ import com.yunxinlink.notes.model.DetailList;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.widget.LayoutManagerFactory;
@@ -530,6 +530,25 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         return mTitle;
     }
 
+    /**
+     * 获取当前编辑的清单的hash
+     * @return
+     */
+    public String getDetailHash() {
+        String body = null;
+        String content = getText().toString();
+        String title = getTitle() == null ? "" : getTitle().toString();
+        if (!TextUtils.isEmpty(title)) {
+            body = title + Constants.TAG_NEXT_LINE + content;
+        } else {
+            body = content;
+        }
+        if (TextUtils.isEmpty(body)) {
+            return null;
+        }
+        return DigestUtil.md5Hex(body);
+    }
+
     @Override
     public NoteInfo.NoteKind getNoteType() {
         return NoteInfo.NoteKind.DETAILED_LIST;
@@ -777,16 +796,14 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
             mEtTitle.setText(mTitle);
         }
         
-        if (!TextUtils.isEmpty(text)) {
-            if (detailNote.hasDetailList()) {   //已经有清单了
-                initData(detailNote.getDetailList(), note);
-            } else {
-                setText(text, note);
-            }
-            
-            if (mRecyclerView != null) {
-                mRecyclerView.getAdapter().notifyDataSetChanged();
-            }
+        if (detailNote.hasDetailList()) {   //已经有清单了
+            initData(detailNote.getDetailList(), note);
+        } else {
+            setText(text, note);
+        }
+        
+        if (mRecyclerView != null) {
+            mRecyclerView.getAdapter().notifyDataSetChanged();
         }
     }
 

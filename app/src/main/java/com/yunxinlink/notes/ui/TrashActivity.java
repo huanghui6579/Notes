@@ -6,6 +6,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.view.View;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
@@ -14,6 +15,7 @@ import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.List;
 
@@ -154,6 +156,24 @@ public class TrashActivity extends BaseActivity implements MainFragment.OnMainFr
                                 } else if (list != null) {  //多条笔记
                                     mainFragment.addNotes(list);
                                 }
+                            }
+                            break;
+                        case UPDATE:    ///更新笔记
+                            KLog.d(TAG, "update note in trash ui:" + detailNote);
+                            if (detailNote != null) {
+                                mainFragment.updateNote(detailNote);
+                            }
+                            break;
+                        case BATCH_UPDATE:  //同时更新了多条记录
+                            if (!SystemUtil.isEmpty(list)) {
+                                KLog.d(TAG, "------update note list in trash size:" + list.size());
+                                mainFragment.updateNotes(list);
+                            }
+                            break;
+                        case MERGE: //合并笔记
+                            if (!SystemUtil.isEmpty(list)) {
+                                KLog.d(TAG, "------merge note list in trash size:" + list.size());
+                                mainFragment.mergeNotes(list);
                             }
                             break;
                     }

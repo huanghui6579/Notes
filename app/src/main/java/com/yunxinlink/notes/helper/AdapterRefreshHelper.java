@@ -40,7 +40,9 @@ public class AdapterRefreshHelper {
                     fromPos = position;
                     adapter.notifyItemInserted(position);
                 }
-                adapter.notifyItemRangeChanged(fromPos, adapter.getItemCount() - fromPos);
+                if (notify) {
+                    adapter.notifyItemRangeChanged(fromPos, adapter.getItemCount() - fromPos);
+                }
                 break;
             case AdapterRefreshHelper.TYPE_UPDATE:
                 adapter.notifyItemChanged(position);

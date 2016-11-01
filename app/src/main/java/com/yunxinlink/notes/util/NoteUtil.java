@@ -185,10 +185,11 @@ public class NoteUtil {
 
     /**
      * 显示笔记详情
-     * @param note
+     * @param detailNoteInfo
      */
-    public static void showInfo(Context context, final NoteInfo note) {
-        String info = note.getNoteInfo(context);
+    public static void showInfo(Context context, final DetailNoteInfo detailNoteInfo) {
+        NoteInfo note = detailNoteInfo.getNoteInfo();
+        String info = detailNoteInfo.getNoteInfo(context);
         AlertDialog.Builder builder = buildDialog(context);
         builder.setTitle(note.getNoteTitle(false))
                 .setMessage(info)

@@ -118,6 +118,14 @@ public class SystemUtil {
     }
 
     /**
+     * 在后台运行
+     * @param runnable
+     */
+    public static void doInbackground(Runnable runnable) {
+        getThreadPool().execute(runnable);
+    }
+    
+    /**
      * 停止任务
      */
     public static void shutDownExecutor() {

@@ -35,6 +35,11 @@ public interface Observer {
         REMOVE,
 
         /**
+         * 合并，一般用于服务器下载到本地
+         */
+        MERGE,
+
+        /**
          * 刷新，数据加载完毕了
          */
         REFRESH,

@@ -2433,7 +2433,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     break;
                 case R.id.action_info:    //详情
                     if (mNote != null && !mNote.isEmpty()) {
-                        NoteUtil.showInfo(mContext, mNote);
+                        NoteUtil.showInfo(mContext, mDetailNote);
                     }
                     break;
                 case R.id.action_detailed_list: //清单与文本之间的切换

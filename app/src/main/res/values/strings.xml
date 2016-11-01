@@ -62,7 +62,9 @@
     <string name="tip_note_empty">还没有笔记哦~</string>
     <string name="tip_share_no_text">没有内容是不能分享的哦~</string>
     <string name="tip_network_not_available">网络不可用，请连接网络后再试</string>
-
+    <string name="tip_file_not_exists">文件不存在</string>
+    <string name="tip_file_not_download">文件还没有下载</string>
+    
     <string name="title_note_clear_all">清空回收站</string>
 
     <string name="result_success">操作成功</string>
@@ -81,6 +83,7 @@
     <string name="path">路径</string>
     <string name="size">大小</string>
     <string name="note_words">字数</string>
+    <string name="note_detail_count">清单数量</string>
     <string name="create_time">创建时间</string>
     <string name="modify_time">修改时间</string>
     <string name="sync_state">同步状态</string>
@@ -89,6 +92,9 @@
     <string name="undo">撤销</string>
     <string name="real_delete">彻底删除</string>
     <string name="do_refresh">刷新</string>
+    
+    <string name="unit_word_count">%1$d 字</string>
+    <string name="unit_detail_count">%1$d 条</string>
 
     <string name="hint_folder_edit">输入文件夹名称</string>
 

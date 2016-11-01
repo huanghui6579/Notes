@@ -612,12 +612,35 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     }
 
     /**
-     * 添加笔记
+     * 判断该笔记是否可以刷新界面
+     * @param detailNoteInfo
+     * @return
+     */
+    public boolean canRefresh(DetailNoteInfo detailNoteInfo) {
+        boolean isAvailableNote = detailNoteInfo.isAvailableNote();
+        boolean isTrashNote = detailNoteInfo.isTrashNote();
+        boolean flag = false;
+        if (this.mIsTrash && isTrashNote) { //是回收站笔记且现在是回收站界面
+            flag = true;
+        } else if (!mIsTrash && isAvailableNote) {  //非回收站笔记且现在是普通界面
+            flag = true;
+        }
+        if (!flag) {
+            KLog.d(TAG, "main ui can not refresh ui is trash mode:" + mIsTrash + ", is note available:" + isAvailableNote);
+        }
+        return flag;
+    }
+
+    /**
+     * 添加笔记,从0处添加
      * @author huanghui1
      * @update 2016/3/9 17:29
      * @version: 1.0.0
      */
     public void addNote(DetailNoteInfo note) {
+        if (!canRefresh(note)) {
+            return;
+        }
         mNotes.add(0, note);
         AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
         refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
@@ -626,15 +649,67 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     }
 
     /**
-     * 添加多条笔记，刷新界面
+     * 在尾部添加笔记
+     * @param note
+     * @param refresh 是否及时刷新数据
+     */
+    public int appendNote(DetailNoteInfo note, boolean refresh) {
+        if (!canRefresh(note)) {
+            return -1;
+        }
+        mNotes.add(note);
+        int position = mNotes.size() - 1;
+        AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+        refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
+        refreshHelper.position = position;
+        refreshHelper.notify = refresh;
+        refreshUI(mNotes, refreshHelper);
+        return position;
+    }
+
+    /**
+     * 移除不能刷新界面的笔记
+     * @param list
+     */
+    private void removeRefreshNotes(List<DetailNoteInfo> list) {
+        List<DetailNoteInfo> removeList = new ArrayList<>();
+        for (DetailNoteInfo noteInfo : list) {
+            boolean canRefresh = canRefresh(noteInfo);
+            if (!canRefresh) {
+                removeList.add(noteInfo);
+            }
+        }
+        if (SystemUtil.isEmpty(removeList)) {
+            list.removeAll(removeList);
+        }
+    }
+
+    /**
+     * 添加多条笔记，刷新界面,在0处添加
      * @param list
      */
     public void addNotes(List<DetailNoteInfo> list) {
+        removeRefreshNotes(list);
         mNotes.addAll(0, list);
         AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
         refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
         refreshHelper.fromPosition = 0;
         refreshHelper.toPosition = list.size() - 1;
+        refreshUI(mNotes, refreshHelper);
+    }
+
+    /**
+     * 在尾部添加
+     * @param list
+     */
+    public void appendNotes(List<DetailNoteInfo> list) {
+        removeRefreshNotes(list);
+        int fromSize = mNotes.size();
+        mNotes.addAll(list);
+        AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+        refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
+        refreshHelper.fromPosition = fromSize;
+        refreshHelper.toPosition = mNotes.size() - 1;
         refreshUI(mNotes, refreshHelper);
     }
 
@@ -822,6 +897,13 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      * @version: 1.0.0
      */
     public void updateNote(DetailNoteInfo detailNote) {
+        if (SystemUtil.isEmpty(mNotes)) {
+            addNote(detailNote);
+            return;
+        }
+        if (!canRefresh(detailNote)) {
+            return;
+        }
         int index = mNotes.indexOf(detailNote);
         NoteInfo note = detailNote.getNoteInfo();
         if (index != -1) {  //列表中存在
@@ -851,10 +933,15 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      * @param detailNotes
      */
     public void updateNotes(List<DetailNoteInfo> detailNotes) {
+        if (SystemUtil.isEmpty(mNotes)) {
+            addNotes(detailNotes);
+            return;
+        }
         if (detailNotes.size() == 1) {  //单条记录
             updateNote(detailNotes.get(0));
             return;
         }
+        removeRefreshNotes(detailNotes);
         List<Integer> positionList = new ArrayList<>();
         for (DetailNoteInfo detailNote : detailNotes) {
             int index = mNotes.indexOf(detailNote);
@@ -871,9 +958,47 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 //                mNotes.remove(index);
                 //再添加到0位
 //                mNotes.add(0, oldDetail);
-
             }
         }
+        batchRefresh(positionList);
+    }
+
+    /**
+     * 合并笔记，一般用于下载服务器的数据后的刷新
+     * @param detailNotes
+     */
+    public void mergeNotes(List<DetailNoteInfo> detailNotes) {
+        if (SystemUtil.isEmpty(mNotes)) {
+            appendNotes(detailNotes);
+            return;
+        }
+        List<Integer> positionList = new ArrayList<>();
+        for (DetailNoteInfo detailNote : detailNotes) {
+            if (!canRefresh(detailNote)) {
+                continue;
+            }
+            int index = mNotes.indexOf(detailNote);
+            NoteInfo note = detailNote.getNoteInfo();
+            if (index != -1) {  //列表中存在
+                positionList.add(index);
+                DetailNoteInfo oldDetail = mNotes.get(index);
+                NoteInfo info = oldDetail.getNoteInfo();
+                setupUpdateNote(info, note);
+                oldDetail.setLastAttach(detailNote.getLastAttach());
+                oldDetail.setDetailList(detailNote.getDetailList());
+            } else {
+                index = appendNote(detailNote, false);
+                positionList.add(index);
+            }
+        }
+        batchRefresh(positionList);
+    }
+
+    /**
+     * 刷新多条数据
+     * @param positionList ，要刷新数据的起始位置和结束位置
+     */
+    private void batchRefresh(List<Integer> positionList) {
         if (positionList.size() > 0) {
             Collections.sort(positionList);
             int fromPosition = positionList.get(0);
@@ -1174,7 +1299,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      */
     private void showTrashNote(final DetailNoteInfo detailNote) {
         NoteInfo note = detailNote.getNoteInfo();
-        String info = note.getNoteInfo(getContext());
+        String info = detailNote.getNoteInfo(getContext());
         AlertDialog.Builder builder = NoteUtil.buildDialog(getContext());
         builder.setTitle(note.getNoteTitle(false))
                 .setMessage(info)
@@ -1407,7 +1532,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                     NoteUtil.shareNote(getContext(), mSelectedList.get(0));
                     break;
                 case R.id.action_info:    //详情
-                    NoteUtil.showInfo(getContext(), mSelectedList.get(0).getNoteInfo());
+                    NoteUtil.showInfo(getContext(), mSelectedList.get(0));
                     break;
                 case R.id.action_restore:   //还原
                     handleUnDeleteNote(mSelectedList);
@@ -1761,19 +1886,24 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         private void showAttachIcon(DetailNoteInfo detailNote, NoteListViewHolder holder) {
             Attach lastAttach = detailNote.getLastAttach();
             if (lastAttach.isImage()) { //图片文件
-                ImageUtil.displayImage(lastAttach.getLocalPath(), new ImageViewAware(holder.mIvIcon, false), new SimpleImageLoadingListener() {
-                    @Override
-                    public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                        if (loadedImage == null) {
+                String filePath = lastAttach.getLocalPath();
+                if (TextUtils.isEmpty(filePath)) {
+                    KLog.d(TAG, "main ui attach file path is empty:" + lastAttach.getSid() + "---->" + lastAttach.getFilename());
+                } else {
+                    ImageUtil.displayImage(lastAttach.getLocalPath(), new ImageViewAware(holder.mIvIcon, false), new SimpleImageLoadingListener() {
+                        @Override
+                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                            if (loadedImage == null) {
+                                loadImageFailed((ImageView) view);
+                            }
+                        }
+
+                        @Override
+                        public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
                             loadImageFailed((ImageView) view);
                         }
-                    }
-
-                    @Override
-                    public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
-                        loadImageFailed((ImageView) view);
-                    }
-                });
+                    });
+                }
             } else {
                 Drawable drawable = initAttachIcon(lastAttach.getType(), mTintColor);
                 holder.mIvIcon.setImageDrawable(drawable);
@@ -1975,14 +2105,19 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                     SystemUtil.setViewVisibility(holder.mIvAttachIcon, View.VISIBLE);
                     holder.mIvAttachIcon.setImageResource(attachIcon);
                 }
-                ImageUtil.displayImage(attach.getLocalPath(), new NoteItemViewAware(holder.mItemContainer), new SimpleImageLoadingListener() {
-                    @Override
-                    public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                        if (loadedImage != null) {
-                            doInbackground(new PaletteItemColorTask(holder.getAdapterPosition(), loadedImage));
+                String filePath = attach.getLocalPath();
+                if (TextUtils.isEmpty(filePath)) {
+                    KLog.d(TAG, "main ui show attach img but file path is empty:" + attach.getSid() + "--->" + attach.getFilename());
+                } else {
+                    ImageUtil.displayImage(attach.getLocalPath(), new NoteItemViewAware(holder.mItemContainer), new SimpleImageLoadingListener() {
+                        @Override
+                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                            if (loadedImage != null) {
+                                doInbackground(new PaletteItemColorTask(holder.getAdapterPosition(), loadedImage));
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         }
 
@@ -2137,7 +2272,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                         handleDeleteNote(detailNote);
                         break;
                     case R.id.action_info:  //详情
-                        NoteUtil.showInfo(mContext, detailNote.getNoteInfo());
+                        NoteUtil.showInfo(mContext, detailNote);
                         break;
                     case R.id.action_move:  //移动
                         moveNote(detailNote);

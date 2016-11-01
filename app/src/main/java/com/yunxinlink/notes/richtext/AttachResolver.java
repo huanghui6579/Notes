@@ -1,15 +1,19 @@
 package com.yunxinlink.notes.richtext;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
+import android.support.v4.content.res.ResourcesCompat;
+import android.text.TextUtils;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.SparseArray;
 
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.socks.library.KLog;
-
+import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.listener.RichTextClickListener;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.util.ImageUtil;
@@ -111,26 +115,16 @@ public class AttachResolver implements Resolver {
                 attachSpan.setSelStart(selStart);
                 attachSpan.setSelEnd(selEnd);
                 attachSpan.setNoteSid(attach.getNoteId());
-
                 ReplacementSpan replacementSpan = null;
-                Bitmap bitmap = null;
                 int[] size = null;
                 switch (attach.getType()) {
                     case Attach.IMAGE:  //显示图片
-                        bitmap = ImageUtil.loadImageThumbnailsSync(filePath);
-                        if (bitmap == null) {
-                            return;
-                        }
-                        replacementSpan = new ImageSpan(context, bitmap);
+                        replacementSpan = getImageSpan(context, filePath, null);
                         break;
                     case Attach.PAINT:  //显示绘画
                         size = richSpan.getSize();
                         ImageSize imageSize = new ImageSize(size[0], size[1]);
-                        bitmap = ImageUtil.loadImageThumbnailsSync(filePath, imageSize);
-                        if (bitmap == null) {
-                            return;
-                        }
-                        replacementSpan = new ImageSpan(context, bitmap);
+                        replacementSpan = getImageSpan(context, filePath, imageSize);
                         break;
                     default:  //录音文件
                         size = richSpan.getSize();
@@ -138,10 +132,45 @@ public class AttachResolver implements Resolver {
                         break;
                 }
                 KLog.d(TAG, "---ResolverAttachTask----addSpan-----replacementSpan----");
-                richSpan.addSpan(text, attachSpan, replacementSpan, selStart, selEnd, null);
+                if (replacementSpan != null) {
+                    richSpan.addSpan(text, attachSpan, replacementSpan, selStart, selEnd, null);
+                }
             }
         }
     }
-    
-    
+
+    /**
+     * 获取图片的span
+     * @param context
+     * @param filePath 图片的路径
+     * @return
+     */
+    public ReplacementSpan getImageSpan(Context context, String filePath, ImageSize imageSize) {
+        ReplacementSpan replacementSpan = null;
+        Bitmap bitmap = null;
+        if (!TextUtils.isEmpty(filePath)) {
+            bitmap = ImageUtil.loadImageThumbnailsSync(filePath, imageSize);
+        }
+        if (bitmap == null) {
+            Drawable drawable = getFailedImage(context);
+            drawable.setBounds(0, 0, drawable.getIntrinsicWidth(),
+                    drawable.getIntrinsicHeight());
+            replacementSpan = new ImageSpan(drawable, ImageSpan.ALIGN_BASELINE);
+        } else {
+            replacementSpan = new ImageSpan(context, bitmap);
+        }
+        return replacementSpan;
+    }
+
+    /**
+     * 初始化图片加载时候的图片
+     * @return
+     */
+    private Drawable getFailedImage(Context context) {
+        Resources resources = context.getResources();
+        int color = ResourcesCompat.getColor(resources, R.color.text_time_color, context.getTheme());
+        Drawable drawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_broken_image, context.getTheme());
+        drawable = SystemUtil.getTintDrawable(context, drawable, color);
+        return drawable;
+    }
 }

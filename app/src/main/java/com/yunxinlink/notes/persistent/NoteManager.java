@@ -247,7 +247,7 @@ public class NoteManager extends Observable<Observer> {
             KLog.d(TAG, "note manager refresh notes list but note sid set is empty");
             return;
         }
-        KLog.d(TAG, "note manager refresh note set:" + noteSidSet.size());
+        KLog.d(TAG, "note manager refresh note set:" + noteSidSet);
         String selection = null;
         String[] args = null;
         if (noteSidSet.size() == 1) {   //只有一条记录
@@ -257,7 +257,7 @@ public class NoteManager extends Observable<Observer> {
         } else {
             List<String> argsList = new ArrayList<>();
             StringBuilder builder = new StringBuilder();
-            builder.append(Provider.NoteColumns.SID).append("in (");
+            builder.append(Provider.NoteColumns.SID).append(" in (");
             for (String sid : noteSidSet) {
                 argsList.add(sid);
                 builder.append("?").append(Constants.TAG_COMMA);
@@ -552,7 +552,12 @@ public class NoteManager extends Observable<Observer> {
         values.put(Provider.NoteColumns.SID, note.getSid());
         return values;
     }
-    
+
+    /**
+     * 将cursor转换成笔记信息
+     * @param cursor
+     * @return
+     */
     private NoteInfo cursor2Note(Cursor cursor) {
         NoteInfo note = new NoteInfo();
         note.setId(cursor.getInt(cursor.getColumnIndex(Provider.NoteColumns._ID)));
@@ -857,7 +862,10 @@ public class NoteManager extends Observable<Observer> {
             db = mDBHelper.getWritableDatabase();
         }
         //设置hash
-        detail.setHash(detail.generateHash());
+        String hash = detail.getHash();
+        if (hash == null) {
+            detail.setHash(detail.generateHash());
+        }
         int id = detail.getId();
         ContentValues values = initUpdateDetailValues(detail);
         long rowId = 0;
@@ -1101,7 +1109,7 @@ public class NoteManager extends Observable<Observer> {
                     row = db.insert(Provider.NoteColumns.TABLE_NAME, null, values);
                     if (row > 0) {
                         canUpdate = true;
-                        note.setRemindId((int) row);
+                        note.setId((int) row);
                     }
                 } else {
                     canUpdate = true;
@@ -1140,11 +1148,7 @@ public class NoteManager extends Observable<Observer> {
             success = true;
             KLog.d(TAG, "add or update notes result:true, size:" + size);
             if (notify) {
-                if (size == 1) {    //只有一条记录
-                    notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, changedList.get(0));
-                } else {    //多条记录
-                    notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.BATCH_UPDATE, changedList);
-                }
+                notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.MERGE, changedList);
             }
         }
         return success;
