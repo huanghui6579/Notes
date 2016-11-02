@@ -619,8 +619,22 @@ public class SystemUtil {
                 filename = generateHandWriteFilename();
                 break;
         }
+        return getAttachFilePath(sid, attachType, filename);
+    }
+
+    /**
+     * 获取附件的全路径
+     * @param sid 笔记的sid
+     * @param attachType 文件的类型
+     * @param filename 文件名                  
+     * @return
+     */
+    public static String getAttachFilePath(String sid, int attachType, String filename) throws IOException {
+        if (TextUtils.isEmpty(filename)) {
+            return null;
+        }
         String attachDir = SystemUtil.getAttachPath(sid, attachType);
-        if (attachDir == null || filename == null) {
+        if (attachDir == null) {
             Log.d(TAG, "--getAttachFilePath-----error---null--");
             return null;
         }
@@ -636,6 +650,22 @@ public class SystemUtil {
      */
     public static File getAttachFile(String sid, int attachType) throws IOException {
         String filePath = getAttachFilePath(sid, attachType);
+        if (filePath != null) {
+            return new File(filePath);
+        }
+        return null;
+    }
+
+    /**
+     * 获取附件
+     * @param sid 笔记的sid
+     * @param attachType 文件的类型
+     * @param filename 已有的文件名，保存的文件就是以此名称为准                  
+     * @return
+     * @throws IOException
+     */
+    public static File getAttachFile(String sid, int attachType, String filename) throws IOException {
+        String filePath = getAttachFilePath(sid, attachType, filename);
         if (filePath != null) {
             return new File(filePath);
         }

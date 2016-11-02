@@ -13,6 +13,7 @@ import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.api.model.NoteParam;
 import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
+import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.TaskParam;
@@ -21,9 +22,14 @@ import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.sync.SyncData;
+import com.yunxinlink.notes.sync.download.DownloadTask;
+import com.yunxinlink.notes.sync.download.DownloadTaskQueue;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -201,9 +207,47 @@ public class SyncService extends Service {
 
         //下载笔记
         downNotes(user);
+        
+        //下载附件
+        downAttachFile(user);
 
         SyncCache.getInstance().remove(syncSid);
         return resultParam;
+    }
+
+    /**
+     * 下载附件
+     */
+    private void downAttachFile(User user) {
+        //查询需要下载的附件
+        List<Attach> attachList = NoteManager.getInstance().getUnDownloadAttach(user);
+        if (SystemUtil.isEmpty(attachList)) {
+            KLog.d(TAG, "sync service download attach file but list is empty");
+            return;
+        }
+        
+        List<DownloadTask> taskList = new ArrayList<>();
+        for (Attach attach : attachList) {
+            DownloadTask task = new DownloadTask();
+            task.setId(attach.getSid());
+            task.setFilename(attach.getFilename());
+            String savePath = null;
+            try {
+                savePath = SystemUtil.getAttachFilePath(attach.getNoteId(), attach.getType(), attach.getFilename());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            task.setSavePath(savePath);
+            Map<String, Object> param = new HashMap<>();
+            param.put("attach", attach);
+            task.setParams(param);
+
+            taskList.add(task);
+        }
+        KLog.d(TAG, "sync service download attach file start");
+        DownloadTaskQueue downloadTaskQueue = new DownloadTaskQueue(mContext);
+        downloadTaskQueue.addAll(taskList);
+        downloadTaskQueue.start();
     }
 
     /**

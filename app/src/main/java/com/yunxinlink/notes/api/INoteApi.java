@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.FieldMap;
@@ -93,7 +94,7 @@ public interface INoteApi {
      * @param params 参数
      * @return 笔记的数据
      */
-    @GET("note/{userSid}/list")
+    @GET("note/{userSid}/sids")
     Call<ActionResult<PageInfo<List<NoteInfoDto>>>> downNoteSids(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
 
     /**
@@ -125,4 +126,13 @@ public interface INoteApi {
     @FormUrlEncoded
     @POST("note/{userSid}/attach/filter")
     Call<ActionResult<List<AttachDto>>> downAttachFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
+
+    /**
+     * 下载附件
+     * @param sid
+     * @param params
+     * @return
+     */
+    @GET("note/att/{sid}")
+    Call<ResponseBody> downAttachFile(@Path("sid") String sid, @QueryMap Map<String, String> params);
 }

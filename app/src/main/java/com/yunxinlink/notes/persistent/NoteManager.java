@@ -1446,6 +1446,33 @@ public class NoteManager extends Observable<Observer> {
         }
         return map;
     }
+
+    /**
+     * 获取该用户的所有附件文件没有下载的附件列表
+     * @param user
+     * @return
+     */
+    public List<Attach> getUnDownloadAttach(User user) {
+        if (user == null || !user.checkOnLine()) {//用户离线或者不可用，退出登录了
+            KLog.d(TAG, "get all un download file user is null or offline or disable:" + user);
+            return null;
+        }
+        List<Attach> list = null;
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        String selection = Provider.AttachmentColumns.LOCAL_PATH + " is null or " + Provider.AttachmentColumns.SYNC_STATE + " = ?";
+        String[] selectionArgs = {String.valueOf(SyncState.SYNC_DOWN.ordinal())};
+        String orderBy = Provider.AttachmentColumns.MODIFY_TIME + " desc";
+        Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, orderBy);
+        if (cursor != null) {
+            list = new ArrayList<>();
+            while (cursor.moveToNext()) {
+                Attach attach = cursor2Attach(cursor);
+                list.add(attach);
+            }
+            cursor.close();
+        }
+        return list;
+    }
     
     /**
      * 更新笔记

@@ -27,6 +27,7 @@ import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
+import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.io.File;
@@ -38,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -584,7 +587,7 @@ public class NoteApi extends BaseApi {
     public static void downNotesWithIds(Context context) {
         User user = getUser(context);
         if (user == null || !user.isAvailable()) {  //用户不可用
-            KLog.d(TAG, "down note width id but user is null or not available");
+            KLog.d(TAG, "down note with id but user is null or not available");
             return;
         }
         try {
@@ -592,6 +595,57 @@ public class NoteApi extends BaseApi {
         } catch (IOException e) {
             KLog.e(TAG, "down notes with ids error :" + e.getMessage());
         }
+    }
+
+    /**
+     * 下载附件的文件
+     * @param context
+     */
+    public static boolean downAttachFile(Context context, Attach attach) throws IOException {
+        User user = getUser(context);
+        if (user == null || !user.isAvailable()) {  //用户不可用
+            KLog.d(TAG, "down attach file with id but user is null or not available");
+            return false;
+        }
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        
+        String userSid = user.getSid();
+        String sid = attach.getSid();
+        Map<String, String> queryMap = new HashMap<>();
+        queryMap.put("userSid", userSid);
+        Call<ResponseBody> call = repo.downAttachFile(sid, queryMap);
+
+        Response<ResponseBody> response = call.execute();
+        
+        KLog.d(TAG, "download attach file invoke :" + attach.getSid() + ", filename:" + attach.getFilename());
+        if (response == null || response.body() == null) {
+            KLog.d(TAG, "download attach file response is null or body is null so down failed");
+            return false;
+        }
+        String filename = attach.getFilename();
+        if (TextUtils.isEmpty(filename)) {  //从header中获取
+            Headers headers = response.headers();
+            filename = SystemUtil.getFilename(headers);
+        }
+        boolean saveResult = false;
+        String filePath = null;
+        try {
+            File saveFile = SystemUtil.getAttachFile(attach.getNoteId(), attach.getType(), filename);
+            if (saveFile != null) {
+                filePath = saveFile.getAbsolutePath();
+                saveResult = FileUtil.writeResponseBodyToDisk(response.body(), saveFile);
+                KLog.d(TAG, "download attach file save file result:" + saveResult + ", and path:" + filePath);
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "download attach file save file error:" + e.getMessage());
+        }
+        if (saveResult) {   //将数据保存到数据库中
+            attach.setLocalPath(filePath);
+            KLog.d(TAG, "download attach file success and will save attach file info to local db:" + filePath);
+//            saveResult = UserManager.getInstance().update(user);
+        }
+        return saveResult;
     }
 
     /**

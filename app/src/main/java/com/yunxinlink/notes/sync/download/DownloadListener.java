@@ -1,0 +1,28 @@
+package com.yunxinlink.notes.sync.download;
+
+/**
+ * 下载的任务监听器
+ * @author huanghui-iri
+ * @update 2016/11/2 11:35
+ * @version: 0.0.1
+ */
+public interface DownloadListener {
+
+    /**
+     * 开始下载
+     * @param downloadTask
+     */
+    void onStart(DownloadTask downloadTask);
+    
+    /**
+     * 下载结束
+     * @param downloadTask
+     */
+    void onCompleted(DownloadTask downloadTask);
+
+    /**
+     * 下载失败
+     * @param downloadTask
+     */
+    void onError(DownloadTask downloadTask);
+}

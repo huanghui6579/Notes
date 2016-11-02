@@ -313,6 +313,10 @@ public class UserApi extends BaseApi {
 //        Call<ActionResult<UserDto>> call = repo.register(buildRegisterParams(userDto, confirmPassword));
     }
 
+    /**
+     * 异步下载头像
+     * @param user
+     */
     public static void downloadAvatarAsync(User user) {
         doInbackground(new NoteTask(user) {
             @Override
