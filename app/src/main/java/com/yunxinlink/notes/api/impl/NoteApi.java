@@ -12,6 +12,8 @@ import com.yunxinlink.notes.api.model.FolderDto;
 import com.yunxinlink.notes.api.model.NoteDto;
 import com.yunxinlink.notes.api.model.NoteInfoDto;
 import com.yunxinlink.notes.api.model.PageInfo;
+import com.yunxinlink.notes.db.Provider;
+import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.listener.OnLoadCompletedListener;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.Attach;
@@ -642,7 +644,18 @@ public class NoteApi extends BaseApi {
         }
         if (saveResult) {   //将数据保存到数据库中
             attach.setLocalPath(filePath);
+            attach.setSyncState(SyncState.SYNC_DONE);
             KLog.d(TAG, "download attach file success and will save attach file info to local db:" + filePath);
+            saveResult = AttachManager.getInstance().updateAttachSyncState(attach);
+            if (saveResult) {
+                //查询该附件对应的笔记
+                String noteSid = attach.getNoteId();
+                DetailNoteInfo detailNoteInfo = NoteManager.getInstance().getDetailNote(noteSid);
+                if (detailNoteInfo != null) {
+                    KLog.d(TAG, "note attach download notify :" + detailNoteInfo);
+                    NoteManager.getInstance().notifyObservers(Provider.NoteColumns.NOTIFY_FLAG, Observer.NotifyType.MERGE, detailNoteInfo);
+                }
+            }
 //            saveResult = UserManager.getInstance().update(user);
         }
         return saveResult;

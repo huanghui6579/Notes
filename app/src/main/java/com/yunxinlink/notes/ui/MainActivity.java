@@ -1097,7 +1097,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             }
                             break;
                         case MERGE: //合并笔记
-                            if (!SystemUtil.isEmpty(detailNoteList)) {
+                            if (detailNote != null) {   //单个
+                                KLog.d(TAG, "------merge note single------");
+                                mainFragment.mergeNote(detailNote);
+                            } else if (!SystemUtil.isEmpty(detailNoteList)) {
                                 KLog.d(TAG, "------merge note list size:" + detailNoteList.size());
                                 mainFragment.mergeNotes(detailNoteList);
                             }
@@ -1141,7 +1144,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             break;
                     }
                     break;
-                case Provider.UserColumns.NOTIFY_FLAG:  //用户的通知
+                /*case Provider.UserColumns.NOTIFY_FLAG:  //用户的通知
                     mainFragment = getMainFragment();
                     if (mainFragment == null) {
                         KLog.d(TAG, "--update--observer--mainFragment-is---null--");
@@ -1154,7 +1157,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             mainFragment.reLoadData(true);
                             break;
                     }
-                    break;
+                    break;*/
                 case Provider.NOTIFY_FLAG:  //通用的刷新，一般重新加载数据，然后刷新界面
                     mainFragment = getMainFragment();
                     if (mainFragment == null) {

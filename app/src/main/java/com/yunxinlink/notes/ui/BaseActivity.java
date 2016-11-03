@@ -30,10 +30,7 @@ import com.yunxinlink.notes.lock.LockerDelegate;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.receiver.SystemReceiver;
-import com.yunxinlink.notes.sync.SyncCache;
-import com.yunxinlink.notes.sync.SyncData;
-import com.yunxinlink.notes.sync.service.SyncService;
-import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import me.imid.swipebacklayout.app.SwipeBackActivity;
@@ -617,15 +614,7 @@ public abstract class BaseActivity extends SwipeBackActivity {
             KLog.d(TAG, "start sync up note but user is null or not available:" + user);
             return;
         }
-        noteParam.setUserSid(user.getSid());
-        SyncData syncData = new SyncData();
-        syncData.setState(SyncData.SYNC_NONE);
-        syncData.setSyncable(noteParam);
-        SyncCache.getInstance().addOrUpdate(syncSid, syncData);
-        Intent service = new Intent(this, SyncService.class);
-        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_UP_NOTE);
-        service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
-        startService(service);
+        NoteUtil.startSyncUpNote(this, user, syncSid, noteParam);
     }
 
     /**

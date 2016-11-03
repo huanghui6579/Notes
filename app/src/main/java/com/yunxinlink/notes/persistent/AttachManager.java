@@ -231,6 +231,10 @@ public class AttachManager extends Observable<Observer> {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(Provider.AttachmentColumns.SYNC_STATE, attach.getSyncState().ordinal());
+        String filePath = attach.getLocalPath();
+        if (filePath != null) {
+            values.put(Provider.AttachmentColumns.LOCAL_PATH, filePath);
+        }
         long rowId = 0;
         try {
             String selection = Provider.AttachmentColumns.SID + " = ?";

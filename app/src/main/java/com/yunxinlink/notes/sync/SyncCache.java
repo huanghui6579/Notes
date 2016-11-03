@@ -83,6 +83,16 @@ public class SyncCache {
     }
 
     /**
+     * 是否有同步任务
+     * @param sid
+     * @return
+     */
+    public boolean hasSyncData(String sid) {
+        SyncData syncData = mMap.get(sid);
+        return syncData != null;
+    } 
+
+    /**
      * 获取同步的数据
      * @param sid
      * @return

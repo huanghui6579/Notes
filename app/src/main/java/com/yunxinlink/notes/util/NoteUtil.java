@@ -28,6 +28,7 @@ import android.widget.TextView;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.adapter.ShareListAdapter;
+import com.yunxinlink.notes.api.model.NoteParam;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.appwidget.NoteListAppWidget;
 import com.yunxinlink.notes.appwidget.ShortCreateAppWidget;
@@ -42,6 +43,8 @@ import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.share.ShareInfo;
 import com.yunxinlink.notes.share.ShareItem;
 import com.yunxinlink.notes.share.SimplePlatformActionListener;
+import com.yunxinlink.notes.sync.SyncCache;
+import com.yunxinlink.notes.sync.SyncData;
 import com.yunxinlink.notes.sync.service.SyncService;
 import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
@@ -835,12 +838,41 @@ public class NoteUtil {
     }
 
     /**
+     * 向上同步笔记
+     * @param syncSid 同步的编号
+     * @param noteParam 笔记的参数
+     */
+    public static void startSyncUpNote(Context context, User user, String syncSid, NoteParam noteParam) {
+        noteParam.setUserSid(user.getSid());
+        SyncData syncData = new SyncData();
+        syncData.setState(SyncData.SYNC_NONE);
+        syncData.setSyncable(noteParam);
+        SyncCache.getInstance().addOrUpdate(syncSid, syncData);
+        Intent service = new Intent(context, SyncService.class);
+        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_UP_NOTE);
+        service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
+        context.startService(service);
+    }
+
+    /**
      * 开始同步笔记
      */
-    public static void startSyncNote(Context context) {
+    public synchronized static void startSyncNote(Context context) {
+        KLog.d(TAG, "start sync down note");
+        String syncSid = SystemUtil.generateSyncSid();
+        
+        if (SyncCache.getInstance().hasSyncData(syncSid)) {
+            KLog.d(TAG, "start sync data but already hash sync data:" + syncSid);
+            return;
+        }
+        
         Intent service = new Intent(context, SyncService.class);
         service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_DOWN_NOTE);
-        String syncSid = SystemUtil.generateSyncSid();
+        
+        SyncData syncData = new SyncData();
+        syncData.setState(SyncData.SYNC_NONE);
+        SyncCache.getInstance().addOrUpdate(syncSid, syncData);
+        
         service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
         context.startService(service);
     }

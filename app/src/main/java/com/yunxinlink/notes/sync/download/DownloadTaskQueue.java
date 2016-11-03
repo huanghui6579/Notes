@@ -37,12 +37,21 @@ public class DownloadTaskQueue implements DownloadListener {
      * 正在下载的任务列表
      */
     private LinkedList<DownloadTask> mRunningTasks = new LinkedList<>();
+
+    /**
+     * 所有下载任务的总的监听器
+     */
+    private DownloadListener mDownloadListener;
     
     private Context mContext;
     
     public DownloadTaskQueue(Context context) {
         this.mContext = context;
         init();
+    }
+
+    public void setDownloadListener(DownloadListener downloadListener) {
+        this.mDownloadListener = downloadListener;
     }
 
     /**
@@ -61,6 +70,9 @@ public class DownloadTaskQueue implements DownloadListener {
         Downloader downloader = Downloader.getInstance();
 //        downloader.detachListener(this);
         downloader.cancelAll();
+        if (mDownloadListener != null) {
+            mDownloadListener.onCompleted(null);
+        }
         KLog.d(TAG, "download task queue destroy");
     }
 

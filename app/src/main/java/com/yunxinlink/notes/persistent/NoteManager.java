@@ -792,6 +792,30 @@ public class NoteManager extends Observable<Observer> {
         return info;
     }
 
+    /**
+     * 根据笔记的sid获取笔记信息
+     * @param noteSid
+     * @return
+     */
+    public NoteInfo getNote(String noteSid) {
+        //TODO 或者最后的附件
+        NoteInfo info = null;
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, Provider.NoteColumns.SID + " = ?", new String[] {noteSid}, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            info = cursor2Note(cursor);
+            
+            //获取笔记中的附件
+            Map<String, Attach> map = getAttaches(info, db);
+
+            info.setAttaches(map);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return info;
+    }
+
 
     /**
      * 初始化note的添加数据
@@ -1425,6 +1449,23 @@ public class NoteManager extends Observable<Observer> {
     }
 
     /**
+     * 获取清单笔记的信息
+     * @param noteSid 笔记的sid
+     * @return
+     */
+    public DetailNoteInfo getDetailNote(String noteSid) {
+        NoteInfo note = getNote(noteSid);
+        if (note == null) {
+            return null;
+        }
+        List<DetailList> list = getDetailList(null, note.getSid());
+        DetailNoteInfo detailNote = new DetailNoteInfo();
+        detailNote.setDetailList(list);
+        detailNote.setNoteInfo(note);
+        return detailNote;
+    }
+
+    /**
      * 获取笔记中的附件列表，附件按时间倒序，也就是最新的时间排在最前面
      * @param note 笔记
      * @return 返回笔记中的附件列表
@@ -1863,6 +1904,7 @@ public class NoteManager extends Observable<Observer> {
         int userId = user.getId();
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         boolean success = false;
+//        boolean hasMerge = false;
         db.beginTransaction();
 
         try {
@@ -1871,26 +1913,27 @@ public class NoteManager extends Observable<Observer> {
             ContentValues values = new ContentValues();
             values.put(Provider.FolderColumns.USER_ID, userId);
             values.put(Provider.FolderColumns.MODIFY_TIME, time);
-            long rowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns.USER_ID + " = 0 OR " + Provider.FolderColumns.USER_ID + " IS NULL", null);
+            long folderRowId = db.update(Provider.FolderColumns.TABLE_NAME, values, Provider.FolderColumns.USER_ID + " = 0 OR " + Provider.FolderColumns.USER_ID + " IS NULL", null);
             
-            KLog.d(TAG, "merge local folder size:" + rowId);
+            KLog.d(TAG, "merge local folder size:" + folderRowId);
             
             //更新笔记的所属用户
             values = new ContentValues();
             values.put(Provider.NoteColumns.USER_ID, userId);
             values.put(Provider.NoteColumns.MODIFY_TIME, time);
-            rowId = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL", null);
+            long noteRowId = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL", null);
 
-            KLog.d(TAG, "merge local note size:" + rowId);
+            KLog.d(TAG, "merge local note size:" + noteRowId);
             
             //更新附件的所属用户
             values = new ContentValues();
             values.put(Provider.NoteColumns.USER_ID, userId);
             values.put(Provider.NoteColumns.MODIFY_TIME, time);
-            rowId = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL", null);
+            long attRowId = db.update(Provider.NoteColumns.TABLE_NAME, values, Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL", null);
 
-            KLog.d(TAG, "merge local attach size:" + rowId);
+            KLog.d(TAG, "merge local attach size:" + attRowId);
             db.setTransactionSuccessful();
+//            hasMerge = folderRowId > 0 && noteRowId > 0 && attRowId > 0;
             success = true;
         } catch (Exception e) {
             KLog.e(TAG, "merge local notes error:" + e.getMessage());

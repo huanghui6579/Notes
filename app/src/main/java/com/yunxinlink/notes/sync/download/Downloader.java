@@ -2,7 +2,6 @@ package com.yunxinlink.notes.sync.download;
 
 import android.content.Context;
 
-import com.liulishuo.filedownloader.util.FileDownloadExecutors;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.model.Attach;
@@ -133,7 +132,7 @@ public class Downloader {
 
         private void init() {
             mWorkQueue = new LinkedBlockingQueue<>();
-            mPool = FileDownloadExecutors.newDefaultThreadPool(3, mWorkQueue, "LauncherTask");
+            mPool = DownloadExecutors.newDefaultThreadPool(3, mWorkQueue, "LauncherTask");
         }
 
         /**

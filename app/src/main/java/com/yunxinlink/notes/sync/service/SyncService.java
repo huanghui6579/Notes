@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.support.v4.os.AsyncTaskCompat;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
@@ -24,6 +25,7 @@ import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.sync.SyncData;
 import com.yunxinlink.notes.sync.download.DownloadTask;
 import com.yunxinlink.notes.sync.download.DownloadTaskQueue;
+import com.yunxinlink.notes.sync.download.SimpleDownloadListener;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.SystemUtil;
 
@@ -33,8 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.yunxinlink.notes.lockpattern.Alp.TAG;
-
 /**
  * 同步数据的服务
  * @author huanghui1
@@ -42,6 +42,8 @@ import static com.yunxinlink.notes.lockpattern.Alp.TAG;
  * @version: 1.0.0
  */
 public class SyncService extends Service {
+    private static final String TAG = "SyncService";
+    
     private Context mContext;
 
     @Override
@@ -105,7 +107,8 @@ public class SyncService extends Service {
      * @param param
      */
     private void executeTask(TaskParam param) {
-        new SyncTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, param);
+        AsyncTaskCompat.executeParallel(new SyncTask(), param);
+//        new SyncTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, param);
     }
 
     @Override
@@ -166,7 +169,7 @@ public class SyncService extends Service {
      * @param syncSid 同步任务的id
      * @return true:可以继续执行该同步任务，false：该任务已经在执行了
      */
-    private boolean checkSyncState(String syncSid) {
+    private synchronized boolean checkSyncState(String syncSid) {
         SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
         KLog.d(TAG, "sync service sync down note task in cache:" + syncData);
         if (syncData == null) { //没有同步数据
@@ -191,6 +194,7 @@ public class SyncService extends Service {
     private TaskParam syncDownNote(String syncSid) {
         User user = getCurrentUser();
         if (user == null || !user.isAvailable()) {
+            SyncCache.getInstance().remove(syncSid);
             KLog.d(TAG, "sync service sync down note user is null or user is not available user:" + user);
             return null;
         }
@@ -210,6 +214,8 @@ public class SyncService extends Service {
         
         //下载附件
         downAttachFile(user);
+
+//        SystemClock.sleep(3000);
 
         SyncCache.getInstance().remove(syncSid);
         return resultParam;
@@ -246,6 +252,7 @@ public class SyncService extends Service {
         }
         KLog.d(TAG, "sync service download attach file start");
         DownloadTaskQueue downloadTaskQueue = new DownloadTaskQueue(mContext);
+        downloadTaskQueue.setDownloadListener(new MyDownloadListener());
         downloadTaskQueue.addAll(taskList);
         downloadTaskQueue.start();
     }
@@ -317,6 +324,17 @@ public class SyncService extends Service {
             default:
                 SystemUtil.makeShortToast("同步失败，请稍后再试");
                 break;
+        }
+    }
+
+    /**
+     * 附件下载的监听器
+     */
+    class MyDownloadListener extends SimpleDownloadListener {
+        @Override
+        public void onCompleted(DownloadTask downloadTask) {
+            super.onCompleted(downloadTask);
+            KLog.d(TAG, "sync service download file listener completed");
         }
     }
 

@@ -995,6 +995,36 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     }
 
     /**
+     * 合并笔记，一般用于下载服务器的数据后的刷新
+     * @param detailNote
+     */
+    public void mergeNote(DetailNoteInfo detailNote) {
+        if (SystemUtil.isEmpty(mNotes)) {
+            appendNote(detailNote, true);
+            return;
+        }
+        if (!canRefresh(detailNote)) {
+            return;
+        }
+        int index = mNotes.indexOf(detailNote);
+        AdapterRefreshHelper refreshHelper = new AdapterRefreshHelper();
+        NoteInfo note = detailNote.getNoteInfo();
+        if (index != -1) {  //列表中存在
+            DetailNoteInfo oldDetail = mNotes.get(index);
+            NoteInfo info = oldDetail.getNoteInfo();
+            setupUpdateNote(info, note);
+            oldDetail.setLastAttach(detailNote.getLastAttach());
+            oldDetail.setDetailList(detailNote.getDetailList());
+            refreshHelper.type = AdapterRefreshHelper.TYPE_UPDATE;
+        } else {
+            index = appendNote(detailNote, false);
+            refreshHelper.type = AdapterRefreshHelper.TYPE_ADD;
+        }
+        refreshHelper.position = index;
+        refreshUI(mNotes, refreshHelper);
+    }
+
+    /**
      * 刷新多条数据
      * @param positionList ，要刷新数据的起始位置和结束位置
      */
@@ -2086,6 +2116,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             int attachType = 0;
             if (note.hasAttach() && detailNote.getLastAttach() != null) {
                 attach = detailNote.getLastAttach();
+                KLog.d(TAG, "note attach download adapter get view attach:" + attach);
                 attachType = attach.getType();
             }
 
