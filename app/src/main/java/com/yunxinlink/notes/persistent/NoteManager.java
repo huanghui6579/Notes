@@ -28,7 +28,6 @@ import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -222,9 +221,11 @@ public class NoteManager extends Observable<Observer> {
                 }
                 if (note.hasAttach()) { //有附件
 
-                    Map<String, Attach> attachMap = getAttaches(note, db);
-                    if (attachMap != null && attachMap.size() > 0) {
-                        Attach attach = attachMap.values().iterator().next();
+                    List<Attach> attachList = getAttaches(note, db);
+                    
+                    Map<String, Attach> attachMap = convert2Map(attachList);
+                    if (!SystemUtil.isEmpty(attachList)) {
+                        Attach attach = attachList.get(0);
                         detailNote.setLastAttach(attach);
                     }
                     note.setAttaches(attachMap);
@@ -767,55 +768,6 @@ public class NoteManager extends Observable<Observer> {
             folder.setSyncState(SyncState.SYNC_UP);
         }
     }
-    
-    /**
-     * 获取笔记的信息
-     * @author huanghui1
-     * @update 2016/6/18 14:35
-     * @version: 1.0.0
-     */
-    public NoteInfo getNote(NoteInfo note) {
-        NoteInfo info = null;
-        SQLiteDatabase db = mDBHelper.getReadableDatabase();
-        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(note.getId())}, null, null, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            info = cursor2Note(cursor);
-            
-            //获取笔记中的附件
-            Map<String, Attach> map = getAttaches(info, db);
-
-            info.setAttaches(map);
-        }
-        if (cursor != null) {
-            cursor.close();
-        }
-        return info;
-    }
-
-    /**
-     * 根据笔记的sid获取笔记信息
-     * @param noteSid
-     * @return
-     */
-    public NoteInfo getNote(String noteSid) {
-        //TODO 或者最后的附件
-        NoteInfo info = null;
-        SQLiteDatabase db = mDBHelper.getReadableDatabase();
-        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, Provider.NoteColumns.SID + " = ?", new String[] {noteSid}, null, null, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            info = cursor2Note(cursor);
-            
-            //获取笔记中的附件
-            Map<String, Attach> map = getAttaches(info, db);
-
-            info.setAttaches(map);
-        }
-        if (cursor != null) {
-            cursor.close();
-        }
-        return info;
-    }
-
 
     /**
      * 初始化note的添加数据
@@ -1437,15 +1389,9 @@ public class NoteManager extends Observable<Observer> {
      * @return
      */
     public DetailNoteInfo getDetailNote(int noteId) {
-        NoteInfo note = getNote(noteId);
-        if (note == null) {
-            return null;
-        }
-        List<DetailList> list = getDetailList(null, note.getSid());
-        DetailNoteInfo detailNote = new DetailNoteInfo();
-        detailNote.setDetailList(list);
-        detailNote.setNoteInfo(note);
-        return detailNote;
+        NoteInfo info = new NoteInfo();
+        info.setId(noteId);
+        return getDetailNote(info);
     }
 
     /**
@@ -1454,12 +1400,58 @@ public class NoteManager extends Observable<Observer> {
      * @return
      */
     public DetailNoteInfo getDetailNote(String noteSid) {
-        NoteInfo note = getNote(noteSid);
+        NoteInfo info = new NoteInfo();
+        info.setSid(noteSid);
+        return getDetailNote(info);
+    }
+
+    /**
+     * 获取笔记信息
+     * @param info
+     * @return
+     */
+    private DetailNoteInfo getDetailNote(NoteInfo info) {
+        if (info == null) {
+            return null;
+        }
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        
+        String selection = null;
+        String[] selectionArgs = null;
+        
+        if (info.getId() > 0) {
+            selection = Provider.NoteColumns._ID + " = ?";
+            selectionArgs = new String[] {String.valueOf(info.getId())};
+        } else {
+            selection = Provider.NoteColumns.SID + " = ?";
+            selectionArgs = new String[] {info.getSid()};
+        }
+        Attach lastAttach = null;
+        NoteInfo note = null;
+        Cursor cursor = db.query(Provider.NoteColumns.TABLE_NAME, null, selection, selectionArgs, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            note = cursor2Note(cursor);
+
+            List<Attach> attachList = getAttaches(note, db);
+
+            //获取笔记中的附件
+            Map<String, Attach> map = convert2Map(attachList);
+
+            if (!SystemUtil.isEmpty(attachList)) {
+                lastAttach = attachList.get(0);
+            }
+
+            note.setAttaches(map);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
         if (note == null) {
             return null;
         }
-        List<DetailList> list = getDetailList(null, note.getSid());
+        List<DetailList> list = getDetailList(db, note.getSid());
         DetailNoteInfo detailNote = new DetailNoteInfo();
+        detailNote.setLastAttach(lastAttach);
         detailNote.setDetailList(list);
         detailNote.setNoteInfo(note);
         return detailNote;
@@ -1470,20 +1462,36 @@ public class NoteManager extends Observable<Observer> {
      * @param note 笔记
      * @return 返回笔记中的附件列表
      */
-    public Map<String, Attach> getAttaches(NoteInfo note, SQLiteDatabase db) {
+    public List<Attach> getAttaches(NoteInfo note, SQLiteDatabase db) {
         String selection = Provider.AttachmentColumns.NOTE_ID + " = ? AND (" + Provider.AttachmentColumns.DELETE_STATE + " IS NULL OR " + Provider.AttachmentColumns.DELETE_STATE + " = ?)";
         String[] selectionArgs = {note.getSid(), String.valueOf(DeleteState.DELETE_NONE.ordinal())};
         String order = Provider.AttachmentColumns.MODIFY_TIME + " DESC ";
         Cursor cursor = db.query(Provider.AttachmentColumns.TABLE_NAME, null, selection, selectionArgs, null, null, order, null);
-        Map<String, Attach> map = null;
+        List<Attach> attachList = null;
         if (cursor != null) {
-            map = new LinkedHashMap<>();
+            attachList = new ArrayList<>();
             while (cursor.moveToNext()) {
                 Attach attach = cursor2Attach(cursor);
                 if (attach != null) {
-                    map.put(attach.getSid(), attach);
+                    attachList.add(attach);
                 }
             }
+        }
+        return attachList;
+    }
+
+    /**
+     * 将list的附件列表转换成map
+     * @param list
+     * @return
+     */
+    private Map<String, Attach> convert2Map(List<Attach> list) {
+        if (SystemUtil.isEmpty(list)) {
+            return null;
+        }
+        Map<String, Attach> map = new HashMap<>();
+        for (Attach attach : list) {
+            map.put(attach.getSid(), attach);
         }
         return map;
     }
@@ -1693,17 +1701,6 @@ public class NoteManager extends Observable<Observer> {
             db.endTransaction();
         }
         return false;
-    }
-    
-    /**
-     * 获取笔记的信息
-     * @author huanghui1
-     * @update 2016/6/18 14:35
-     * @version: 1.0.0  
-     */
-    public NoteInfo getNote(int noteId) {
-        NoteInfo info = new NoteInfo(noteId);
-        return getNote(info);
     }
 
     /**

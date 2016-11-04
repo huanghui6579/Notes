@@ -14,6 +14,20 @@ import java.util.List;
  */
 public class NoteParam implements Syncable {
     /**
+     * 同步笔记的内容，包括笔记的状态和其他内容
+     */
+    public static final int SYNC_CONTENT = 0;
+    /**
+     * 只同步笔记的状态
+     */
+    public static final int SYNC_STATE = 1;
+
+    /**
+     * 同步的范围，
+     */
+    private int syncScope = SYNC_CONTENT;
+    
+    /**
      * 该笔记本下的笔记
      */
     private List<DetailNoteInfo> detailNoteInfos;
@@ -49,10 +63,19 @@ public class NoteParam implements Syncable {
         this.userSid = userSid;
     }
 
+    public int getSyncScope() {
+        return syncScope;
+    }
+
+    public void setSyncScope(int syncScope) {
+        this.syncScope = syncScope;
+    }
+
     @Override
     public String toString() {
         return "NoteParam{" +
-                "detailNoteInfos=" + detailNoteInfos +
+                "syncScope=" + syncScope +
+                ", detailNoteInfos=" + detailNoteInfos +
                 ", folder=" + folder +
                 ", userSid='" + userSid + '\'' +
                 '}';

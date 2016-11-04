@@ -225,4 +225,12 @@ public class DetailNoteInfo implements Comparator<DetailNoteInfo> {
     public boolean isTrashNote() {
         return noteInfo != null && noteInfo.checkDeleteState(DeleteState.DELETE_TRASH);
     }
+
+    /**
+     * 判断该笔记是否已经同步了
+     * @return
+     */
+    public boolean isSynced() {
+        return noteInfo != null && noteInfo.isSynced();
+    }
 }

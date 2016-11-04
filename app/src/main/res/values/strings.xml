@@ -156,6 +156,7 @@
     <string name="action_redo">重做</string>
     <string name="action_open">打开</string>
     <string name="action_clear_all">清空</string>
+    <string name="action_sync_ing">同步中…</string>
 
     <string name="action_take_pic">拍照</string>
     <string name="action_pic_img">从相册中选择</string>

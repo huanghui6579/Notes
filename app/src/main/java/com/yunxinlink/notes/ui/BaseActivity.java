@@ -610,10 +610,6 @@ public abstract class BaseActivity extends SwipeBackActivity {
      */
     protected void startSyncUpNote(String syncSid, NoteParam noteParam) {
         User user = getCurrentUser();
-        if (user == null || !user.isAvailable() || noteParam == null) {  //用户不存在或者不可用
-            KLog.d(TAG, "start sync up note but user is null or not available:" + user);
-            return;
-        }
         NoteUtil.startSyncUpNote(this, user, syncSid, noteParam);
     }
 

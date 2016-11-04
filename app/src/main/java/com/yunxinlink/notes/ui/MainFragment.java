@@ -33,6 +33,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -145,6 +147,11 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      */
     private boolean mIsTrash;
 
+    /**
+     * 同步进度条的菜单
+     */
+    private MenuItem mSyncMenu;
+
     public MainFragment() {
         // Required empty public constructor
     }
@@ -242,6 +249,8 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
         inflater.inflate(R.menu.main, menu);
+
+        mSyncMenu = menu.findItem(R.id.action_sync);
         
         if (mIsTrash) { //回收站的界面
             MenuItem clearAllItem = menu.add(0, R.id.action_clear_all, 200, R.string.action_clear_all);
@@ -256,7 +265,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         
         MenuItem item = menu.findItem(R.id.action_more);
         SystemUtil.setMenuOverFlowTint(getContext(), item);
-        
+
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -348,6 +357,38 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         if (mOnRefreshListener != null && !mOnRefreshListener.isIsFirstLoad() && !mIsTrash) {    //不是首次进入界面或者不是加载回收站的数据，则需同步数据
             KLog.d(TAG, "main fragment reload data and will start sync down notes");
             NoteUtil.startSyncNote(getContext());
+        }
+    }
+
+    /**
+     * 显示同步的进度条
+     */
+    public void showSyncProgress() {
+        if (mSyncMenu != null && !mSyncMenu.isVisible()) {
+            
+            View view = LayoutInflater.from(getContext()).inflate(R.layout.layout_refresh, null);
+            
+            Animation rotation = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_refresh);
+            rotation.setRepeatCount(Animation.INFINITE);
+
+            view.startAnimation(rotation);
+            
+            mSyncMenu.setActionView(view);
+            mSyncMenu.setVisible(true);
+        }
+    }
+
+    /**
+     * 隐藏进度条
+     */
+    public void hideSyncProgress() {
+        if (mSyncMenu != null && mSyncMenu.isVisible()) {
+            View actionView = mSyncMenu.getActionView();
+            if (actionView != null) {
+                actionView.clearAnimation();
+            }
+            mSyncMenu.setActionView(null);
+            mSyncMenu.setVisible(false);
         }
     }
 
@@ -836,7 +877,8 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      * @param list
      */
     private void handleUnDeleteNote(List<DetailNoteInfo> list) {
-        final List<DetailNoteInfo> detailNoteInfos = new ArrayList<>(list);
+        NoteUtil.doDeleteNote(list, DeleteState.DELETE_NONE, getContext());
+        /*final List<DetailNoteInfo> detailNoteInfos = new ArrayList<>(list);
         doInbackground(new NoteTask(detailNoteInfos) {
             @Override
             public void run() {
@@ -845,7 +887,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                     NoteUtil.notifyAppWidgetList(getContext());
                 }
             }
-        });
+        });*/
     }
 
     /**
@@ -1680,6 +1722,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     @Override
     public void onDetach() {
         super.onDetach();
+        mSyncMenu = null;
         mIsChooseMode = false;
         mListener = null;
     }

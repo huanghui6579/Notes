@@ -11,7 +11,7 @@
         android:summary="@string/settings_account_summary"/>
 
     <Preference android:title="@string/action_upload"
-        android:icon="@drawable/ic_sync_black_24dp"
+        android:icon="@drawable/ic_sync_black"
         android:summary="@string/settings_sync_summary">
         <intent
             android:targetClass="com.yunxinlink.notes.ui.settings.SettingsSyncActivity"

@@ -1164,7 +1164,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                         KLog.d(TAG, "--update--observer--mainFragment-is---null--");
                         return;
                     }
-                    mainFragment.reLoadData(false);
+                    switch (notifyType) {
+                        case BATCH_UPDATE:  //批量更新
+                        case REFRESH:   //刷新数据
+                            mainFragment.reLoadData(false);
+                            break;
+                        case LOADING:   //加载同步进度条
+                            KLog.d(TAG, "main ui show sync progress");
+                            mainFragment.showSyncProgress();
+                            break;
+                        case DONE:  //同步结束，隐藏同步进度条
+                            KLog.d(TAG, "main ui hide sync progress");
+                            mainFragment.hideSyncProgress();
+                            break;
+                    }
+                    
                     break;
             }
         }

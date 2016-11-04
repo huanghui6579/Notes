@@ -63,22 +63,20 @@ public class NoteApi extends BaseApi {
      * @param context 上下文
      * @param folder 笔记所属的笔记本
      * @param noteInfos 要同步的笔记              
-     * @param listener 同步完后的回调
-     * @return
+     * @return 返回结果码
      */
-    public static Call<?> syncUpNote(Context context, Folder folder, List<DetailNoteInfo> noteInfos, OnLoadCompletedListener<ActionResult<Void>> listener) throws IOException {
+    public static int syncUpNote(Context context, Folder folder, List<DetailNoteInfo> noteInfos) throws IOException {
         KLog.d(TAG, "sync up note invoke...");
+        int resultCode = ActionResult.RESULT_ERROR;
         if (context == null) {
             KLog.d(TAG, "sync up note invoke but context is null and will return");
-            return null;
+            return resultCode;
         }
         User user = getUser(context);
         if (user == null) {  //用户不可用
             KLog.d(TAG, "sync up note failed user is not available");
-            if (listener != null) {
-                listener.onLoadFailed(ActionResult.RESULT_DATA_NOT_EXISTS, "user is null or not available");
-            }
-            return null;
+            resultCode = ActionResult.RESULT_DATA_NOT_EXISTS;
+            return resultCode;
         }
         
         String userSid = user.getSid();
@@ -108,11 +106,8 @@ public class NoteApi extends BaseApi {
         Call<ActionResult<Void>> call = repo.syncUpNote(userSid, noteDto);
         Response<ActionResult<Void>> responseBody = call.execute();
         if (responseBody == null) {
-            if (listener != null) {
-                listener.onLoadFailed(ActionResult.RESULT_ERROR, "responseBody is null");
-            }
             KLog.d(TAG, "sync up note failed responseBody is null");
-            return null;
+            return resultCode;
         }
         if (responseBody.isSuccessful() && responseBody.body() != null) {  //服务器请求成功
             ActionResult<Void> actionResult = responseBody.body();
@@ -123,56 +118,46 @@ public class NoteApi extends BaseApi {
                     for (DetailNoteInfo detailNoteInfo : noteInfos) {
                         NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
                         Map<String, Attach> attachMap = noteInfo.getAttaches();
-                        if (noteInfo.hasAttach() && !SystemUtil.isEmpty(attachMap)) {   //有附件
-                            Set<String> keys = attachMap.keySet();
-                            for (String key : keys) {
-                                Attach attach = attachMap.get(key);
-                                if (attach.isSynced()) {
-                                    continue;
-                                }
-                                uploadAttach(attach, null);
+                        if (!noteInfo.hasAttach() || SystemUtil.isEmpty(attachMap)) {   //没有附件
+                            continue;
+                        }
+                        Set<String> keys = attachMap.keySet();
+                        for (String key : keys) {
+                            Attach attach = attachMap.get(key);
+                            if (attach.isSynced()) {
+                                continue;
                             }
+                            uploadAttach(attach, null);
                         }
                     }
                 }
-                if (listener != null) {
-                    listener.onLoadSuccess(actionResult);
-                }
+                resultCode = ActionResult.RESULT_SUCCESS;
             } else {
                 KLog.d(TAG, "sync up note response is successful but result error");
-                int resultCode = actionResult.getResultCode();
-                String reason = null;
-                switch (resultCode) {
+                int actionCode = actionResult.getResultCode();
+                switch (actionCode) {
                     case ActionResult.RESULT_FAILED:    //同步结果是失败的
-                        reason = "sync up note result is failed";
                         KLog.d(TAG, "sync up note response is successful but result is failed");
                         break;
                     case ActionResult.RESULT_ERROR:    //同步过程中遇到错误
-                        reason = "sync up note result is error";
                         KLog.d(TAG, "sync up note response is successful but result is error");
                         break;
                     case ActionResult.RESULT_PARAM_ERROR:    //同步的参数错误
-                        reason = "sync up note result params is error";
                         KLog.d(TAG, "sync up note response is successful but result params is error");
                         break;
                     case ActionResult.RESULT_STATE_DISABLE:    //用户被禁用
                     case ActionResult.RESULT_DATA_NOT_EXISTS:    //用户不存在或者被禁用
-                        reason = "sync up note result user is not exists or disable";
                         KLog.d(TAG, "sync up note response is successful but result user is not exists or disable");
                         break;
                 }
-                if (listener != null) {
-                    listener.onLoadFailed(resultCode, reason);
-                }
+                resultCode = actionCode;
             }
         } else {
-            if (listener != null) {
-                listener.onLoadFailed(ActionResult.RESULT_FAILED, "responseBody is not successful");
-            }
+            resultCode = ActionResult.RESULT_FAILED;
             KLog.d(TAG, "sync up note failed is not successful");
-            return null;
+            return resultCode;
         }
-        return call;
+        return resultCode;
     }
 
     /**

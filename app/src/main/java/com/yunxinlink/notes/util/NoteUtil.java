@@ -26,6 +26,7 @@ import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.adapter.ShareListAdapter;
 import com.yunxinlink.notes.api.model.NoteParam;
@@ -36,8 +37,10 @@ import com.yunxinlink.notes.model.AccountType;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.DetailNoteInfo;
+import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.share.ShareInfo;
@@ -51,7 +54,10 @@ import com.yunxinlink.notes.ui.NoteEditActivity;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import cn.sharesdk.framework.Platform;
 import cn.sharesdk.framework.PlatformDb;
@@ -144,23 +150,141 @@ public class NoteUtil {
      * @param realDelete 是否彻底删除                
      */
     private static void doDeleteNote(final List<DetailNoteInfo> noteList, final boolean realDelete, final Context context) {
+        DeleteState deleteState = null;
+        if (realDelete) {    //彻底删除
+            deleteState = DeleteState.DELETE_DONE;
+        } else {
+            deleteState = DeleteState.DELETE_TRASH;
+        }
+        doDeleteNote(noteList, deleteState, context);
+    }
+
+    /**
+     * 删除多条笔记，子线程中运行
+     * @param stateParam 笔记的删除状态
+     * @param noteList 要删除的笔记的集合
+     */
+    public static void doDeleteNote(final List<DetailNoteInfo> noteList, DeleteState stateParam, final Context context) {
         final List<DetailNoteInfo> list = new ArrayList<>(noteList);
-        SystemUtil.getThreadPool().execute(new NoteTask(list, realDelete, context) {
+        SystemUtil.getThreadPool().execute(new NoteTask(list, stateParam, context) {
             @Override
             public void run() {
-                DeleteState deleteState = null;
-                boolean deleteOpt = (boolean) params[1];
-                if (deleteOpt) {    //彻底删除
-                    deleteState = DeleteState.DELETE_DONE;
-                } else {
-                    deleteState = DeleteState.DELETE_TRASH;  
+                DeleteState deleteState = (DeleteState) params[1];
+                List<DetailNoteInfo> detailList = (List<DetailNoteInfo>) params[0];
+                //需要同步笔记内容的列表
+                List<DetailNoteInfo> syncContentList = new ArrayList<>();
+                //只需要同步笔记状态的列表，不需要同步笔记的内容
+                List<DetailNoteInfo> syncStateList = new ArrayList<>();
+                for (DetailNoteInfo noteInfo : detailList) {
+                    if (noteInfo.isSynced()) {
+                        syncStateList.add(noteInfo);
+                    } else {
+                        syncContentList.add(noteInfo);
+                    }
                 }
-                boolean success = NoteManager.getInstance().deleteNote((List<DetailNoteInfo>) params[0], deleteState);
+                boolean success = NoteManager.getInstance().deleteNote(detailList, deleteState);
                 if (success) {
-                    NoteUtil.notifyAppWidgetList(context);
+                    notifyAppWidgetList(context);
+                    //获取当前的用户
+                    NoteApplication app = (NoteApplication) context.getApplicationContext();
+                    User user = app.getCurrentUser();
+                    if (user == null || !user.isAvailable()) {
+                        KLog.d(TAG, "do delete note user is null or not available so don't sync");
+                        return;
+                    }
+                    doSync(user, syncContentList, syncStateList, context);
                 }
             }
         });
+    }
+
+    /**
+     * 同步笔记，主要用户笔记删除或者还原
+     * @param user 当前的用户
+     * @param syncContentList 需要同步笔记内容的集合
+     * @param syncStateList 只同步笔记状态的集合
+     * @param context 上下文
+     */
+    private static void doSync(User user, List<DetailNoteInfo> syncContentList, List<DetailNoteInfo> syncStateList, Context context) {
+        //开始同步笔记到服务器
+        //如果有内容需要上传，则需分笔记本来同步
+        if (!SystemUtil.isEmpty(syncContentList)) { //有需要上传内容的笔记
+            KLog.d(TAG, "sync notes has some note need sync up content");
+            //key 为folder sid ,value为DetailNoteInfo
+            Map<String, List<DetailNoteInfo>> map = new HashMap<>();
+            //默认的笔记本sid,主要是为没有归类的笔记准备的
+            String defaultFolderSid = SystemUtil.generateFolderSid();
+            for (DetailNoteInfo detailNoteInfo : syncContentList) {
+                if (detailNoteInfo == null || detailNoteInfo.getNoteInfo() == null) {
+                    continue;
+                }
+                NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
+                String folderSid = noteInfo.getSid();
+                if (TextUtils.isEmpty(folderSid)) { //该笔记不属于任何笔记本，则使用默认的笔记
+                    folderSid = defaultFolderSid;
+                }
+                List<DetailNoteInfo> list = map.get(folderSid);
+                if (list == null) {
+                    list = new ArrayList<>();
+                }
+                list.add(detailNoteInfo);
+            }
+            //先上传没有笔记本的
+            List<DetailNoteInfo> nofolderNotes = map.get(defaultFolderSid);
+            if (!SystemUtil.isEmpty(nofolderNotes)) {    //有未归类的笔记
+                NoteParam noteParam = new NoteParam();
+
+                noteParam.setDetailNoteInfos(nofolderNotes);
+                noteParam.setFolder(null);
+                noteParam.setUserSid(user.getSid());
+
+                //开始同步
+                KLog.d(TAG, "start sync un folder notes with content:" + defaultFolderSid);
+                startSyncUpNote(context, user, defaultFolderSid, noteParam);
+                //从缓存中移除
+                map.remove(defaultFolderSid);
+            }
+            Map<String, Folder> folderMap = FolderManager.getInstance().getFolders(user, null);
+            if (!SystemUtil.isEmpty(map)) { //还有其他有归类的笔记需要同步内容
+                Set<String> keys = map.keySet();
+                for (String key : keys) {
+                    List<DetailNoteInfo> syncList = map.get(key);
+                    if (SystemUtil.isEmpty(syncList)) {
+                        continue;
+                    }
+                    Folder folder = folderMap.get(key);
+                    if (folder == null) {
+                        continue;
+                    }
+
+                    NoteParam noteParam = new NoteParam();
+
+                    noteParam.setDetailNoteInfos(syncList);
+                    noteParam.setFolder(folder);
+                    noteParam.setUserSid(user.getSid());
+
+                    //开始同步
+                    KLog.d(TAG, "start sync folder notes with content:" + key);
+                    startSyncUpNote(context, user, key, noteParam);
+                }
+                //清除缓存
+                map.clear();
+            }
+        } else if (!SystemUtil.isEmpty(syncStateList)) {    //只同步笔记的状态
+
+            String syncId = SystemUtil.generateNoteSid();
+
+            NoteParam noteParam = new NoteParam();
+
+            noteParam.setSyncScope(NoteParam.SYNC_STATE);
+            noteParam.setDetailNoteInfos(syncStateList);
+            noteParam.setFolder(null);
+            noteParam.setUserSid(user.getSid());
+
+            //开始同步
+            KLog.d(TAG, "start sync folder notes with state:" + syncId);
+            startSyncUpNote(context, user, syncId, noteParam);
+        }
     }
 
     /**
@@ -188,7 +312,7 @@ public class NoteUtil {
 
     /**
      * 显示笔记详情
-     * @param detailNoteInfo
+     * @param detailNoteInfo 笔记信息
      */
     public static void showInfo(Context context, final DetailNoteInfo detailNoteInfo) {
         NoteInfo note = detailNoteInfo.getNoteInfo();
@@ -842,12 +966,19 @@ public class NoteUtil {
      * @param syncSid 同步的编号
      * @param noteParam 笔记的参数
      */
-    public static void startSyncUpNote(Context context, User user, String syncSid, NoteParam noteParam) {
+    public synchronized static void startSyncUpNote(Context context, User user, String syncSid, NoteParam noteParam) {
+        if (user == null || !user.isAvailable() || noteParam == null) {  //用户不存在或者不可用
+            KLog.d(TAG, "start sync up note but user is null or not available:" + user);
+            return;
+        }
+        
         noteParam.setUserSid(user.getSid());
+        
         SyncData syncData = new SyncData();
         syncData.setState(SyncData.SYNC_NONE);
         syncData.setSyncable(noteParam);
         SyncCache.getInstance().addOrUpdate(syncSid, syncData);
+        
         Intent service = new Intent(context, SyncService.class);
         service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_UP_NOTE);
         service.putExtra(Constants.ARG_CORE_OBJ, syncSid);

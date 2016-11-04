@@ -12,7 +12,8 @@ import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.api.model.NoteParam;
-import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
+import com.yunxinlink.notes.db.Provider;
+import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailNoteInfo;
@@ -92,7 +93,10 @@ public class SyncService extends Service {
                 KLog.d(TAG, "sync service start sync task but this task is syncing sync sid is :" + syncSid);
                 return;
             }
-
+            
+            //通知界面显示进度条
+            onStartSync();
+            
             param.data = syncSid;
             //开始同步
             KLog.d(TAG, "sync service start sync task sid is :" + syncSid);
@@ -100,6 +104,22 @@ public class SyncService extends Service {
         } else {
             KLog.d(TAG, "sync service not start sync task because sid is null");
         }
+    }
+
+    /**
+     * 开始同步数据
+     */
+    private void onStartSync() {
+        KLog.d(TAG, "sync service start sync");
+        NoteManager.getInstance().notifyObservers(Provider.NOTIFY_FLAG, Observer.NotifyType.LOADING);
+    }
+
+    /**
+     * 同步结束
+     */
+    private void onEndSync() {
+        KLog.d(TAG, "sync service end sync");
+        NoteManager.getInstance().notifyObservers(Provider.NOTIFY_FLAG, Observer.NotifyType.DONE);
     }
 
     /**
@@ -132,29 +152,17 @@ public class SyncService extends Service {
     private TaskParam syncUpNotes(String syncSid) {
         final TaskParam resultParam = new TaskParam();
         SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
-        if (syncData == null || syncData.isSyncing()
-                || !syncData.hasSyncData() || !(syncData.getSyncable() instanceof NoteParam)) {
-            KLog.d(TAG, "sync service sync up note info but sync data is null or is syncing or not has sync data:" + syncData);
+        if (!checkSyncUpState(syncData)) {
+            return null;
         } else {
             NoteParam noteParam = (NoteParam) syncData.getSyncable();
             Folder folder = noteParam.getFolder();
             List<DetailNoteInfo> detailNoteInfos = noteParam.getDetailNoteInfos();
             try {
+                //TODO 还需添加一个只同步笔记状态的方法
                 resultParam.optType = Constants.SYNC_UP_NOTE;
                 //该方法是同步的，所以回调也是在同一个线程里
-                NoteApi.syncUpNote(mContext, folder, detailNoteInfos, new SimpleOnLoadCompletedListener<ActionResult<Void>>() {
-                    @Override
-                    public void onLoadSuccess(ActionResult<Void> result) {
-                        super.onLoadSuccess(result);
-                        resultParam.code = result.getResultCode();
-                    }
-
-                    @Override
-                    public void onLoadFailed(int errorCode, String reason) {
-                        super.onLoadFailed(errorCode, reason);
-                        resultParam.code = errorCode;
-                    }
-                });
+                resultParam.code = NoteApi.syncUpNote(mContext, folder, detailNoteInfos);
             } catch (Exception e) {
                 KLog.e(TAG, "sync service sync up note info error:" + e.getMessage());
             }
@@ -162,6 +170,22 @@ public class SyncService extends Service {
             SyncCache.getInstance().remove(syncSid);
         }
         return resultParam;
+    }
+
+    /**
+     * 检测向上同步的状态
+     * @param syncData 同步数据
+     * @return
+     */
+    private synchronized boolean checkSyncUpState(SyncData syncData) {
+        if (syncData == null || syncData.isSyncing()
+                || !syncData.hasSyncData() || !(syncData.getSyncable() instanceof NoteParam)) {
+            KLog.d(TAG, "sync service sync up note info but sync data is null or is syncing or not has sync data:" + syncData);
+            return false;
+        } else {
+            syncData.setState(SyncData.SYNC_ING);
+            return true;
+        }
     }
 
     /**
@@ -214,8 +238,6 @@ public class SyncService extends Service {
         
         //下载附件
         downAttachFile(user);
-
-//        SystemClock.sleep(3000);
 
         SyncCache.getInstance().remove(syncSid);
         return resultParam;
@@ -334,6 +356,7 @@ public class SyncService extends Service {
         @Override
         public void onCompleted(DownloadTask downloadTask) {
             super.onCompleted(downloadTask);
+            onEndSync();
             KLog.d(TAG, "sync service download file listener completed");
         }
     }
@@ -373,7 +396,10 @@ public class SyncService extends Service {
             if (param != null && param.isAvailable()) { //返回的结果可用
                 switch (param.optType) {
                     case Constants.SYNC_UP_NOTE:    //向上同步笔记
+                        onEndSync();
                         syncUpResult(param.code);
+                        break;
+                    case Constants.SYNC_DOWN_NOTE:
                         break;
                 }
             } else {

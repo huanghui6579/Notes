@@ -7,7 +7,7 @@ package com.yunxinlink.notes.db.observer;
  * @version: 0.0.1
  */
 public interface Observer {
-    public enum NotifyType {
+    enum NotifyType {
         /**
          * 单个添加
          */
@@ -43,6 +43,16 @@ public interface Observer {
          * 刷新，数据加载完毕了
          */
         REFRESH,
+
+        /**
+         * 正在加载数据、或者正在同步数据，主要是显示进度条
+         */
+        LOADING,
+
+        /**
+         * 数据加载完毕
+         */
+        DONE,
     }
 
     /**
@@ -54,10 +64,10 @@ public interface Observer {
      *            the {@link Observable} object.
      * @param notifyFlag 通知标识
      * @param data
-     *            the data passed to {@link Observable#notifyObservers(Object)}.
+     *            the data passed to {@link Observable#notifyObservers(int, NotifyType, Object)}.
      * @param notifyType one of {@link NotifyType#ADD}, {@link NotifyType#DELETE}, {@link NotifyType#UPDATE}
      */
-    public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data);
+    void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data);
 
     /**
      * 处理更新
@@ -67,5 +77,5 @@ public interface Observer {
      * @param notifyType
      * @param data
      */
-    public void dispatchUpdate(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data);
+    void dispatchUpdate(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data);
 }

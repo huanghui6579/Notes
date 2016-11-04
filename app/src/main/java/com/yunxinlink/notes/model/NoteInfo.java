@@ -692,4 +692,12 @@ public class NoteInfo implements Parcelable, Comparator<NoteInfo> {
             return deleteState == this.deleteState;
         }
     }
+
+    /**
+     * 该笔记是否已经同步了
+     * @return
+     */
+    public boolean isSynced() {
+        return syncState != null && syncState == SyncState.SYNC_DONE;
+    }
 }
