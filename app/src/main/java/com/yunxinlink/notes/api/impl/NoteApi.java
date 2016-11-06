@@ -92,7 +92,7 @@ public class NoteApi extends BaseApi {
         Retrofit retrofit = buildRetrofit();
         INoteApi repo = retrofit.create(INoteApi.class);
 
-        NoteDto noteDto = fillNoteInfoDto(noteInfos);
+        NoteDto noteDto = fillNoteDto(noteInfos);
         /*if (noteDto == null) {
             if (listener != null) {
                 listener.onLoadFailed(ActionResult.RESULT_PARAM_ERROR, "params noteDto is null");
@@ -892,7 +892,7 @@ public class NoteApi extends BaseApi {
 
         ActionResult<List<AttachDto>> actionResult = response.body();
         if (actionResult == null) {
-            KLog.d(TAG, "down attach list filter sid response is failed");
+            KLog.d(TAG, "down attach list filter sid action result is failed");
             return null;
         }
         if (!actionResult.isSuccess()) {    //结果是失败的
@@ -900,6 +900,57 @@ public class NoteApi extends BaseApi {
             return null;
         }
         return actionResult.getData();
+    }
+
+    /**
+     * 同步修改笔记的删除状态,该方法在主线程里执行
+     * @param context 上下文
+     * @param detailNoteInfos 笔记列表
+     * @return 结果码，
+     * @see ActionResult
+     */
+    public static int updateNoteDeleteState(Context context, List<DetailNoteInfo> detailNoteInfos) throws IOException {
+        User user = getUser(context);
+        int resultCode = ActionResult.RESULT_ERROR;
+        if (user == null || !user.isAvailable()) {  //用户不可用
+            KLog.d(TAG, "update note delete state but user is null or not available");
+            resultCode = ActionResult.RESULT_STATE_DISABLE;
+            return resultCode;
+        }
+        if (SystemUtil.isEmpty(detailNoteInfos)) {  //参数为空
+            KLog.d(TAG, "update note delete state but note list is empty");
+            resultCode = ActionResult.RESULT_SUCCESS;
+            return resultCode;
+        }
+        List<NoteInfoDto> noteInfoDtos = fillNoteInfoDto(detailNoteInfos);
+        if (SystemUtil.isEmpty(noteInfoDtos)) {
+            KLog.d(TAG, "update note delete state but note info dto list is empty");
+            resultCode = ActionResult.RESULT_SUCCESS;
+            return resultCode;
+        }
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Call<ActionResult<Void>> call = repo.updateNoteState(user.getSid(), noteInfoDtos);
+
+        Response<ActionResult<Void>> response = call.execute();
+
+        if (response == null || !response.isSuccessful()) { //http 请求失败
+            KLog.d(TAG, "update note delete state but response is failed");
+            resultCode = ActionResult.RESULT_FAILED;
+            return resultCode;
+        }
+        ActionResult<Void> actionResult = response.body();
+        if (actionResult == null) {
+            KLog.d(TAG, "update note delete state action result is failed");
+            resultCode = ActionResult.RESULT_FAILED;
+            return resultCode;
+        }
+        if (!actionResult.isSuccess()) {    //结果是失败的
+            KLog.d(TAG, "update note delete state action response is success but action result is not success:" + actionResult);
+            resultCode = actionResult.getResultCode();
+            return resultCode;
+        }
+        //TODO 保存状态到本地
     }
 
     /**
@@ -1155,18 +1206,18 @@ public class NoteApi extends BaseApi {
      * @param detailNoteInfoList
      * @return
      */
-    private static NoteDto fillNoteInfoDto(List<DetailNoteInfo> detailNoteInfoList) {
+    private static NoteDto fillNoteDto(List<DetailNoteInfo> detailNoteInfoList) {
         NoteDto noteDto = new NoteDto();
         if (SystemUtil.isEmpty(detailNoteInfoList)) {
             return noteDto;
         }
         List<NoteInfoDto> noteInfoDtos = new ArrayList<>();
         for (DetailNoteInfo detailNoteInfo : detailNoteInfoList) {
-            NoteInfoDto infoDto = new NoteInfoDto();
             NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
             if (noteInfo == null || TextUtils.isEmpty(noteInfo.getSid())) {
                 continue;
             }
+            NoteInfoDto infoDto = new NoteInfoDto();
 
             boolean isDetailNote = noteInfo.isDetailNote();
             if (isDetailNote) { //清单不需要上传笔记的内容
@@ -1251,6 +1302,28 @@ public class NoteApi extends BaseApi {
         
         noteDto.setNoteInfos(noteInfoDtos);
         return noteDto;
+    }
+
+    /**
+     * 填充笔记列表
+     * @param detailNoteInfos 笔记的列表
+     * @return 返回填充后的笔记列表
+     */
+    private static List<NoteInfoDto> fillNoteInfoDto(List<DetailNoteInfo> detailNoteInfos) {
+        List<NoteInfoDto> noteInfoDtos = new ArrayList<>();
+        long modifyTime = System.currentTimeMillis();
+        for (DetailNoteInfo detailNoteInfo : detailNoteInfos) {
+            NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
+            if (noteInfo == null || TextUtils.isEmpty(noteInfo.getSid())) {
+                continue;
+            }
+            NoteInfoDto infoDto = new NoteInfoDto();
+            infoDto.setSid(noteInfo.getSid());
+            infoDto.setModifyTime(modifyTime);
+            infoDto.setDeleteState(noteInfo.getDeleteState().ordinal());
+            noteInfoDtos.add(infoDto);
+        }
+        return noteInfoDtos;
     }
 
     /**

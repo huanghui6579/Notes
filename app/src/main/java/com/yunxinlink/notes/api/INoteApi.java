@@ -135,4 +135,13 @@ public interface INoteApi {
      */
     @GET("note/att/{sid}")
     Call<ResponseBody> downAttachFile(@Path("sid") String sid, @QueryMap Map<String, String> params);
+
+    /**
+     * 只改变笔的删除状态
+     * @param userSid 当前用户
+     * @param noteList 要改变删除状态的笔记
+     * @return 服务器返回的数据
+     */
+    @POST("note/state/{userSid}/change")
+    Call<ActionResult<Void>> updateNoteState(@Path("userSid") String userSid, @Body List<NoteInfoDto> noteList);
 }
