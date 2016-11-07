@@ -71,6 +71,14 @@ public class NoteParam implements Syncable {
         this.syncScope = syncScope;
     }
 
+    /**
+     * 判断该同步任务是否只同步笔记的状态
+     * @return
+     */
+    public boolean onlySyncState() {
+        return syncScope == SYNC_STATE;
+    }
+
     @Override
     public String toString() {
         return "NoteParam{" +

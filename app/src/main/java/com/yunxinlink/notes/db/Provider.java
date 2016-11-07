@@ -60,6 +60,11 @@ public final class Provider {
          * 文件夹中笔记减少的触发器
          */
         public static final String TRI_NOTE_COUNT_MINUS = "tri_note_count_minus";
+
+        /**
+         * 删除笔记的触发器
+         */
+        public static final String TRI_DELETE_NOTE = "tri_delete_note";
         
         /**
          * sid的索引
@@ -250,7 +255,7 @@ public final class Provider {
         /**
          * 笔记的id
          */
-        public static final String NOTE_ID = "noteId";
+        public static final String NOTE_ID = "note_id";
 
         /**
          * 所属的用户id

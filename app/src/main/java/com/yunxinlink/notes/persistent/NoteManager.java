@@ -520,6 +520,48 @@ public class NoteManager extends Observable<Observer> {
             return false;
         }
     }
+
+    /**
+     * 彻底删除笔记，直接删除数据库记录
+     * @param detailNoteInfoList 笔记列表
+     * @return
+     */
+    public boolean removeNotes(List<DetailNoteInfo> detailNoteInfoList) {
+        //TODO 彻底删除笔记
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        long rowId = 0;
+        int size = detailNoteInfoList.size();
+        db.beginTransaction();
+        try {
+            if (size == 1) {   //只有一条记录
+                DetailNoteInfo detailNoteInfo = detailNoteInfoList.get(0);
+                NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
+                rowId = db.delete(Provider.NoteColumns.TABLE_NAME, Provider.NoteColumns._ID + " = ?", new String[] {String.valueOf(noteInfo.getId())});
+                //删除该笔记关联的附件，有数据库的触发器删除
+            } else {    //多条记录
+                StringBuilder selectionBuilder = new StringBuilder();
+                List<String> argsList = new ArrayList<>();
+                for (DetailNoteInfo detailNoteInfo : detailNoteInfoList) {
+                    int noteId = detailNoteInfo.getNoteInfo().getId();
+                    selectionBuilder.append(Provider.NoteColumns._ID).append(" in (");
+                    selectionBuilder.append("?").append(Constants.TAG_COMMA);
+                    argsList.add(String.valueOf(noteId));
+                }
+                if (selectionBuilder.length() > 0) {
+                    selectionBuilder.deleteCharAt(selectionBuilder.lastIndexOf(Constants.TAG_COMMA));
+                    String[] args = new String[argsList.size()];
+                    args = argsList.toArray(args);
+                    rowId = db.delete(Provider.NoteColumns.TABLE_NAME, selectionBuilder.toString(), args);
+                }
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            KLog.e(TAG, "delete notes error:" + e.getMessage());
+        } finally {
+            db.endTransaction();
+        }
+        return rowId > 0;
+    }
     
     /**
      * 初始化note的添加数据
@@ -1006,10 +1048,14 @@ public class NoteManager extends Observable<Observer> {
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
         long row = 0;
         List<DetailNoteInfo> successList = new ArrayList<>();
+        List<DetailNoteInfo> removeList = new ArrayList<>();
         for (DetailNoteInfo detailNoteInfo : detailNoteList) {
             NoteInfo note = detailNoteInfo.getNoteInfo();
             if (note == null) {
                 continue;
+            }
+            if (detailNoteInfo.isRemovedNote()) {   //需要本地完全删除的笔记
+                removeList.add(detailNoteInfo);
             }
             long currentTime = System.currentTimeMillis();
             if (note.getModifyTime() == 0) {
@@ -1037,10 +1083,15 @@ public class NoteManager extends Observable<Observer> {
                 db.setTransactionSuccessful();
                 successList.add(detailNoteInfo);
             } catch (Exception e) {
-                KLog.d(TAG, "update detail notes error:" + e.getMessage());
+                KLog.e(TAG, "update detail notes error:" + e.getMessage());
             } finally {
                 db.endTransaction();
             }
+        }
+        if (!SystemUtil.isEmpty(removeList)) {  //有需要本地删除的笔记
+            KLog.d(TAG, "update detail notes some note delete from local size:" + removeList.size());
+            removeNotes(removeList);
+            removeList.removeAll(removeList);
         }
         boolean success = row > 0;
         int size = successList.size();

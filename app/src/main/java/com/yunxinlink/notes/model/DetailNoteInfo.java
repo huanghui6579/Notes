@@ -219,6 +219,14 @@ public class DetailNoteInfo implements Comparator<DetailNoteInfo> {
     }
 
     /**
+     * 是否是彻底删除的短信
+     * @return
+     */
+    public boolean isRemovedNote() {
+        return noteInfo != null && noteInfo.checkDeleteState(DeleteState.DELETE_DONE);
+    }
+
+    /**
      * 是否是垃圾桶的笔记
      * @return
      */

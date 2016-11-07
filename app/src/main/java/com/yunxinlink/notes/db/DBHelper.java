@@ -265,6 +265,28 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.FolderColumns.SID).append(" = NEW.").append(Provider.NoteColumns.FOLDER_ID)
                 .append("; END;");
         db.execSQL(builder.toString());
+
+        //笔记删除的触发器
+        /*
+            CREATE TRIGGER "tri_delete_note" AFTER DELETE ON "notes"
+            BEGIN
+              DELETE FROM attachment WHERE note_id = OLD.sid;
+                DELETE FROM detailed_list_item WHERE note_id = OLD.sid;
+            END;
+         */
+        builder = new StringBuilder();
+        builder.append("CREATE TRIGGER ").append(Provider.NoteColumns.TRI_DELETE_NOTE)
+                .append(" AFTER DELETE ON ").append(Provider.NoteColumns.TABLE_NAME).append(" BEGIN ")
+                .append(" DELETE FROM ")
+                .append(Provider.AttachmentColumns.TABLE_NAME)
+                .append(" WHERE ").append(Provider.AttachmentColumns.NOTE_ID)
+                .append(" = OLD.").append(Provider.NoteColumns.SID).append("; ")
+                .append(" DELETE FROM ")
+                .append(Provider.DetailedListColumns.TABLE_NAME)
+                .append(" WHERE ").append(Provider.DetailedListColumns.NOTE_ID)
+                .append(" = OLD.").append(Provider.NoteColumns.SID).append("; ")
+                .append(" END;");
+        db.execSQL(builder.toString());
         
         //创建添加文件夹后设置排序的触发器
         /*CREATE TRIGGER tri_set_folder_sort AFTER INSERT ON folder FOR EACH ROW
@@ -342,6 +364,9 @@ public class DBHelper extends SQLiteOpenHelper {
         
         //删除更新笔记后更新文件夹的触发器
         db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.TRI_INSERT_NOTE);
+
+        //删除笔记删除的触发器
+        db.execSQL("DROP TRIGGER IF EXISTS " + Provider.NoteColumns.TRI_DELETE_NOTE);
         
         //删除添加文件夹后设置排序的触发器
         db.execSQL("DROP TRIGGER IF EXISTS " + Provider.FolderColumns.TRI_SET_FOLDER_SORT);

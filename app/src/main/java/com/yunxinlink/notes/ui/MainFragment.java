@@ -57,6 +57,7 @@ import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteTask;
@@ -245,18 +246,26 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         initData();
     }
 
+    /**
+     * 初始化同步的状态
+     */
+    private void initSyncState() {
+        boolean hasSyncTask = !SyncCache.getInstance().isEmpty();
+        if (hasSyncTask) {
+            KLog.d(TAG, "init sync state in main ui and has sync task");
+            showSyncProgress();
+        }
+    }
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
         inflater.inflate(R.menu.main, menu);
-
-        mSyncMenu = menu.findItem(R.id.action_sync);
         
         if (mIsTrash) { //回收站的界面
             MenuItem clearAllItem = menu.add(0, R.id.action_clear_all, 200, R.string.action_clear_all);
             MenuItemCompat.setShowAsAction(clearAllItem, MenuItem.SHOW_AS_ACTION_ALWAYS);
             clearAllItem.setIcon(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_clear_all, getContext().getTheme()));
-
             menu.removeItem(R.id.action_search);
         } else {
             MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -265,6 +274,9 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         
         MenuItem item = menu.findItem(R.id.action_more);
         SystemUtil.setMenuOverFlowTint(getContext(), item);
+
+        //初始化同步的状态
+        initSyncState();
 
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -361,10 +373,35 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     }
 
     /**
+     * 添加同步的菜单
+     * @return
+     */
+    private MenuItem addSyncItem() {
+        BaseActivity baseActivity = (BaseActivity) getActivity();
+        Menu menu = baseActivity.getOptionsMenu();
+        if (menu == null) {
+            return null;
+        }
+        if (mSyncMenu == null) {
+            mSyncMenu = menu.add(0, R.id.action_sync, 90, R.string.action_sync_ing);
+            mSyncMenu.setVisible(false);
+            MenuItemCompat.setShowAsAction(mSyncMenu, MenuItem.SHOW_AS_ACTION_ALWAYS);
+        }
+        return mSyncMenu;
+    }
+
+    /**
      * 显示同步的进度条
      */
     public void showSyncProgress() {
-        if (mSyncMenu != null && !mSyncMenu.isVisible()) {
+        addSyncItem();
+        
+        if (mSyncMenu == null) {
+            KLog.d(TAG, "main ui show sync menu added but menu item is also null");
+            return;
+        }
+        
+        if (!mSyncMenu.isVisible()) {
             
             View view = LayoutInflater.from(getContext()).inflate(R.layout.layout_refresh, null);
             
@@ -720,7 +757,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                 removeList.add(noteInfo);
             }
         }
-        if (SystemUtil.isEmpty(removeList)) {
+        if (!SystemUtil.isEmpty(removeList)) {
             list.removeAll(removeList);
         }
     }

@@ -159,10 +159,13 @@ public class SyncService extends Service {
             Folder folder = noteParam.getFolder();
             List<DetailNoteInfo> detailNoteInfos = noteParam.getDetailNoteInfos();
             try {
-                //TODO 还需添加一个只同步笔记状态的方法
                 resultParam.optType = Constants.SYNC_UP_NOTE;
                 //该方法是同步的，所以回调也是在同一个线程里
-                resultParam.code = NoteApi.syncUpNote(mContext, folder, detailNoteInfos);
+                if (noteParam.onlySyncState()) {    //只同步笔记的状态
+                    resultParam.code = NoteApi.updateNoteDeleteState(mContext, detailNoteInfos);
+                } else {    //同步笔记的内容
+                    resultParam.code = NoteApi.syncUpNote(mContext, folder, detailNoteInfos);
+                }
             } catch (Exception e) {
                 KLog.e(TAG, "sync service sync up note info error:" + e.getMessage());
             }
@@ -393,7 +396,7 @@ public class SyncService extends Service {
 
         @Override
         protected void onPostExecute(TaskParam param) {
-            if (param != null && param.isAvailable()) { //返回的结果可用
+            if (param != null/* && param.isAvailable()*/) { //返回的结果可用
                 switch (param.optType) {
                     case Constants.SYNC_UP_NOTE:    //向上同步笔记
                         onEndSync();

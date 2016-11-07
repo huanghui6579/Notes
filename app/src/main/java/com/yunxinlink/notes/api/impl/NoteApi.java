@@ -118,7 +118,7 @@ public class NoteApi extends BaseApi {
                     for (DetailNoteInfo detailNoteInfo : noteInfos) {
                         NoteInfo noteInfo = detailNoteInfo.getNoteInfo();
                         Map<String, Attach> attachMap = noteInfo.getAttaches();
-                        if (!noteInfo.hasAttach() || SystemUtil.isEmpty(attachMap)) {   //没有附件
+                        if (!noteInfo.hasAttach() || SystemUtil.isEmpty(attachMap) || noteInfo.checkDeleteState(DeleteState.DELETE_DONE)) {   //没有附件
                             continue;
                         }
                         Set<String> keys = attachMap.keySet();
@@ -906,10 +906,10 @@ public class NoteApi extends BaseApi {
      * 同步修改笔记的删除状态,该方法在主线程里执行
      * @param context 上下文
      * @param detailNoteInfos 笔记列表
-     * @return 结果码，
+     * @return 结果码
      * @see ActionResult
      */
-    public static int updateNoteDeleteState(Context context, List<DetailNoteInfo> detailNoteInfos) throws IOException {
+    public static int updateNoteDeleteState(Context context, List<DetailNoteInfo> detailNoteInfos) {
         User user = getUser(context);
         int resultCode = ActionResult.RESULT_ERROR;
         if (user == null || !user.isAvailable()) {  //用户不可用
@@ -922,6 +922,38 @@ public class NoteApi extends BaseApi {
             resultCode = ActionResult.RESULT_SUCCESS;
             return resultCode;
         }
+        
+        int size = detailNoteInfos.size();
+        int pageSize = Constants.PAGE_SIZE_DEFAULT;
+        try {
+            if (size > pageSize) {   //需要分页提交，每页20条数据
+                int pageCount = size % pageSize == 0 ? size / pageSize : size / pageSize + 1;
+                for (int i = 0; i < pageCount; i++) {
+                    int pageNumber = i + 1;
+                    KLog.d(TAG, "update note delete state with page number:" + pageNumber);
+                    int offset = i * pageSize;
+                    int end = offset + pageSize;
+                    List<DetailNoteInfo> subList = detailNoteInfos.subList(offset, end);
+                    resultCode = doUpdateNoteDeleteState(user, subList);
+                }
+            } else {    //不需要分页
+                resultCode = doUpdateNoteDeleteState(user, detailNoteInfos);
+            }
+        } catch (Exception e) {
+            KLog.d(TAG, "update note delete state error:" + e.getMessage());
+        }
+        return resultCode;
+    }
+
+    /**
+     * 更新笔记的删除状态
+     * @param user 当前的用户
+     * @param detailNoteInfos 笔记列表
+     * @return
+     * @throws IOException
+     */
+    private static int doUpdateNoteDeleteState(User user, List<DetailNoteInfo> detailNoteInfos) throws IOException {
+        int resultCode = ActionResult.RESULT_ERROR;
         List<NoteInfoDto> noteInfoDtos = fillNoteInfoDto(detailNoteInfos);
         if (SystemUtil.isEmpty(noteInfoDtos)) {
             KLog.d(TAG, "update note delete state but note info dto list is empty");
@@ -951,6 +983,19 @@ public class NoteApi extends BaseApi {
             return resultCode;
         }
         //TODO 保存状态到本地
+        DetailNoteInfo detailNoteInfo = detailNoteInfos.get(0);
+        boolean success = true;
+        if (detailNoteInfo.isRemovedNote()) {   //是否是彻底删除的信息
+            KLog.d(TAG, "update note state and will remove local notes");
+            success = NoteManager.getInstance().removeNotes(detailNoteInfos);
+        }
+        if (success) {  //本地删除数据库成功
+            resultCode = ActionResult.RESULT_SUCCESS;
+        } else {
+            resultCode = ActionResult.RESULT_FAILED;
+        }
+        KLog.d(TAG, "update note state remove local notes result:" + success);
+        return resultCode;
     }
 
     /**
