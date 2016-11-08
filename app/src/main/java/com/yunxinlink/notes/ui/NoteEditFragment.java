@@ -19,7 +19,9 @@ import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
+import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
+import android.text.style.UpdateAppearance;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,7 +46,6 @@ import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteLinkify;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
-import com.yunxinlink.notes.widget.AttachSpan;
 import com.yunxinlink.notes.widget.MessageBundleSpan;
 import com.yunxinlink.notes.widget.NoteEditText;
 import com.yunxinlink.notes.widget.NoteFrameLayout;
@@ -600,17 +601,27 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
             @Override
             public void onSelectionChanged(int selStart, int selEnd) {
                 CharSequence text = editText.getText();
-                ClickableSpan[] links = ((Spannable) text).getSpans(selStart,
-                        selEnd, ClickableSpan.class);
+                MessageBundleSpan[] links = ((Spannable) text).getSpans(selStart,
+                        selEnd, MessageBundleSpan.class);
+                UpdateAppearance span = null;
+                boolean hasSpan = false;
                 if (links != null && links.length > 0) {
                     ClickableSpan clickableSpan = links[0];
+                    hasSpan = true;
+                    span = links[0];
                     KLog.d(TAG, "----onSelectionChanged--clickableSpan---" + clickableSpan.toString());
                 } else {
-                    AttachSpan[] images = ((Spannable) text).getSpans(selStart,
-                            selEnd, AttachSpan.class);
+                    DynamicDrawableSpan[] images = ((Spannable) text).getSpans(selStart,
+                            selEnd, DynamicDrawableSpan.class);
                     if (images != null && images.length > 0) {
+                        hasSpan = true;
+                        span = images[0];
                         KLog.d(TAG, "----onSelectionChanged---AttachSpan--");
                     }
+                }
+                if (mListener != null) {
+                    KLog.d(TAG, "----onSelectionChanged---set state--");
+                    mListener.setActionButtonVisible(hasSpan, true, span);
                 }
             }
         });
@@ -826,6 +837,25 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
 
                 //移除链接的点击事件
                 mRichTextWrapper.setMovementMethod(ArrowKeyMovementMethod.getInstance());
+                
+                int selStart = textView.getSelectionStart();
+                int selEnd = textView.getSelectionEnd();
+
+                CharSequence text = textView.getText();
+
+                MessageBundleSpan[] spans = ((Spannable) text).getSpans(selStart, selEnd, MessageBundleSpan.class);
+                MessageBundleSpan span = null;
+                boolean hasSpan = false;
+                if (spans != null && spans.length > 0) {    //该光标所在位置有链接
+                    //TODO 添加界面的显示
+                    hasSpan = true;
+                    span = spans[0];
+                }
+                
+                if (mListener != null) {
+                    KLog.d(TAG, "----onSelectionChanged--auto task -set state--");
+                    mListener.setActionButtonVisible(hasSpan, false, span);
+                }
             }
         }
     }
@@ -875,6 +905,14 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
          * 初始化完毕
          */
         void onInitCompleted(boolean isViewMode);
+
+        /**
+         * 设置action button 的显示状态
+         * @param visible 是否可见
+         * @param selected 是否点击状态
+         * @param span 当前的span                
+         */
+        void setActionButtonVisible(boolean visible, boolean selected, UpdateAppearance span);
     }
 
     /**

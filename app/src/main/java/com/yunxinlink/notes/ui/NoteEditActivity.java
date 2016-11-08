@@ -25,6 +25,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.style.UpdateAppearance;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -104,6 +105,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private static final int MSG_INIT_BOTTOM_TOOL_BAR = 3;
     private static final int MSG_READ_CONTACT_SUCCESS = 4;
     private static final int MSG_READ_CONTACT_FAILED = 5;
+    private static final int MSG_CHANGE_ACTION_BUTTON_STATE = 6;
     
     public static final int REQ_PICK_IMAGE = 10;
     public static final int REQ_TAKE_PIC = 11;
@@ -157,6 +159,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private int mNoteMode;
     
     private View mBottomBar;
+    
+    private View mBottomActionLayout;
 
     /**
      * 附件的临时缓存
@@ -288,6 +292,37 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
         //处理数据
         handleIntent();
+    }
+
+    /**
+     * 初始化action button
+     */
+    private void initActionLayout() {
+        if (mBottomActionLayout == null) {
+            ViewStub viewStub = (ViewStub) findViewById(R.id.bottom_layout_action);
+            if (viewStub != null) {
+                viewStub.inflate();
+                mBottomActionLayout = findViewById(R.id.btn_action);
+            }
+        }
+    }
+
+    /**
+     * 设置action button的显示状态
+     * @param visible
+     */
+    private void changeActionButtonVisible(boolean visible, boolean selected, UpdateAppearance span) {
+        if (visible) {  //设置可见
+            if (mBottomActionLayout == null) {
+                initActionLayout();
+            }
+            if (mBottomActionLayout == null) {
+                return;
+            }
+            SystemUtil.setViewVisibility(mBottomActionLayout, View.VISIBLE);
+        } else if (mBottomActionLayout != null) {
+            SystemUtil.setViewVisibility(mBottomActionLayout, View.GONE);
+        }
     }
 
     /**
@@ -2318,6 +2353,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         initEditInfo(isViewMode);
     }
 
+    @Override
+    public void setActionButtonVisible(boolean visible, boolean selected, UpdateAppearance span) {
+        mHandler.removeMessages(MSG_CHANGE_ACTION_BUTTON_STATE);
+        
+        Message msg = mHandler.obtainMessage();
+        msg.obj = span;
+        msg.arg1 = visible ? 1 : 0;
+        msg.arg2 = selected ? 1 : 0;
+        msg.what = MSG_CHANGE_ACTION_BUTTON_STATE;
+        mHandler.sendMessage(msg);
+    }
+
     /**
      * 添加拍照
      */
@@ -2526,6 +2573,12 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     break;
                 case MSG_READ_CONTACT_FAILED:   //读取联系人失败，没有权限
                     SystemUtil.makeShortToast(R.string.read_contact_failed);
+                    break;
+                case MSG_CHANGE_ACTION_BUTTON_STATE:    //改变操作按钮的显示状态
+                    boolean visible = msg.arg1 == 1;
+                    boolean selected = msg.arg2 == 1;
+                    UpdateAppearance span = (UpdateAppearance) msg.obj;
+                    activity.changeActionButtonVisible(visible, selected, span);
                     break;
             }
             super.handleMessage(msg);

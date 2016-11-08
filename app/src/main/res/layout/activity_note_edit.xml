@@ -20,12 +20,25 @@
             android:id="@id/content_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
+        
         <ViewStub
             android:id="@+id/bottom_tool_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout="@layout/edit_bottom_tool_bar"
             android:layout_alignParentBottom="true"/>
+
+        <ViewStub
+            android:id="@+id/bottom_layout_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/bottom_tool_bar"
+            android:layout="@layout/layout_action"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginRight="@dimen/btn_bg_size_small"
+            android:layout_marginEnd="@dimen/btn_bg_size_small"
+            android:layout_alignWithParentIfMissing="true"/>
 
     </RelativeLayout>
     
