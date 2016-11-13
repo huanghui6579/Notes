@@ -37,6 +37,7 @@ import com.yunxinlink.notes.listener.OnItemClickListener;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.persistent.AttachManager;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.persistent.UserManager;
@@ -232,6 +233,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
         attachMainFrame(mSelectedFolderId);
 
+        //请求权限
         requestPermission();
 
     }
@@ -459,6 +461,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         NoteManager.getInstance().addObserver(mNoteObserver);
         FolderManager.getInstance().addObserver(mNoteObserver);
         UserManager.getInstance().addObserver(mNoteObserver);
+        AttachManager.getInstance().addObserver(mNoteObserver);
     }
     
     /**
@@ -472,6 +475,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             NoteManager.getInstance().removeObserver(mNoteObserver);
             FolderManager.getInstance().removeObserver(mNoteObserver);
             UserManager.getInstance().removeObserver(mNoteObserver);
+            AttachManager.getInstance().removeObserver(mNoteObserver);
         }
     }
 
@@ -1032,9 +1036,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         @Override
         public void update(Observable<?> observable, int notifyFlag, NotifyType notifyType, Object data) {
             MainFragment mainFragment = null;
+            DetailNoteInfo detailNote = null;
             switch (notifyFlag) {
                 case Provider.NoteColumns.NOTIFY_FLAG:  //笔记的通知
-                    DetailNoteInfo detailNote = null;
                     mainFragment = getMainFragment();
                     if (mainFragment == null) {
                         KLog.d(TAG, "--update--observer--mainFragment-is---null--");
@@ -1103,6 +1107,27 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                             } else if (!SystemUtil.isEmpty(detailNoteList)) {
                                 KLog.d(TAG, "------merge note list size:" + detailNoteList.size());
                                 mainFragment.mergeNotes(detailNoteList);
+                            }
+                            break;
+                    }
+                    break;
+                case Provider.AttachmentColumns.NOTIFY_FLAG:    //附件的更新通知
+                    if (data == null) {
+                        return;
+                    }
+                    if (data instanceof DetailNoteInfo) {
+                        detailNote = (DetailNoteInfo) data;
+                    }
+                    mainFragment = getMainFragment();
+                    if (mainFragment == null) {
+                        KLog.d(TAG, "--update--observer--mainFragment-is---null--");
+                        return;
+                    }
+                    switch (notifyType) {
+                        case UPDATE:    //笔记的修改，主要是涂鸦编辑修改
+                            if (detailNote != null) {
+                                KLog.d(TAG, "------updateNote----" + detailNote);
+                                mainFragment.updateNote(detailNote);
                             }
                             break;
                     }

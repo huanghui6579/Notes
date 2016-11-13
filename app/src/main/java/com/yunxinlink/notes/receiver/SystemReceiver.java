@@ -14,7 +14,7 @@ import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
-import static com.yunxinlink.notes.util.NoteUtil.startSyncNote;
+import static com.yunxinlink.notes.util.NoteUtil.startSyncDownNote;
 
 /**
  * 主题切换的广播
@@ -86,7 +86,7 @@ public class SystemReceiver extends BroadcastReceiver {
                 boolean success = UserApi.login(context, userDto, null);
                 if (success) {
                     KLog.d(TAG, "app init completed user login success and will start sync down notes");
-                    startSyncNote(context);
+                    startSyncDownNote(context);
                 }
             }
         });

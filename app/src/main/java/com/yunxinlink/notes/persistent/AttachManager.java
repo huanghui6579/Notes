@@ -12,6 +12,7 @@ import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DeleteState;
+import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.FileUtil;
@@ -146,11 +147,16 @@ public class AttachManager extends Observable<Observer> {
 
     /**
      * 更新附件
-     * @param attach
+     * @param detailNoteInfo 笔记
      * @return
      */
-    public Attach updateAttach(Attach attach) {
-        return updateAttach(attach, null, true);
+    public Attach updateAttach(DetailNoteInfo detailNoteInfo) {
+        Attach attach = detailNoteInfo.getLastAttach();
+        Attach result = updateAttach(attach, null, false);
+        if (result != null) {
+            notifyObservers(Provider.AttachmentColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, detailNoteInfo);
+        }
+        return attach;
     }
 
     /**

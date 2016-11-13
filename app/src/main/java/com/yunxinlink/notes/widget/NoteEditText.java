@@ -9,6 +9,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
 import android.text.method.MovementMethod;
+import android.text.style.ClickableSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.AttributeSet;
@@ -396,10 +397,13 @@ public class NoteEditText extends EditText implements NoteRichSpan {
                         int selEnd = spanInfo.selEnd;
                         CharSequence text = spanInfo.text;
                         ReplacementSpan replaceSpan = spanInfo.replaceSpan;
+                        ClickableSpan clickSpan = spanInfo.clickSpan;
                         
                         SpannableStringBuilder builder = new SpannableStringBuilder();
                         builder.append(text);
-                        builder.setSpan(replaceSpan, 0, builder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        int length = builder.length();
+                        builder.setSpan(replaceSpan, 0, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        builder.setSpan(clickSpan, 0, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                         
                         KLog.d(TAG, "-------addSpan---post--ing---");
                         Editable editable = getEditableText();

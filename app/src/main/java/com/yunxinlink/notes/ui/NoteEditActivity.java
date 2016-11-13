@@ -14,6 +14,7 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.res.ResourcesCompat;
@@ -68,6 +69,8 @@ import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
+import com.yunxinlink.notes.widget.AttachSpan;
+import com.yunxinlink.notes.widget.MessageBundleSpan;
 import com.yunxinlink.notes.widget.NoteSearchLayout;
 
 import java.io.File;
@@ -79,6 +82,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+
+import static com.yunxinlink.notes.util.SystemUtil.setViewVisibility;
 
 /**
  * 笔记编辑界面
@@ -160,7 +165,8 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     
     private View mBottomBar;
     
-    private View mBottomActionLayout;
+    //右下角链接的操作按钮
+    private FloatingActionButton mBottomActionLayout;
 
     /**
      * 附件的临时缓存
@@ -302,8 +308,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             ViewStub viewStub = (ViewStub) findViewById(R.id.bottom_layout_action);
             if (viewStub != null) {
                 viewStub.inflate();
-                mBottomActionLayout = findViewById(R.id.btn_action);
+                mBottomActionLayout = (FloatingActionButton) findViewById(R.id.btn_action);
             }
+        }
+        if (mBottomActionLayout != null) {
+            mBottomActionLayout.setOnClickListener(this);
         }
     }
 
@@ -313,15 +322,30 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void changeActionButtonVisible(boolean visible, boolean selected, UpdateAppearance span) {
         if (visible) {  //设置可见
-            if (mBottomActionLayout == null) {
-                initActionLayout();
+            if (span instanceof MessageBundleSpan) {//且是链接类型
+                if (mBottomActionLayout == null) {
+                    initActionLayout();
+                }
+                if (mBottomActionLayout == null) {
+                    return;
+                }
+                MessageBundleSpan bundleSpan = (MessageBundleSpan) span;
+                int resId = bundleSpan.getActionIconRes();
+                if (resId != 0) {
+                    mBottomActionLayout.setImageResource(resId);
+                    mBottomActionLayout.setTag(span);
+                    SystemUtil.setViewVisibility(mBottomActionLayout, View.VISIBLE);
+                } else {
+                    SystemUtil.setViewVisibility(mBottomActionLayout, View.GONE);
+                }
+            } else if (span instanceof AttachSpan) {  //附件
+                AttachSpan attachSpan = (AttachSpan) span;
+                attachSpan.onClick(mContext);
+                KLog.d(TAG, "change action button span:" + span);
             }
-            if (mBottomActionLayout == null) {
-                return;
-            }
-            SystemUtil.setViewVisibility(mBottomActionLayout, View.VISIBLE);
+            
         } else if (mBottomActionLayout != null) {
-            SystemUtil.setViewVisibility(mBottomActionLayout, View.GONE);
+            setViewVisibility(mBottomActionLayout, View.GONE);
         }
     }
 
@@ -1320,6 +1344,15 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             case R.id.tv_content:   //阅读模式的文本点击事件
                 setupEditMode();
                 break;
+            case R.id.btn_action: //action button 的点击事件
+                UpdateAppearance span = (UpdateAppearance) v.getTag();
+                if (span != null) {
+                    if (span instanceof MessageBundleSpan) {  //链接
+                        MessageBundleSpan bundleSpan = (MessageBundleSpan) span;
+                        bundleSpan.openUrl(mContext);
+                    }//可能还有其他条件
+                }
+                break;
         }
     }
 
@@ -2030,9 +2063,11 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                     tmpAttach.setSize(new File(filePath).length());
 
-                    AttachManager.getInstance().updateAttach(tmpAttach);
+                    
                     mAttachCache.put(tmpAttach.getSid(), tmpAttach);
                     mDetailNote.setLastAttach(tmpAttach);
+
+                    AttachManager.getInstance().updateAttach(mDetailNote);
                     KLog.d(TAG, "---handleUpdateAttach--mAttachCache--has---uri--update--");
                 } else {
                     KLog.d(TAG, "--handleUpdateAttach--filePath--is---null--");

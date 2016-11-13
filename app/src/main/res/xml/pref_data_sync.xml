@@ -4,15 +4,15 @@
         android:key="@string/settings_key_sync_note_auto"
         android:title="@string/settings_sync_note_title"
         android:summary="@string/settings_sync_note_summary"
-        android:defaultValue="true"
-        android:checked="true"/>
+        android:defaultValue="@bool/default_settings_key_sync_note_auto"
+        android:checked="@bool/default_settings_key_sync_note_auto"/>
     
     <SwitchPreference
         android:key="@string/settings_key_sync_note_traffic"
         android:title="@string/settings_sync_traffic_title"
         android:summary="@string/settings_sync_traffic_summary"
-        android:defaultValue="false"
-        android:checked="false"/>
+        android:defaultValue="@bool/default_settings_key_sync_note_traffic"
+        android:checked="@bool/default_settings_key_sync_note_traffic"/>
     
     <Preference
         android:key="@string/settings_key_sync_note_state"

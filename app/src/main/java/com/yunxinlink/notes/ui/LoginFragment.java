@@ -1,10 +1,12 @@
 package com.yunxinlink.notes.ui;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -16,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
@@ -48,6 +51,9 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
     private EditText mEtAccount;
     private EditText mEtPassword;
     private Button mBtnLogin;
+    
+    //找回密码
+    private TextView mBtnForgetPwd;
     
     //网络请求工具
     private Call<?> mCall;
@@ -107,11 +113,14 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
         mEtPassword = (EditText) view.findViewById(R.id.et_password);
         
         mBtnLogin = (Button) view.findViewById(R.id.btn_login);
+
+        mBtnForgetPwd = (TextView) view.findViewById(R.id.tv_password_tip);
 //
         btnQQLogin.setOnClickListener(this);
         btnWeiboLogin.setOnClickListener(this);
 
         mBtnLogin.setOnClickListener(this);
+        mBtnForgetPwd.setOnClickListener(this);
         mEtAccount.addTextChangedListener(new SimpleTextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -206,6 +215,9 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                 }
                 user.setPassword(mEtPassword.getText().toString());
                 break;
+            case R.id.tv_password_tip:  //找回密码
+                resetPassword();
+                break;
         }
         if (loginType != -1) {
             if (SystemUtil.isNetworkAvailable(getContext())) {  //网络可用
@@ -214,6 +226,35 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                 SystemUtil.makeShortToast(R.string.tip_network_not_available);
             }
         }
+    }
+
+    /**
+     * 找回密码
+     */
+    private void resetPassword() {
+        
+        EditText editText = new EditText(getContext());
+        editText.setHint(R.string.authority_account_tip);
+        
+        String email = mEtAccount.getText() == null ? null : mEtAccount.getText().toString();
+        if (!SystemUtil.isEmail(email)) {
+            email = null;
+        }
+        editText.setText(email);
+        
+        int space = getResources().getDimensionPixelSize(R.dimen.activity_horizontal_margin);
+        
+        AlertDialog.Builder builder = NoteUtil.buildDialog(getContext());
+        builder.setTitle(R.string.authority_forget_password)
+                .setView(editText, space, space, space, space)
+                .setPositiveButton(R.string.authority_reset_password, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
     
     /**

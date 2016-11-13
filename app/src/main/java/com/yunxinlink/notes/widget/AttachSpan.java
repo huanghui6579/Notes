@@ -111,6 +111,14 @@ public class AttachSpan extends ClickableSpan {
     @Override
     public void onClick(View widget) {
         Context context = widget.getContext();
+        onClick(context);
+    }
+
+    /**
+     * 处理点击事件
+     * @param context
+     */
+    public void onClick(Context context) {
         Log.d(TAG, "--AttachSpan--onClick----");
         if (TextUtils.isEmpty(attachSpec.filePath)) {
             SystemUtil.makeShortToast(R.string.tip_file_not_download);

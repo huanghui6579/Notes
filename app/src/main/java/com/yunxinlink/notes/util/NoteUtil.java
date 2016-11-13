@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
@@ -48,6 +49,7 @@ import com.yunxinlink.notes.share.ShareItem;
 import com.yunxinlink.notes.share.SimplePlatformActionListener;
 import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.sync.SyncData;
+import com.yunxinlink.notes.sync.SyncSettingState;
 import com.yunxinlink.notes.sync.service.SyncService;
 import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
@@ -962,6 +964,47 @@ public class NoteUtil {
     }
 
     /**
+     * 检查同步的状态
+     * @return
+     */
+    public static SyncSettingState checkSyncSetting(Context context) {
+        //检查网络是否可用
+        int netType = SystemUtil.getConnectedType(context);
+        if (netType == -1) { //网络不可用
+//            SystemUtil.makeShortToast(R.string.tip_network_not_available);
+            return SyncSettingState.NET_DISABLE;
+        }
+        // 如果不是wifi，则判断当前连接的是运营商的哪种网络2g、3g、4g等
+        boolean isMobileNet = netType == ConnectivityManager.TYPE_MOBILE;
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        //是否自动同步
+        boolean autoSync = preferences.getBoolean(context.getString(R.string.settings_key_sync_note_auto), context.getResources().getBoolean(R.bool.default_settings_key_sync_note_auto));
+        if (autoSync) {
+            //检测当前的网络环境
+            //在数据流量环境下是否自动同步
+            boolean syncDataMobile = preferences.getBoolean(context.getString(R.string.settings_key_sync_note_traffic), context.getResources().getBoolean(R.bool.default_settings_key_sync_note_traffic));
+            if (!syncDataMobile && isMobileNet) {   //在移动数据下不同步，且当前使用的是移动网络数据
+                KLog.d(TAG, "sync data but can not sync in mobile data and now net work type is mobile");
+                return SyncSettingState.PROMPT;
+            }
+            return SyncSettingState.ENABLE;
+        } else {
+            return SyncSettingState.DISABLE;
+        }
+    }
+
+    /**
+     * 设置移动数据网络下是否同步笔记
+     * @param enable
+     */
+    public static void setSyncMobile(Context context, boolean enable) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(context.getString(R.string.settings_key_sync_note_traffic), enable);
+        editor.apply();
+    }
+
+    /**
      * 向上同步笔记
      * @param syncSid 同步的编号
      * @param noteParam 笔记的参数
@@ -986,26 +1029,38 @@ public class NoteUtil {
     }
 
     /**
-     * 开始同步笔记
+     * 开始向下同步笔记
      */
-    public synchronized static void startSyncNote(Context context) {
+    public synchronized static void startSyncDownNote(Context context) {
         KLog.d(TAG, "start sync down note");
+        startSyncNote(context, true);
+    }
+
+    /**
+     * 开始同步笔记，先向下同步，后向上同步
+     * @param context
+     * @param onlyDown 是否只是向下同步
+     */
+    public synchronized static void startSyncNote(Context context, boolean onlyDown) {
+        KLog.d(TAG, "start sync note");
         String syncSid = SystemUtil.generateSyncSid();
-        
+
         if (SyncCache.getInstance().hasSyncData(syncSid)) {
             KLog.d(TAG, "start sync data but already hash sync data:" + syncSid);
             return;
         }
-        
         Intent service = new Intent(context, SyncService.class);
-        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_DOWN_NOTE);
-        
+        if (onlyDown) {
+            service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_DOWN_NOTE);
+        } else {
+            service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_NOTE);
+        }
+
         SyncData syncData = new SyncData();
         syncData.setState(SyncData.SYNC_NONE);
         SyncCache.getInstance().addOrUpdate(syncSid, syncData);
-        
+
         service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
         context.startService(service);
     }
-    
 }

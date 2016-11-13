@@ -76,7 +76,7 @@ public class SettingsAccountActivity extends AppCompatPreferenceActivity impleme
 
         @Override
         protected Void doInBackground(Void... params) {
-            User user = ((NoteApplication) getApplication()).getCurrentUser();
+            User user = getCurrentUser();
             if (user != null) {
                 KLog.d(TAG, "settings account logout task set user state to offline");
                 User u = new User();

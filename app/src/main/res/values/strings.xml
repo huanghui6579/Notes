@@ -64,6 +64,10 @@
     <string name="tip_network_not_available">网络不可用，请连接网络后再试</string>
     <string name="tip_file_not_exists">文件不存在</string>
     <string name="tip_file_not_download">文件还没有下载</string>
+    <string name="tip_sync_mobile_data">移动数据环境下同步设置项没有开启，是否开启？</string>
+    
+    <string name="sync_setting_btn_text">立即开启</string>
+    
     
     <string name="title_note_clear_all">清空回收站</string>
 
@@ -315,6 +319,9 @@
     <string name="authority_register_account_repeat">注册失败，该用户已存在</string>
     <string name="authority_login_success">登录成功</string>
     <string name="authority_register_success">注册成功</string>
+    <string name="authority_forget_password">重置密码</string>
+    <string name="authority_reset_password">重置密码</string>
+    <string name="authority_reset_password_tip">密码重置指令已发送到邮箱</string>
 
     <string name="save_ing">保存中…</string>
     <string name="save_success">保存成功</string>

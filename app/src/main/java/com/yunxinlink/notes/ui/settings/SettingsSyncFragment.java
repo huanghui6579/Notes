@@ -3,8 +3,11 @@ package com.yunxinlink.notes.ui.settings;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.Preference;
 
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.util.TimeUtil;
 
 /**
  * 同步的设置界面
@@ -46,6 +49,23 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
 //        bindPreferenceChangeListener(findPreference("sync_note_traffic"));
     }
 
+    /**
+     * 刷新界面
+     * @param user 当前登录的用户
+     */
+    public void refresh(User user) {
+        Preference preference = findPreference(getString(R.string.settings_key_sync_note_state));
+        if (preference == null) {
+            return;
+        }
+        long time = user == null ? 0 : user.getLastSyncTime();
+        if (user != null && user.isAvailable() && time > 0) {
+            preference.setSummary(TimeUtil.formatNoteTime(time));
+        } else {
+            preference.setSummary(R.string.settings_sync_state_summary);
+        }
+    }
+    
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);

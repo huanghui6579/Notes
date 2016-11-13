@@ -444,4 +444,27 @@ public class UserManager extends Observable<Observer> {
     public void logoutUser(User user) {
         UserManager.getInstance().notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.REMOVE, user);
     }
+
+    /**
+     * 修改当前用户最后的同步时间
+     * @param user 当前用户
+     * @return
+     */
+    public boolean updateSyncTime(User user) {
+        SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        long lastSyncTime = user.getLastSyncTime();
+        long time = System.currentTimeMillis();
+        if (lastSyncTime == 0 || lastSyncTime < time) {
+            user.setLastSyncTime(time);
+        }
+        values.put(Provider.UserColumns.LAST_SYNC_TIME, user.getLastSyncTime());
+        long rowId = 0;
+        try {
+            rowId = db.update(Provider.UserColumns.TABLE_NAME, values, Provider.UserColumns._ID + " = ?", new String[] {String.valueOf(user.getId())});
+        } catch (Exception e) {
+            KLog.d(TAG, "update user last sync time error:" + e.getMessage());
+        }
+        return rowId > 0;
+    }
 }

@@ -22,12 +22,15 @@ import com.yunxinlink.notes.model.TaskParam;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.sync.SyncData;
+import com.yunxinlink.notes.sync.SyncSettingState;
 import com.yunxinlink.notes.sync.download.DownloadTask;
 import com.yunxinlink.notes.sync.download.DownloadTaskQueue;
 import com.yunxinlink.notes.sync.download.SimpleDownloadListener;
 import com.yunxinlink.notes.util.Constants;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.io.IOException;
@@ -73,6 +76,10 @@ public class SyncService extends Service {
                     KLog.d(TAG, "sync service will start sync down note info");
                     handleSyncCommand(intent, param);
                     break;
+                case Constants.SYNC_NOTE:   //开始同步笔记，先向下同步，后向上同步
+                    KLog.d(TAG, "sync service will start sync note info");
+                    handleSyncCommand(intent, param);
+                    break;
             }
         }
         return super.onStartCommand(intent, flags, startId);
@@ -83,27 +90,47 @@ public class SyncService extends Service {
      * @param intent
      * @param param
      */
-    private void handleSyncCommand(Intent intent, TaskParam param) {
+    private void handleSyncCommand(Intent intent, final TaskParam param) {
         //同步任务的编号
-        String syncSid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+        final String syncSid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
         KLog.d(TAG, "sync service will start sync task sid : " + syncSid);
         if (!TextUtils.isEmpty(syncSid)) {
+            if (!param.isManual) {   //非手动的，才需要再做检查了
+                SyncSettingState settingState = NoteUtil.checkSyncSetting(mContext);
 
-            if (isSyncIng(syncSid)) {   //该任务已在同步中
-                KLog.d(TAG, "sync service start sync task but this task is syncing sync sid is :" + syncSid);
-                return;
+                if (settingState != SyncSettingState.ENABLE) {
+                    removeSyncTask(syncSid);
+                    KLog.d(TAG, "sync note check settings the result is can not sync");
+                    return;
+                }
+            } else {
+                KLog.d(TAG, "sync service is manual task ");
             }
-            
-            //通知界面显示进度条
-            onStartSync();
-            
-            param.data = syncSid;
-            //开始同步
-            KLog.d(TAG, "sync service start sync task sid is :" + syncSid);
-            executeTask(param);
+
+            doHandleSyncCommand(syncSid, param);
         } else {
             KLog.d(TAG, "sync service not start sync task because sid is null");
         }
+    }
+
+    /**
+     * 执行同步任务的准备工作
+     * @param syncSid
+     * @param param
+     */
+    private void doHandleSyncCommand(String syncSid, TaskParam param) {
+        if (isSyncIng(syncSid)) {   //该任务已在同步中
+            KLog.d(TAG, "sync service start sync task but this task is syncing sync sid is :" + syncSid);
+            return;
+        }
+
+        //通知界面显示进度条
+        onStartSync();
+
+        param.data = syncSid;
+        //开始同步
+        KLog.d(TAG, "sync service start sync task sid is :" + syncSid);
+        executeTask(param);
     }
 
     /**
@@ -170,7 +197,7 @@ public class SyncService extends Service {
                 KLog.e(TAG, "sync service sync up note info error:" + e.getMessage());
             }
             //移除该同步记录
-            SyncCache.getInstance().remove(syncSid);
+//            SyncCache.getInstance().remove(syncSid);
         }
         return resultParam;
     }
@@ -215,14 +242,16 @@ public class SyncService extends Service {
 
     /**
      * 向下同步笔记
+     * @param taskParam 任务的参数
      * @param syncSid 向下同步任务的编号
      * @return
      */
-    private TaskParam syncDownNote(String syncSid) {
+    private TaskParam syncDownNote(String syncSid, TaskParam taskParam) {
         User user = getCurrentUser();
         if (user == null || !user.isAvailable()) {
-            SyncCache.getInstance().remove(syncSid);
             KLog.d(TAG, "sync service sync down note user is null or user is not available user:" + user);
+            onEndSync();
+            removeSyncTask(syncSid);
             return null;
         }
 
@@ -240,16 +269,46 @@ public class SyncService extends Service {
         downNotes(user);
         
         //下载附件
-        downAttachFile(user);
+        downAttachFile(user, !taskParam.isManual);
 
-        SyncCache.getInstance().remove(syncSid);
+//        removeSyncTask(syncSid);
         return resultParam;
     }
 
     /**
-     * 下载附件
+     * 同步笔记，先向下同步，再向上同步
+     * @param syncSid 同步任务的编号
+     * @param taskParam 同步任务的参数
+     * @return
      */
-    private void downAttachFile(User user) {
+    private TaskParam syncNote(String syncSid, TaskParam taskParam) {
+        KLog.d(TAG, "sync note sid:" + syncSid);
+        TaskParam param = syncDownNote(syncSid, taskParam);
+        if (param == null) {
+            KLog.d(TAG, "sync note but down note task param is null");
+            return null;
+        }
+        param = syncUpNotes(syncSid);
+        if (param == null) {
+            KLog.d(TAG, "sync note but up note task param is null");
+            return null;
+        }
+        return param;
+    }
+
+    /**
+     * 移除同步的sid
+     * @param syncSid
+     */
+    private void removeSyncTask(String syncSid) {
+        SyncCache.getInstance().remove(syncSid);
+    }
+
+    /**
+     * 下载附件
+     * @param autoNotifyDone 是否自动通知撒下载完毕
+     */
+    private void downAttachFile(User user, boolean autoNotifyDone) {
         //查询需要下载的附件
         List<Attach> attachList = NoteManager.getInstance().getUnDownloadAttach(user);
         if (SystemUtil.isEmpty(attachList)) {
@@ -277,7 +336,7 @@ public class SyncService extends Service {
         }
         KLog.d(TAG, "sync service download attach file start");
         DownloadTaskQueue downloadTaskQueue = new DownloadTaskQueue(mContext);
-        downloadTaskQueue.setDownloadListener(new MyDownloadListener());
+        downloadTaskQueue.setDownloadListener(new MyDownloadListener(autoNotifyDone));
         downloadTaskQueue.addAll(taskList);
         downloadTaskQueue.start();
     }
@@ -356,10 +415,19 @@ public class SyncService extends Service {
      * 附件下载的监听器
      */
     class MyDownloadListener extends SimpleDownloadListener {
+        //是否自动通知同步完成
+        private boolean mAutoNotifyDone;
+
+        public MyDownloadListener(boolean autoNotifyDone) {
+            this.mAutoNotifyDone = autoNotifyDone;
+        }
+
         @Override
         public void onCompleted(DownloadTask downloadTask) {
             super.onCompleted(downloadTask);
-            onEndSync();
+            if (mAutoNotifyDone) {
+                onEndSync();
+            }
             KLog.d(TAG, "sync service download file listener completed");
         }
     }
@@ -388,8 +456,20 @@ public class SyncService extends Service {
                     resultParam = syncUpNotes(syncSid);
                     break;
                 case Constants.SYNC_DOWN_NOTE:  //向下同步笔记，即下载笔记
-                    resultParam = syncDownNote(syncSid);
+                    resultParam = syncDownNote(syncSid, param);
                     break;
+                case Constants.SYNC_NOTE:   //先向下同步笔记，后向上同步笔记
+                    param.isManual = true;
+                    resultParam = syncNote(syncSid, param);
+                    break;
+            }
+            //移除同步的sid
+            removeSyncTask(syncSid);
+            //修改最后的同步时间
+            User user = getCurrentUser();
+            if (user != null && user.isAvailable()) {
+                user.setLastSyncTime(System.currentTimeMillis());
+                UserManager.getInstance().updateSyncTime(user);
             }
             return resultParam;
         }
@@ -398,9 +478,10 @@ public class SyncService extends Service {
         protected void onPostExecute(TaskParam param) {
             if (param != null/* && param.isAvailable()*/) { //返回的结果可用
                 switch (param.optType) {
+                    case Constants.SYNC_NOTE:   //同步笔记，这里不需要break
+                        syncUpResult(param.code);
                     case Constants.SYNC_UP_NOTE:    //向上同步笔记
                         onEndSync();
-                        syncUpResult(param.code);
                         break;
                     case Constants.SYNC_DOWN_NOTE:
                         break;

@@ -78,4 +78,6 @@ http://developer.android.com/guide/topics/appwidgets/index.html#CreatingLayout
 
     <dimen name="authority_btn_margin_top">24dp</dimen>
     
+    <dimen name="edit_action_bottom_space">8dp</dimen>
+    
 </resources>

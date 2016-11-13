@@ -225,9 +225,8 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
         setText(s);
         mRichTextWrapper.setText(s, map);
         NoteRichSpan richSpan = mRichTextWrapper.getRichSpan();
-        if (richSpan instanceof NoteTextView) {
-            autoLink(s);
-        } else {
+        autoLink(s);
+        if (richSpan instanceof NoteEditText) {
             initEditText((NoteEditText) richSpan);
         }
     }
@@ -601,26 +600,22 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
             @Override
             public void onSelectionChanged(int selStart, int selEnd) {
                 CharSequence text = editText.getText();
-                MessageBundleSpan[] links = ((Spannable) text).getSpans(selStart,
-                        selEnd, MessageBundleSpan.class);
+                ClickableSpan[] links = ((Spannable) text).getSpans(selStart,
+                        selEnd, ClickableSpan.class);
                 UpdateAppearance span = null;
                 boolean hasSpan = false;
                 if (links != null && links.length > 0) {
-                    ClickableSpan clickableSpan = links[0];
                     hasSpan = true;
                     span = links[0];
-                    KLog.d(TAG, "----onSelectionChanged--clickableSpan---" + clickableSpan.toString());
                 } else {
                     DynamicDrawableSpan[] images = ((Spannable) text).getSpans(selStart,
                             selEnd, DynamicDrawableSpan.class);
                     if (images != null && images.length > 0) {
                         hasSpan = true;
                         span = images[0];
-                        KLog.d(TAG, "----onSelectionChanged---AttachSpan--");
                     }
                 }
                 if (mListener != null) {
-                    KLog.d(TAG, "----onSelectionChanged---set state--");
                     mListener.setActionButtonVisible(hasSpan, true, span);
                 }
             }
@@ -838,7 +833,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                 //移除链接的点击事件
                 mRichTextWrapper.setMovementMethod(ArrowKeyMovementMethod.getInstance());
                 
-                int selStart = textView.getSelectionStart();
+                /*int selStart = textView.getSelectionStart();
                 int selEnd = textView.getSelectionEnd();
 
                 CharSequence text = textView.getText();
@@ -855,7 +850,7 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                 if (mListener != null) {
                     KLog.d(TAG, "----onSelectionChanged--auto task -set state--");
                     mListener.setActionButtonVisible(hasSpan, false, span);
-                }
+                }*/
             }
         }
     }

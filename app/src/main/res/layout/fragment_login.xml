@@ -56,7 +56,8 @@
             android:text="@string/authority_forget_password_tip"
             android:layout_below="@id/btn_login"
             android:layout_marginTop="@dimen/authority_btn_margin_top"
-            android:layout_marginBottom="@dimen/activity_vertical_margin"/>
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:textSize="16sp" />
     </RelativeLayout>
 
     <LinearLayout
@@ -118,6 +119,5 @@
                 android:text="@string/authority_login_weibo"/>
         </LinearLayout>
     </LinearLayout>
-
 
 </RelativeLayout>

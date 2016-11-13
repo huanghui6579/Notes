@@ -145,6 +145,7 @@ public class Constants {
     
     public static final int SYNC_UP_NOTE = 1;
     public static final int SYNC_DOWN_NOTE = 2;
+    public static final int SYNC_NOTE = 3;
     
     public static final String ARG_CORE_OPT = "arg_core_opt";
     public static final String ARG_CORE_OBJ = "arg_core_obj";

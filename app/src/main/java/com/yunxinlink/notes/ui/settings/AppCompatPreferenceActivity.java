@@ -17,9 +17,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.lock.ILockerActivityDelegate;
 import com.yunxinlink.notes.lock.LockInfo;
 import com.yunxinlink.notes.lock.LockerDelegate;
+import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.receiver.SystemReceiver;
 
 import me.imid.swipebacklayout.app.SwipeBackPreferenceActivity;
@@ -80,6 +82,15 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
             LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
             localBroadcastManager.unregisterReceiver(mThemeReceiver);
         }
+    }
+
+    /**
+     * 获取当前用户
+     * @return
+     */
+    protected User getCurrentUser() {
+        NoteApplication app = (NoteApplication) getApplication();
+        return app.getCurrentUser();
     }
 
     @Override

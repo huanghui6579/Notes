@@ -18,6 +18,11 @@ public class TaskParam {
     public int code;
 
     /**
+     * 是否是手动同步，即点击同步的按钮或者菜单
+     */
+    public boolean isManual;
+
+    /**
      * 数据
      */
     public Object data;

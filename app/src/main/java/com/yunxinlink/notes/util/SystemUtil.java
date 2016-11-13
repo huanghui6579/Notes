@@ -1406,9 +1406,12 @@ public class SystemUtil {
      * @param view
      * @param visibility
      */
-    public static void setViewVisibility(View view, int visibility) {
+    public static boolean setViewVisibility(View view, int visibility) {
         if (view.getVisibility() != visibility) {
             view.setVisibility(visibility);
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -1710,8 +1713,17 @@ public class SystemUtil {
     public static boolean isNetworkAvailable(Context context) {
         ConnectivityManager connectivity = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivity != null) {
-            NetworkInfo info = connectivity.getActiveNetworkInfo();
+        return isNetworkAvailable(connectivity);
+    }
+
+    /**
+     * 检测当的网络（WLAN、3G/2G）状态
+     * @param connectivityManager 网络连接器
+     * @return true 表示网络可用
+     */
+    public static boolean isNetworkAvailable(ConnectivityManager connectivityManager) {
+        if (connectivityManager != null) {
+            NetworkInfo info = connectivityManager.getActiveNetworkInfo();
             if (info != null && info.isConnected()) {
                 // 当前网络是连接的
                 if (info.getState() == NetworkInfo.State.CONNECTED) {
@@ -1721,6 +1733,57 @@ public class SystemUtil {
             }
         }
         return false;
+    }
+
+    /**
+     * 判断MOBILE网络是否可用
+     *
+     * @param context
+     * @return
+     */
+    public static boolean isMobileConnected(Context context) {
+        ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        return isMobileConnected(manager);
+    }
+
+    /**
+     * 判断MOBILE网络是否可用
+     *
+     * @param connectivityManager 网络连接管理器
+     * @return
+     */
+    public static boolean isMobileConnected(ConnectivityManager connectivityManager) {
+        //获取手机所有连接管理对象(包括对wi-fi,net等连接的管理)
+        if (connectivityManager != null) {
+            //获取NetworkInfo对象
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            //判断NetworkInfo对象是否为空 并且类型是否为MOBILE 
+            if (networkInfo != null && networkInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
+                return networkInfo.isAvailable();
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 获取当前网络连接的类型信息
+     * 原生
+     *
+     * @param context
+     * @return
+     */
+    public static int getConnectedType(Context context) {
+        if (context != null) {
+            //获取手机所有连接管理对象
+            ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            //获取NetworkInfo对象
+            NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isAvailable()) {
+                //返回NetworkInfo的类型
+                return networkInfo.getType();
+            }
+        }
+        return -1;
     }
 
     /**

@@ -9,9 +9,11 @@ import android.os.Parcel;
 import android.provider.Browser;
 import android.provider.ContactsContract;
 import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
 import android.text.style.URLSpan;
 import android.view.View;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.util.NoteLinkify;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -91,6 +93,34 @@ public class MessageBundleSpan extends URLSpan {
                 viewUrl(context, url);
                 break;
             
+        }
+    }
+
+    /**
+     * 打开链接
+     * @param context
+     */
+    public void openUrl(Context context) {
+        String url = getURL();
+        if (TextUtils.isEmpty(url)) {
+            KLog.d(TAG, "message span open url but is null");
+            return;
+        }
+        switch (urlType) {
+            case NoteLinkify.WEB_URLS:  //网页链接
+            case NoteLinkify.MAP_ADDRESSES: //地图显示
+                viewUrl(context, url);
+                break;
+            case NoteLinkify.PHONE_NUMBERS: //电话号码
+                call(context, url);
+                break;
+            case NoteLinkify.EMAIL_ADDRESSES:   //发送邮件
+                sendEmail(context, url);
+                break;
+            default:
+                viewUrl(context, url);
+                break;
+
         }
     }
     
@@ -306,6 +336,32 @@ public class MessageBundleSpan extends URLSpan {
         } else {
             SystemUtil.makeShortToast(R.string.tip_no_app_handle);
         }
+    }
+
+    /**
+     * 根据链接的类型来获取对应的图标
+     * @return 返回图标的资源id
+     */
+    public int getActionIconRes() {
+        int res = 0;
+        switch (urlType) {
+            case NoteLinkify.WEB_URLS:  //网页链接
+                res = R.drawable.ic_network;
+                break;
+            case NoteLinkify.MAP_ADDRESSES: //地图显示
+                res = R.drawable.ic_place;
+                break;
+            case NoteLinkify.PHONE_NUMBERS: //电话号码
+                res = R.drawable.ic_call;
+                break;
+            case NoteLinkify.EMAIL_ADDRESSES:   //发送邮件
+                res = R.drawable.ic_email;
+                break;
+            default:
+                break;
+
+        }
+        return res;
     }
 
     class MenuItem {

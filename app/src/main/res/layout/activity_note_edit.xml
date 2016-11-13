@@ -36,8 +36,6 @@
             android:layout="@layout/layout_action"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
-            android:layout_marginRight="@dimen/btn_bg_size_small"
-            android:layout_marginEnd="@dimen/btn_bg_size_small"
             android:layout_alignWithParentIfMissing="true"/>
 
     </RelativeLayout>

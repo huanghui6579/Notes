@@ -14,4 +14,7 @@
     <string name="settings_key_account_name">account_name</string>
     <string name="settings_key_account_last_sync_time">account_last_sync_time</string>
     <string name="settings_key_account_logout">account_logout</string>
+    
+    <bool name="default_settings_key_sync_note_auto">true</bool>
+    <bool name="default_settings_key_sync_note_traffic">false</bool>
 </resources>

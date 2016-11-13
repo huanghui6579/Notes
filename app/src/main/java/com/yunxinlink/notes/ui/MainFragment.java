@@ -58,6 +58,7 @@ import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.sync.SyncCache;
+import com.yunxinlink.notes.sync.SyncSettingState;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteTask;
@@ -331,7 +332,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
         if (!isFirstLoad && !mIsTrash) {    //不是首次进入界面或者不是加载回收站的数据，则需同步数据
             KLog.d(TAG, "main fragment do on refresh and will start sync down notes");
-            NoteUtil.startSyncNote(getContext());
+            NoteUtil.startSyncDownNote(getContext());
         }
 
         if (mOnRefreshListener != null) {
@@ -368,7 +369,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
         if (mOnRefreshListener != null && !mOnRefreshListener.isIsFirstLoad() && !mIsTrash) {    //不是首次进入界面或者不是加载回收站的数据，则需同步数据
             KLog.d(TAG, "main fragment reload data and will start sync down notes");
-            NoteUtil.startSyncNote(getContext());
+            NoteUtil.startSyncDownNote(getContext());
         }
     }
 
@@ -1765,6 +1766,26 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
     }
 
     /**
+     * 显示数据流量同步的提示对话框
+     */
+    private void showNetSyncTip(DialogInterface.OnClickListener positiveListener) {
+        AlertDialog.Builder builder = NoteUtil.buildDialog(getContext());
+        AlertDialog dialog = builder.setTitle(R.string.action_upload)
+                .setMessage(R.string.tip_sync_mobile_data)
+                .setPositiveButton(R.string.sync_setting_btn_text, positiveListener)
+                .setNegativeButton(R.string.cancel, null)
+                .create();
+        dialog.show();
+    }
+
+    /**
+     * 开始同步笔记，先向下同步后向上同步
+     */
+    private void startSyncNote() {
+        NoteUtil.startSyncNote(getContext(), false);
+    }
+    
+    /**
      * popuMenu每一项点击的事件
      * @author huanghui1
      * @update 2016/3/2 15:05
@@ -1780,6 +1801,30 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
 
                     break;
                 case R.id.nav_upload:   //同步
+                    SyncSettingState settingState = NoteUtil.checkSyncSetting(getContext());
+                    boolean canSync = true;
+                    switch (settingState) {
+                        case NET_DISABLE:   //网络或者同步设置不可用
+                            canSync = false;
+                            SystemUtil.makeShortToast(R.string.tip_network_not_available);
+                            break;
+                        case PROMPT:   //移动网络如果设置项没有打开，下需要提示
+                            canSync = false;
+                            showNetSyncTip(new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    //保存移动数据下也同步的设置项
+                                    NoteUtil.setSyncMobile(getContext(), true);
+                                    //开始同步
+                                    startSyncNote();
+                                }
+                            });
+                            break;
+                    }
+                    if (canSync) {
+                        //开始同步
+                        startSyncNote();
+                    }
                     break;
                 case R.id.nav_sort: //排序
                     showSortStyle(mNoteSort);
@@ -1997,7 +2042,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             Attach lastAttach = detailNote.getLastAttach();
             if (lastAttach.isImage()) { //图片文件
                 String filePath = lastAttach.getLocalPath();
-                if (TextUtils.isEmpty(filePath)) {
+                if (TextUtils.isEmpty(filePath) || !lastAttach.isImage()) {
                     KLog.d(TAG, "main ui attach file path is empty:" + lastAttach.getSid() + "---->" + lastAttach.getFilename());
                 } else {
                     ImageUtil.displayImage(lastAttach.getLocalPath(), new ImageViewAware(holder.mIvIcon, false), new SimpleImageLoadingListener() {
@@ -2217,7 +2262,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                     holder.mIvAttachIcon.setImageResource(attachIcon);
                 }
                 String filePath = attach.getLocalPath();
-                if (TextUtils.isEmpty(filePath)) {
+                if (TextUtils.isEmpty(filePath) || !attach.isImage()) {
                     KLog.d(TAG, "main ui show attach img but file path is empty:" + attach.getSid() + "--->" + attach.getFilename());
                 } else {
                     ImageUtil.displayImage(attach.getLocalPath(), new NoteItemViewAware(holder.mItemContainer), new SimpleImageLoadingListener() {
