@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/item_selected_color"/>
+    
+    <corners android:radius="@dimen/widget_bg_radius_size"/>
+    
+    <size 
+        android:width="@dimen/list_item_height_middle"
+        android:height="@dimen/list_item_height_middle"/>
+</shape>

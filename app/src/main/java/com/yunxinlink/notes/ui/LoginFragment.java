@@ -45,6 +45,9 @@ import retrofit2.Call;
 public class LoginFragment extends BaseFragment implements View.OnClickListener {
 
     private static final int MSG_LOGIN = 10;
+    private static final int MSG_SEND_MAIL_SUCCESS = 11;
+    private static final int MSG_SEND_MAIL_FAILED = 12;
+    
 
     private OnLoginFragmentInteractionListener mListener;
     
@@ -233,7 +236,7 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
      */
     private void resetPassword() {
         
-        EditText editText = new EditText(getContext());
+        final EditText editText = new EditText(getContext());
         editText.setHint(R.string.authority_account_tip);
         
         String email = mEtAccount.getText() == null ? null : mEtAccount.getText().toString();
@@ -250,11 +253,52 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                 .setPositiveButton(R.string.authority_reset_password, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        
+                        CharSequence textEmail = editText.getText();
+                        boolean isEmail = checkEmail(textEmail);
+                        if (isEmail) {
+                            if (mListener != null) {
+                                mListener.showDialog(getString(R.string.authority_sending));
+                            }
+                            UserApi.resetPasswordAsync(textEmail.toString(), new SimpleOnLoadCompletedListener<ActionResult<Void>>() {
+                                @Override
+                                public void onLoadSuccess(ActionResult<Void> result) {
+                                    dismissLoadingDialog();
+                                    super.onLoadSuccess(result);
+                                    mHandler.sendEmptyMessage(MSG_SEND_MAIL_SUCCESS);
+                                }
+
+                                @Override
+                                public void onLoadFailed(int errorCode, String reason) {
+                                    dismissLoadingDialog();
+                                    super.onLoadFailed(errorCode, reason);
+                                    Message msg = mHandler.obtainMessage();
+                                    msg.what = MSG_SEND_MAIL_FAILED;
+                                    msg.arg1 = errorCode;
+                                    mHandler.sendMessage(msg);
+                                }
+                            });
+                        }
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    /**
+     * 校验email
+     * @param email 邮箱地址
+     * @return
+     */
+    private boolean checkEmail(CharSequence email) {
+        if (TextUtils.isEmpty(email)) {
+            SystemUtil.makeShortToast(R.string.tip_email_is_empty);
+            return false;
+        }
+        if (!SystemUtil.isEmail(email)) {
+            SystemUtil.makeShortToast(R.string.tip_email_is_not_right);
+            return false;
+        }
+        return true;
     }
     
     /**
@@ -347,6 +391,29 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
     }
 
     /**
+     * 发送邮件的结果
+     * @param resultCode 结果码
+     */
+    private void mailResult(int resultCode) {
+        int tipRes = 0;
+        switch (resultCode) {
+            case ActionResult.RESULT_SUCCESS:   //成功
+                tipRes = R.string.authority_send_mail_success;
+                break;
+            case ActionResult.RESULT_STATE_DISABLE: //用户被禁用
+                tipRes = R.string.authority_login_state_disable;
+                break;
+            case ActionResult.RESULT_DATA_NOT_EXISTS:   //用户存在
+                tipRes = R.string.authority_account_not_exists;
+                break;
+            default:
+                tipRes = R.string.authority_send_mail_failed;
+                break;
+        }
+        SystemUtil.makeShortToast(tipRes);
+    }
+
+    /**
      * 执行登录操作
      * @param context
      * @param userDto
@@ -400,6 +467,12 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                     case Constants.MSG_FAILED:  //登录失败
                         int errorCode = msg.arg1;
                         target.loginFailed(errorCode);
+                        break;
+                    case MSG_SEND_MAIL_SUCCESS:
+                        target.mailResult(ActionResult.RESULT_SUCCESS);
+                        break;
+                    case MSG_SEND_MAIL_FAILED:
+                        target.mailResult(msg.arg1);
                         break;
                 }
             }

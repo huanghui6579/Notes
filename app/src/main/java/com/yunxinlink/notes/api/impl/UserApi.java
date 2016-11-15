@@ -332,6 +332,55 @@ public class UserApi extends BaseApi {
     }
 
     /**
+     * 异步发送重置密码的请求，该方法异步执行，不需要额外的创建线程
+     * @param account 收件人的邮箱
+     * @param listener 加载完毕的监听器
+     * @return
+     */
+    public static Call<?> resetPasswordAsync(String account, final OnLoadCompletedListener<ActionResult<Void>> listener) {
+        if (TextUtils.isEmpty(account)) {
+            if (listener != null) {
+                listener.onLoadFailed(ActionResult.RESULT_PARAM_ERROR, null);
+            }
+            return null;
+        }
+        Retrofit retrofit = buildRetrofit();
+        final IUserApi repo = retrofit.create(IUserApi.class);
+        Call<ActionResult<Void>> call = repo.resetPassword(account);
+        call.enqueue(new Callback<ActionResult<Void>>() {
+            @Override
+            public void onResponse(Call<ActionResult<Void>> call, Response<ActionResult<Void>> response) {
+                int actionCode = 0;
+                if (response == null || !response.isSuccessful() || response.body() == null) {
+                    actionCode = ActionResult.RESULT_FAILED;
+                    KLog.d(TAG, "reset password response is null or not successful");
+                } else {
+                    ActionResult<Void> actionResult = response.body();
+                    actionCode = actionResult.getResultCode();
+                }
+                if (listener != null) {
+                    if (actionCode == ActionResult.RESULT_SUCCESS) {    //成功
+                        KLog.d(TAG, "user api reset password success");
+                        listener.onLoadSuccess(null);
+                    } else {
+                        KLog.d(TAG, "user api reset password not success");
+                        listener.onLoadFailed(actionCode, null);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ActionResult<Void>> call, Throwable t) {
+                KLog.e(TAG, "user api reset password on failed:" + t);
+                if (listener != null) {
+                    listener.onLoadFailed(ActionResult.RESULT_FAILED, null);
+                }
+            }
+        });
+        return call;
+    }
+
+    /**
      * 下载用户的头像，该方法同步在主线程中进行
      * @param user
      */

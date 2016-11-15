@@ -163,4 +163,8 @@ public class Constants {
     public static final int MSG_SUCCESS2 = 2;
     public static final int MSG_FAILED = -1;
     
+    //意见反馈的最大图片大小，2MB=1024 * 1024
+    public static final long MAX_FEEDBACK_IMG_LENGTH = 1048576L;
+    public static final int MAX_FEEDBACK_IMG_UNIT = 2;
+    
 }

@@ -23,6 +23,7 @@
     <string name="label_trash">回收站</string>
     <string name="label_settings">设置</string>
     <string name="title_settings_account">账户信息</string>
+    <string name="title_feedback">建议或意见</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -63,12 +64,17 @@
     <string name="tip_share_no_text">没有内容是不能分享的哦~</string>
     <string name="tip_network_not_available">网络不可用，请连接网络后再试</string>
     <string name="tip_file_not_exists">文件不存在</string>
+    <string name="tip_file_too_large">文件不能超过%1$dMB</string>
     <string name="tip_file_not_download">文件还没有下载</string>
     <string name="tip_sync_mobile_data">移动数据环境下同步设置项没有开启，是否开启？</string>
-    
+    <string name="tip_email_is_empty">邮箱不能为空</string>
+    <string name="tip_email_is_not_right">邮箱格式不正确</string>
+    <string name="tip_read_sdcard_permission_need">选择图片需要读取SD卡的权限，请允许该权限</string>
+    <string name="tip_read_sdcard_permission_failed">选择图片失败，请检查是否有读取SD卡的权限</string>
+
     <string name="sync_setting_btn_text">立即开启</string>
-    
-    
+
+
     <string name="title_note_clear_all">清空回收站</string>
 
     <string name="result_success">操作成功</string>
@@ -79,7 +85,7 @@
     <string name="note_type_list">清单</string>
     <string name="sync_type_none">未同步</string>
     <string name="sync_type_done">已同步</string>
-    
+
     <string name="ok">确定</string>
     <string name="cancel">取消</string>
 
@@ -96,7 +102,7 @@
     <string name="undo">撤销</string>
     <string name="real_delete">彻底删除</string>
     <string name="do_refresh">刷新</string>
-    
+
     <string name="unit_word_count">%1$d 字</string>
     <string name="unit_detail_count">%1$d 条</string>
 
@@ -322,6 +328,14 @@
     <string name="authority_forget_password">重置密码</string>
     <string name="authority_reset_password">重置密码</string>
     <string name="authority_reset_password_tip">密码重置指令已发送到邮箱</string>
+    <string name="authority_sending">发送中…</string>
+    <string name="authority_send_mail_success">邮件已发送</string>
+    <string name="authority_send_mail_failed">邮件发送失败</string>
+    <string name="authority_account_not_exists">该账号不存在</string>
+    
+    <string name="feedback_content_hint">请描述遇到的问题，以便我们及时为您解决(必填)</string>
+    <string name="feedback_contact_way_hint">邮箱/手机号/QQ</string>
+    <string name="feedback_add_img_tip">添加图片</string>
 
     <string name="save_ing">保存中…</string>
     <string name="save_success">保存成功</string>
@@ -330,7 +344,7 @@
     <string name="account_save_tip_title">保存修改？</string>
     <string name="account_save_tip_content">保存或放弃对个人资料的修改。</string>
     <string name="account_save_cancel">放弃</string>
-    
+
     <string name="account_last_sync_time">上次同步时间</string>
     <string name="account_logout">退出登录</string>
     <string name="account_logout_summary">退出或者切换账号</string>

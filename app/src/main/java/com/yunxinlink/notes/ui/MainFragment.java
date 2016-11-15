@@ -520,22 +520,12 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      * @version: 1.0.0
      */
     private View loadEmptyView() {
+        Button btnLogin = null;
         if (mMainEmptyView == null) {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             mMainEmptyView = inflater.inflate(R.layout.main_empty_view, null);
-            Button btnLogin = (Button) mMainEmptyView.findViewById(R.id.btn_login);
+            btnLogin = (Button) mMainEmptyView.findViewById(R.id.btn_login);
             btnLogin.setOnClickListener(this);
-            TextView tvContent = (TextView) mMainEmptyView.findViewById(R.id.tv_content);
-            if (mIsTrash) {
-                
-                SystemUtil.setViewVisibility(btnLogin, View.GONE);
-
-                tvContent.setText(R.string.tip_note_empty_trash);
-            } else if (hasUser()) {    //本地已有账号，但是没有笔记
-                SystemUtil.setViewVisibility(btnLogin, View.VISIBLE);
-                tvContent.setText(R.string.tip_note_empty);
-                btnLogin.setText(R.string.do_refresh);
-            }
             
             CoordinatorLayout.LayoutParams layoutParams = new CoordinatorLayout.LayoutParams(CoordinatorLayout.LayoutParams.MATCH_PARENT, CoordinatorLayout.LayoutParams.WRAP_CONTENT);
             layoutParams.gravity = Gravity.CENTER;
@@ -550,6 +540,23 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                 mMainEmptyView.setVisibility(View.VISIBLE);
             }
         }
+
+        if (btnLogin == null) {
+            btnLogin = (Button) mMainEmptyView.findViewById(R.id.btn_login);
+        }
+        
+        TextView tvContent = (TextView) mMainEmptyView.findViewById(R.id.tv_content);
+        if (mIsTrash) {
+
+            SystemUtil.setViewVisibility(btnLogin, View.GONE);
+
+            tvContent.setText(R.string.tip_note_empty_trash);
+        } else if (hasUser()) {    //本地已有账号，但是没有笔记
+            SystemUtil.setViewVisibility(btnLogin, View.VISIBLE);
+            tvContent.setText(R.string.tip_note_empty);
+            btnLogin.setText(R.string.do_refresh);
+        }
+        
         return mMainEmptyView;
     }
 
@@ -943,16 +950,11 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
      */
     public void saveDeleteOpt() {
         if (!mHasDeleteOpt) {   //之前是否有删除操作，如果没有，则需保存  
-            doInbackground(new Runnable() {
-                @Override
-                public void run() {
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putBoolean(Constants.PREF_HAS_DELETE_OPT, true);
-                    editor.apply();
-                    mHasDeleteOpt = true;
-                }
-            });
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean(Constants.PREF_HAS_DELETE_OPT, true);
+            editor.apply();
+            mHasDeleteOpt = true;
         }
     }
 

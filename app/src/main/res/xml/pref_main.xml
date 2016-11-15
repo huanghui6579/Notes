@@ -38,7 +38,11 @@
 
     <Preference android:title="@string/settings_feedback_title"
         android:icon="@drawable/ic_feedback_black"
-        android:summary="@string/settings_feedback_summary"/>
+        android:summary="@string/settings_feedback_summary">
+        <intent 
+            android:targetClass="com.yunxinlink.notes.ui.settings.FeedbackActivity"
+            android:targetPackage="com.yunxinlink.notes"/>
+    </Preference>        
 
     <Preference android:title="@string/settings_about_title"
         android:icon="@drawable/ic_action_info"

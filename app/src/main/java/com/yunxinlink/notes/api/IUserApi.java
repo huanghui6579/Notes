@@ -67,4 +67,11 @@ public interface IUserApi {
      */
     @GET("user/{sid}/avatar")
     Call<ResponseBody> downAvatar(@Path("sid") String sid);
+
+    /**
+     * 发送重置密码的邮件
+     * @return
+     */
+    @POST("user/{account}/forget")
+    Call<ActionResult<Void>> resetPassword(@Path("account") String account);
 }

@@ -241,7 +241,11 @@
         <service
             android:name=".sync.service.SyncService"
             android:enabled="true"
-            android:exported="false"/>
+            android:exported="false" />
+
+        <activity 
+            android:name=".ui.settings.FeedbackActivity"
+            android:label="@string/title_feedback"/>
     </application>
 
 </manifest>

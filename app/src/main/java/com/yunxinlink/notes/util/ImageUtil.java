@@ -16,6 +16,7 @@ import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.display.RoundedBitmapDisplayer;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.core.imageaware.ImageAware;
+import com.nostra13.universalimageloader.core.imageaware.ImageViewAware;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 import com.nostra13.universalimageloader.utils.MemoryCacheUtils;
 import com.yunxinlink.notes.R;
@@ -212,12 +213,34 @@ public class ImageUtil {
      * @param loadingListener
      */
     public static void displayImage(String imagePath, ImageView imageView, DisplayImageOptions imageOptions, ImageLoadingListener loadingListener) {
+        displayImage(imagePath, imageView, null, imageOptions, loadingListener);
+    }
+
+    /**
+     * 显示图片
+     * @param imagePath
+     * @param imageView
+     * @param imageSize
+     */
+    public static void displayImage(String imagePath, ImageView imageView, ImageSize imageSize) {
+        displayImage(imagePath, imageView, imageSize, null, null);
+    }
+
+    /**
+     * 显示图片
+     * @param imagePath
+     * @param imageView
+     * @param imageSize
+     * @param imageOptions
+     * @param loadingListener
+     */
+    public static void displayImage(String imagePath, ImageView imageView, ImageSize imageSize, DisplayImageOptions imageOptions, ImageLoadingListener loadingListener) {
         String iconUri = wrapImageUri(imagePath);
         ImageLoader imageLoader = ImageLoader.getInstance();
         if (imageOptions == null) {
             imageOptions = getAlbumImageOptions();
         }
-        imageLoader.displayImage(iconUri, imageView, imageOptions, loadingListener);
+        imageLoader.displayImage(iconUri, new ImageViewAware(imageView), imageOptions, imageSize, loadingListener, null);
     }
 
     /**
