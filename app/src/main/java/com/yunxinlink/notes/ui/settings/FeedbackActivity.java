@@ -2,17 +2,22 @@ package com.yunxinlink.notes.ui.settings;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -21,7 +26,11 @@ import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.helper.AdapterRefreshHelper;
+import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
+import com.yunxinlink.notes.model.ActionResult;
+import com.yunxinlink.notes.model.FeedbackInfo;
 import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.FileUtil;
@@ -44,7 +53,7 @@ import static com.yunxinlink.notes.util.Constants.MAX_FEEDBACK_IMG_LENGTH;
  * @update 2016/11/15 14:42
  * @version: 1.0.0
  */
-public class FeedbackActivity extends BaseActivity {
+public class FeedbackActivity extends BaseActivity implements View.OnClickListener, TextWatcher {
     
     private static final int REQ_PICK_IMAGE = 1;
     
@@ -60,12 +69,16 @@ public class FeedbackActivity extends BaseActivity {
     
     private EditText mEtContactWay;
     
+    private Button btnSubmit;
+    
     //图片的列表，最多3张图片，每张大小不超过2M
     private List<String> mImgList;
     
     private ImgAdapter mAdapter;
     
     private Handler mHandler = new MyHandler(this);
+    
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected int getContentView() {
@@ -91,6 +104,11 @@ public class FeedbackActivity extends BaseActivity {
         mEtContent = (EditText) findViewById(R.id.et_content);
         mRecyclerView = (RecyclerView) findViewById(R.id.lv_data);
         mEtContactWay = (EditText) findViewById(R.id.et_contact_way);
+        btnSubmit = (Button) findViewById(R.id.submit);
+        if (btnSubmit != null) {
+            btnSubmit.setOnClickListener(this);
+        }
+        mEtContent.addTextChangedListener(this);
     }
 
     @Override
@@ -161,6 +179,7 @@ public class FeedbackActivity extends BaseActivity {
                 refreshType = AdapterRefreshHelper.TYPE_SWAP;
                 fromPosition = position;
                 toPosition = MAX_IMG_SIZE - 1;
+                mImgList.set(toPosition, "");
             } else {
                 mImgList.remove(position);
                 refreshType = AdapterRefreshHelper.TYPE_DELETE;
@@ -200,6 +219,92 @@ public class FeedbackActivity extends BaseActivity {
                 mHandler.sendMessage(msg);
             }
         });
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.submit:   //提交
+                submit();
+                break;
+        }
+    }
+
+    /**
+     * 提交数据
+     */
+    private void submit() {
+        FeedbackInfo feedbackInfo = new FeedbackInfo();
+        feedbackInfo.setContent(mEtContent.getText().toString());
+        String contactWay = mEtContactWay.getText() == null ? null : mEtContactWay.getText().toString();
+        feedbackInfo.setContactWay(contactWay);
+
+        String imei = SystemUtil.getDeviceId(mContext);
+        String os = Constants.OS;
+        String osVersion = SystemUtil.getBuildVersion();
+        String phoneModel = SystemUtil.getPhoneModel();
+        String brand = SystemUtil.getPhoneBrand();
+
+        feedbackInfo.setBrand(brand);
+        feedbackInfo.setImei(imei);
+        feedbackInfo.setOs(os);
+        feedbackInfo.setOsVersion(osVersion);
+        feedbackInfo.setPhoneModel(phoneModel);
+
+        PackageInfo info = SystemUtil.getPackageInfo(mContext);
+        if (info != null) {
+            int versionCode = info.versionCode;
+            String versionName = info.versionName;
+            feedbackInfo.setAppVersionCode(versionCode);
+            feedbackInfo.setAppVersionName(versionName);
+        }
+        List<File> fileList = null;
+        if (!SystemUtil.isEmpty(mImgList) && mImgList.size() > 1) {  //有图片
+            fileList = new ArrayList<>();
+            for (String filePath : mImgList) {
+                File file = new File(filePath);
+                if (!file.exists()) {
+                    continue;
+                }
+                fileList.add(file);
+            }
+        }
+        
+        mProgressDialog = showLoadingDialog(R.string.feedback_submit_ing);
+        NoteApi.makeFeedback(mContext, feedbackInfo, fileList, new SimpleOnLoadCompletedListener<ActionResult<Void>>() {
+            @Override
+            public void onLoadSuccess(ActionResult<Void> result) {
+                super.onLoadSuccess(result);
+                dismissDialog(mProgressDialog);
+                mHandler.sendEmptyMessage(Constants.MSG_SUCCESS);
+            }
+
+            @Override
+            public void onLoadFailed(int errorCode, String reason) {
+                super.onLoadFailed(errorCode, reason);
+                dismissDialog(mProgressDialog);
+                mHandler.sendEmptyMessage(Constants.MSG_FAILED);
+            }
+        });
+    }
+
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        
+    }
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+        if (TextUtils.isEmpty(s)) {
+            SystemUtil.setViewEnable(btnSubmit, false);
+        } else {
+            SystemUtil.setViewEnable(btnSubmit, true);
+        }
     }
 
     private class ImgViewHolder extends RecyclerView.ViewHolder {
@@ -342,6 +447,13 @@ public class FeedbackActivity extends BaseActivity {
                         break;
                     case MSG_FILE_TOO_LARGE:    //文件超过了2M
                         SystemUtil.makeShortToast(target.getString(R.string.tip_file_too_large, Constants.MAX_FEEDBACK_IMG_UNIT));
+                        break;
+                    case Constants.MSG_SUCCESS: //提交成功
+                        SystemUtil.makeShortToast(R.string.feedback_submit_success);
+                        target.finish();
+                        break;
+                    case Constants.MSG_FAILED: //提交失败
+                        SystemUtil.makeShortToast(R.string.feedback_submit_failed);
                         break;
                 }
             }

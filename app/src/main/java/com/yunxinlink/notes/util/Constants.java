@@ -159,6 +159,8 @@ public class Constants {
 
     public static final String ATTACH_PREFIX = "attach";
     
+    public static final String OS = "Android";
+    
     public static final int MSG_SUCCESS = 1;
     public static final int MSG_SUCCESS2 = 2;
     public static final int MSG_FAILED = -1;

@@ -7,6 +7,7 @@ import com.yunxinlink.notes.api.model.NoteDto;
 import com.yunxinlink.notes.api.model.NoteInfoDto;
 import com.yunxinlink.notes.api.model.PageInfo;
 import com.yunxinlink.notes.model.ActionResult;
+import com.yunxinlink.notes.model.FeedbackInfo;
 import com.yunxinlink.notes.model.Folder;
 
 import java.util.List;
@@ -144,4 +145,14 @@ public interface INoteApi {
      */
     @POST("note/state/{userSid}/change")
     Call<ActionResult<Void>> updateNoteState(@Path("userSid") String userSid, @Body List<NoteInfoDto> noteList);
+
+    /**
+     * 反馈意见或者建议
+     * @param feedbackInfo 意见或建议，json类型
+     * @param params 参数
+     * @return 服务器返回的数据
+     */
+    @Multipart
+    @POST("note/feedback/new")
+    Call<ActionResult<Void>> makeFeedback(@PartMap Map<String, RequestBody> params);
 }

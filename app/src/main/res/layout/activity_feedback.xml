@@ -12,6 +12,7 @@
         android:layout_height="wrap_content" />
     
     <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <LinearLayout
@@ -76,6 +77,23 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/feedback_contact_way_hint"/>
             </android.support.design.widget.TextInputLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/activity_vertical_margin"
+                android:background="@color/divider_color"/>
+            
+            <Button
+                android:id="@+id/submit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/CommonBtnStyle"
+                android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                android:layout_marginStart="@dimen/activity_horizontal_margin"
+                android:layout_marginRight="@dimen/activity_horizontal_margin"
+                android:layout_marginEnd="@dimen/activity_horizontal_margin"
+                android:enabled="false"
+                android:text="@string/submit"/>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

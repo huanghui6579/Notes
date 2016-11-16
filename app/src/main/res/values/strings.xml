@@ -88,6 +88,7 @@
 
     <string name="ok">确定</string>
     <string name="cancel">取消</string>
+    <string name="submit">提交</string>
 
     <string name="note_type">类型</string>
     <string name="path">路径</string>
@@ -336,6 +337,9 @@
     <string name="feedback_content_hint">请描述遇到的问题，以便我们及时为您解决(必填)</string>
     <string name="feedback_contact_way_hint">邮箱/手机号/QQ</string>
     <string name="feedback_add_img_tip">添加图片</string>
+    <string name="feedback_submit_ing">提交中…</string>
+    <string name="feedback_submit_success">反馈成功，我们会尽快处理的！</string>
+    <string name="feedback_submit_failed">提交数据失败，请稍后再试</string>
 
     <string name="save_ing">保存中…</string>
     <string name="save_success">保存成功</string>

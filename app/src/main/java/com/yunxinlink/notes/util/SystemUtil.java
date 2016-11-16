@@ -7,6 +7,8 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.TypedArray;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -1632,6 +1634,22 @@ public class SystemUtil {
     }
 
     /**
+     * 获取APP的版本信息
+     * @param context
+     * @return
+     */
+    public static PackageInfo getPackageInfo(Context context) {
+        PackageManager manager = context.getPackageManager();
+        PackageInfo info = null;
+        try {
+            info = manager.getPackageInfo(context.getPackageName(), 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            KLog.e(TAG, "get app version error:" + e.getMessage());
+        }
+        return info;
+    }
+
+    /**
      * 获取设备的编译信息
      * @return
      */
@@ -1658,7 +1676,7 @@ public class SystemUtil {
     public static DeviceInfo getDeviceInfo(Context context) {
         DeviceInfo deviceInfo = new DeviceInfo();
         String imei = getDeviceId(context);
-        String os = "Android";
+        String os = Constants.OS;
         String osVersion = getBuildVersion();
         String phoneModel = getPhoneModel();
         String brand = getPhoneBrand();
@@ -1668,6 +1686,13 @@ public class SystemUtil {
         deviceInfo.setOsVersion(osVersion);
         deviceInfo.setPhoneModel(phoneModel);
         deviceInfo.setBrand(brand);
+        
+        PackageInfo info = SystemUtil.getPackageInfo(context);
+        if (info != null) {
+            deviceInfo.setVersionCode(info.versionCode);
+            deviceInfo.setVersionName(info.versionName);
+        }
+        
         return deviceInfo;
     }
 

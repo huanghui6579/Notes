@@ -36,11 +36,34 @@ public class DeviceApi extends BaseApi {
         IDeviceApi repo = retrofit.create(IDeviceApi.class);
         
         Map<String, String> params = new HashMap<>();
-        params.put("imei", deviceInfo.getImei());
+        String imei = deviceInfo.getImei();
+        if (imei != null) {
+            params.put("imei", imei);
+        }
         params.put("os", deviceInfo.getOs());
-        params.put("osVersion", deviceInfo.getOsVersion());
-        params.put("phoneModel", deviceInfo.getPhoneModel());
-        params.put("brand", deviceInfo.getBrand());
+        String osVersion = deviceInfo.getOsVersion();
+        if (osVersion != null) {
+            params.put("osVersion", osVersion);
+        }
+        String phoneModel = deviceInfo.getPhoneModel();
+        if (phoneModel != null) {
+            params.put("phoneModel", phoneModel);
+        }
+        String brand = deviceInfo.getBrand();
+        if (brand != null) {
+            params.put("brand", brand);
+        }
+
+        int versionCode = deviceInfo.getVersionCode();
+        if (versionCode > 0) {
+            params.put("versionCode", String.valueOf(versionCode));
+        }
+        
+        String versionName = deviceInfo.getVersionName();
+        
+        if (versionName != null) {
+            params.put("versionCode", versionName);
+        }
         
         Call<ActionResult<Void>> call = repo.activeDeviceInfo(params);
         call.enqueue(new Callback<ActionResult<Void>>() {

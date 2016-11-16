@@ -36,6 +36,16 @@ public class DeviceInfo {
 	 */
 	private String brand;
 
+	/**
+	 * 客户端软件的版本号
+	 */
+	private int versionCode;
+
+	/**
+	 * 客户端软件的版本名名称
+	 */
+	private String versionName;
+
 	public Integer getId() {
 		return id;
 	}
@@ -83,7 +93,23 @@ public class DeviceInfo {
 	public void setBrand(String brand) {
 		this.brand = brand;
 	}
-	
+
+	public int getVersionCode() {
+		return versionCode;
+	}
+
+	public void setVersionCode(int versionCode) {
+		this.versionCode = versionCode;
+	}
+
+	public String getVersionName() {
+		return versionName;
+	}
+
+	public void setVersionName(String versionName) {
+		this.versionName = versionName;
+	}
+
 	/**
 	 * 检查设备信息是否为空，imei不存在则为空
 	 * @return
@@ -94,7 +120,15 @@ public class DeviceInfo {
 
 	@Override
 	public String toString() {
-		return "DeviceInfo [id=" + id + ", imei=" + imei + ", os=" + os + ", osVersion=" + osVersion + ", phoneModel="
-				+ phoneModel + ", brand=" + brand + "]";
+		return "DeviceInfo{" +
+				"id=" + id +
+				", imei='" + imei + '\'' +
+				", os='" + os + '\'' +
+				", osVersion='" + osVersion + '\'' +
+				", phoneModel='" + phoneModel + '\'' +
+				", brand='" + brand + '\'' +
+				", versionCode=" + versionCode +
+				", versionName='" + versionName + '\'' +
+				'}';
 	}
 }

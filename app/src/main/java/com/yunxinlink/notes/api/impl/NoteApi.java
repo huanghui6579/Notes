@@ -3,6 +3,7 @@ package com.yunxinlink.notes.api.impl;
 import android.content.Context;
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.api.INoteApi;
@@ -20,6 +21,7 @@ import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.DetailList;
 import com.yunxinlink.notes.model.DetailNoteInfo;
+import com.yunxinlink.notes.model.FeedbackInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
 import com.yunxinlink.notes.model.SyncState;
@@ -46,6 +48,7 @@ import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 
@@ -943,6 +946,73 @@ public class NoteApi extends BaseApi {
             KLog.d(TAG, "update note delete state error:" + e.getMessage());
         }
         return resultCode;
+    }
+
+    /**
+     * 上传用户反馈的信息，该方法在后台线程中执行，无需另外再创建线程
+     * @param context 上下文
+     * @param feedbackInfo 反馈的信息
+     * @param fileList 附件列表
+     * @param listener 回调                
+     */
+    public static void makeFeedback(Context context, FeedbackInfo feedbackInfo, List<File> fileList, final OnLoadCompletedListener<ActionResult<Void>> listener) {
+        if (feedbackInfo == null) {
+            return;
+        }
+        User user = getUser(context);
+        if (user != null) { //当前有用户登录
+            feedbackInfo.setUserSid(user.getSid());
+        }
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Map<String, RequestBody> param = new HashMap<>();
+        Gson gson = new Gson();
+        String json = gson.toJson(feedbackInfo);
+        param.put("json", RequestBody.create(null, json));
+        if (!SystemUtil.isEmpty(fileList)) {    //有附件
+            for (File file : fileList) {
+                String filename = file.getName();
+                String mime = FileUtil.getMimeType(file);
+                RequestBody attachFile = RequestBody.create(MediaType.parse(mime), file);
+                //attachFile: 与服务器端的参数名相同
+                param.put("attachFile\"; filename=\"" + filename + "", attachFile);
+            }
+        }
+        Call<ActionResult<Void>> call = repo.makeFeedback(param);
+        call.enqueue(new Callback<ActionResult<Void>>() {
+            @Override
+            public void onResponse(Call<ActionResult<Void>> call, Response<ActionResult<Void>> response) {
+                int resultCode = 0;
+                if (response == null || !response.isSuccessful()) { //http请求失败
+                    resultCode = ActionResult.RESULT_ERROR;
+                } else if (response.body() == null) {   //返回的内容为空
+                    resultCode = ActionResult.RESULT_FAILED;
+                } else {
+                    ActionResult<Void> actionResult = response.body();
+                    if (actionResult.isSuccess()) { //成功
+                        resultCode = ActionResult.RESULT_SUCCESS;
+                    } else {
+                        resultCode = ActionResult.RESULT_FAILED;
+                    }
+                }
+                if (listener != null) {
+                    if (resultCode == ActionResult.RESULT_SUCCESS) {
+                        listener.onLoadSuccess(null);
+                    } else {
+                        KLog.d(TAG, "note api make feedback on response success but result failed:" + resultCode);
+                        listener.onLoadFailed(resultCode, null); 
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ActionResult<Void>> call, Throwable t) {
+                if (listener != null) {
+                    listener.onLoadFailed(ActionResult.RESULT_ERROR, null);
+                }
+                KLog.e(TAG, "note api make feedback on failed:" + t);
+            }
+        });
     }
 
     /**
