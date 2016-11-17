@@ -289,13 +289,19 @@ public class CoreService extends IntentService {
     private void addNote(DetailNoteInfo detailNote) {
         NoteInfo note = detailNote.getNoteInfo();
         AttachText attachText = SystemUtil.getAttachSids(note.getContent());
-        List<String> attachSids = attachText.getAttachSids();
+        List<String> attachSids = null;
+        
+        String showContent = null;
+        if (attachText != null) {
+            attachSids = attachText.getAttachSids();
+            showContent = attachText.getText();
+        }
         String sid = note.getSid();
         List<String> attSidList = null;
         if (attachSids != null && attachSids.size() > 0) {
             attSidList = getCacheAttachList(detailNote, attachSids);
         }
-        note.setShowContent(attachText.getText());
+        note.setShowContent(showContent);
 
         if (detailNote.hasDetailList()) {   //有清单项
             setDetailListHash(detailNote.getDetailList());

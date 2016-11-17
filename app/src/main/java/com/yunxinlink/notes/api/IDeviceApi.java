@@ -4,10 +4,13 @@ import com.yunxinlink.notes.model.ActionResult;
 
 import java.util.Map;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 /**
  * 设备的基本API，包括设备基本信息的上报等
@@ -24,4 +27,7 @@ public interface IDeviceApi {
     @FormUrlEncoded
     @POST("device/activate")
     Call<ActionResult<Void>> activeDeviceInfo(@FieldMap Map<String, String>params);
+
+    @GET("user/{sid}/avatar")
+    Call<ResponseBody> checkAppVersion(@Path("sid") String sid);
 }
