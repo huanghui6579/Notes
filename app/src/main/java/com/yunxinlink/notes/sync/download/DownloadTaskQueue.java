@@ -189,4 +189,14 @@ public class DownloadTaskQueue implements DownloadListener {
         KLog.d(TAG, "download task queue task on error:" + downloadTask);
         doNext();
     }
+
+    @Override
+    public void onProgress(long bytesRead, long contentLength, boolean done) {
+        
+    }
+
+    @Override
+    public void onCanceled(DownloadTask downloadTask) {
+        
+    }
 }

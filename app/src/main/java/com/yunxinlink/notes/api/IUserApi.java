@@ -16,6 +16,7 @@ import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
+import retrofit2.http.Streaming;
 
 /**
  * 用户信息的一些API接口
@@ -66,6 +67,7 @@ public interface IUserApi {
      * @return
      */
     @GET("user/{sid}/avatar")
+    @Streaming
     Call<ResponseBody> downAvatar(@Path("sid") String sid);
 
     /**

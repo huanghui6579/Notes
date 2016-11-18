@@ -7,7 +7,6 @@ import com.yunxinlink.notes.api.model.NoteDto;
 import com.yunxinlink.notes.api.model.NoteInfoDto;
 import com.yunxinlink.notes.api.model.PageInfo;
 import com.yunxinlink.notes.model.ActionResult;
-import com.yunxinlink.notes.model.FeedbackInfo;
 import com.yunxinlink.notes.model.Folder;
 
 import java.util.List;
@@ -25,6 +24,7 @@ import retrofit2.http.POST;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
 import retrofit2.http.QueryMap;
+import retrofit2.http.Streaming;
 
 /**
  * 笔记的服务器端api
@@ -135,6 +135,7 @@ public interface INoteApi {
      * @return
      */
     @GET("note/att/{sid}")
+    @Streaming
     Call<ResponseBody> downAttachFile(@Path("sid") String sid, @QueryMap Map<String, String> params);
 
     /**
@@ -148,7 +149,6 @@ public interface INoteApi {
 
     /**
      * 反馈意见或者建议
-     * @param feedbackInfo 意见或建议，json类型
      * @param params 参数
      * @return 服务器返回的数据
      */

@@ -39,12 +39,12 @@ public class DeviceInfo {
 	/**
 	 * 客户端软件的版本号
 	 */
-	private int versionCode;
+	private int appVersionCode;
 
 	/**
 	 * 客户端软件的版本名名称
 	 */
-	private String versionName;
+	private String appVersionName;
 
 	public Integer getId() {
 		return id;
@@ -94,20 +94,20 @@ public class DeviceInfo {
 		this.brand = brand;
 	}
 
-	public int getVersionCode() {
-		return versionCode;
+	public int getAppVersionCode() {
+		return appVersionCode;
 	}
 
-	public void setVersionCode(int versionCode) {
-		this.versionCode = versionCode;
+	public void setAppVersionCode(int appVersionCode) {
+		this.appVersionCode = appVersionCode;
 	}
 
-	public String getVersionName() {
-		return versionName;
+	public String getAppVersionName() {
+		return appVersionName;
 	}
 
-	public void setVersionName(String versionName) {
-		this.versionName = versionName;
+	public void setAppVersionName(String appVersionName) {
+		this.appVersionName = appVersionName;
 	}
 
 	/**
@@ -127,8 +127,8 @@ public class DeviceInfo {
 				", osVersion='" + osVersion + '\'' +
 				", phoneModel='" + phoneModel + '\'' +
 				", brand='" + brand + '\'' +
-				", versionCode=" + versionCode +
-				", versionName='" + versionName + '\'' +
+				", appVersionCode=" + appVersionCode +
+				", appVersionName='" + appVersionName + '\'' +
 				'}';
 	}
 }

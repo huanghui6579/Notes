@@ -21,6 +21,7 @@ import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.api.impl.DeviceApi;
+import com.yunxinlink.notes.api.model.VersionInfo;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.listener.SimpleOnLoadCompletedListener;
@@ -67,6 +68,9 @@ public class NoteApplication extends Application {
 
     //主题切换的广播
     private SystemReceiver mSystemReceiver;
+    
+    //新版本的信息
+    private VersionInfo mVersionInfo;
     
     private Handler mHandler = new Handler();
 
@@ -116,6 +120,22 @@ public class NoteApplication extends Application {
                 }
             }
         });
+    }
+
+    public VersionInfo getVersionInfo() {
+        return mVersionInfo;
+    }
+
+    public synchronized void setVersionInfo(VersionInfo versionInfo) {
+        this.mVersionInfo = versionInfo;
+    }
+
+    /**
+     * 是否有新版本信息，true：有
+     * @return
+     */
+    public boolean hasNewVersion() {
+        return mVersionInfo != null && !TextUtils.isEmpty(mVersionInfo.getContent());
     }
 
     /**

@@ -391,8 +391,8 @@ public class UserApi extends BaseApi {
         Call<ResponseBody> call = repo.downAvatar(sid);
         Response<ResponseBody> response = call.execute();
         KLog.d(TAG, "download avatar invoke...");
-        if (response == null || response.body() == null) {
-            KLog.d(TAG, "download avatar response is null or body is null so down failed");
+        if (response == null || !response.isSuccessful() || response.body() == null) {
+            KLog.d(TAG, "download avatar response is null or not successful or body is null so down failed");
             return false;
         }
         Headers headers = response.headers();

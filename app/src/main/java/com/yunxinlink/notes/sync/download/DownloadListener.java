@@ -25,4 +25,18 @@ public interface DownloadListener {
      * @param downloadTask
      */
     void onError(DownloadTask downloadTask);
+
+    /**
+     * 下载的进度
+     * @param bytesRead
+     * @param contentLength
+     * @param done
+     */
+    void onProgress(long bytesRead, long contentLength, boolean done);
+
+    /**
+     * 下载任务取消了
+     * @param downloadTask
+     */
+    void onCanceled(DownloadTask downloadTask);
 }

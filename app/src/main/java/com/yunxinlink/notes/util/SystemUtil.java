@@ -437,6 +437,20 @@ public class SystemUtil {
     }
 
     /**
+     * 获取该应用的下载目录，默认路径为/mnt/sdcard/YunXinNotes/Download
+     * @return
+     */
+    public static String getAppDownloadPath() {
+        String rootPath = getAppRootPath();
+        String downloadPath = rootPath + File.separator + Constants.APP_DOWNLOAD_FOLDER_NAME;
+        File file = new File(downloadPath);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        return downloadPath;
+    }
+
+    /**
      * 获取该应用程序默认存储在sd卡中的文件夹名称，默认路径为/mnt/sdcard/YunXinNotes/notes
      * @return
      */
@@ -1689,8 +1703,8 @@ public class SystemUtil {
         
         PackageInfo info = SystemUtil.getPackageInfo(context);
         if (info != null) {
-            deviceInfo.setVersionCode(info.versionCode);
-            deviceInfo.setVersionName(info.versionName);
+            deviceInfo.setAppVersionCode(info.versionCode);
+            deviceInfo.setAppVersionName(info.versionName);
         }
         
         return deviceInfo;
@@ -1809,6 +1823,16 @@ public class SystemUtil {
             }
         }
         return -1;
+    }
+
+    /**
+     * WiFi是否连上
+     * @param context
+     * @return
+     */
+    public static boolean isWifiConnected(Context context) {
+        int connectedType = getConnectedType(context);
+        return connectedType == ConnectivityManager.TYPE_WIFI;
     }
 
     /**

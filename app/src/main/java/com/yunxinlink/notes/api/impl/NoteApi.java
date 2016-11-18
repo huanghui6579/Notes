@@ -609,7 +609,7 @@ public class NoteApi extends BaseApi {
         Response<ResponseBody> response = call.execute();
         
         KLog.d(TAG, "download attach file invoke :" + attach.getSid() + ", filename:" + attach.getFilename());
-        if (response == null || response.body() == null) {
+        if (response == null || !response.isSuccessful() || response.body() == null) {
             KLog.d(TAG, "download attach file response is null or body is null so down failed");
             return false;
         }

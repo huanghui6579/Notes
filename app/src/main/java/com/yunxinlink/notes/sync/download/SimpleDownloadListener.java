@@ -21,4 +21,14 @@ public class SimpleDownloadListener implements DownloadListener {
     public void onError(DownloadTask downloadTask) {
 
     }
+
+    @Override
+    public void onProgress(long bytesRead, long contentLength, boolean done) {
+        
+    }
+
+    @Override
+    public void onCanceled(DownloadTask downloadTask) {
+        
+    }
 }
