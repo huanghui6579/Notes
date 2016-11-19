@@ -2,6 +2,7 @@ package com.yunxinlink.notes.ui;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
@@ -15,6 +16,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -22,12 +24,14 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.api.model.VersionInfo;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
@@ -54,6 +58,8 @@ import java.util.List;
 import java.util.Map;
 
 import cn.sharesdk.framework.ShareSDK;
+
+import static com.yunxinlink.notes.db.observer.Observer.NotifyType.SHOW_EXTRA;
 
 /**
  * 主界面
@@ -250,12 +256,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
      * 请求权限
      */
     private void requestPermission() {
-        final String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        final String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE};
         PermissionsManager.getInstance().requestPermissionsIfNecessaryForResult(this, permissions, new PermissionsResultAction() {
 
             @Override
             public void onGranted() {
-                KLog.d(TAG, "---requestPermission---onGranted----permission--" + permissions[0]);
+                KLog.d(TAG, "---requestPermission---onGranted----permission--");
 //                Toast.makeText(mContext,"onGranted",Toast.LENGTH_SHORT).show();
             }
 
@@ -840,6 +846,39 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         return (MainFragment) getSupportFragmentManager().findFragmentByTag(MainFragment.class.getSimpleName());
     }
 
+    /**
+     * 弹出新版本安装提示的对话框
+     * @param versionInfo
+     */
+    private void showInstallAppDialog(final VersionInfo versionInfo) {
+        if (versionInfo == null || TextUtils.isEmpty(versionInfo.getFilePath())) {
+            KLog.d(TAG, "main ui show install app dialog but apk file path is empty");
+            return;
+        }
+        String title = getString(R.string.version_install_title, "V" + versionInfo.getVersionName());
+        String content = getString(R.string.version_new_info, versionInfo.getContent());
+        AlertDialog.Builder builder = NoteUtil.buildDialog(this);
+        AlertDialog dialog = builder.setTitle(title)
+                .setMessage(content)
+                .setPositiveButton(R.string.version_btn_install_now, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String filePath = versionInfo.getFilePath();
+                        boolean success = SystemUtil.installApp(mContext, filePath);
+                        if (!success) {
+                            SystemUtil.makeShortToast(R.string.version_install_failed);
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.version_btn_install_cancel, null)
+                .setCancelable(false)
+                .create();
+//        dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+        //解决有些手机不显示的问题，绕过检查
+        dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_TOAST);
+        dialog.show();
+    }
+
     @Override
     public void onClick(View v) {
         Intent intent = null;
@@ -1184,6 +1223,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
                     }
                     break;*/
                 case Provider.NOTIFY_FLAG:  //通用的刷新，一般重新加载数据，然后刷新界面
+                    if (notifyType == SHOW_EXTRA) { //作额外的显示
+                        if (data != null && data instanceof VersionInfo) {
+                            VersionInfo versionInfo = (VersionInfo) data;
+                            showInstallAppDialog(versionInfo);
+                        }
+                        return;
+                    }
                     mainFragment = getMainFragment();
                     if (mainFragment == null) {
                         KLog.d(TAG, "--update--observer--mainFragment-is---null--");

@@ -26,6 +26,8 @@
     <color name="tint_color_gray">#858585</color>
 
     <color name="text_appearance_grey">#8affffff</color>
+
+    <color name="space_bg">#292929</color>
     
     <color name="nav_panel_bg_color">#303030</color>
     <color name="text_color_pressed">@color/text_color</color>

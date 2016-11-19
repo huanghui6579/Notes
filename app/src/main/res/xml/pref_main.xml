@@ -46,6 +46,10 @@
 
     <Preference android:title="@string/settings_about_title"
         android:icon="@drawable/ic_action_info"
-        android:summary="@string/settings_about_summary"/>
+        android:summary="@string/settings_about_summary">
+        <intent
+            android:targetClass="com.yunxinlink.notes.ui.settings.AboutActivity"
+            android:targetPackage="com.yunxinlink.notes"/>
+    </Preference>
 
 </PreferenceScreen>

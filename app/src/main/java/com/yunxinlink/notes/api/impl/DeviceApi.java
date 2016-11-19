@@ -13,11 +13,11 @@ import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.DeviceInfo;
 import com.yunxinlink.notes.sync.download.DownloadListener;
 import com.yunxinlink.notes.sync.download.DownloadTask;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -162,17 +162,91 @@ public class DeviceApi extends BaseApi {
     }
 
     /**
-     * 下载APP软件
      * @param context
+     * @return
+     */
+    public static Call<?> checkVersionAsync(Context context, OnLoadCompletedListener<ActionResult<VersionInfo>> listener) {
+        PackageInfo packageInfo = SystemUtil.getPackageInfo(context);
+        final int versionCode = packageInfo.versionCode;
+        final String versionName = packageInfo.versionName;
+        int platform = Platform.PLATFORM_ANDROID;
+
+        Retrofit retrofit = buildRetrofit();
+        IDeviceApi repo = retrofit.create(IDeviceApi.class);
+
+        Map<String, String> map = new HashMap<>();
+        map.put("platform", String.valueOf(platform));
+        Call<ActionResult<VersionInfo>> call = repo.checkAppVersion(map);
+
+        call.enqueue(new Callback<ActionResult<VersionInfo>>() {
+            @Override
+            public void onResponse(Call<ActionResult<VersionInfo>> call, Response<ActionResult<VersionInfo>> response) {
+                boolean hasNewVersion = false;
+                if (response == null || !response.isSuccessful() || response.body() == null) {
+                    KLog.d(TAG, "check app version failed response is null or not successful or body is null");
+                }
+                ActionResult<VersionInfo> actionResult = response.body();
+                if (!actionResult.isSuccess()) {
+                    KLog.d(TAG, "check app version failed action result is not success:" + actionResult);
+                }
+                VersionInfo versionInfo = actionResult.getData();
+                if (versionInfo == null || !versionInfo.checkContent()) {   //没有更新内容
+                    KLog.d(TAG, "check app version failed version info content is empty:" + versionInfo);
+                }
+                int newVersionCode = versionInfo.getVersionCode();
+                String newVersionName = versionInfo.getVersionName();
+                if (newVersionCode >= versionCode && !newVersionName.equals(versionName)) { //有新版本
+                    KLog.d(TAG, "check app version result success and has new version:" + versionInfo);
+                } else {
+                    KLog.d(TAG, "check app version result success and has no new version");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ActionResult<VersionInfo>> call, Throwable t) {
+
+            }
+        });
+        return null;
+    }
+
+    /**
+     * 下载APP软件
      * @param versionInfo
      * @param downloadListener 下载的监听器
      */
-    public static Call<?> downloadApp(Context context, VersionInfo versionInfo, DownloadListener downloadListener) {
+    public static Call<?> downloadApp(VersionInfo versionInfo, DownloadListener downloadListener) {
         DownloadTask downloadTask = new DownloadTask();
         downloadTask.setTag(versionInfo);
         if (downloadListener != null) {
             downloadListener.onStart(downloadTask);
         }
+        File saveFile = null;
+        //优先检测本地是否已经下载了该app，避免重复下载
+        String filename = versionInfo.getFilename();
+        if (!TextUtils.isEmpty(filename)) {
+            saveFile = new File(SystemUtil.getAppDownloadPath(), filename);
+            if (saveFile.canRead() && saveFile.exists()) {    //本地文件已存在
+                //检验md5
+                String localMd5 = DigestUtil.md5FileHex(saveFile);
+                if (localMd5 != null && localMd5.equals(versionInfo.getHash())) {
+                    //相同
+                    KLog.d(TAG, "download app but already download to local not need download again");
+                    downloadTask.setSavePath(saveFile.getAbsolutePath());
+                    downloadTask.setFilename(filename);
+                    if (downloadListener != null) {
+                        downloadListener.onCompleted(downloadTask);
+                    }
+                    return null;
+                } else {
+                    //MD5不相同，则先删除原有的文件
+                    KLog.d(TAG, "download app but already download to local but hash not the same delete file");
+                    saveFile.delete();
+                }
+
+            }
+        }
+
         Retrofit retrofit = buildDownloadRetrofit(downloadListener);
         IDeviceApi repo = retrofit.create(IDeviceApi.class);
         Map<String, String> map = new HashMap<>();
@@ -185,17 +259,17 @@ public class DeviceApi extends BaseApi {
                 KLog.d(TAG, "download app failed response is null or not successful");
             } else {
                 Headers headers = response.headers();
-                String filename = SystemUtil.getFilename(headers);
+                filename = SystemUtil.getFilename(headers);
                 if (TextUtils.isEmpty(filename)) {
                     filename = System.currentTimeMillis() + ".apk";
                 }
-                File saveFile = new File(SystemUtil.getAppDownloadPath(), filename);
+                saveFile = new File(SystemUtil.getAppDownloadPath(), filename);
                 downloadTask.setSavePath(saveFile.getAbsolutePath());
                 downloadTask.setFilename(filename);
                 saveResult = FileUtil.writeResponseBodyToDisk(response.body(), saveFile);
                 KLog.d(TAG, "download app success file:" + saveFile);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             KLog.e(TAG, "download app file error:" + e.getMessage());
             e.printStackTrace();
         }

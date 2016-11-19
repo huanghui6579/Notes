@@ -5,10 +5,10 @@
         android:title="@string/settings_account_title"
         android:summary="@string/account_no_account"/>
     
-    <Preference
+    <!--<Preference
         android:key="@string/settings_key_account_last_sync_time"
         android:title="@string/account_last_sync_time"
-        android:summary="@string/sync_type_none"/>
+        android:summary="@string/sync_type_none"/>-->
     
     <Preference
         android:key="@string/settings_key_account_logout"

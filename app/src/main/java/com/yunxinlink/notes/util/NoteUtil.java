@@ -831,7 +831,7 @@ public class NoteUtil {
         UserDto userDto = new UserDto();
 
         int accountType = -1;
-        if (user != null) { //指定账号和密码登录，一般用于登录或者注册界面
+        if (user != null && TextUtils.isEmpty(user.getOpenUserId())) { //指定账号和密码登录，一般用于登录或者注册界面
             userDto.setType(AccountType.TYPE_LOCAL);
             userDto.setUser(user);
             KLog.d(TAG, "build login param login with local account");

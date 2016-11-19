@@ -211,7 +211,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
             String oldNickname = user.getNickname();
             if (oldNickname != null && !oldNickname.equals(newNickname)) {  //需要保存
                 hasTip = true;
-            } else if (oldNickname == null && newNickname != null) {
+            } else if (oldNickname == null && !TextUtils.isEmpty(newNickname)) {
                 hasTip = true;
             }
             if (mIconFile != null) {

@@ -180,4 +180,15 @@
         <item name="android:paddingTop">@dimen/widget_margin_vertical</item>
         <item name="android:paddingBottom">@dimen/widget_margin_vertical</item>
     </style>
+
+    <style name="SpaceStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:background">@color/space_bg</item>
+    </style>
+
+    <style name="DividerStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/list_divider_height</item>
+        <item name="android:background">@drawable/divider</item>
+    </style>
 </resources>

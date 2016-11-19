@@ -80,4 +80,8 @@ http://developer.android.com/guide/topics/appwidgets/index.html#CreatingLayout
 
     <dimen name="edit_action_bottom_space">8dp</dimen>
 
+    <dimen name="list_item_elevation">2dp</dimen>
+
+    <dimen name="text_display_middle">24sp</dimen>
+
 </resources>

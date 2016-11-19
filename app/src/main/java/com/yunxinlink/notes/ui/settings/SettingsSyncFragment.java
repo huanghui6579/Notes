@@ -42,6 +42,8 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
         super.onCreate(savedInstanceState);
         
         addPreferencesFromResource(R.xml.pref_data_sync);
+
+        refresh(getApp().getCurrentUser());
         
 //        bindPreferenceSummaryToValue(findPreference("sync_note_state"));
         
@@ -60,7 +62,7 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
         }
         long time = user == null ? 0 : user.getLastSyncTime();
         if (user != null && user.isAvailable() && time > 0) {
-            preference.setSummary(TimeUtil.formatNoteTime(time));
+            preference.setSummary(getString(R.string.settings_sync_state_summary_time, TimeUtil.formatNoteTime(time)));
         } else {
             preference.setSummary(R.string.settings_sync_state_summary);
         }

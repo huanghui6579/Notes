@@ -131,8 +131,9 @@ public class DownloadTask {
     @Override
     public String toString() {
         return "DownloadTask{" +
-                "id='" + id + '\'' +
-                ", filename='" + filename + '\'' +
+                "filename='" + filename + '\'' +
+                ", savePath='" + savePath + '\'' +
+                ", tag=" + tag +
                 '}';
     }
 }

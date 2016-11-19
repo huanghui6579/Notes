@@ -159,6 +159,10 @@ public class DownloadTaskQueue implements DownloadListener {
         KLog.d(TAG, "download task queue start");
         Downloader downloader = Downloader.getInstance();
         while (!isFullRunning()) {
+            if (SystemUtil.isEmpty(mWaitTasks)) {
+                KLog.d(TAG, "download task queue wait task list is empty");
+                break;
+            }
             DownloadTask task = mWaitTasks.pop();
             if (task != null) {
                 KLog.d(TAG, "download task queue running task do now:" + task);

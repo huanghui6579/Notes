@@ -33,6 +33,9 @@
     <!-- 获取手机信息 -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
+    <!-- 显示系统对话框的权限 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <application
         android:name=".NoteApplication"
         android:allowBackup="true"
@@ -236,16 +239,19 @@
         <activity android:name=".ui.AccountEditActivity" />
         <activity
             android:name=".ui.settings.SettingsAccountActivity"
-            android:label="@string/title_settings_account" />
+            android:label="@string/label_settings_account" />
 
         <service
             android:name=".sync.service.SyncService"
             android:enabled="true"
             android:exported="false" />
 
-        <activity 
+        <activity
             android:name=".ui.settings.FeedbackActivity"
-            android:label="@string/title_feedback"/>
+            android:label="@string/label_feedback" />
+
+        <activity android:name=".ui.settings.AboutActivity"
+            android:label="@string/label_about"/>
     </application>
 
 </manifest>

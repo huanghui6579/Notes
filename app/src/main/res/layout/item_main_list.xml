@@ -6,7 +6,7 @@
     android:layout_margin="@dimen/grid_item_spacing"
     android:foreground="@drawable/common_background_selector"
     android:clickable="true"
-    app:cardElevation="@dimen/design_appbar_elevation">
+    app:cardElevation="@dimen/list_item_elevation">
     
     <RelativeLayout
         android:id="@+id/slide_layout"

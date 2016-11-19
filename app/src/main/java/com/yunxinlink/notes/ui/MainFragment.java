@@ -626,7 +626,6 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                 mMainPopuMenu = createPopMenu(author, R.menu.main_overflow, true, new OnPopuMenuItemClickListener());
                 Menu menu = mMainPopuMenu.getMenu();
                 if (menu != null) {
-                    tintMenu(menu);
                     if (!mIsGridStyle) {    //开始就显示列表，则菜单为网格
                         MenuItem menuItem = menu.findItem(R.id.nav_show_style);
                         if (menuItem != null) {
@@ -634,6 +633,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                             menuItem.setIcon(R.drawable.ic_action_grid);
                         }
                     }
+                    tintMenu(menu);
                 }
             }
             mMainPopuMenu.show();

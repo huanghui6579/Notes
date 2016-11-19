@@ -57,8 +57,6 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-        }
 
         //注册观察者
         registerObserver();

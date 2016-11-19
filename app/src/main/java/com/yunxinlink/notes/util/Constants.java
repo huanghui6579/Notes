@@ -142,10 +142,12 @@ public class Constants {
     public static final int OPT_UPDATE_NOTE = 2;
     public static final int OPT_REMOVE_NOTE_ATTACH = 3;
     public static final int OPT_LOAD_WIDGET_ITEMS = 4;
-    
+    public static final int OPT_INSTALL_APP = 5;
+
     public static final int SYNC_UP_NOTE = 1;
     public static final int SYNC_DOWN_NOTE = 2;
     public static final int SYNC_NOTE = 3;
+
     
     public static final String ARG_CORE_OPT = "arg_core_opt";
     public static final String ARG_CORE_OBJ = "arg_core_obj";

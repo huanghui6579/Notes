@@ -3,7 +3,6 @@ package com.yunxinlink.notes.util;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
-import com.socks.library.KLog;
 import com.yunxinlink.notes.util.log.Log;
 
 import java.io.File;
@@ -242,7 +241,6 @@ public class FileUtil {
 
                     fileSizeDownloaded += read;
 
-                    KLog.d(TAG, "file download: " + fileSizeDownloaded + " of " + fileSize);
                 }
 
                 outputStream.flush();

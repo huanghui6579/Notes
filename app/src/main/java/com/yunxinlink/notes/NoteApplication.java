@@ -1,5 +1,6 @@
 package com.yunxinlink.notes;
 
+import android.Manifest;
 import android.app.Application;
 import android.appwidget.AppWidgetManager;
 import android.content.Context;
@@ -104,6 +105,11 @@ public class NoteApplication extends Application {
         SystemUtil.getThreadPool().execute(new NoteTask() {
             @Override
             public void run() {
+                if (!SystemUtil.hasPermission(context, Manifest.permission.READ_PHONE_STATE)) {
+                    KLog.d(TAG, "app init get deivce info but no read phone state permission");
+                    return;
+                }
+                //检查有没有获取设备状态的权限
                 boolean shouldActive = NoteUtil.shouldActive(context);
                 if (shouldActive) {    //需要激活
                     KLog.d(TAG, "device will active ...");

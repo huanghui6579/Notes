@@ -53,6 +53,11 @@ public interface Observer {
          * 数据加载完毕
          */
         DONE,
+
+        /**
+         * 进行额外的显示操作，具体的显示类型，需要根据传递的参数判断
+         */
+        SHOW_EXTRA,
     }
 
     /**

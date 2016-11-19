@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.api.model.NoteParam;
+import com.yunxinlink.notes.api.model.VersionInfo;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.cache.NoteCache;
 import com.yunxinlink.notes.db.Provider;
@@ -90,92 +91,138 @@ public class CoreService extends IntentService {
                 mNoteManager = NoteManager.getInstance();
             }
             int opt = intent.getIntExtra(Constants.ARG_CORE_OPT, 0);
-            NoteInfo note = null;
-            List<String> list = null;
-            String sid = null;
-            NoteCache noteCache = null;
-            DetailNoteInfo detailNote = null;
-            User user = ((NoteApplication) getApplication()).getCurrentUser();
             switch (opt) {
                 case Constants.OPT_ADD_NOTE:    //添加笔记
-                    sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
-                    noteCache = NoteCache.getInstance();
-                    note = noteCache.getNote();
-                    if (!checkNoteInfo(note, sid)) {
-                        KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
-                        return;
-                    }
-                    if (user != null) {
-                        note.setUserId(user.getId());
-                    }
-                    note.setHash(DigestUtil.md5Hex(note.generateHash()));
-                    
-                    detailNote = noteCache.get();
-//                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
-//                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
-                    addNote(detailNote);
-                    noteCache.clear();
-                    startSync(this, user, detailNote);
+                    handleNoteAdd(intent);
                     break;
                 case Constants.OPT_UPDATE_NOTE: //更新笔记
-                    sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
-                    noteCache = NoteCache.getInstance();
-                    note = noteCache.getNote();
-                    if (!checkNoteInfo(note, sid)) {
-                        KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
-                        return;
-                    }
-                    if (user != null) {
-                        note.setUserId(user.getId());
-                    }
-                    detailNote = noteCache.get();
-//                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
-                    //是否更新内容
-                    boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
-                    if (updateContent) {
-                        note.setHash(note.generateHash());
-                    }
-                    if (!note.isDetailNote()) { //非清单，则将标题设为""
-                        note.setTitle("");
-                    }
-                    List<DetailList> srcDetails = null;
-                    Object extraObj = noteCache.getExtraData();
-                    if (extraObj != null && extraObj instanceof List) {
-                        srcDetails = (List<DetailList>) extraObj;
-                    }
-                    updateNote(detailNote, /*list, */updateContent, srcDetails);
-                    noteCache.clear();
-                    if (updateContent) {
-                        startSync(this, user, detailNote);
-                    }
+                    handleNoteUpdate(intent);
                     break;
                 case Constants.OPT_REMOVE_NOTE_ATTACH:  //移除笔记中的附件数据库记录，彻底删除
-                    List<Attach> attachList = intent.getParcelableArrayListExtra(Constants.ARG_CORE_LIST);
-                    //是否删除父类的目录
-                    String parentDir = intent.getStringExtra(Constants.ARG_SUB_OBJ);
-                    if (attachList != null && attachList.size() > 0) {
-                        list = new ArrayList<>();
-                        List<String> fileList = new ArrayList<>();
-                        for (Attach attach : attachList) {
-                            list.add(attach.getSid());
-                            fileList.add(attach.getLocalPath());
-                        }
-                        AttachManager.getInstance().removeAttachs(list, fileList);
-                        if (!TextUtils.isEmpty(parentDir)) {
-                            try {
-                                File dir = new File(parentDir);
-                                if (dir.exists()) {
-                                    dir.delete();
-                                }
-                            } catch (Exception e) {
-                                KLog.d(TAG, "---opt_remove_note_attach---delete--parent---dir----error----" + parentDir + ":" + e.getMessage());
-                                e.printStackTrace();
-                            }
-                            KLog.d(TAG, "---opt_remove_note_attach---delete--parent---dir--" + parentDir);
-                        }
-                    }
+                    handleAttachRemove(intent);
+                    break;
+                case Constants.OPT_INSTALL_APP:    //通知主界面弹出安装新版本的对话框
+                    handleInstallApp(intent);
                     break;
             }
+        }
+    }
+
+    /**
+     * 处理笔记的添加
+     * @param intent
+     */
+    private void handleNoteAdd(Intent intent) {
+        User user = ((NoteApplication) getApplication()).getCurrentUser();
+
+        String sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+        NoteCache noteCache = NoteCache.getInstance();
+        NoteInfo note = noteCache.getNote();
+        if (!checkNoteInfo(note, sid)) {
+            KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
+            return;
+        }
+        if (user != null) {
+            note.setUserId(user.getId());
+        }
+        note.setHash(DigestUtil.md5Hex(note.generateHash()));
+
+        DetailNoteInfo detailNote = noteCache.get();
+//                    note = intent.getParcelableExtra(Constants.ARG_CORE_OBJ);
+//                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
+        addNote(detailNote);
+        noteCache.clear();
+        startSync(this, user, detailNote);
+    }
+
+    /**
+     * 处理笔记的更新
+     * @param intent
+     */
+    private void handleNoteUpdate(Intent intent) {
+        String sid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+        NoteCache noteCache = NoteCache.getInstance();
+        NoteInfo note = noteCache.getNote();
+        User user = ((NoteApplication) getApplication()).getCurrentUser();
+        if (!checkNoteInfo(note, sid)) {
+            KLog.d(TAG, "----checkNoteInfo----false---note---" + note + "----sid:----" + sid);
+            return;
+        }
+        if (user != null) {
+            note.setUserId(user.getId());
+        }
+        DetailNoteInfo detailNote = noteCache.get();
+//                    list = intent.getStringArrayListExtra(Constants.ARG_CORE_LIST);
+        //是否更新内容
+        boolean updateContent = intent.getBooleanExtra(Constants.ARG_SUB_OBJ, true);
+        if (updateContent) {
+            note.setHash(note.generateHash());
+        }
+        if (!note.isDetailNote()) { //非清单，则将标题设为""
+            note.setTitle("");
+        }
+        List<DetailList> srcDetails = null;
+        Object extraObj = noteCache.getExtraData();
+        if (extraObj != null && extraObj instanceof List) {
+            srcDetails = (List<DetailList>) extraObj;
+        }
+        updateNote(detailNote, /*list, */updateContent, srcDetails);
+        noteCache.clear();
+        if (updateContent) {
+            startSync(this, user, detailNote);
+        }
+    }
+
+    /**
+     * 处理移除笔记中多余的附件
+     * @param intent
+     */
+    private void handleAttachRemove(Intent intent) {
+        List<Attach> attachList = intent.getParcelableArrayListExtra(Constants.ARG_CORE_LIST);
+        List<String> list = null;
+        //是否删除父类的目录
+        String parentDir = intent.getStringExtra(Constants.ARG_SUB_OBJ);
+        if (attachList != null && attachList.size() > 0) {
+            list = new ArrayList<>();
+            List<String> fileList = new ArrayList<>();
+            for (Attach attach : attachList) {
+                list.add(attach.getSid());
+                fileList.add(attach.getLocalPath());
+            }
+            AttachManager.getInstance().removeAttachs(list, fileList);
+            if (!TextUtils.isEmpty(parentDir)) {
+                try {
+                    File dir = new File(parentDir);
+                    if (dir.exists()) {
+                        dir.delete();
+                    }
+                } catch (Exception e) {
+                    KLog.d(TAG, "---opt_remove_note_attach---delete--parent---dir----error----" + parentDir + ":" + e.getMessage());
+                    e.printStackTrace();
+                }
+                KLog.d(TAG, "---opt_remove_note_attach---delete--parent---dir--" + parentDir);
+            }
+        }
+    }
+
+    /**
+     * 处理软件的安装
+     * @param intent
+     */
+    private void handleInstallApp(Intent intent) {
+        NoteApplication app = (NoteApplication) getApplication();
+        VersionInfo versionInfo = app.getVersionInfo();
+        if (versionInfo != null && versionInfo.checkContent() && !TextUtils.isEmpty(versionInfo.getFilePath())) {    //有新版本，
+            //检验本地文件的MD5值
+            String filePath = versionInfo.getFilePath();
+            String hash = DigestUtil.md5FileHex(filePath);
+            if (hash != null && hash.equals(versionInfo.getHash())) {    //两者hash相等，则app正确
+                KLog.d(TAG, "handle install app validate success and will show install dialog");
+                NoteManager.getInstance().notifyInstallApp(versionInfo);
+
+            }
+        } else {
+            KLog.d(TAG, "handle install app but new version info is not validate:" + versionInfo);
         }
     }
 
@@ -367,7 +414,7 @@ public class CoreService extends IntentService {
      */
     private class NoteObserver extends ContentObserver {
 
-        public NoteObserver(Handler handler) {
+        NoteObserver(Handler handler) {
             super(handler);
         }
 

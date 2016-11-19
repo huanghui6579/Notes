@@ -22,6 +22,7 @@ import android.preference.PreferenceManager;
 import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.PopupMenu;
@@ -1880,5 +1881,33 @@ public class SystemUtil {
             }
         }
         return filename;
+    }
+
+    /**
+     * 查是否具有某种权限
+     * @param context
+     * @param permission
+     * @return
+     */
+    public static boolean hasPermission(Context context, String permission) {
+        return ActivityCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * 安装apk文件
+     * @param context
+     * @param filePath
+     * @return 是否能够安装，true：有安装器，可以安装
+     */
+    public static boolean installApp(Context context, String filePath) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setDataAndType(Uri.parse("file://" + filePath), "application/vnd.android.package-archive");
+        if (intent.resolveActivity(context.getPackageManager()) != null) {
+            context.startActivity(intent);
+            return true;
+        } else {
+            return false;
+        }
     }
 }

@@ -9,6 +9,7 @@ import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
+import com.yunxinlink.notes.api.model.VersionInfo;
 import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.db.DBHelper;
 import com.yunxinlink.notes.db.Provider;
@@ -2019,6 +2020,14 @@ public class NoteManager extends Observable<Observer> {
         }
 
         return count;
+    }
+
+    /**
+     * 通知主界面显示新版本安装的对话框
+     * @param versionInfo
+     */
+    public void notifyInstallApp(VersionInfo versionInfo) {
+        notifyObservers(Provider.NOTIFY_FLAG, Observer.NotifyType.SHOW_EXTRA, versionInfo);
     }
     
 }

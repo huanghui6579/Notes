@@ -51,6 +51,16 @@ public class VersionInfo implements Cloneable {
 	 */
 	private String hash;
 
+	/**
+	 * 文件的本地全路径
+	 */
+	private String filePath;
+
+	/**
+	 * 文件名
+	 */
+	private String filename;
+
 	public int getId() {
 		return id;
 	}
@@ -126,7 +136,23 @@ public class VersionInfo implements Cloneable {
 	public void setHash(String hash) {
 		this.hash = hash;
 	}
-	
+
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+
+	public String getFilename() {
+		return filename;
+	}
+
+	public void setFilename(String filename) {
+		this.filename = filename;
+	}
+
 	/**
 	 * 是否有内容，true：有更新日志内容
 	 * @return
@@ -148,8 +174,18 @@ public class VersionInfo implements Cloneable {
 
 	@Override
 	public String toString() {
-		return "VersionInfo [id=" + id + ", content=" + content + ", versionCode=" + versionCode + ", versionName="
-				+ versionName + ", platform=" + platform + ", createTime=" + createTime + ", isMilestone=" + isMilestone
-				+ ", size=" + size + ", hash=" + hash + "]";
+		return "VersionInfo{" +
+				"id=" + id +
+				", content='" + content + '\'' +
+				", versionCode=" + versionCode +
+				", versionName='" + versionName + '\'' +
+				", platform=" + platform +
+				", createTime=" + createTime +
+				", isMilestone=" + isMilestone +
+				", size=" + size +
+				", hash='" + hash + '\'' +
+				", filePath='" + filePath + '\'' +
+				", filename='" + filename + '\'' +
+				'}';
 	}
 }

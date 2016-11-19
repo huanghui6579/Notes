@@ -17,7 +17,6 @@ import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.ui.AccountEditActivity;
 import com.yunxinlink.notes.util.NoteUtil;
-import com.yunxinlink.notes.util.TimeUtil;
 
 /**
  * 账号设置界面
@@ -32,7 +31,6 @@ public class SettingsAccountFragment extends BasePreferenceFragment implements P
     private UserObserver mUserObserver;
     
     private Preference mAccountNamePreference;
-    private Preference mLastSyncPreference;
 
     public SettingsAccountFragment() {
         // Required empty public constructor
@@ -61,8 +59,6 @@ public class SettingsAccountFragment extends BasePreferenceFragment implements P
         mAccountNamePreference = findPreference(getString(R.string.settings_key_account_name));
         mAccountNamePreference.setOnPreferenceClickListener(this);
 
-        mLastSyncPreference = findPreference(getString(R.string.settings_key_account_last_sync_time));
-
         Preference logoutPreference = findPreference(getString(R.string.settings_key_account_logout));
         logoutPreference.setOnPreferenceClickListener(this);
 
@@ -88,11 +84,6 @@ public class SettingsAccountFragment extends BasePreferenceFragment implements P
             String account = user.getAccount();
             if (!TextUtils.isEmpty(account)) {
                 mAccountNamePreference.setSummary(account);
-            }
-            Long lastSyncTime = user.getLastSyncTime();
-            if (lastSyncTime != null && lastSyncTime > 0) {
-                String time = TimeUtil.formatNoteTime(lastSyncTime);
-                mLastSyncPreference.setTitle(time);
             }
         }
     }

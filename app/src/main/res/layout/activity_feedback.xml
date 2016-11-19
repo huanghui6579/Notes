@@ -32,10 +32,9 @@
                 android:gravity="start|top"
                 android:hint="@string/feedback_content_hint"/>
             <Space
-                android:layout_width="match_parent"
                 android:layout_height="@dimen/activity_vertical_margin"
-                android:background="@color/divider_color"/>
-            
+                style="@style/SpaceStyle"/>
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -60,9 +59,8 @@
                 android:layout_marginEnd="@dimen/activity_horizontal_margin"/>
 
             <Space
-                android:layout_width="match_parent"
                 android:layout_height="@dimen/activity_vertical_margin"
-                android:background="@color/divider_color"/>
+                style="@style/SpaceStyle"/>
             
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
@@ -79,9 +77,8 @@
             </android.support.design.widget.TextInputLayout>
 
             <Space
-                android:layout_width="match_parent"
                 android:layout_height="@dimen/activity_vertical_margin"
-                android:background="@color/divider_color"/>
+                style="@style/SpaceStyle"/>
             
             <Button
                 android:id="@+id/submit"

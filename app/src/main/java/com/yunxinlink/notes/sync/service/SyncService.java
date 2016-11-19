@@ -10,10 +10,8 @@ import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
-import com.yunxinlink.notes.api.impl.DeviceApi;
 import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.api.model.NoteParam;
-import com.yunxinlink.notes.api.model.VersionInfo;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.model.ActionResult;
@@ -433,67 +431,10 @@ public class SyncService extends Service {
         public void onCompleted(DownloadTask downloadTask) {
             super.onCompleted(downloadTask);
             if (mAutoNotifyDone) {
+                //同步结束
                 onEndSync();
-                //如果本地已经有了新版本的信息，则下载新版本
-                NoteApplication app = (NoteApplication) getApplication();
-                boolean hasNewVersion = app.hasNewVersion();
-                if (hasNewVersion) {
-                    VersionInfo tmp = app.getVersionInfo();
-                    VersionInfo versionInfo = tmp.clone();
-                    app.setVersionInfo(null);
-                    boolean isWifi = SystemUtil.isWifiConnected(app);
-                    isWifi = true;
-                    if (isWifi) {
-                        KLog.d(TAG, "sync service has new version and wifi connected and will download new app");
-                        
-                        if (versionInfo == null) {
-                            KLog.d(TAG, "sync service has new version clone version info error");
-                            return;
-                        }
-                        DeviceApi.downloadApp(app, versionInfo, new AppDownloadListener());
-                    } else {
-                        KLog.d(TAG, "sync service has new version but is not wifi");
-                    }
-                }
-                
             }
             KLog.d(TAG, "sync service download file listener completed");
-        }
-    }
-
-    /**
-     * APP下载的监听器
-     */
-    class AppDownloadListener extends SimpleDownloadListener {
-
-        @Override
-        public void onStart(DownloadTask downloadTask) {
-            super.onStart(downloadTask);
-            KLog.d(TAG, "download app sync service onStart task:" + downloadTask);
-        }
-
-        @Override
-        public void onCompleted(DownloadTask downloadTask) {
-            super.onCompleted(downloadTask);
-            KLog.d(TAG, "download app sync service onStart task:" + downloadTask);
-        }
-
-        @Override
-        public void onError(DownloadTask downloadTask) {
-            super.onError(downloadTask);
-            KLog.d(TAG, "download app sync service onError task:" + downloadTask);
-        }
-
-        @Override
-        public void onProgress(long bytesRead, long contentLength, boolean done) {
-            super.onProgress(bytesRead, contentLength, done);
-            KLog.d(TAG, "download app sync service onProgress bytesRead:" + bytesRead + ", contentLength:" + contentLength + ", done:" + done);
-        }
-
-        @Override
-        public void onCanceled(DownloadTask downloadTask) {
-            super.onCanceled(downloadTask);
-            KLog.d(TAG, "download app sync service onCanceled task:" + downloadTask);
         }
     }
 

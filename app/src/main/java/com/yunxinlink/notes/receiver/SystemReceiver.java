@@ -1,5 +1,6 @@
 package com.yunxinlink.notes.receiver;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,8 +13,10 @@ import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.api.model.VersionInfo;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.service.CoreService;
 import com.yunxinlink.notes.sync.download.DownloadTask;
 import com.yunxinlink.notes.sync.download.SimpleDownloadListener;
+import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -82,85 +85,115 @@ public class SystemReceiver extends BroadcastReceiver {
             public void run() {
                 KLog.d(TAG, "doAuthorityVerify invoke");
                 NoteApplication app = (NoteApplication) context.getApplicationContext();
-                boolean isWifi = SystemUtil.isWifiConnected(context);
-                isWifi = true;
-                VersionInfo versionInfo = null;
-                if (isWifi) {
-                    versionInfo = DeviceApi.checkVersion(context);
-                } else {
-                    KLog.d(TAG, "is not wifi so can not auto check app version");
-                }
-                app.setVersionInfo(versionInfo);
-                User user = app.getCurrentUser();
-                KLog.d(TAG, "app init check new version:" + versionInfo);
+
+                //检查版本更新
+                VersionInfo versionInfo = checkVersion(app);
+
                 //是否可以自动下载软件更新包
-                boolean canAutoDown = false;
-                
+                User user = app.getCurrentUser();
                 final UserDto userDto = NoteUtil.buildLoginParams(context, user, null);
                 if (userDto != null) {
                     boolean success = UserApi.login(context, userDto, null);
                     if (success) {
                         KLog.d(TAG, "app init completed user login success and will start sync down notes");
                         startSyncDownNote(context);
-                    } else {
-                        canAutoDown = true;
                     }
                 } else {
-                    canAutoDown = true;
                     KLog.d(TAG, "doAuthorityVerify userDto is null");
                 }
-                if (canAutoDown && versionInfo != null && versionInfo.checkContent()) {   //可以自动下载软件更新包
-                    KLog.d(TAG, "app init will auto download new app package");
-                    //如果本地已经有了新版本的信息，则下载新版本
-                    boolean hasNewVersion = app.hasNewVersion();
-                    if (hasNewVersion) {
-                        KLog.d(TAG, "app init has new version and wifi connected and will download new app");
-                        VersionInfo cloneInfo = versionInfo.clone();
-                        app.setVersionInfo(null);
-                        if (cloneInfo == null) {
-                            KLog.d(TAG, "app init has new version clone version info error");
-                            return;
-                        }
-                        DeviceApi.downloadApp(app, versionInfo, new AppDownloadListener());
-                    }
+                if (versionInfo != null && versionInfo.checkContent()) {   //可以自动下载软件更新包
+                    //下载软件版本
+                    downloadAppInbackground(app, versionInfo);
                 }
             }
         });
     }
 
     /**
+     * 检查版本更新
+     * @param app
+     * @return
+     */
+    private VersionInfo checkVersion(NoteApplication app) {
+        boolean isWifi = SystemUtil.isWifiConnected(app);
+        isWifi = true;
+        VersionInfo versionInfo = null;
+        if (isWifi) {   //只有WiFi下才自动检查版本更新
+            versionInfo = DeviceApi.checkVersion(app);
+        } else {
+            KLog.d(TAG, "is not wifi so can not auto check app version");
+        }
+        app.setVersionInfo(versionInfo);
+        KLog.d(TAG, "app init check new version:" + versionInfo);
+        return versionInfo;
+    }
+
+    /**
+     * 下载软件版本
+     * @param app
+     * @param versionInfo
+     */
+    private void downloadAppInbackground(NoteApplication app, VersionInfo versionInfo) {
+        KLog.d(TAG, "app init will auto download new app package");
+        //如果本地已经有了新版本的信息，则下载新版本
+        boolean hasNewVersion = app.hasNewVersion();
+        if (hasNewVersion) {
+            //检测是否否读写SD卡的权限
+            boolean hasPermission = SystemUtil.hasPermission(app, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            if (!hasPermission) {   //没有sd卡的读取权限
+                KLog.d(TAG, "app init has new version but not write sd card permission");
+                app.setVersionInfo(null);
+                return;
+            }
+            KLog.d(TAG, "app init has new version and wifi connected and will download new app");
+            DeviceApi.downloadApp(versionInfo, new AppDownloadListener(app));
+        }
+    }
+
+    /**
      * APP下载的监听器
      */
-    class AppDownloadListener extends SimpleDownloadListener {
+    private class AppDownloadListener extends SimpleDownloadListener {
+
+        private Context mContext;
+
+        public AppDownloadListener(Context context) {
+            this.mContext = context;
+        }
 
         @Override
         public void onStart(DownloadTask downloadTask) {
             super.onStart(downloadTask);
-            KLog.d(TAG, "download app onStart task:" + downloadTask);
+            KLog.d(TAG, "download app sync service onStart task:" + downloadTask);
         }
 
         @Override
         public void onCompleted(DownloadTask downloadTask) {
-            super.onCompleted(downloadTask);
-            KLog.d(TAG, "download app onStart task:" + downloadTask);
+            KLog.d(TAG, "download app sync service onStart task:" + downloadTask);
+            //在界面上弹出安装的提示框
+            VersionInfo versionInfo = ((NoteApplication) mContext.getApplicationContext()).getVersionInfo();
+            if (versionInfo != null && versionInfo.checkContent()) {
+                versionInfo.setFilePath(downloadTask.getSavePath());
+                Intent service = new Intent(mContext, CoreService.class);
+                service.putExtra(Constants.ARG_CORE_OPT, Constants.OPT_INSTALL_APP);
+                mContext.startService(service);
+            }
         }
 
         @Override
         public void onError(DownloadTask downloadTask) {
             super.onError(downloadTask);
-            KLog.d(TAG, "download app onError task:" + downloadTask);
+            KLog.d(TAG, "download app sync service onError task:" + downloadTask);
         }
 
         @Override
         public void onProgress(long bytesRead, long contentLength, boolean done) {
-            super.onProgress(bytesRead, contentLength, done);
-            KLog.d(TAG, "download app onProgress bytesRead:" + bytesRead + ", contentLength:" + contentLength + ", done:" + done);
         }
 
         @Override
         public void onCanceled(DownloadTask downloadTask) {
             super.onCanceled(downloadTask);
-            KLog.d(TAG, "download app onCanceled task:" + downloadTask);
+            KLog.d(TAG, "download app sync service onCanceled task:" + downloadTask);
         }
     }
 }

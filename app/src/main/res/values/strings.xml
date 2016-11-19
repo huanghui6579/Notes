@@ -22,8 +22,9 @@
     <string name="label_note_share">保存到云信笔记</string>
     <string name="label_trash">回收站</string>
     <string name="label_settings">设置</string>
-    <string name="title_settings_account">账户信息</string>
-    <string name="title_feedback">建议或意见</string>
+    <string name="label_about">关于</string>
+    <string name="label_settings_account">账户信息</string>
+    <string name="label_feedback">建议或意见</string>
 
     <string name="confirm_to_trash">确定删除该项么？删除后可以在回收站中恢复！</string>
     <string name="confirm_fodler_to_trash">确定删除该项么？该文件夹下面的笔记也将会被删除，删除后可以在回收站中恢复！</string>
@@ -216,6 +217,7 @@
     <string name="settings_sync_traffic_summary">在3G/4G等数据流量环境下也自动同步</string>
     <string name="settings_sync_state_title">同步状态</string>
     <string name="settings_sync_state_summary">没有同步过</string>
+    <string name="settings_sync_state_summary_time">上次同步：%1$s</string>
 
     <string name="settings_security_type_title">安全密码</string>
     <string name="settings_security_type_summary">查看、搜索、分享笔记等需要密码</string>
@@ -333,7 +335,7 @@
     <string name="authority_send_mail_success">邮件已发送</string>
     <string name="authority_send_mail_failed">邮件发送失败</string>
     <string name="authority_account_not_exists">该账号不存在</string>
-    
+
     <string name="feedback_content_hint">请描述遇到的问题，以便我们及时为您解决(必填)</string>
     <string name="feedback_contact_way_hint">邮箱/手机号/QQ</string>
     <string name="feedback_add_img_tip">添加图片</string>
@@ -354,6 +356,18 @@
     <string name="account_logout_summary">退出或者切换账号</string>
     <string name="account_logout_msg">退出登录后，该账号的笔记将在该设备上不可见。\n确定退出？</string>
     <string name="account_no_account">未登录</string>
+
+    <string name="version_install_title">新版本已下载完毕&#160;&#160;%1$s</string>
+    <string name="version_new_info">更新内容:\n%1$s</string>
+    <string name="version_btn_install_now">立即安装</string>
+    <string name="version_btn_install_cancel">稍后再说</string>
+    <string name="version_install_failed">安装失败，没有安装器</string>
+
+    <string name="about_check_version">检查更新</string>
+    <string name="about_share">推荐给朋友</string>
+    <string name="about_url">了解我们</string>
+    <string name="about_version_name">版本：%1$s</string>
+    <string name="about_version_check_ing">检查新版本中…</string>
 
     <string-array name="list_preference_entries">
         <item>Entry 1</item>
