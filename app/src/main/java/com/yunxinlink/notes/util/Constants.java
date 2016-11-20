@@ -104,6 +104,8 @@ public class Constants {
     public static final String PREF_APPWIDGETID_SHORT_CREATE = "appwidgetid_short_create";
     public static final String PREF_APPWIDGETID_LIST = "appwidgetid_list";
 
+    public static final String WEB_SITE_URL = "http://www.yunxinlink.com/";
+
     /**
      * 回车的标签
      */

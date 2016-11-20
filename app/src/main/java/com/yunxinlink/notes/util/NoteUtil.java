@@ -555,7 +555,7 @@ public class NoteUtil {
         String text = note.getShowText();
         Attach lastAttach = detailNote.getLastAttach();
         ShareInfo shareInfo = new ShareInfo();
-        String url = "http://www.yunxinlink.com/";
+        String url = Constants.WEB_SITE_URL;
 //                        shareInfo.setTitleUrl(url);
         shareInfo.setSite(SystemUtil.getAppName(context));
         shareInfo.setSiteUrl(url);

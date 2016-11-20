@@ -362,12 +362,23 @@
     <string name="version_btn_install_now">立即安装</string>
     <string name="version_btn_install_cancel">稍后再说</string>
     <string name="version_install_failed">安装失败，没有安装器</string>
+    <string name="version_download_title">版本升级</string>
+    <string name="version_download_msg">正在下载安装包，请稍后…</string>
+    <string name="version_download_percent">%1$d%%</string>
+    <string name="version_download_failed">下载失败</string>
 
     <string name="about_check_version">检查更新</string>
     <string name="about_share">推荐给朋友</string>
     <string name="about_url">了解我们</string>
     <string name="about_version_name">版本：%1$s</string>
     <string name="about_version_check_ing">检查新版本中…</string>
+    <string name="about_check_version_failed">请求失败，请稍后再试</string>
+    <string name="about_check_version_none">当前版本已经是最新的版本了</string>
+    <string name="about_check_version_new_title">发现新版本：%1$s</string>
+    <string name="about_check_version_new_size">安装包大小：%1$s</string>
+    <string name="about_check_version_btn_ok">立即更新</string>
+    <string name="about_check_version_btn_cancel">暂不更新</string>
+    <string name="about_share_text">简单、实用的笔记，随时记录生活、工作中的点滴，尽在#云信笔记#，快来试试吧。http://www.yunxinlink.com/</string>
 
     <string-array name="list_preference_entries">
         <item>Entry 1</item>

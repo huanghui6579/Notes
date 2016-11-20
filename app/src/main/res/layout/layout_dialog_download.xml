@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="?attr/dialogPreferredPadding"
+    android:paddingStart="?attr/dialogPreferredPadding"
+    android:paddingEnd="?attr/dialogPreferredPadding"
+    android:paddingRight="?attr/dialogPreferredPadding">
+    <TextView
+        android:id="@android:id/message"
+        style="@style/TextAppearance.AppCompat.Subhead"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/abc_dialog_padding_top_material"/>
+
+    <Space android:id="@+id/scrollIndicatorDown"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/abc_dialog_padding_top_material"
+        android:layout_below="@android:id/message"/>
+
+    <ProgressBar
+        android:id="@+id/progressbar"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/download_progress_bar_height"
+        android:layout_below="@id/scrollIndicatorDown"
+        android:max="100"
+        style="?android:attr/progressBarStyleHorizontal"/>
+
+    <TextView
+        android:id="@+id/tv_percent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/progressbar"
+        android:layout_marginTop="@dimen/content_padding"/>
+</RelativeLayout>

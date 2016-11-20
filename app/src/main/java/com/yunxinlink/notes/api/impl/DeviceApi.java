@@ -156,16 +156,16 @@ public class DeviceApi extends BaseApi {
             }
         } catch (Exception e) {
             KLog.e(TAG, "check app version error:" + e.getMessage());
-            e.printStackTrace();
         }
         return null;
     }
 
     /**
+     * 异步检查版本更新
      * @param context
      * @return
      */
-    public static Call<?> checkVersionAsync(Context context, OnLoadCompletedListener<ActionResult<VersionInfo>> listener) {
+    public static Call<?> checkVersionAsync(Context context, final OnLoadCompletedListener<VersionInfo> listener) {
         PackageInfo packageInfo = SystemUtil.getPackageInfo(context);
         final int versionCode = packageInfo.versionCode;
         final String versionName = packageInfo.versionName;
@@ -182,32 +182,48 @@ public class DeviceApi extends BaseApi {
             @Override
             public void onResponse(Call<ActionResult<VersionInfo>> call, Response<ActionResult<VersionInfo>> response) {
                 boolean hasNewVersion = false;
+                VersionInfo versionInfo = null;
                 if (response == null || !response.isSuccessful() || response.body() == null) {
                     KLog.d(TAG, "check app version failed response is null or not successful or body is null");
-                }
-                ActionResult<VersionInfo> actionResult = response.body();
-                if (!actionResult.isSuccess()) {
-                    KLog.d(TAG, "check app version failed action result is not success:" + actionResult);
-                }
-                VersionInfo versionInfo = actionResult.getData();
-                if (versionInfo == null || !versionInfo.checkContent()) {   //没有更新内容
-                    KLog.d(TAG, "check app version failed version info content is empty:" + versionInfo);
-                }
-                int newVersionCode = versionInfo.getVersionCode();
-                String newVersionName = versionInfo.getVersionName();
-                if (newVersionCode >= versionCode && !newVersionName.equals(versionName)) { //有新版本
-                    KLog.d(TAG, "check app version result success and has new version:" + versionInfo);
                 } else {
-                    KLog.d(TAG, "check app version result success and has no new version");
+                    ActionResult<VersionInfo> actionResult = response.body();
+                    if (!actionResult.isSuccess()) {
+                        KLog.d(TAG, "check app version failed action result is not success:" + actionResult);
+                    } else {
+                        versionInfo = actionResult.getData();
+                        if (versionInfo == null || !versionInfo.checkContent()) {   //没有更新内容
+                            KLog.d(TAG, "check app version failed version info content is empty:" + versionInfo);
+                        } else {
+                            int newVersionCode = versionInfo.getVersionCode();
+                            String newVersionName = versionInfo.getVersionName();
+                            if (newVersionCode >= versionCode && !newVersionName.equals(versionName)) { //有新版本
+                                KLog.d(TAG, "check app version result success and has new version:" + versionInfo);
+                                hasNewVersion = true;
+                            } else {
+                                KLog.d(TAG, "check app version result success and has no new version");
+                            }
+                        }
+                    }
                 }
+                if (listener != null) {
+                    if (hasNewVersion) {
+                        listener.onLoadSuccess(versionInfo);
+                    } else {
+                        listener.onLoadSuccess(null);
+                    }
+                }
+
             }
 
             @Override
             public void onFailure(Call<ActionResult<VersionInfo>> call, Throwable t) {
-
+                KLog.d(TAG, "check app version on failed:" + t);
+                if (listener != null) {
+                    listener.onLoadFailed(ActionResult.RESULT_FAILED, null);
+                }
             }
         });
-        return null;
+        return call;
     }
 
     /**
@@ -216,8 +232,55 @@ public class DeviceApi extends BaseApi {
      * @param downloadListener 下载的监听器
      */
     public static Call<?> downloadApp(VersionInfo versionInfo, DownloadListener downloadListener) {
+        File saveFile = null;
+        //优先检测本地是否已经下载了该app，避免重复下载
+
         DownloadTask downloadTask = new DownloadTask();
         downloadTask.setTag(versionInfo);
+
+        Call<ResponseBody> call = initDownloadApp(versionInfo, downloadTask, downloadListener);
+        if (call == null) {
+            return null;
+        }
+
+        boolean saveResult = false;
+        try {
+            Response<ResponseBody> response = call.execute();
+            if (response == null || !response.isSuccessful() || response.body() == null) {
+                KLog.d(TAG, "download app failed response is null or not successful");
+            } else {
+                Headers headers = response.headers();
+                String filename = SystemUtil.getFilename(headers);
+                if (TextUtils.isEmpty(filename)) {
+                    filename = System.currentTimeMillis() + ".apk";
+                }
+                saveFile = new File(SystemUtil.getAppDownloadPath(), filename);
+                downloadTask.setSavePath(saveFile.getAbsolutePath());
+                downloadTask.setFilename(filename);
+                saveResult = FileUtil.writeResponseBodyToDisk(response.body(), saveFile);
+                KLog.d(TAG, "download app success file:" + saveFile);
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "download app file error:" + e.getMessage());
+            e.printStackTrace();
+        }
+        if (downloadListener != null) {
+            if (saveResult) {
+                downloadListener.onCompleted(downloadTask);
+            } else {
+                downloadListener.onError(downloadTask);
+            }
+        }
+        return call;
+    }
+
+    /**
+     * 初始化下载器
+     * @param versionInfo
+     * @param downloadListener
+     * @return 下载是线程
+     */
+    private static Call<ResponseBody> initDownloadApp(VersionInfo versionInfo, DownloadTask downloadTask, DownloadListener downloadListener) {
         if (downloadListener != null) {
             downloadListener.onStart(downloadTask);
         }
@@ -251,36 +314,6 @@ public class DeviceApi extends BaseApi {
         IDeviceApi repo = retrofit.create(IDeviceApi.class);
         Map<String, String> map = new HashMap<>();
         map.put("id", String.valueOf(versionInfo.getId()));
-        Call<ResponseBody> call = repo.downApp(map);
-        boolean saveResult = false;
-        try {
-            Response<ResponseBody> response = call.execute();
-            if (response == null || !response.isSuccessful() || response.body() == null) {
-                KLog.d(TAG, "download app failed response is null or not successful");
-            } else {
-                Headers headers = response.headers();
-                filename = SystemUtil.getFilename(headers);
-                if (TextUtils.isEmpty(filename)) {
-                    filename = System.currentTimeMillis() + ".apk";
-                }
-                saveFile = new File(SystemUtil.getAppDownloadPath(), filename);
-                downloadTask.setSavePath(saveFile.getAbsolutePath());
-                downloadTask.setFilename(filename);
-                saveResult = FileUtil.writeResponseBodyToDisk(response.body(), saveFile);
-                KLog.d(TAG, "download app success file:" + saveFile);
-            }
-        } catch (Exception e) {
-            KLog.e(TAG, "download app file error:" + e.getMessage());
-            e.printStackTrace();
-        }
-        if (downloadListener != null) {
-            if (saveResult) {
-                downloadListener.onCompleted(downloadTask);
-            } else {
-                downloadListener.onError(downloadTask);
-            }
-        }
-        return call;
+        return repo.downApp(map);
     }
-    
 }
