@@ -13,7 +13,7 @@ import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
-import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.telephony.TelephonyManager;
 import android.view.View;
@@ -285,7 +285,7 @@ public class TestActivity extends BaseActivity implements View.OnClickListener {
 
     private void tintDoMenuIcon(ImageButton imageButton, int resId, int disableColor) {
 
-        Drawable normalDrawable = ResourcesCompat.getDrawable(getResources(), resId, getTheme());
+        Drawable normalDrawable = ContextCompat.getDrawable(mContext, resId);
 
         Drawable spinnerInkDrawable = getResources().getDrawable(R.drawable.ic_action_spinner_ink);
 

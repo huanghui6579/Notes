@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -26,6 +27,8 @@ import com.yunxinlink.notes.util.TimeUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.yunxinlink.notes.R.drawable.ic_broken_image;
 
 /**
  * 桌面小部件列表的数据刷新的工厂
@@ -163,7 +166,7 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
             case Attach.VOICE:
                 if (mItemAttachIcon.mMusicDrawable == null) {
                     resId = R.drawable.ic_library_music;
-                    drawable = ResourcesCompat.getDrawable(resources, resId, context.getTheme());
+                    drawable = ContextCompat.getDrawable(context, resId);
                     mItemAttachIcon.mMusicDrawable = SystemUtil.getTintDrawable(context, drawable, color);
                 }
                 drawable = mItemAttachIcon.mMusicDrawable;
@@ -171,7 +174,7 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
             case Attach.VIDEO:
                 if (mItemAttachIcon.mVideoDrawable == null) {
                     resId = R.drawable.ic_library_music;
-                    drawable = ResourcesCompat.getDrawable(resources, resId, context.getTheme());
+                    drawable = ContextCompat.getDrawable(context, resId);
                     mItemAttachIcon.mVideoDrawable = SystemUtil.getTintDrawable(context, drawable, color);
                 }
                 drawable = mItemAttachIcon.mVideoDrawable;
@@ -179,7 +182,7 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
             case Attach.ARCHIVE:
                 if (mItemAttachIcon.mArchiveDrawable == null) {
                     resId = R.drawable.ic_library_archive;
-                    drawable = ResourcesCompat.getDrawable(resources, resId, context.getTheme());
+                    drawable = ContextCompat.getDrawable(context, resId);
                     mItemAttachIcon.mArchiveDrawable = SystemUtil.getTintDrawable(context, drawable, color);
                 }
                 drawable = mItemAttachIcon.mArchiveDrawable;
@@ -187,7 +190,7 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
             case Attach.FILE:
                 if (mItemAttachIcon.mFileDrawable == null) {
                     resId = R.drawable.ic_library_file;
-                    drawable = ResourcesCompat.getDrawable(resources, resId, context.getTheme());
+                    drawable = ContextCompat.getDrawable(context, resId);
                     mItemAttachIcon.mFileDrawable = SystemUtil.getTintDrawable(context, drawable, color);
                 }
                 drawable = mItemAttachIcon.mFileDrawable;
@@ -206,8 +209,7 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
     private Bitmap getFailedImage(Context context, int color) {
         if (mItemAttachIcon.mFailedDrawable == null) {
 
-            Resources resources = context.getResources();
-            Drawable drawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_broken_image, context.getTheme());
+            Drawable drawable = ContextCompat.getDrawable(context, ic_broken_image);
             drawable = SystemUtil.getTintDrawable(context, drawable, color);
 
             mItemAttachIcon.mFailedDrawable = drawable;

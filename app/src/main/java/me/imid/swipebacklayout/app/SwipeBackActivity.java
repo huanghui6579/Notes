@@ -3,6 +3,7 @@ package me.imid.swipebacklayout.app;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AppCompatDelegate;
 import android.view.View;
 
 import com.yunxinlink.notes.util.log.Log;
@@ -12,6 +13,10 @@ import me.imid.swipebacklayout.Utils;
 
 public class SwipeBackActivity extends AppCompatActivity implements SwipeBackActivityBase {
     private SwipeBackActivityHelper mHelper;
+
+    static {
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+    }
 
     /**
      * 是否允许滑动返回，默认为true

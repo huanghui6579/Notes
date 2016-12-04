@@ -8,6 +8,9 @@ android {
     signingConfigs {
         debug {
             storeFile file('doc/debug.keystore-platform')
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storePassword 'android'
         }
         release {
             keyAlias 'Notes'
@@ -21,10 +24,14 @@ android {
     }
     compileSdkVersion globalConfiguration.getAt("compileSdkVersion")
     buildToolsVersion globalConfiguration.getAt("buildToolsVersion")
+//    compileSdkVersion 24
+//    buildToolsVersion '25.0.0'
     defaultConfig {
         applicationId 'com.yunxinlink.notes'
         minSdkVersion globalConfiguration.getAt("minSdkVersion")
         targetSdkVersion globalConfiguration.getAt("targetSdkVersion")
+//        minSdkVersion 15
+//        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
         buildConfigField("boolean", "LOG_TO_FILE_ENABLE", "true")
@@ -61,20 +68,39 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':sharesdk')
+    compile project(':lockpattern')
+    /*compile "com.android.support:appcompat-v7:24.2.1"
+    compile "com.android.support:design:24.2.1"
+    compile "com.android.support:cardview-v7:24.2.1"
+    compile "com.android.support:recyclerview-v7:24.2.1"
+    compile "com.android.support:palette-v7:24.2.1"
+    compile "com.android.support:support-vector-drawable:24.2.1"
+    compile "com.nostra13.universalimageloader:universal-image-loader:1.9.5"
+    compile "com.googlecode.libphonenumber:libphonenumber:7.4.5"
+    compile "com.anthonycr.grant:permissions:1.0"
+    compile "com.github.zhaokaiqiang.klog:library:1.5.0"
+    compile "com.jiongbull:jlog:1.0.5"
+    compile "com.google.code.gson:gson:2.7"
+    compile "com.squareup.retrofit2:retrofit:2.1.0"
+    compile "com.squareup.retrofit2:converter-gson:2.1.0"
+    compile "com.squareup.okhttp3:logging-interceptor:3.4.1"
+    testCompile "junit:junit:4.12"*/
     compile supportDependencies.appcompat
     compile supportDependencies.design
     compile supportDependencies.cardview
     compile supportDependencies.palette
+    compile supportDependencies.preference
     compile supportDependencies.universalimageloader
     compile supportDependencies.libphonenumber
     compile supportDependencies.permissions
     compile supportDependencies.klog
     compile supportDependencies.jlog
-//    compile supportDependencies.gson
     compile supportDependencies.retrofit
     compile supportDependencies.converterGson
     compile supportDependencies.loggingInterceptor
-    compile project(':lockpattern')
+    compile supportDependencies.vectorDrawable
+    testCompile supportDependencies.junit
+    
 /*
     //ADD THESE LINES:
     // Android JUnit Runner
@@ -92,6 +118,5 @@ dependencies {
         exclude group: 'com.android.support', module: 'appcompat-v7'
         exclude group: 'com.android.support', module: 'support-annotations'
     }*/
-    compile supportDependencies.vectorDrawable
-    testCompile supportDependencies.junit
+    
 }

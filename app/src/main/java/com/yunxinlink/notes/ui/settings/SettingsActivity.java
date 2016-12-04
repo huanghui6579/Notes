@@ -1,15 +1,14 @@
 package com.yunxinlink.notes.ui.settings;
 
 
-import android.annotation.TargetApi;
 import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.preference.PreferenceFragment;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.preference.PreferenceFragmentCompat;
+import android.support.v7.preference.PreferenceScreen;
 
+import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-
-import java.util.List;
+import com.yunxinlink.notes.ui.BaseActivity;
 
 /**
  * 设置主界面
@@ -17,49 +16,36 @@ import java.util.List;
  * @update 2016/8/24 17:09
  * @version: 1.0.0
  */
-public class SettingsActivity extends AppCompatPreferenceActivity implements SettingsFragment.OnSettingsFragmentInteractionListener {
+public class SettingsActivity extends BaseActivity implements SettingsFragment.OnSettingsFragmentInteractionListener, PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        setContentView(R.layout.activity_settings);
-
-        setupActionBar(R.id.toolbar);
-
-        setListDividerHeight();
+    protected int getContentView() {
+        return R.layout.activity_settings;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public boolean onIsMultiPane() {
-        return isXLargeTablet(this);
+    protected void initData() {
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public void onBuildHeaders(List<Header> target) {
-//        loadHeadersFromResource(R.xml.pref_headers, target);
-    }
+    protected void initView() {
 
-    /**
-     * This method stops fragment injection in malicious applications.
-     * Make sure to deny any unknown fragments here.
-     */
-    @Override
-    protected boolean isValidFragment(String fragmentName) {
-        return PreferenceFragment.class.getName().equals(fragmentName)
-                || SettingsFragment.class.getName().equals(fragmentName);
     }
 
     @Override
     public void onFragmentInteraction(Uri uri) {
         
     }
-    
+
+    @Override
+    public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
+        KLog.d(TAG, "onPreferenceStartScreen settings activity");
+        SettingsFragment fragment = SettingsFragment.newInstance(pref.getKey());
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        transaction.replace(R.id.main_frame, fragment, pref.getKey());
+        transaction.addToBackStack(pref.getKey());
+        transaction.commit();
+        return true;
+    }
 }

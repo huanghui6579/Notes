@@ -1,12 +1,12 @@
 ext {
     //Version
-    supportLibrary = '23.4.0'
+    supportLibrary = '25.0.1'
 
     //android
-    compileSdkVersion = 23
-    buildToolsVersion = "24.0.3"
+    compileSdkVersion = 24
+    buildToolsVersion = "25.0.0"
     minSdkVersion = 15
-    targetSdkVersion = 23
+    targetSdkVersion = 24
 
     //libraries dependencies
     supportDependencies = [
@@ -16,6 +16,7 @@ ext {
             appcompat               : "com.android.support:appcompat-v7:${supportLibrary}",
             palette                 : "com.android.support:palette-v7:${supportLibrary}",
             vectorDrawable          : "com.android.support:support-vector-drawable:${supportLibrary}",
+            preference              : "com.android.support:preference-v14:${supportLibrary}",
             universalimageloader    : 'com.nostra13.universalimageloader:universal-image-loader:1.9.5',
             libphonenumber          : "com.googlecode.libphonenumber:libphonenumber:7.4.5",
             permissions             : "com.anthonycr.grant:permissions:1.0",

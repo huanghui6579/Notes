@@ -30,6 +30,10 @@ public class FileUtil {
      * 文本的mime类型：text/plain
      */
     public static final String MIME_TYPE_TEXT = "text/plain";
+    /**
+     * png的mime类型，image/png
+     */
+    public static final String MIME_TYPE_PNG = "image/png";
     
     //压缩文件的格式集合
     public static List<String> suffixList = null;

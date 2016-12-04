@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/grid_item_spacing">
     <ImageView
-        android:id="@+id/iv_icon"
+        android:id="@id/iv_icon"
         android:layout_width="@dimen/list_item_height_middle"
         android:layout_height="@dimen/list_item_height_middle"
         android:contentDescription="@null"

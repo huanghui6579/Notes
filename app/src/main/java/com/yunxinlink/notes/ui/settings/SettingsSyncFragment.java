@@ -1,12 +1,15 @@
 package com.yunxinlink.notes.ui.settings;
 
+import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.Preference;
+import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceFragmentCompat;
 
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
 
 /**
@@ -30,9 +33,10 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
      * @return A new instance of fragment SettingsSyncFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static SettingsSyncFragment newInstance() {
+    public static SettingsSyncFragment newInstance(String rootKey) {
         SettingsSyncFragment fragment = new SettingsSyncFragment();
         Bundle args = new Bundle();
+        args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, rootKey);
         fragment.setArguments(args);
         return fragment;
     }
@@ -41,12 +45,16 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+    }
+
+    @Override
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.pref_data_sync);
 
         refresh(getApp().getCurrentUser());
-        
+
 //        bindPreferenceSummaryToValue(findPreference("sync_note_state"));
-        
+
 //        bindPreferenceChangeListener(findPreference("sync_note_auto"));
 //        bindPreferenceChangeListener(findPreference("sync_note_traffic"));
     }
@@ -67,10 +75,25 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
             preference.setSummary(R.string.settings_sync_state_summary);
         }
     }
-    
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        if (!SystemUtil.hasSdkV23()) {
+            attachCompat(activity);
+        }
+    }
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        if (SystemUtil.hasSdkV23()) {
+            attachCompat(context);
+        }
+    }
+
+    @Override
+    protected void attachCompat(Context context) {
         if (context instanceof OnSettingsSyncFragmentInteractionListener) {
             mListener = (OnSettingsSyncFragmentInteractionListener) context;
         } else {

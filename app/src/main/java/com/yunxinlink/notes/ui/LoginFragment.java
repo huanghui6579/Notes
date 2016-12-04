@@ -39,6 +39,8 @@ import java.util.HashMap;
 import cn.sharesdk.framework.Platform;
 import retrofit2.Call;
 
+import static com.yunxinlink.notes.util.NoteUtil.checkEmail;
+
 /**
  * 登录的界面
  */
@@ -137,7 +139,6 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                 SystemUtil.setViewEnable(mBtnLogin, canLogin());
             }
         });
-
     }
 
     /**
@@ -248,7 +249,7 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
         int space = getResources().getDimensionPixelSize(R.dimen.activity_horizontal_margin);
         
         AlertDialog.Builder builder = NoteUtil.buildDialog(getContext());
-        builder.setTitle(R.string.authority_forget_password)
+        builder.setTitle(R.string.authority_reset_password)
                 .setView(editText, space, space, space, space)
                 .setPositiveButton(R.string.authority_reset_password, new DialogInterface.OnClickListener() {
                     @Override
@@ -282,23 +283,6 @@ public class LoginFragment extends BaseFragment implements View.OnClickListener 
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
-    }
-
-    /**
-     * 校验email
-     * @param email 邮箱地址
-     * @return
-     */
-    private boolean checkEmail(CharSequence email) {
-        if (TextUtils.isEmpty(email)) {
-            SystemUtil.makeShortToast(R.string.tip_email_is_empty);
-            return false;
-        }
-        if (!SystemUtil.isEmail(email)) {
-            SystemUtil.makeShortToast(R.string.tip_email_is_not_right);
-            return false;
-        }
-        return true;
     }
     
     /**

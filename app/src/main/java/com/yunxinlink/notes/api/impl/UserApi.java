@@ -14,6 +14,7 @@ import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.persistent.UserManager;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
@@ -110,6 +111,9 @@ public class UserApi extends BaseApi {
             public void run() {
                 Context ctx = (Context) params[0];
                 UserDto userParam = (UserDto) params[1];
+                User user = userParam.getUser();
+                String md5Pwd = DigestUtil.md5Hex(user.getPassword());
+                user.setPassword(md5Pwd);
                 OnLoadCompletedListener<ActionResult<UserDto>> onListener = (OnLoadCompletedListener<ActionResult<UserDto>>) params[2];
                 login(ctx, userParam, onListener);
             }
@@ -182,6 +186,40 @@ public class UserApi extends BaseApi {
     }
 
     /**
+     * 绑定用户，若用户不存在，则创建
+     * @param context
+     * @param userDto
+     * @return
+     */
+    public static int bind(final Context context, final UserDto userDto) {
+        if (userDto == null) {
+            return ActionResult.RESULT_FAILED;
+        }
+        int resultCode = 0;
+        Retrofit retrofit = buildRetrofit();
+        IUserApi repo = retrofit.create(IUserApi.class);
+        Call<ActionResult<UserDto>> call = repo.bind(buildRegisterParams(userDto, null));
+        try {
+            Response<ActionResult<UserDto>> response = call.execute();
+            if (response == null || !response.isSuccessful() || response.body() == null) { //http请求错误
+                KLog.d(TAG, "bind failed response is null or not successful");
+                return ActionResult.RESULT_FAILED;
+            }
+            ActionResult<UserDto> actionResult = response.body();
+            if (actionResult.getData() != null && actionResult.isSuccess()) {
+                //将该用户保存到本地
+                boolean success = saveLocalUser(context, userDto, actionResult.getData());
+                resultCode = success ? ActionResult.RESULT_SUCCESS : ActionResult.RESULT_FAILED;
+            } else {
+                resultCode = actionResult.getResultCode();
+            }
+        } catch (Exception e) {
+            KLog.d(TAG, "bind error :" + e.getMessage());
+        }
+        return resultCode;
+    }
+
+    /**
      * 同步用户信息，如果本地比较新，则上传本地用户信息，如果本地比较旧，则从服务器更新本地信息，新旧的判断标准是根据syncState来的
      * @param user
      */
@@ -196,33 +234,56 @@ public class UserApi extends BaseApi {
         final String sid = user.getSid();
         final int id = user.getId();
         final String oldAvatarHash = user.getAvatarHash();
+
+        
         if (isUp) { //需要上传本地信息到服务器
             KLog.d(TAG, "sync user info upload to server");
             IUserApi repoUp = retrofit.create(IUserApi.class);
             Map<String, RequestBody> map = new HashMap<>();
-            String nickname = user.getNickname();
-            if (nickname != null) {
-                map.put("user.nickname", RequestBody.create(null, nickname));
-            }
-            String avatar = user.getAvatar();
-            if (avatar != null) {
-                File file = new File(avatar);
-                if (file.exists()) {
-                    String filename = file.getName();
-                    String mime = FileUtil.getWebMime(file);
-                    if (mime == null) {
-                        mime = "image/png";
-                    }
-                    RequestBody img = RequestBody.create(MediaType.parse(mime), file);
-                    //avatarFile: 与服务器端的参数名相同
-                    map.put("avatarFile\"; filename=\"" + filename + "", img);
+            buildSyncUserMap(user, map);
+
+            //是否需要更新头像
+            boolean shouldUpdateAvatar = false;
+            String oldHash = user.getAvatarHash();
+            String iconPath = user.getAvatar();
+            String iconHash = null;
+            if (!TextUtils.isEmpty(iconPath)) { //存在头像，则生成头像文件的hash
+                iconHash = DigestUtil.md5FileHex(iconPath);
+                if (!TextUtils.isEmpty(iconHash) && !iconHash.equals(oldHash)) { //头像修改了才上传
+                    shouldUpdateAvatar = true;
                 }
             }
-            String avatarHash = user.getAvatarHash();
-            if (avatarHash != null) {
-                map.put("user.avatarHash", RequestBody.create(null, avatarHash));
+            final String newIconHash = iconHash;
+            if (shouldUpdateAvatar) {
+                String avatar = user.getAvatar();
+                if (avatar != null) {
+                    File file = new File(avatar);
+                    if (file.exists()) {
+                        String filename = file.getName();
+                        String mime = FileUtil.getWebMime(file);
+                        if (mime == null) {
+                            mime = "image/png";
+                        }
+                        RequestBody img = RequestBody.create(MediaType.parse(mime), file);
+                        //avatarFile: 与服务器端的参数名相同
+                        map.put("avatarFile\"; filename=\"" + filename + "", img);
+                    }
+                }
+                String avatarHash = user.getAvatarHash();
+                if (avatarHash != null) {
+                    map.put("user.avatarHash", RequestBody.create(null, avatarHash));
+                }
+            } else {
+                KLog.d(TAG, "sync user info not need update avatar");
             }
-            Call<ActionResult<Void>> callUp = repoUp.modify(sid, map);
+            Call<ActionResult<Void>> callUp = null;
+            if (shouldUpdateAvatar) {
+                callUp = repoUp.modify(sid, map);
+            } else {
+                Map<String, String> basicMap = new HashMap<>();
+                buildSyncUserBasicMap(user, basicMap);
+                callUp = repoUp.modifyBasic(sid, basicMap);
+            }
             callUp.enqueue(new Callback<ActionResult<Void>>() {
                 @Override
                 public void onResponse(Call<ActionResult<Void>> call, Response<ActionResult<Void>> response) {
@@ -242,7 +303,7 @@ public class UserApi extends BaseApi {
                         //将同步的状态修改到本地
                         User u = new User();
                         u.setSid(sid);
-                        u.setId(id);
+                        u.setAvatarHash(newIconHash);
                         u.setSyncState(SyncState.SYNC_DONE.ordinal());
                         updateLocalUserAsync(u);
                     } else {
@@ -257,6 +318,7 @@ public class UserApi extends BaseApi {
             });
         } else {    //从服务器上更新信息到本地
             KLog.d(TAG, "sync user info download from server");
+            final long lastSyncTime = user.getLastSyncTime();
             final IUserApi repoDown = retrofit.create(IUserApi.class);
             Call<ActionResult<User>> call = repoDown.downInfo(sid);
             call.enqueue(new Callback<ActionResult<User>>() {
@@ -291,6 +353,7 @@ public class UserApi extends BaseApi {
                         u.setMobile(resultUser.getMobile());
                         u.setNickname(resultUser.getNickname());
                         u.setState(resultUser.getState());
+                        u.setLastSyncTime(lastSyncTime);
                         if (avatarChanged) {    //需要下载头像
                             KLog.d(TAG, "sync down user info response success and avatar changed and will download avatar from server");
                             downloadAvatarAsync(u);
@@ -311,6 +374,98 @@ public class UserApi extends BaseApi {
         }
 //        IUserApi repo = retrofit.create(IUserApi.class);
 //        Call<ActionResult<UserDto>> call = repo.register(buildRegisterParams(userDto, confirmPassword));
+    }
+
+    /**
+     * 构建修改用户信息所需的参数
+     * @param user
+     * @param map
+     * @return
+     */
+    private static Map<String, RequestBody> buildSyncUserMap(User user, Map<String, RequestBody> map) {
+        String nickname = user.getNickname();
+        if (nickname != null) {
+            map.put("user.nickname", RequestBody.create(null, nickname));
+        }
+
+        String email = user.getEmail();
+        if (email != null) {
+            map.put("user.email", RequestBody.create(null, email));
+        }
+
+        String username = user.getUsername();
+        if (username != null) {
+            map.put("user.username", RequestBody.create(null, username));
+        }
+
+        String phone = user.getMobile();
+
+        if (phone != null) {
+            map.put("user.phone", RequestBody.create(null, phone));
+        }
+        return map;
+    }
+
+    /**
+     * 构建修改用户信息所需的参数
+     * @param user
+     * @param map
+     * @return
+     */
+    private static Map<String, String> buildSyncUserBasicMap(User user, Map<String, String> map) {
+        String nickname = user.getNickname();
+        if (nickname != null) {
+            map.put("user.nickname", nickname);
+        }
+
+        String email = user.getEmail();
+        if (email != null) {
+            map.put("user.email", email);
+        }
+
+        String username = user.getUsername();
+        if (username != null) {
+            map.put("user.username", username);
+        }
+
+        String phone = user.getMobile();
+
+        if (phone != null) {
+            map.put("user.phone", phone);
+        }
+        return map;
+    }
+
+    /**
+     * 向服务器端上传用户信息，不包含头像信息，该方法在主线程中运行
+     * @param user
+     * @return
+     */
+    public static int syncUpUser(User user) {
+        Retrofit retrofit = buildRetrofit();
+        final String sid = user.getSid();
+        IUserApi repo = retrofit.create(IUserApi.class);
+        Map<String, String> map = new HashMap<>();
+        buildSyncUserBasicMap(user, map);
+        Call<ActionResult<Void>> call = repo.modifyBasic(sid, map);
+        int resultCode = 0;
+        try {
+            Response<ActionResult<Void>> response = call.execute();
+            if (response == null || !response.isSuccessful() || response.body() == null) {
+                KLog.d(TAG, "sync up user info response is null or not successful");
+                return ActionResult.RESULT_FAILED;
+            }
+            ActionResult<Void> actionResult = response.body();
+            if (!actionResult.isSuccess()) {
+                KLog.d(TAG, "sync up user info action result is failed");
+                return actionResult.getResultCode();
+            }
+            resultCode = ActionResult.RESULT_SUCCESS;
+        } catch (Exception e) {
+            resultCode = ActionResult.RESULT_ERROR;
+            KLog.d(TAG, "sync up user info error:" + e.getMessage());
+        }
+        return resultCode;
     }
 
     /**
@@ -378,6 +533,76 @@ public class UserApi extends BaseApi {
             }
         });
         return call;
+    }
+
+    /**
+     * 校验用户，主要要用于重置应用锁密码
+     * @param context
+     * @param password 用户密码
+     * @return
+     */
+    public static int validateUser(final Context context, String password) {
+        KLog.d(TAG, "validate user invoke...");
+        if (TextUtils.isEmpty(password)) {
+            KLog.d(TAG, "validate user failed params is null");
+            return ActionResult.RESULT_PARAM_ERROR;
+        }
+        
+        User user = getUser(context);
+        if (user == null) { //当前用户没有登录，则查询本地的账号
+            int userId = NoteUtil.getAccountId(context);
+            if (userId <= 0) {  //当前没有绑定的账户
+                KLog.d(TAG, "validate user local user id 0");
+                return ActionResult.RESULT_PARAM_ERROR;
+            }
+            User param = new User();
+            param.setId(userId);
+            user = UserManager.getInstance().getAccountInfo(param);
+            if (user == null) {
+                KLog.d(TAG, "validate user local user id null:" + userId);
+                return ActionResult.RESULT_PARAM_ERROR;
+            }
+        }
+        String encodePwd = DigestUtil.md5Hex(password);
+        user.setPassword(encodePwd);
+        Retrofit retrofit = buildRetrofit();
+        IUserApi repo = retrofit.create(IUserApi.class);
+        final UserDto paramDto = new UserDto();
+        paramDto.setUser(user);
+        paramDto.setType(0);
+        Call<ActionResult<UserDto>> call = repo.validate(buildValidateParams(user));
+        try {
+            Response<ActionResult<UserDto>> response = call.execute();
+            if (response == null || !response.isSuccessful()) { //http 请求失败
+                KLog.d(TAG, "validate user but response is null or not successful");
+                return ActionResult.RESULT_FAILED;
+            }
+            ActionResult<UserDto> actionResult = response.body();
+            if (actionResult == null || !actionResult.isSuccess()) {    //返回的数据为空或者失败
+                int resultCode = actionResult == null ? ActionResult.RESULT_FAILED : actionResult.getResultCode();
+                KLog.d(TAG, "validate user result data is null or not successful");
+                KLog.d(TAG, "validate user result:" + actionResult);
+                return resultCode;
+            }
+            //没有真实的用户数据
+            UserDto userDto = actionResult.getData();
+            if (userDto == null || userDto.getUser() == null) {
+                KLog.d(TAG, "validate user result user data is null:" + userDto);
+                return ActionResult.RESULT_FAILED;
+            }
+            //数据是有效的
+            //保存基本数据到本地
+            boolean success = saveLocalUser(context, paramDto, userDto);
+            if (success) {
+                return ActionResult.RESULT_SUCCESS;
+            } else {
+                return ActionResult.RESULT_FAILED; 
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "validate user error:" + e.getMessage());
+            e.printStackTrace();
+        }
+        return ActionResult.RESULT_FAILED;
     }
 
     /**
@@ -524,6 +749,33 @@ public class UserApi extends BaseApi {
     }
     
     /**
+     * 更新本地的用户信息--同步处理
+     * @param original 本地的用户信息
+     * @param result 服务器返回的结果
+     */
+    private static boolean saveLocalUser(Context context, final UserDto original, final UserDto result) {
+        boolean success = false;
+        if (result != null && result.getUser() != null) {
+
+            User user = original.getUser();
+            if (user == null) {
+                user = new User();
+            }
+            User currentUser = getUser(context);
+            boolean isLogin = currentUser != null;//当前用户已登录，则刷新界面
+            mergeUserInfo(user, result.getUser());
+            //添加或更新本地账号信息
+            success = UserManager.getInstance().insertOrUpdate(user, isLogin);
+            if (success) {
+                int state = isLogin ? State.NORMAL : State.OFFLINE;
+                NoteUtil.saveAccount(context, user.getId(), state, -1);
+            }
+        }
+        KLog.d(TAG, "bing user add user to local result:" + success);
+        return success;
+    }
+    
+    /**
      * 更新本地的用户信息--异步处理
      * @param original 本地的用户信息
      * @param result 服务器返回的结果
@@ -620,6 +872,38 @@ public class UserApi extends BaseApi {
             autoCreate = 1;
         }
         params.put("autoCreate", String.valueOf(autoCreate));
+        return params;
+    }
+
+    /**
+     * 构建登录的请求参数
+     * @param user
+     * @return
+     */
+    private static Map<String, String> buildValidateParams(User user) {
+        Map<String, String> params = new HashMap<>();
+        if (user != null) {
+            String mobile = user.getMobile();
+            if (mobile != null) {
+                params.put("mobile", mobile);
+            }
+            String email = user.getEmail();
+            if (email != null) {
+                params.put("email", email);
+            }
+            String password = user.getPassword();
+            if (password != null) {
+                params.put("password", password);
+            }
+            String username = user.getUsername();
+            if (username != null) {
+                params.put("username", username);
+            }
+            String sid = user.getSid();
+            if (sid != null) {
+                params.put("sid", sid);
+            }
+        }
         return params;
     }
 

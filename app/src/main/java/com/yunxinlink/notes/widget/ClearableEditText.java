@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v4.widget.TextViewCompat;
 import android.support.v7.widget.AppCompatEditText;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -45,7 +46,7 @@ public class ClearableEditText extends AppCompatEditText implements View.OnTouch
     }
 
     private void init(final Context context) {
-        final Drawable drawable = ContextCompat.getDrawable(context, R.drawable.abc_ic_clear_mtrl_alpha);
+        final Drawable drawable = ContextCompat.getDrawable(context, R.drawable.ic_clear_mtrl_alpha);
         final Drawable wrappedDrawable = DrawableCompat.wrap(drawable); //Wrap the drawable so that it can be tinted pre Lollipop
         DrawableCompat.setTint(wrappedDrawable, getCurrentHintTextColor());
         mClearTextIcon = wrappedDrawable;
@@ -101,10 +102,11 @@ public class ClearableEditText extends AppCompatEditText implements View.OnTouch
     private void setClearIconVisible(final boolean visible) {
         mClearTextIcon.setVisible(visible, false);
         final Drawable[] compoundDrawables = getCompoundDrawables();
-        setCompoundDrawables(
-                compoundDrawables[0],
-                compoundDrawables[1],
-                visible ? mClearTextIcon : null,
+        TextViewCompat.setCompoundDrawablesRelative(
+                this, 
+                compoundDrawables[0], 
+                compoundDrawables[1], 
+                visible ? mClearTextIcon : null, 
                 compoundDrawables[3]);
     }
 }

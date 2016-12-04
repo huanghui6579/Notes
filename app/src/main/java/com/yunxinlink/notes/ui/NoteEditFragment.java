@@ -44,6 +44,7 @@ import com.yunxinlink.notes.richtext.RichTextWrapper;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteLinkify;
+import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.widget.MessageBundleSpan;
@@ -708,14 +709,34 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
     public void clearContent() {
         mEtContent.setText("");
     }
-    
+
+    @Override
+    public int[] getSelPos(boolean update) {
+        return mRichTextWrapper.getRichSpan().getSelPos(update);
+    }
+
     /**
      * 处理图片的更新，主要是绘画
      * @param attachSpec
      * @param listener
      */
     public void handleUpdateImage(AttachSpec attachSpec, AttachAddCompleteListener listener) {
-        mRichTextWrapper.getRichSpan().showImage(attachSpec, listener);
+        SystemUtil.doInbackground(new NoteTask(attachSpec, listener) {
+            @Override
+            public void run() {
+                AttachSpec spec = (AttachSpec) params[0];
+                AttachAddCompleteListener completeListener = (AttachAddCompleteListener) params[1];
+                if (!spec.hasSelPos()) {
+                    int[] selPos = getSelPos(true);
+                    if (selPos != null && selPos.length > 1) {
+                        spec.start = selPos[0];
+                        spec.end = selPos[1];
+                    }
+                }
+                mRichTextWrapper.getRichSpan().showImage(spec, completeListener);
+            }
+        });
+        
     }
 
     /**

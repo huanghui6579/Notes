@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -26,6 +27,7 @@ import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.api.model.NoteParam;
 import com.yunxinlink.notes.lock.ILockerActivityDelegate;
+import com.yunxinlink.notes.lock.LockInfo;
 import com.yunxinlink.notes.lock.LockerDelegate;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.User;
@@ -64,6 +66,10 @@ public abstract class BaseActivity extends SwipeBackActivity {
 
     public BaseActivity() {
         TAG = this.getClass().getSimpleName();
+    }
+
+    static {
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
     }
 
     @Override
@@ -150,6 +156,26 @@ public abstract class BaseActivity extends SwipeBackActivity {
         if (mThemeReceiver != null) {
             LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
             localBroadcastManager.unregisterReceiver(mThemeReceiver);
+        }
+    }
+
+    /**
+     * 更新密码锁的信息
+     * @param lockInfo
+     */
+    protected void updateLockInfo(LockInfo lockInfo) {
+        if (mLockerActivityDelegate != null) {
+            mLockerActivityDelegate.updateLockInfo(lockInfo);
+        }
+    }
+
+    /**
+     * 更新目前app的解锁状态
+     * @param isLocking 是否锁定，true：已锁定
+     */
+    protected void updateLockState(boolean isLocking) {
+        if (mLockerActivityDelegate != null) {
+            mLockerActivityDelegate.setLockState(isLocking);
         }
     }
 

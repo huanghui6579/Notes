@@ -613,6 +613,11 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         }
     }
 
+    @Override
+    public int[] getSelPos(boolean update) {
+        return null;
+    }
+
     /**
      * 获取当前有焦点的文本框
      * @return
@@ -1055,7 +1060,7 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
                         Drawable drawable = adapter.getClearDrawable();
                         if (drawable == null) {
                             int color = ResourcesCompat.getColor(getResources(), R.color.text_content_color, getContext().getTheme());
-                            drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.abc_ic_clear_mtrl_alpha, getContext().getTheme());
+                            drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_clear_mtrl_alpha, getContext().getTheme());
                             drawable = DrawableCompat.wrap(drawable); //Wrap the drawable so that it can be tinted pre Lollipop
                             DrawableCompat.setTint(drawable, color);
                             adapter.setClearDrawable(drawable);

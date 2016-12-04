@@ -1,20 +1,20 @@
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <SwitchPreference 
+    <android.support.v7.preference.SwitchPreferenceCompat 
         android:key="@string/settings_key_sync_note_auto"
         android:title="@string/settings_sync_note_title"
         android:summary="@string/settings_sync_note_summary"
         android:defaultValue="@bool/default_settings_key_sync_note_auto"
         android:checked="@bool/default_settings_key_sync_note_auto"/>
     
-    <SwitchPreference
+    <android.support.v7.preference.SwitchPreferenceCompat
         android:key="@string/settings_key_sync_note_traffic"
         android:title="@string/settings_sync_traffic_title"
         android:summary="@string/settings_sync_traffic_summary"
         android:defaultValue="@bool/default_settings_key_sync_note_traffic"
         android:checked="@bool/default_settings_key_sync_note_traffic"/>
     
-    <Preference
+    <android.support.v7.preference.Preference
         android:key="@string/settings_key_sync_note_state"
         android:title="@string/settings_sync_state_title"
         android:summary="@string/settings_sync_state_summary" />
@@ -37,4 +37,4 @@
         <intent android:action="android.settings.SYNC_SETTINGS" />
     </Preference>-->
 
-</PreferenceScreen>
+</android.support.v7.preference.PreferenceScreen>

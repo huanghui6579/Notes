@@ -75,4 +75,11 @@ public interface ActionFragment {
      * 清空当前的内容
      */
     void clearContent();
+
+    /**
+     * 获取光标目前的起始位置,[0]:光标的起始位置，[1]:光标的结束位置
+     * @param update 是否是更新操作，更新和添加时获取光标定位的逻辑不一样
+     * @return
+     */
+    int[] getSelPos(boolean update);
 }

@@ -5,10 +5,14 @@ android {
 
     compileSdkVersion globalConfiguration.getAt("compileSdkVersion")
     buildToolsVersion globalConfiguration.getAt("buildToolsVersion")
+//    compileSdkVersion 24
+//    buildToolsVersion '25.0.0'
 
     defaultConfig {
         minSdkVersion globalConfiguration.getAt("minSdkVersion")
         targetSdkVersion globalConfiguration.getAt("targetSdkVersion")
+//        minSdkVersion 15
+//        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
     }
@@ -22,8 +26,11 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile supportDependencies.junit
     compile supportDependencies.appcompat
     compile supportDependencies.klog
     compile 'haibison.android:underdogs:3.1.0'
+    testCompile supportDependencies.junit
+//    testCompile "junit:junit:4.12"
+//    compile "com.github.zhaokaiqiang.klog:library:1.5.0"
+//    compile "com.android.support:appcompat-v7:24.2.1"
 }

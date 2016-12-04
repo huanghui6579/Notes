@@ -40,7 +40,7 @@ public interface INoteApi {
      * @param noteDto 笔记数据
      * @return 上传笔记的结果
      */
-    @POST("note/{userSid}/up")
+    @POST("api/note/{userSid}/up")
     Call<ActionResult<Void>> syncUpNote(@Path("userSid") String userSid, @Body NoteDto noteDto);
 
     /**
@@ -49,7 +49,7 @@ public interface INoteApi {
      * @return 上传附件的结果
      */
     @Multipart
-    @POST("note/att/upload")
+    @POST("api/note/att/upload")
     Call<ActionResult<Void>> uploadAttach(@PartMap Map<String, RequestBody> params);
 
     /**
@@ -58,7 +58,7 @@ public interface INoteApi {
      * @param params 参数
      * @return 返回笔记本的sid集合
      */
-    @GET("note/{userSid}/folder/sids")
+    @GET("api/note/{userSid}/folder/sids")
     Call<ActionResult<PageInfo<List<Folder>>>> downFolderSid(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
 
     /**
@@ -68,7 +68,7 @@ public interface INoteApi {
      * @return 笔记本的数据
      */
     @FormUrlEncoded
-    @POST("note/{userSid}/folders/filter")
+    @POST("api/note/{userSid}/folders/filter")
     Call<ActionResult<List<FolderDto>>> downFoldersFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
 
     /**
@@ -77,7 +77,7 @@ public interface INoteApi {
      * @param params 参数
      * @return 笔记本的数据
      */
-    @GET("note/{userSid}/folders")
+    @GET("api/note/{userSid}/folders")
     Call<ActionResult<PageInfo<List<FolderDto>>>> downFolders(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
 
     /**
@@ -86,7 +86,7 @@ public interface INoteApi {
      * @param params 参数
      * @return 笔记的数据
      */
-    @GET("note/{userSid}/list")
+    @GET("api/note/{userSid}/list")
     Call<ActionResult<PageInfo<List<NoteInfoDto>>>> downNotes(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
 
     /**
@@ -95,7 +95,7 @@ public interface INoteApi {
      * @param params 参数
      * @return 笔记的数据
      */
-    @GET("note/{userSid}/sids")
+    @GET("api/note/{userSid}/sids")
     Call<ActionResult<PageInfo<List<NoteInfoDto>>>> downNoteSids(@Path("userSid") String userSid, @QueryMap Map<String, String> params);
 
     /**
@@ -105,7 +105,7 @@ public interface INoteApi {
      * @return 笔记的数据
      */
     @FormUrlEncoded
-    @POST("note/{userSid}/list/filter")
+    @POST("api/note/{userSid}/list/filter")
     Call<ActionResult<List<NoteInfoDto>>> downNotesFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
 
     /**
@@ -115,7 +115,7 @@ public interface INoteApi {
      * @return 清单的数据
      */
     @FormUrlEncoded
-    @POST("note/{userSid}/detaillist/filter")
+    @POST("api/note/{userSid}/detaillist/filter")
     Call<ActionResult<List<DetailListDto>>> downDetailListFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
 
     /**
@@ -125,7 +125,7 @@ public interface INoteApi {
      * @return 附件的数据
      */
     @FormUrlEncoded
-    @POST("note/{userSid}/attach/filter")
+    @POST("api/note/{userSid}/attach/filter")
     Call<ActionResult<List<AttachDto>>> downAttachFilter(@Path("userSid") String userSid, @FieldMap Map<String, String> params);
 
     /**
@@ -134,7 +134,7 @@ public interface INoteApi {
      * @param params
      * @return
      */
-    @GET("note/att/{sid}")
+    @GET("api/note/att/{sid}")
     @Streaming
     Call<ResponseBody> downAttachFile(@Path("sid") String sid, @QueryMap Map<String, String> params);
 
@@ -144,7 +144,7 @@ public interface INoteApi {
      * @param noteList 要改变删除状态的笔记
      * @return 服务器返回的数据
      */
-    @POST("note/state/{userSid}/change")
+    @POST("api/note/state/{userSid}/change")
     Call<ActionResult<Void>> updateNoteState(@Path("userSid") String userSid, @Body List<NoteInfoDto> noteList);
 
     /**
@@ -153,6 +153,6 @@ public interface INoteApi {
      * @return 服务器返回的数据
      */
     @Multipart
-    @POST("note/feedback/new")
+    @POST("api/note/feedback/new")
     Call<ActionResult<Void>> makeFeedback(@PartMap Map<String, RequestBody> params);
 }

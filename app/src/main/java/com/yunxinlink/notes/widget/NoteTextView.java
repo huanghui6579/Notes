@@ -145,6 +145,13 @@ public class NoteTextView extends TextView implements NoteRichSpan {
         return this;
     }
 
+    @Override
+    public int[] getSelPos(boolean update) {
+        int start = getSelectionStart();
+        int end = getSelectionEnd();
+        return new int[] {start, end};
+    }
+
     /**
      * 图片加载完毕的回调
      */
@@ -208,6 +215,8 @@ public class NoteTextView extends TextView implements NoteRichSpan {
 
                         int selStart = spanInfo.selStart;
                         int selEnd = spanInfo.selEnd;
+                        selStart = selStart < 0 ? 0 : selStart;
+                        selEnd = selEnd < 0 ? 0 : selEnd;
                         ReplacementSpan replaceSpan = spanInfo.replaceSpan;
                         CharSequence text = getText();
                         ClickableSpan clickSpan = spanInfo.clickSpan;

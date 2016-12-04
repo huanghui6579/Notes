@@ -20,7 +20,6 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
-
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.paint.PaintData;
@@ -28,6 +27,7 @@ import com.yunxinlink.notes.paint.PaintRecord;
 import com.yunxinlink.notes.paint.Painter;
 import com.yunxinlink.notes.paint.widget.PaintView;
 import com.yunxinlink.notes.richtext.AttachSpec;
+import com.yunxinlink.notes.util.FileUtil;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.log.Log;
@@ -274,6 +274,7 @@ public class PaintFragment extends Fragment implements PaintView.OnDrawChangedLi
             String filePath = null;
             try {
                 filePath = attachSpec.filePath;
+                attachSpec.mimeType = FileUtil.MIME_TYPE_PNG;
                 if (TextUtils.isEmpty(filePath)) {
                     filePath = SystemUtil.getAttachFilePath(attachSpec.noteSid, Attach.PAINT);
                 }

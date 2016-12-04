@@ -23,6 +23,7 @@ import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.view.menu.MenuPopupHelper;
 import android.support.v7.widget.PopupMenu;
@@ -216,6 +217,15 @@ public class SystemUtil {
      */
     public static String generateSyncSid() {
         int hashCodeV = 0;
+        return formatSid(hashCodeV);
+    }
+
+    /**
+     * 生成同步用户信息的sid,该sid是固定的
+     * @return
+     */
+    public static String generateSyncUserSid() {
+        int hashCodeV = 1;
         return formatSid(hashCodeV);
     }
 
@@ -526,6 +536,27 @@ public class SystemUtil {
     }
 
     /**
+     * 获取日志的路径,默认为/sdcard/YunXinNotes/log/
+     * @return
+     */
+    public static File getLogDir() {
+        File file = null;
+        try {
+            String dir = getLogPath();
+            if (dir != null) {
+                file = new File(dir);
+                if (!file.exists()) {
+                    file.mkdirs();
+                }
+            }
+        } catch (Exception e) {
+            KLog.e(TAG, "get log dir error:" + e.getMessage());
+            e.printStackTrace();
+        }
+        return file;
+    }
+
+    /**
      * 根据附件类型获取对应类型的存储路径,默认为/sdcard/YunXinNotes/notes/#{noteid}/#{type}
      * @param sid
      * @param attachType
@@ -614,7 +645,7 @@ public class SystemUtil {
         if (mCameraNameFormat == null) {
             mCameraNameFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
         }
-        return "P" + mCameraNameFormat.format(new Date()) + ".png";
+        return "P" + mCameraNameFormat.format(new Date()) + ".paint";
     }
 
     /**
@@ -1550,8 +1581,8 @@ public class SystemUtil {
      */
     public static void setMenuOverFlowTint(Context context, MenuItem... menuItems) {
         if (menuItems != null) {
-            TypedArray a = context.obtainStyledAttributes(android.support.v7.appcompat.R.style.Widget_AppCompat_ActionButton_Overflow, new int[]{android.R.attr.src});
-            Drawable drawable = a.getDrawable(0);
+//            TypedArray a = context.obtainStyledAttributes(android.support.v7.appcompat.R.style.Widget_AppCompat_ActionButton_Overflow, new int[]{android.R.attr.src});
+            Drawable drawable = ResourcesCompat.getDrawable(context.getResources(), R.drawable.ic_menu_moreoverflow_mtrl_alpha, context.getTheme());
 //            a = obtainStyledAttributes(R.style.AppTheme_PopupOverlay, new int[] {R.attr.colorButtonNormal});
             int tint = SystemUtil.getColor(context, R.color.colorButtonControl);
             if (drawable != null) {
@@ -1560,7 +1591,7 @@ public class SystemUtil {
                     item.setIcon(drawable);
                 }
             }
-            a.recycle();
+//            a.recycle();
         }
     }
 

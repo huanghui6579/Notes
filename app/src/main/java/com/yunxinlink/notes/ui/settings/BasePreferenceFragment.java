@@ -1,7 +1,9 @@
 package com.yunxinlink.notes.ui.settings;
 
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
+import android.content.Context;
+import android.support.v7.app.AppCompatDelegate;
+import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceFragmentCompat;
 
 import com.yunxinlink.notes.NoteApplication;
 
@@ -10,8 +12,12 @@ import com.yunxinlink.notes.NoteApplication;
  * @update 2016/8/24 17:50
  * @version: 0.0.1
  */
-public abstract class BasePreferenceFragment extends PreferenceFragment {
+public abstract class BasePreferenceFragment extends PreferenceFragmentCompat {
     protected static String TAG = null;
+
+    static {
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+    }
 
     BasePreferenceFragment() {
         TAG = getClass().getSimpleName();
@@ -109,5 +115,13 @@ public abstract class BasePreferenceFragment extends PreferenceFragment {
      */
     protected NoteApplication getApp() {
         return (NoteApplication) getActivity().getApplication();
+    }
+
+    /**
+     * 兼容执行attach
+     * @param context
+     */
+    protected void attachCompat(Context context) {
+        //do nothing
     }
 }

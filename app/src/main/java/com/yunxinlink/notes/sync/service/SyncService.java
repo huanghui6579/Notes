@@ -10,8 +10,11 @@ import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
+import com.yunxinlink.notes.api.impl.DeviceApi;
 import com.yunxinlink.notes.api.impl.NoteApi;
+import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.api.model.NoteParam;
+import com.yunxinlink.notes.api.model.VersionInfo;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.model.ActionResult;
@@ -81,9 +84,29 @@ public class SyncService extends Service {
                     KLog.d(TAG, "sync service will start sync note info");
                     handleSyncCommand(intent, param);
                     break;
+                case Constants.SYNC_USER:   //开始同步用户信息
+                    KLog.d(TAG, "sync service will start sync user info");
+                    handleSyncUser(intent, param);
+                    break;
             }
         }
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    /**
+     * 同步用户信息
+     * @param intent
+     * @param param
+     */
+    private void handleSyncUser(Intent intent, final TaskParam param) {
+        //同步任务的编号
+        final String syncSid = intent.getStringExtra(Constants.ARG_CORE_OBJ);
+        KLog.d(TAG, "sync service will start sync user task sid : " + syncSid);
+        if (!TextUtils.isEmpty(syncSid)) {
+            param.data = syncSid;
+            //开始同步
+            executeTask(param);
+        }
     }
 
     /**
@@ -174,6 +197,24 @@ public class SyncService extends Service {
     }
 
     /**
+     * 同步用户信息
+     * @param syncSid
+     * @return
+     */
+    private TaskParam syncUser(String syncSid) {
+        final TaskParam resultParam = new TaskParam();
+        SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
+        if (!checkSyncUpState(syncData)) {
+            return null;
+        } else {
+            User user = (User) syncData.getSyncable();
+            UserApi.syncUserInfo(user);
+            resultParam.optType = Constants.SYNC_USER;
+        }
+        return resultParam;
+    }
+
+    /**
      * 上传笔记
      * @param syncSid 同步任务的编号
      */
@@ -210,8 +251,8 @@ public class SyncService extends Service {
      */
     private synchronized boolean checkSyncUpState(SyncData syncData) {
         if (syncData == null || syncData.isSyncing()
-                || !syncData.hasSyncData() || !(syncData.getSyncable() instanceof NoteParam)) {
-            KLog.d(TAG, "sync service sync up note info but sync data is null or is syncing or not has sync data:" + syncData);
+                || !syncData.hasSyncData()) {
+            KLog.d(TAG, "sync service sync up user info but sync data is null or is syncing or not has sync data:" + syncData);
             return false;
         } else {
             syncData.setState(SyncData.SYNC_ING);
@@ -433,8 +474,66 @@ public class SyncService extends Service {
             if (mAutoNotifyDone) {
                 //同步结束
                 onEndSync();
+                //如果本地已经有了新版本的信息，则下载新版本
+                NoteApplication app = (NoteApplication) getApplication();
+                boolean hasNewVersion = app.hasNewVersion();
+                if (hasNewVersion) {
+                    VersionInfo tmp = app.getVersionInfo();
+                    VersionInfo versionInfo = tmp.clone();
+                    app.setVersionInfo(null);
+                    boolean isWifi = SystemUtil.isWifiConnected(app);
+                    isWifi = true;
+                    if (isWifi) {
+                        KLog.d(TAG, "sync service has new version and wifi connected and will download new app");
+                        
+                        if (versionInfo == null) {
+                            KLog.d(TAG, "sync service has new version clone version info error");
+                            return;
+                        }
+                        DeviceApi.downloadApp(versionInfo, new AppDownloadListener());
+                    } else {
+                        KLog.d(TAG, "sync service has new version but is not wifi");
+                    }
+                }
+                
             }
             KLog.d(TAG, "sync service download file listener completed");
+        }
+    }
+
+    /**
+     * APP下载的监听器
+     */
+    class AppDownloadListener extends SimpleDownloadListener {
+
+        @Override
+        public void onStart(DownloadTask downloadTask) {
+            super.onStart(downloadTask);
+            KLog.d(TAG, "download app sync service onStart task:" + downloadTask);
+        }
+
+        @Override
+        public void onCompleted(DownloadTask downloadTask) {
+            super.onCompleted(downloadTask);
+            KLog.d(TAG, "download app sync service onStart task:" + downloadTask);
+        }
+
+        @Override
+        public void onError(DownloadTask downloadTask) {
+            super.onError(downloadTask);
+            KLog.d(TAG, "download app sync service onError task:" + downloadTask);
+        }
+
+        @Override
+        public void onProgress(long bytesRead, long contentLength, boolean done) {
+            super.onProgress(bytesRead, contentLength, done);
+            KLog.d(TAG, "download app sync service onProgress bytesRead:" + bytesRead + ", contentLength:" + contentLength + ", done:" + done);
+        }
+
+        @Override
+        public void onCanceled(DownloadTask downloadTask) {
+            super.onCanceled(downloadTask);
+            KLog.d(TAG, "download app sync service onCanceled task:" + downloadTask);
         }
     }
 
@@ -454,6 +553,8 @@ public class SyncService extends Service {
                 KLog.d(TAG, "sync service sync task sid is null");
                 return null;
             }
+            //是否是同步笔记
+            boolean syncNote = true;
             TaskParam resultParam = null;
             KLog.d(TAG, "sync service sync task do in background syncSid :" + syncSid);
             int syncType = param.optType;
@@ -468,14 +569,20 @@ public class SyncService extends Service {
                     param.isManual = true;
                     resultParam = syncNote(syncSid, param);
                     break;
+                case Constants.SYNC_USER:   //同步用户的信息
+                    syncNote = false;
+                    resultParam = syncUser(syncSid);
+                    break;
             }
             //移除同步的sid
             removeSyncTask(syncSid);
-            //修改最后的同步时间
-            User user = getCurrentUser();
-            if (user != null && user.isAvailable()) {
-                user.setLastSyncTime(System.currentTimeMillis());
-                UserManager.getInstance().updateSyncTime(user);
+            if (syncNote) {
+                //修改最后的同步时间
+                User user = getCurrentUser();
+                if (user != null && user.isAvailable()) {
+                    user.setLastSyncTime(System.currentTimeMillis());
+                    UserManager.getInstance().updateSyncTime(user);
+                }
             }
             return resultParam;
         }

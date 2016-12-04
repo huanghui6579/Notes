@@ -64,4 +64,11 @@ public interface NoteRichSpan {
      * 获取原始的view
      */
     TextView getOriginalView();
+
+    /**
+     * 获取光标的起始位置,[0]:起始位置，[1]:结束位置
+     * @param update 是否是更新操作，更新和添加时获取光标定位的逻辑不一样
+     * @return
+     */
+    int[] getSelPos(boolean update);
 }

@@ -1,6 +1,7 @@
 package com.yunxinlink.notes.lock;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,6 +14,7 @@ import com.socks.library.KLog;
 import com.yunxinlink.notes.util.NoteUtil;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * @author huanghui1
@@ -42,7 +44,11 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
         if (mMethodIsTopOfTask == null) {
             try {
                 mMethodIsTopOfTask = Activity.class.getDeclaredMethod("isTopOfTask");
-                mMethodIsTopOfTask.setAccessible(true);
+                if (mMethodIsTopOfTask != null) {
+                    mMethodIsTopOfTask.setAccessible(true);
+                } else {
+                    KLog.d(TAG, "locker delegate init is top of task method is null may under Android 5.0");
+                }
             } catch (NoSuchMethodException e) {
                 KLog.e(TAG, "get isTopOfTask method error:" + e.getMessage());
                 e.printStackTrace();
@@ -306,14 +312,20 @@ public class LockerDelegate implements ILockerDelegate, ILockerActivityDelegate 
         NoteUtil.finishAll(activity);
     }
 
-    boolean isActivityTopOfTask(Activity a) {
+    private boolean isActivityTopOfTask(Activity a) {
         boolean isTop = true;
         try {
-            if(mMethodIsTopOfTask != null) {
+            if(mMethodIsTopOfTask != null) {    //Android 5.0或者之上
                 Object value  = mMethodIsTopOfTask.invoke(a, (Object[])null);
-                if (value instanceof Boolean) {
-                    isTop = ((Boolean) value).booleanValue();
+                if (value != null && value instanceof Boolean) {
+                    isTop = (boolean) value;
                 }
+            } else {    //Android 5.0之下
+                ActivityManager manager = ((ActivityManager) a.getSystemService(Context.ACTIVITY_SERVICE));
+                List localList = manager.getRunningTasks(1);
+                ActivityManager.RunningTaskInfo localRunningTaskInfo = (ActivityManager.RunningTaskInfo)localList.get(0);
+                String topActivityName = localRunningTaskInfo.topActivity.getClassName();
+                isTop = a.getClass().getName().equals(topActivityName);
             }
         } catch (Exception e) {
             KLog.e(TAG, "isActivityTopOfTask error:" + e.getMessage());

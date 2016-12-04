@@ -161,6 +161,36 @@ public class AttachSpan extends ClickableSpan {
     }
 
     /**
+     * 根据链接的类型来获取对应的图标
+     * @return 返回图标的资源id
+     */
+    public int getActionIconRes() {
+        int res = 0;
+        switch (attachSpec.attachType) {
+            case Attach.IMAGE:  //图片
+                res = R.drawable.ic_action_photo;
+                break;
+            case Attach.PAINT:  //绘画
+                res = R.drawable.ic_action_brush;
+                break;
+            case Attach.VOICE:  //录音
+                res = R.drawable.ic_audiotrack;
+                break;
+            case Attach.ARCHIVE:  //压缩文件
+                res = R.drawable.ic_archive;
+                break;
+            case Attach.VIDEO:  //视频
+                res = R.drawable.ic_play_arrow;
+                break;
+            default:    //文件
+                res = R.drawable.ic_action_insert_file;
+                break;
+
+        }
+        return res;
+    }
+
+    /**
      * 显示菜单
      * @param context 上下文
      * @param menuItem 菜单数据
@@ -199,6 +229,29 @@ public class AttachSpan extends ClickableSpan {
     }
 
     /**
+     * 显示附件
+     * @param context
+     */
+    public void showAttach(Context context) {
+        switch (attachSpec.attachType) {
+            case Attach.PAINT:  //绘画
+                editPaint(context);
+                break;
+            default:    //文件
+                openFile(context);
+                break;
+        }
+    }
+
+    /**
+     * 打开文件
+     * @param context
+     */
+    private void openFile(Context context) {
+        SystemUtil.openFile(context, attachSpec.filePath, attachSpec.attachType, attachSpec.mimeType);
+    }
+
+    /**
      * 处理绘画的菜单
      * @param context
      * @param menuItem
@@ -213,17 +266,7 @@ public class AttachSpan extends ClickableSpan {
                         SystemUtil.openFile(context, filePath, attachSpec.attachType, attachSpec.mimeType);
                         break;
                     case 1: //编辑
-                        Intent intent = new Intent(context, HandWritingActivity.class);
-                        intent.putExtra(Constants.ARG_CORE_OBJ, attachSpec);
-                        
-                        if (context instanceof Activity) {
-                            Activity activity = (Activity) context;
-                            activity.startActivityForResult(intent, NoteEditActivity.REQ_EDIT_PAINT);
-                        } else {
-                            context.startActivity(intent);
-                            Log.d(TAG, "---handlePaint----context---is---not---activity---");
-                        }
-//                        SystemUtil.openFile(context, filePath, attachType);
+                        editPaint(context);
                         break;
                     case 2: //分享
                         SystemUtil.shareFile(context, filePath, attachSpec.attachType, attachSpec.mimeType);
@@ -237,11 +280,27 @@ public class AttachSpan extends ClickableSpan {
     }
 
     /**
+     * 编辑涂鸦
+     * @param context
+     */
+    private void editPaint(Context context) {
+        Intent intent = new Intent(context, HandWritingActivity.class);
+        intent.putExtra(Constants.ARG_CORE_OBJ, attachSpec);
+
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            activity.startActivityForResult(intent, NoteEditActivity.REQ_EDIT_PAINT);
+        } else {
+            context.startActivity(intent);
+            Log.d(TAG, "---handlePaint----context---is---not---activity---");
+        }
+    }
+
+    /**
      * 显示文件的详细新
      * @param filePath
      */
     private void showInfo(Context context, String filePath, String mimeType) {
-        //TODO 有报错
         StringBuilder sb = new StringBuilder();
         File file = new File(filePath);
         String colon = context.getString(R.string.colon);
@@ -261,5 +320,12 @@ public class AttachSpan extends ClickableSpan {
     class MenuItem {
         String title;
         int menuRes;
+    }
+
+    @Override
+    public String toString() {
+        return "AttachSpan{" +
+                "attachSpec=" + attachSpec +
+                "} " + super.toString();
     }
 }

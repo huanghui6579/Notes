@@ -18,8 +18,8 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.nostra13.universalimageloader.core.assist.FailReason;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
+import com.nostra13.universalimageloader.core.download.ImageDownloader;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.listener.AttachAddCompleteListener;
@@ -91,36 +91,31 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     }
 
     /**
-     * 添加图片
+     * 添加图片,该方法在主线程中至执行，调用者需要另起线程调用
      * @param attach 图片
      */
     private void addImage(final Attach attach, final AttachAddCompleteListener listener) {
-        final AttachSpan attachSpan = getAttachSpan(attach);
+        final AttachSpan attachSpan = getAttachSpan(attach, false);
+        
         ImageSize imageSize = getImageSize(attachSpan.getAttachType());
         final String filePath = attach.getLocalPath();
-        ImageUtil.generateThumbImageAsync(filePath, imageSize, new SimpleImageLoadingListener() {
-            @Override
-            public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
-                final CharSequence text = attachSpan.getText();
-                addSpan(text, attachSpan, imageSpan, new OnAddSpanCompleteListener() {
-                    @Override
-                    public void onAddSpanComplete() {
-                        if (listener != null) {
-                            listener.onAddComplete(filePath, text, attach);
-                        }
+        Bitmap loadedImage = ImageUtil.loadImageThumbnailsSync(filePath, imageSize);
+        if (loadedImage != null) {
+            ImageSpan imageSpan = new ImageSpan(getContext(), loadedImage);
+            final CharSequence text = attachSpan.getText();
+            addSpan(text, attachSpan, imageSpan, new OnAddSpanCompleteListener() {
+                @Override
+                public void onAddSpanComplete() {
+                    if (listener != null) {
+                        listener.onAddComplete(filePath, text, attach);
                     }
-                });
-                
-            }
-
-            @Override
-            public void onLoadingFailed(String imageUri, View view, FailReason failReason) {
-                if (listener != null) {
-                    listener.onAddFailed(imageUri, failReason);
                 }
+            });
+        } else {
+            if (listener != null) {
+                listener.onAddFailed(ImageDownloader.Scheme.FILE.wrap(filePath), null);
             }
-        });
+        }
     }
 
     /**
@@ -138,7 +133,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
         final String filePath = attach.getLocalPath();
         FileSpan fileSpan = new FileSpan(getContext(), attach, getSize()[0]);
         
-        AttachSpan attachSpan = getAttachSpan(attach);
+        AttachSpan attachSpan = getAttachSpan(attach, false);
         final CharSequence text = attachSpan.getText();
         KLog.d(TAG, "---addAttach---attach-----" + attach + "---text--" + text);
         addSpan(text, attachSpan, fileSpan, new OnAddSpanCompleteListener() {
@@ -155,13 +150,14 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     /**
      * 获取AttachSpan
      * @param attach 附件
+     * @param update 是否是更新操作              
      * @return
      */
-    public AttachSpan getAttachSpan(Attach attach) {
+    public AttachSpan getAttachSpan(Attach attach, boolean update) {
         int attachType = attach.getType();
         String fileId = attach.getSid();
         String filePath = attach.getLocalPath();
-        
+
         String text = "[" + Constants.ATTACH_PREFIX + "=" + fileId + "]";
         AttachSpan attachSpan = new AttachSpan();
         attachSpan.setAttachId(fileId);
@@ -170,6 +166,19 @@ public class NoteEditText extends EditText implements NoteRichSpan {
         attachSpan.setMimeType(attach.getMimeType());
         attachSpan.setText(text);
         attachSpan.setNoteSid(attach.getNoteId());
+
+        int[] pos = getSelPos(update);
+        if (pos != null) {
+            int start = pos[0];
+            attachSpan.setSelStart(start);
+            if (!update) {  //添加
+                int end = start + text.length();
+                attachSpan.setSelEnd(end);
+            } else {
+                attachSpan.setSelEnd(pos[1]);
+            }
+        }
+        
         return attachSpan;
     }
 
@@ -218,6 +227,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
 
     @Override
     public void showImage(AttachSpec attachSpec, AttachAddCompleteListener listener) {
+        
         ImageSize imageSize = getImageSize(attachSpec.attachType);
 
         ImageUtil.generateThumbImageAsync(attachSpec.filePath, imageSize, new SimpleImageLoadingListenerImpl(attachSpec, listener));
@@ -278,6 +288,33 @@ public class NoteEditText extends EditText implements NoteRichSpan {
     @Override
     public TextView getOriginalView() {
         return this;
+    }
+
+    @Override
+    public int[] getSelPos(boolean update) {
+        int start = getSelectionStart();
+        int end = getSelectionEnd();
+        CharSequence text = getText();
+        if (text != null) {
+            Spannable spannable = (Spannable) text;
+            AttachSpan[] spans = spannable.getSpans(start, end, AttachSpan.class);
+            if (spans != null && spans.length > 0) {
+                AttachSpan span = spans[0];
+                //如果光标定位的位置在附件的文本中间，则自动移到该附件的后面
+                int selEnd = span.getSelEnd();
+                if (update) {
+                    start = span.getSelStart();
+                    end = span.getSelEnd();
+                } else {
+                    if (start < selEnd) {
+                        start = span.getSelEnd();
+                        end = start;
+                    }
+                }
+            }
+        }
+        
+        return new int[] {start, end};
     }
 
     /**
@@ -405,7 +442,7 @@ public class NoteEditText extends EditText implements NoteRichSpan {
                         builder.setSpan(replaceSpan, 0, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                         builder.setSpan(clickSpan, 0, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                         
-                        KLog.d(TAG, "-------addSpan---post--ing---");
+                        KLog.d(TAG, "-------addSpan---post--ing--spanInfo:" + spanInfo);
                         Editable editable = getEditableText();
                         if (selStart < 0 || getText() == null || selStart >= getText().length()) {
                             builder.append(Constants.TAG_NEXT_LINE);

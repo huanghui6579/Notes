@@ -1,6 +1,14 @@
 package com.yunxinlink.notes.api.impl;
 
+import android.content.Context;
+import android.text.TextUtils;
+
+import com.socks.library.KLog;
+import com.yunxinlink.notes.NoteApplication;
+import com.yunxinlink.notes.api.interceptor.TokenAuthenticator;
+import com.yunxinlink.notes.api.interceptor.TokenInterceptor;
 import com.yunxinlink.notes.api.interceptor.UserAgentInterceptor;
+import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.sync.download.DownloadListener;
 import com.yunxinlink.notes.sync.download.DownloadProgressInterceptor;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -17,6 +25,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * @version: 0.0.1
  */
 public abstract class BaseApi {
+    private static final String TAG = "BaseApi";
+
     private static final String BASE_URL = "http://192.168.0.5:8080/noteapi/";
 //    private static final String BASE_URL = "http://192.168.0.4:8080/noteapi/";
 //    private static final String BASE_URL = "http://10.78.48.29:8080/noteapi/";
@@ -32,7 +42,13 @@ public abstract class BaseApi {
 
         UserAgentInterceptor agentInterceptor = new UserAgentInterceptor();
 
-        return buildRetrofit(httpLoggingInterceptor, agentInterceptor);
+        String token = getCurrentToken();
+        TokenInterceptor tokenInterceptor = null;
+        if (!TextUtils.isEmpty(token)) {
+            tokenInterceptor = new TokenInterceptor(token);
+        }
+
+        return buildRetrofit(httpLoggingInterceptor, agentInterceptor, tokenInterceptor);
     }
 
     /**
@@ -43,10 +59,21 @@ public abstract class BaseApi {
     private static Retrofit buildRetrofit(Interceptor... interceptors) {
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        TokenInterceptor tokenInterceptor = null;
         for (Interceptor interceptor : interceptors) {
+            if (interceptor == null) {
+                continue;
+            }
+            if (interceptor instanceof TokenInterceptor) {
+                tokenInterceptor = (TokenInterceptor) interceptor;
+                continue;
+            }
             builder.addInterceptor(interceptor);
         }
-        
+        if (tokenInterceptor != null) {
+            builder.addNetworkInterceptor(tokenInterceptor);
+        }
+        builder.authenticator(new TokenAuthenticator());
         OkHttpClient okHttpClient = builder.build();
         return new Retrofit.Builder()
                 .client(okHttpClient)
@@ -67,8 +94,13 @@ public abstract class BaseApi {
         DownloadProgressInterceptor downloadInterceptor = new DownloadProgressInterceptor(downloadListener);
 
         UserAgentInterceptor agentInterceptor = new UserAgentInterceptor();
+        String token = getCurrentToken();
+        TokenInterceptor tokenInterceptor = null;
+        if (!TextUtils.isEmpty(token)) {
+            tokenInterceptor = new TokenInterceptor(token);
+        }
 
-        return buildRetrofit(httpLoggingInterceptor, agentInterceptor, downloadInterceptor);
+        return buildRetrofit(httpLoggingInterceptor, agentInterceptor, downloadInterceptor, tokenInterceptor);
     }
 
     /**
@@ -77,6 +109,35 @@ public abstract class BaseApi {
      */
     protected static void doInbackground(Runnable runnable) {
         SystemUtil.getThreadPool().execute(runnable);
+    }
+
+    /**
+     * 获取当前的用户
+     * @param context
+     * @return
+     */
+    protected static User getUser(Context context) {
+        NoteApplication app = (NoteApplication) context.getApplicationContext();
+        User user = app.getCurrentUser();
+        if (user == null || !user.isAvailable()) {  //用户不可用
+            KLog.d(TAG, "base api get user is not available");
+            return null;
+        }
+        return user;
+    }
+
+    /**
+     * 获取当前的token
+     * @return
+     */
+    private static String getCurrentToken() {
+        NoteApplication app = NoteApplication.getInstance();
+        User user = app.getCurrentUser();
+        if (user != null) {
+            return user.getToken();
+        } else {
+            return null;
+        }
     }
     
 }

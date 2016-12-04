@@ -18,6 +18,7 @@
      Preference is able to place a specific widget for its particular
      type in the "widget_frame" layout. android:attr/activatedBackgroundIndicator -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:minHeight="?attr/listPreferredItemHeightSmall"
@@ -26,7 +27,8 @@
     android:paddingStart="?attr/listPreferredItemPaddingLeft"
     android:paddingRight="?attr/listPreferredItemPaddingRight"
     android:paddingEnd="?attr/listPreferredItemPaddingRight"
-
+    android:background="?attr/selectableItemBackground"
+    android:focusable="true"
     android:clipToPadding="false"><!--android:background="?attr/listChoiceBackgroundIndicator"-->
 
     <LinearLayout
@@ -37,19 +39,19 @@
         android:orientation="horizontal"
         android:paddingTop="4dp"
         android:paddingBottom="4dp">
-        <com.android.internal.widget.PreferenceImageView
+        <android.support.v7.internal.widget.PreferenceImageView
             android:id="@android:id/icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="@dimen/settings_icon_margin"
             android:layout_marginEnd="@dimen/settings_icon_margin"
-            android:maxWidth="48dp"
-            android:maxHeight="48dp"
-            android:tint="?attr/colorPrimary"/>
+            android:tint="?attr/colorPrimary"
+            app:maxWidth="48dp"
+            app:maxHeight="48dp"/>
     </LinearLayout>
 
     <RelativeLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:paddingTop="16dp"
@@ -59,7 +61,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:singleLine="true"
-            android:textAppearance="?attr/textAppearanceListItem"
+            android:textAppearance="@style/Preference_TextAppearanceMaterialSubhead"
             android:ellipsize="marquee" />
         <TextView android:id="@android:id/summary"
             android:layout_width="wrap_content"
@@ -67,9 +69,9 @@
             android:layout_below="@android:id/title"
             android:layout_alignLeft="@android:id/title"
             android:layout_alignStart="@android:id/title"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textAppearance="?android:attr/textAppearanceSmall"
             android:textColor="?android:attr/textColorSecondary"
-            android:maxLines="10" />
+            android:maxLines="10" /><!-- @style/TextAppearance.AppCompat.Body1 -->
 
     </RelativeLayout>
 

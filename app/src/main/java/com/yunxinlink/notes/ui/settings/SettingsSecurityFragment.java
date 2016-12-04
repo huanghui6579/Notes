@@ -1,21 +1,30 @@
 package com.yunxinlink.notes.ui.settings;
 
+import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.preference.Preference;
-import android.preference.SwitchPreference;
+import android.os.Handler;
+import android.support.v14.preference.SwitchPreference;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceFragmentCompat;
+import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.account.AccountBinder;
 import com.yunxinlink.notes.lock.LockType;
 import com.yunxinlink.notes.lock.ui.LockDigitalActivity;
 import com.yunxinlink.notes.lock.ui.LockPatternActivity;
 import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
+import com.yunxinlink.notes.model.User;
+import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SettingsUtil;
+import com.yunxinlink.notes.util.SystemUtil;
 
 /**
  * 安全密码设置界面
@@ -23,10 +32,14 @@ import com.yunxinlink.notes.util.SettingsUtil;
  * @update 2016/8/25 19:34
  * @version: 1.0.0
  */
-public class SettingsSecurityFragment extends BasePreferenceFragment implements Preference.OnPreferenceChangeListener {
+public class SettingsSecurityFragment extends BasePreferenceFragment implements Preference.OnPreferenceChangeListener, AccountBinder.OnBindPostedListener {
     // TODO: Rename parameter arguments, choose names that match
 
     private OnSecurityFragmentInteractionListener mListener;
+    
+    private ProgressDialog mProgressDialog;
+
+    private Handler mHandler = new Handler();
 
     public SettingsSecurityFragment() {
         // Required empty public constructor
@@ -39,9 +52,10 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
      * @return A new instance of fragment SettingsSecurityFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static SettingsSecurityFragment newInstance() {
+    public static SettingsSecurityFragment newInstance(String rootKey) {
         SettingsSecurityFragment fragment = new SettingsSecurityFragment();
         Bundle args = new Bundle();
+        args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, rootKey);
         fragment.setArguments(args);
         return fragment;
     }
@@ -49,7 +63,10 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+    }
 
+    @Override
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.pref_security);
         //设置监听
         bindPreferenceChangeListener(findPreference(getString(R.string.settings_key_security_password)), this);
@@ -66,8 +83,23 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
     }
 
     @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        if (!SystemUtil.hasSdkV23()) {
+            attachCompat(activity);
+        }
+    }
+
+    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        if (SystemUtil.hasSdkV23()) {
+            attachCompat(context);
+        }
+    }
+
+    @Override
+    protected void attachCompat(Context context) {
         if (context instanceof OnSecurityFragmentInteractionListener) {
             mListener = (OnSecurityFragmentInteractionListener) context;
         } else {
@@ -90,8 +122,14 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
             if (newValue instanceof Boolean) {
                 boolean enablePwd = (boolean) newValue;
                 if (enablePwd) {
-                    //显示选择密码类型的提示框
-                    chosePwdType();
+                    //先检查是否有绑定手机号或者邮箱，主要用于密码重置
+                    if (checkBind()) {
+                        //显示选择密码类型的提示框
+                        chosePwdType();
+                    } else {
+                        bindEmail();
+                        KLog.d(TAG, "user has not bind account and will bind first");
+                    }
                 } else {    //取消密码锁
                     //1、先校验密码
                     if (!compareSecurity(false)) {   //没有密码
@@ -103,6 +141,48 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
             }
         }
         return true;
+    }
+
+    /**
+     * 绑定邮箱
+     */
+    private void bindEmail() {
+        AccountBinder accountBinder = new AccountBinder();
+        accountBinder.bindAccount(getActivity(), true, this);
+    }
+
+    /**
+     * 执行绑定邮箱的操作，需另开线程
+     * @param email 电子邮箱
+     * @param password 登录的密码             
+     */
+    private void doBindEmail(String email, String password) {
+        if (!NoteUtil.checkEmail(email)) {
+            return;
+        }
+        if (TextUtils.isEmpty(password)) {
+            SystemUtil.makeShortToast(R.string.tip_password_is_empty);
+            return;
+        }
+        mProgressDialog = ProgressDialog.show(getActivity(), null, getString(R.string.account_email_bind_ing), true, true);
+        AccountBinder accountBinder = new AccountBinder();
+        User param = new User();
+        param.setEmail(email);
+        param.setPassword(password);
+        accountBinder.postData(getActivity(), param, this);
+    }
+
+    /**
+     * 检查是否有绑定手机号或者邮箱
+     * @return
+     */
+    private boolean checkBind() {
+        User user = getApp().getCurrentUser();
+        if (user == null) { //当前用户没有登录，则直接根据输入的账号和密码校验
+            return false;
+        } else {
+            return user.hasBindAccount();
+        }
     }
 
     /**
@@ -189,6 +269,34 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
     public void saveSecurityPreference(boolean isEnabled) {
         SwitchPreference switchPreference = (SwitchPreference) findPreference(getString(R.string.settings_key_security_password));
         switchPreference.setChecked(isEnabled);
+    }
+
+    @Override
+    public void onBindPosted(String account, String password) {
+        doBindEmail(account, password);
+    }
+
+    @Override
+    public void onBindEnd(boolean success, int resId) {
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
+        if (mListener != null) {
+            mHandler.post(new NoteTask(success, resId) {
+                @Override
+                public void run() {
+                    boolean result = (boolean) params[0];
+                    if (result) {
+                        //显示选择密码类型的提示框
+                        chosePwdType();
+                    }
+                    int id = (int) params[1];
+                    if (id != 0) {
+                        SystemUtil.makeShortToast(id);
+                    }
+                }
+            });
+        }
     }
 
     /**

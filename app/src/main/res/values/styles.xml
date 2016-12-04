@@ -6,9 +6,11 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:preferenceStyle">@style/NotePreferenceStyle</item>
-        <item name="android:preferenceCategoryStyle">@style/NotePreferenceStyle.Category</item>
-        <item name="android:preferenceInformationStyle">@style/NotePreferenceStyle.Information</item>
+        <!--<item name="preferenceStyle">@style/NotePreferenceStyle</item>-->
+        <!--<item name="preferenceCategoryStyle">@style/NotePreferenceStyle.Category</item>-->
+        <!--<item name="preferenceInformationStyle">@style/NotePreferenceStyle.Information</item>-->
+        <item name="preferenceTheme">@style/AppTheme.PreferenceTheme</item>
+        
     </style>
 
     <style name="AppTheme.NoActionBar">
@@ -48,6 +50,19 @@
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light"/>
     <style name="AppTheme.PopupOverlay.Dark" parent="ThemeOverlay.AppCompat.Dark"/>
     
+    <style name="AppTheme.PreferenceTheme" parent="@style/PreferenceThemeOverlay.v14.Material">
+        <item name="preferenceStyle">@style/NotePreferenceStyle</item>
+        <item name="preferenceScreenStyle">@style/NotePreferenceStyle</item>
+        <item name="preferenceFragmentStyle">@style/NotePreferenceFragmentStyle</item>
+        <item name="preferenceFragmentCompatStyle">@style/NotePreferenceFragmentStyle</item>
+        <item name="preferenceCategoryStyle">@style/NotePreferenceStyle.Category</item>
+        <item name="preferenceInformationStyle">@style/NotePreferenceStyle.Information</item>
+        <item name="checkBoxPreferenceStyle">@style/NotePreferenceStyle.CheckBoxPreference</item>
+        <item name="switchPreferenceCompatStyle">@style/NotePreferenceStyle.SwitchPreferenceCompat</item>
+        <item name="switchPreferenceStyle">@style/NotePreferenceStyle.SwitchPreference</item>
+        <item name="dialogPreferenceStyle">@style/NotePreferenceStyle.DialogPreference</item>
+        <item name="editTextPreferenceStyle">@style/NotePreferenceStyle.DialogPreference.EditTextPreference</item>
+    </style>
     
     <style name="NavMenuStyle">
         <item name="android:layout_width">wrap_content</item>
@@ -134,6 +149,10 @@
         <item name="android:layout">@layout/item_preference</item>
     </style>
     
+    <style name="NotePreferenceFragmentStyle">
+        <item name="android:divider">@drawable/divider_horizontal</item>
+    </style>
+    
     <style name="NotePreferenceStyle.Category">
         <item name="android:layout">@layout/layout_preference_category</item>
         <!-- The title should not dim if the category is disabled, instead only the preference children should dim. -->
@@ -145,6 +164,26 @@
         <item name="android:layout">@layout/layout_preference_information</item>
         <item name="android:enabled">false</item>
         <item name="android:shouldDisableView">false</item>
+    </style>
+    
+    <style name="NotePreferenceStyle.SwitchPreference" parent="Preference.SwitchPreference.Material">
+        <item name="android:layout">@layout/item_preference</item>
+    </style>
+    
+    <style name="NotePreferenceStyle.CheckBoxPreference" parent="Preference.CheckBoxPreference.Material">
+        <item name="android:layout">@layout/item_preference</item>
+    </style>
+    
+    <style name="NotePreferenceStyle.SwitchPreferenceCompat" parent="Preference.SwitchPreferenceCompat.Material">
+        <item name="android:layout">@layout/item_preference</item>
+    </style>
+    
+    <style name="NotePreferenceStyle.DialogPreference" parent="Preference.DialogPreference.Material">
+        <item name="android:layout">@layout/item_preference</item>
+    </style>
+    
+    <style name="NotePreferenceStyle.DialogPreference.EditTextPreference" parent="Preference.DialogPreference.EditTextPreference.Material">
+        <item name="android:layout">@layout/item_preference</item>
     </style>
 
     <style name="TextTipBtnStyle">

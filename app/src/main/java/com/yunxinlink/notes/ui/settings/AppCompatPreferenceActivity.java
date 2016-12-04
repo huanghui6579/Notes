@@ -10,6 +10,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatDelegate;
+import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -30,7 +31,7 @@ import me.imid.swipebacklayout.app.SwipeBackPreferenceActivity;
  * A {@link android.preference.PreferenceActivity} which implements and proxies the necessary calls
  * to be used with AppCompat.
  */
-public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceActivity {
+public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceActivity implements PreferenceFragmentCompat.OnPreferenceStartScreenCallback  {
     
     protected static String TAG;
 
@@ -45,6 +46,10 @@ public abstract class AppCompatPreferenceActivity extends SwipeBackPreferenceAct
 
     //主题切换的广播
     private SystemReceiver mThemeReceiver;
+
+    static {
+        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

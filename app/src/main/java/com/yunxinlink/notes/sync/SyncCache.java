@@ -90,7 +90,7 @@ public class SyncCache {
     public boolean hasSyncData(String sid) {
         SyncData syncData = mMap.get(sid);
         return syncData != null;
-    } 
+    }
 
     /**
      * 获取同步的数据

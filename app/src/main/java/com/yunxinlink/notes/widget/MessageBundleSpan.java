@@ -90,7 +90,7 @@ public class MessageBundleSpan extends URLSpan {
                 handleEmail(context, menuItem, url);
                 break;
             default:
-                viewUrl(context, url);
+                NoteUtil.viewUrl(context, url);
                 break;
             
         }
@@ -109,7 +109,7 @@ public class MessageBundleSpan extends URLSpan {
         switch (urlType) {
             case NoteLinkify.WEB_URLS:  //网页链接
             case NoteLinkify.MAP_ADDRESSES: //地图显示
-                viewUrl(context, url);
+                NoteUtil.viewUrl(context, url);
                 break;
             case NoteLinkify.PHONE_NUMBERS: //电话号码
                 call(context, url);
@@ -118,7 +118,7 @@ public class MessageBundleSpan extends URLSpan {
                 sendEmail(context, url);
                 break;
             default:
-                viewUrl(context, url);
+                NoteUtil.viewUrl(context, url);
                 break;
 
         }
@@ -152,7 +152,7 @@ public class MessageBundleSpan extends URLSpan {
                         SystemUtil.copyText(context, getText(), true);
                         break;
                     case 1: //浏览器打开
-                        viewUrl(context, url);
+                        NoteUtil.viewUrl(context, url);
                         break;
                     case 2: //转发
                         shareUrl(context, getText());
@@ -261,25 +261,6 @@ public class MessageBundleSpan extends URLSpan {
         intent.setType(ContactsContract.Contacts.CONTENT_ITEM_TYPE);
         intent.putExtra(ContactsContract.Intents.Insert.PHONE, phoneNumber);
         context.startActivity(intent);
-    }
-
-    /**
-     * 处理对应的url
-     * @param context 上下文
-     * @param url 链接
-     */
-    private void viewUrl(Context context, String url) {
-        Uri uri = Uri.parse(url);
-//        Uri uri = Uri.parse("http://www.google.com"); //浏览器 
-//        Uri uri =Uri.parse("tel:1232333"); //拨号程序 
-//        Uri uri=Uri.parse("geo:39.899533,116.036476"); //打开地图定位 
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
-        if (intent.resolveActivity(context.getPackageManager()) != null) {
-            context.startActivity(intent);
-        } else {    //没有对应的程序处理
-            SystemUtil.makeShortToast(R.string.tip_no_app_handle);
-        }
     }
 
     /**

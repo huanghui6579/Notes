@@ -10,8 +10,8 @@ import android.text.TextUtils;
 public class AttachSpec implements Parcelable {
     public CharSequence text;
     public String sid;
-    public int start;
-    public int end;
+    public int start = -1;
+    public int end = -1;
     
     //附件类型
     public int attachType;
@@ -74,4 +74,26 @@ public class AttachSpec implements Parcelable {
             return new AttachSpec[size];
         }
     };
+
+    @Override
+    public String toString() {
+        return "AttachSpec{" +
+                "text=" + text +
+                ", sid='" + sid + '\'' +
+                ", start=" + start +
+                ", end=" + end +
+                ", attachType=" + attachType +
+                ", filePath='" + filePath + '\'' +
+                ", noteSid='" + noteSid + '\'' +
+                ", mimeType='" + mimeType + '\'' +
+                '}';
+    }
+
+    /**
+     * 是否有光标的定位位置
+     * @return
+     */
+    public boolean hasSelPos() {
+        return start >= 0 && end >= 0;
+    }
 }

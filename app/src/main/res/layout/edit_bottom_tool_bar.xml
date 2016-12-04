@@ -24,16 +24,19 @@
     <ImageButton
         android:id="@+id/iv_time"
         style="@style/EditBottomToolBarStyle"
-        android:src="@drawable/ic_content_time"/>
+        android:src="@drawable/ic_content_time"
+        android:tint="@color/tint_color_gray"/>
 
     <ImageButton
         android:id="@+id/iv_contact"
         style="@style/EditBottomToolBarStyle"
-        android:src="@drawable/ic_content_person_add"/>
+        android:src="@drawable/ic_content_person_add"
+        android:tint="@color/tint_color_gray"/>
 
     <ImageButton
         android:id="@+id/iv_down"
         style="@style/EditBottomToolBarStyle"
-        android:src="@drawable/ic_content_arrow_down"/>
+        android:src="@drawable/ic_content_arrow_down"
+        android:tint="@color/tint_color_gray"/>
 
 </LinearLayout>

@@ -19,4 +19,5 @@
     <item type="id" name="action_search" />
     <item type="id" name="action_sync" />
     <item type="id" name="action_more" />
+    <item type="id" name="main_frame" />
 </resources>

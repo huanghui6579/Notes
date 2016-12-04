@@ -2,7 +2,9 @@ package com.yunxinlink.notes.ui.settings;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Bundle;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.preference.PreferenceFragmentCompat;
+import android.support.v7.preference.PreferenceScreen;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
@@ -10,6 +12,7 @@ import com.yunxinlink.notes.lock.LockInfo;
 import com.yunxinlink.notes.lock.LockType;
 import com.yunxinlink.notes.lock.ui.LockDigitalActivity;
 import com.yunxinlink.notes.lock.ui.LockPatternActivity;
+import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.SystemUtil;
 
 /**
@@ -18,7 +21,7 @@ import com.yunxinlink.notes.util.SystemUtil;
  * @update 2016/8/25 19:28
  * @version: 1.0.0
  */
-public class SettingsSecurityActivity extends AppCompatPreferenceActivity implements SettingsSecurityFragment.OnSecurityFragmentInteractionListener {
+public class SettingsSecurityActivity extends BaseActivity implements SettingsSecurityFragment.OnSecurityFragmentInteractionListener, PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
     
     public static final int REQ_CREATE_DIGITAL = 10;
     public static final int REQ_COMPARE_DIGITAL = 11;
@@ -28,13 +31,18 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
     public static final int REQ_MODIFY_DIGITAL = 15;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings_security);
+    protected int getContentView() {
+        return R.layout.activity_settings_security;
+    }
 
-        setupActionBar(R.id.toolbar);
+    @Override
+    protected void initData() {
 
-        setListDividerHeight();
+    }
+
+    @Override
+    protected void initView() {
+
     }
 
     @Override
@@ -166,8 +174,8 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
         updateLockInfo(lockInfo);
         
         KLog.d(TAG, "update security type:" + lockInfo);
-        
-        SettingsSecurityFragment securityFragment = (SettingsSecurityFragment) getFragmentManager().findFragmentByTag("SettingsFragment");
+        //TODO 获取fragment
+        SettingsSecurityFragment securityFragment = (SettingsSecurityFragment) getSupportFragmentManager().findFragmentByTag("SettingsFragment");
         if (securityFragment != null) {
             securityFragment.saveSecurityPreference(hasLock);
         }
@@ -179,5 +187,17 @@ public class SettingsSecurityActivity extends AppCompatPreferenceActivity implem
      */
     public void saveLockState(boolean isLocking) {
         updateLockState(isLocking);
+    }
+
+    @Override
+    public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
+        KLog.d(TAG, "onPreferenceStartScreen settings security activity");
+        SettingsSecurityFragment fragment = SettingsSecurityFragment.newInstance(pref.getKey());
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        transaction.replace(R.id.main_frame, fragment, pref.getKey());
+        transaction.addToBackStack(pref.getKey());
+        transaction.commit();
+        return true;
     }
 }

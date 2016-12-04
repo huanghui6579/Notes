@@ -5,7 +5,6 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.socks.library.KLog;
-import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.api.INoteApi;
 import com.yunxinlink.notes.api.model.AttachDto;
 import com.yunxinlink.notes.api.model.DetailListDto;
@@ -1465,20 +1464,5 @@ public class NoteApi extends BaseApi {
         folderDto.setName(folder.getName());
         folderDto.setHash(folder.getHash());
         return folderDto;
-    }
-
-    /**
-     * 获取当前的用户
-     * @param context
-     * @return
-     */
-    private static User getUser(Context context) {
-        NoteApplication app = (NoteApplication) context.getApplicationContext();
-        User user = app.getCurrentUser();
-        if (user == null || !user.isAvailable()) {  //用户不可用
-            KLog.d(TAG, "sync task get user is not available");
-            return null;
-        }
-        return user;
     }
 }

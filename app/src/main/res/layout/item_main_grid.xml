@@ -24,7 +24,8 @@
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:padding="@dimen/grid_item_padding"
-                android:src="@drawable/abc_ic_menu_moreoverflow_mtrl_alpha"
+                android:src="@drawable/ic_menu_moreoverflow_mtrl_alpha"
+                android:tint="@color/tint_color_gray"
                 android:background="@drawable/common_background_borderless_selector"/>
 
             <CheckBox

@@ -26,7 +26,6 @@ import com.anthonycr.grant.PermissionsManager;
 import com.anthonycr.grant.PermissionsResultAction;
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
-import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
 import com.yunxinlink.notes.db.observer.Observable;
@@ -36,7 +35,6 @@ import com.yunxinlink.notes.model.TaskParam;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.util.Constants;
-import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.ImageUtil;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -92,7 +90,7 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
         //请求sd卡的读写权限
         requestSdCardPermission();
         //网络加载用户信息，让信息与本地保持一致
-        UserApi.syncUserInfo(user);
+        NoteUtil.startSyncUser(mContext, user);
     }
 
     @Override
@@ -501,17 +499,11 @@ public class AccountEditActivity extends BaseActivity implements View.OnClickLis
             KLog.d(TAG, "do save account info failed because user is null");
             return false;
         }
-        String iconPath = user.getAvatar();
-        if (!TextUtils.isEmpty(iconPath)) { //存在头像，则生成头像文件的hash
-            String iconHash = DigestUtil.md5FileHex(iconPath);
-            if (!TextUtils.isEmpty(iconHash)) {
-                user.setAvatarHash(iconHash);
-            }
-        }
         user.setSyncState(SyncState.SYNC_UP.ordinal());
         boolean success = UserManager.getInstance().update(user);
         if (success) {
-            UserApi.syncUserInfo(user);
+
+            NoteUtil.startSyncUser(mContext, user);
         }
         return success;
     }

@@ -2,13 +2,15 @@ package com.yunxinlink.notes.model;
 
 import android.text.TextUtils;
 
+import com.yunxinlink.notes.sync.Syncable;
+
 /**
  * 用户实体
  * @author huanghui1
  * @update 2016/3/7 17:41
  * @version: 0.0.1
  */
-public class User implements Cloneable {
+public class User implements Cloneable, Syncable {
 
     /**
      * 主键
@@ -84,6 +86,11 @@ public class User implements Cloneable {
      * 同步的状态
      */
     private Integer syncState;
+
+    /**
+     * 访问服务器的token
+     */
+    private String token;
 
     public Integer getId() {
         return id;
@@ -205,6 +212,14 @@ public class User implements Cloneable {
         this.syncState = syncState;
     }
 
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     /**
      * 是否需要上传用户信息
      * @return
@@ -265,6 +280,14 @@ public class User implements Cloneable {
         return account;
     }
 
+    /**
+     * 是否由绑定的账号，主要判断是否由邮箱或者手机号
+     * @return
+     */
+    public boolean hasBindAccount() {
+        return !TextUtils.isEmpty(email) || !TextUtils.isEmpty(mobile);
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -283,6 +306,7 @@ public class User implements Cloneable {
                 ", openUserId='" + openUserId + '\'' +
                 ", avatarHash='" + avatarHash + '\'' +
                 ", syncState=" + syncState +
+                ", token='" + token + '\'' +
                 '}';
     }
 }

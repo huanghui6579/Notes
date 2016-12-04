@@ -137,7 +137,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 .append(Provider.UserColumns.SID).append(" TEXT UNIQUE , ")
                 .append(Provider.UserColumns.MOBILE).append(" TEXT UNIQUE, ")
                 .append(Provider.UserColumns.EMAIL).append(" TEXT UNIQUE, ")
-                .append(Provider.UserColumns.ACCESS_TOKEN).append(" TEXT, ")
+                .append(Provider.UserColumns.TOKEN).append(" TEXT, ")
                 .append(Provider.UserColumns.AVATAR).append(" TEXT, ")
                 .append(Provider.UserColumns.GENDER).append(" INTEGER, ")
                 .append(Provider.UserColumns.STATE).append(" INTEGER, ")

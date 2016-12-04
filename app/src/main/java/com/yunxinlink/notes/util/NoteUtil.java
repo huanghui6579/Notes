@@ -9,19 +9,24 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.Browser;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
@@ -40,6 +45,7 @@ import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.model.State;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.FolderManager;
 import com.yunxinlink.notes.persistent.NoteManager;
@@ -477,7 +483,6 @@ public class NoteUtil {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
-                        
                         ShareItem item = (ShareItem) shareAdapter.getItem(which);
                         
                         String text = shareInfo.getText();
@@ -520,6 +525,8 @@ public class NoteUtil {
                         Platform platform = null;
                         //3、非常重要：获取平台对象
                         if (!TextUtils.isEmpty(platformName)) {
+                            //初始化分享sdk
+                            ShareSDK.initSDK(context);
                             platform = ShareSDK.getPlatform(platformName);
                             sp.setShareType(shareInfo.getShareType());//非常重要：一定要设置分享属性
                             sp.setSite(context.getString(R.string.app_name));   //site是分享此内容的网站名称，仅在QQ空间使用
@@ -651,7 +658,16 @@ public class NoteUtil {
         addIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_NEW_TASK);
         addIntent.putExtra(NoteEditActivity.ARG_HAS_LOCK_CONTROLLER, false);
 
-        RemoteViews remoteViews = new RemoteViews(context.getPackageName(), R.layout.layout_nofitication_create);
+        RemoteViews remoteViews = null;
+        
+        String title = context.getString(R.string.app_name);
+        
+        if (isDarkNotificationBar(context, title)) {
+            remoteViews = new RemoteViews(context.getPackageName(), R.layout.layout_nofitication_create);
+        } else {
+            remoteViews = new RemoteViews(context.getPackageName(), R.layout.layout_nofitication_create_light);
+        }
+        
         remoteViews.setOnClickPendingIntent(R.id.btn_plus, addPendingIntent);
 
         Intent intent = new Intent(context, MainActivity.class);
@@ -667,7 +683,119 @@ public class NoteUtil {
                 .build();
         NotificationManagerCompat.from(context).notify(notifyId, notification);
     }
+    
+    private static int getNotificationColorInternal(Context context, final String titleText) {
+        final int[] textColor = new int[1];
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+        builder.setContentTitle(titleText);
+        Notification notification = builder.build();
+        ViewGroup notificationRoot = (ViewGroup) notification.contentView.apply(context, new FrameLayout(context));
+        TextView title = (TextView) notificationRoot.findViewById(android.R.id.title);
+        if (title == null) {
+            iteratorView(notificationRoot, new Filter() {
+                @Override
+                public void filter(View view) {
+                    if (view instanceof TextView) {
+                        TextView textView = (TextView) view;
+                        if (titleText.equals(textView.getText().toString())) {
+                            textColor[0] = textView.getCurrentTextColor();
+                        }
+                    }
+                }
+            });
+            return textColor[0];
+        } else {
+            return title.getCurrentTextColor();
+        }
+    }
+    
+    private static int getNotificationColorCompat(Context context, final String titleText) {
+        final List<TextView> textViews = new ArrayList<>();
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+        Notification notification = builder.build();
+        int layoutId = notification.contentView.getLayoutId();
+        ViewGroup notificationRoot = (ViewGroup) LayoutInflater.from(context).inflate(layoutId, null);
+        TextView title = (TextView) notificationRoot.findViewById(android.R.id.title);
+        if (title == null) {
+            iteratorView(notificationRoot, new Filter() {
+                @Override
+                public void filter(View view) {
+                    if (view instanceof TextView) {
+                        TextView textView = (TextView) view;
+                        textViews.add(textView);
+                    }
+                }
+            });
+            //找字体最大的就是title
+            float minTextSize = Integer.MIN_VALUE;
+            int index = 0;
+            int size = textViews.size();
+            for (int i = 0; i < size; i++) {
+                float currentSize = textViews.get(i).getTextSize();
+                if (currentSize > minTextSize) {
+                    minTextSize = currentSize;
+                    index = i;
+                }
+            }
+            return textViews.get(index).getCurrentTextColor();
+        } else {
+            return title.getCurrentTextColor();
+        }
+    }
+    
+    private static int getNotificationColor(Context context, String titleText) {
+        if (context instanceof AppCompatActivity) {
+            return getNotificationColorCompat(context, titleText);
+        } else {
+            return getNotificationColorInternal(context, titleText);
+        }
+    }
 
+    /**
+     * 计算更接近某种颜色，baseColor是基准颜色
+     * @param baseColor
+     * @param color
+     * @return
+     */
+    private static boolean isColorSimilar(int baseColor, int color) {
+        //阈值
+        double colorThreshold = 180.0;
+        int simpleBaseColor = baseColor | 0xff000000;
+        int simpleColor = color | 0xff000000;
+        int baseRed = Color.red(simpleBaseColor) - Color.red(simpleColor);
+        int baseGreen = Color.green(simpleBaseColor) - Color.green(simpleColor);
+        int baseBlue = Color.blue(simpleBaseColor) - Color.blue(simpleColor);
+        double value = Math.sqrt(baseRed * baseRed + baseGreen * baseGreen + baseBlue * baseBlue);
+        if (value < colorThreshold) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 是否是深色背景的通知栏
+     * @return
+     */
+    private static boolean isDarkNotificationBar(Context context, String titleText) {
+        return !isColorSimilar(Color.BLACK, getNotificationColor(context, titleText));
+    }
+    
+    private static void iteratorView(View view, Filter filter) {
+        if (view == null || filter == null) {
+            return;
+        }
+        filter.filter(view);
+        if (view instanceof ViewGroup) {
+            ViewGroup container = (ViewGroup) view;
+            int count = container.getChildCount();
+            for (int i = 0; i < count; i++) {
+                View child = container.getChildAt(i);
+                iteratorView(child, filter);
+            }
+        }
+    }
+    
     /**
      * 取消状态栏的快捷方式
      */
@@ -797,6 +925,18 @@ public class NoteUtil {
     }
 
     /**
+     * 获取用户的登录状态，是否是在线的
+     * @param context
+     * @return
+     * @see State
+     */
+    public static boolean isAccountOnline(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        int state = preferences.getInt(Constants.PREF_ACCOUNT_STATE, -1);
+        return state == State.NORMAL;
+    }
+
+    /**
      * 获取本地当前登录的用户id
      * @param context
      * @return
@@ -813,9 +953,25 @@ public class NoteUtil {
      * @return
      */
     public static void saveAccountId(Context context, int userId) {
+        saveAccount(context, userId, State.NORMAL, -1);
+    }
+
+    /**
+     * 保存用户ID到本地
+     * @param context
+     * @param userId 用户的ID
+     * @param state 用户的登录状态              
+     * @param type 用户的账户类型，主要是本地账户和第三方公众号账户
+     * @see AccountType            
+     */
+    public static void saveAccount(Context context, int userId, int state, int type) {
         SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(Constants.PREF_ACCOUNT_ID, userId);
+        editor.putInt(Constants.PREF_ACCOUNT_STATE, state);
+        if (type != -1) {
+            editor.putInt(Constants.PREF_ACCOUNT_TYPE, type);
+        }
         editor.apply();
     }
 
@@ -869,6 +1025,7 @@ public class NoteUtil {
                 KLog.d(TAG, "doAuthorityVerify user local account not exists ");
                 return null;
             }
+            userDto.setUser(user);
         }
         return userDto;
     }
@@ -957,9 +1114,11 @@ public class NoteUtil {
         SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
         SharedPreferences.Editor editor = preferences.edit();
         editor.remove(Constants.PREF_ACCOUNT_TYPE);
-        editor.remove(Constants.PREF_ACCOUNT_ID);
+//        editor.remove(Constants.PREF_ACCOUNT_ID);
         editor.remove(Constants.SELECTED_FOLDER_ID);
         editor.remove(Constants.PREF_DEFAULT_FOLDER);
+        //设置用户的状态为离线
+        editor.putInt(Constants.PREF_ACCOUNT_STATE, State.OFFLINE);
         editor.apply();
     }
 
@@ -1046,7 +1205,7 @@ public class NoteUtil {
         String syncSid = SystemUtil.generateSyncSid();
 
         if (SyncCache.getInstance().hasSyncData(syncSid)) {
-            KLog.d(TAG, "start sync data but already hash sync data:" + syncSid);
+            KLog.d(TAG, "start sync data but already has sync data:" + syncSid);
             return;
         }
         Intent service = new Intent(context, SyncService.class);
@@ -1062,5 +1221,81 @@ public class NoteUtil {
 
         service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
         context.startService(service);
+    }
+
+    /**
+     * 开始同步用户信息
+     * @param context
+     * @param user 用户信息
+     */
+    public synchronized static void startSyncUser(Context context, User user) {
+        KLog.d(TAG, "start sync user info");
+        String syncSid = SystemUtil.generateSyncUserSid();
+
+        if (SyncCache.getInstance().isSyncing(syncSid)) {
+            KLog.d(TAG, "start sync data but already is sync data:" + syncSid);
+            return;
+        }
+        Intent service = new Intent(context, SyncService.class);
+        service.putExtra(Constants.ARG_CORE_OPT, Constants.SYNC_USER);
+
+        SyncData syncData = new SyncData();
+        syncData.setSyncable(user);
+        syncData.setState(SyncData.SYNC_NONE);
+        SyncCache.getInstance().addOrUpdate(syncSid, syncData);
+
+        service.putExtra(Constants.ARG_CORE_OBJ, syncSid);
+        context.startService(service);
+    }
+
+    /**
+     * 校验email
+     * @param email 邮箱地址
+     * @return
+     */
+    public static boolean checkEmail(CharSequence email) {
+        if (TextUtils.isEmpty(email)) {
+            SystemUtil.makeShortToast(R.string.tip_email_is_empty);
+            return false;
+        }
+        if (!SystemUtil.isEmail(email)) {
+            SystemUtil.makeShortToast(R.string.tip_email_is_not_right);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 检查密码是否正确
+     * @param user
+     * @param password
+     * @return
+     */
+    public static boolean checkPassword(User user, String password) {
+        String oldPwd = user.getPassword();
+        return SystemUtil.equalsStr(oldPwd, password);
+    }
+
+    /**
+     * 处理对应的url
+     * @param context 上下文
+     * @param url 链接
+     */
+    public static void viewUrl(Context context, String url) {
+        Uri uri = Uri.parse(url);
+//        Uri uri = Uri.parse("http://www.google.com"); //浏览器 
+//        Uri uri =Uri.parse("tel:1232333"); //拨号程序 
+//        Uri uri=Uri.parse("geo:39.899533,116.036476"); //打开地图定位 
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
+        if (intent.resolveActivity(context.getPackageManager()) != null) {
+            context.startActivity(intent);
+        } else {    //没有对应的程序处理
+            SystemUtil.makeShortToast(R.string.tip_no_app_handle);
+        }
+    }
+    
+    public interface Filter {
+        void filter(View view);
     }
 }

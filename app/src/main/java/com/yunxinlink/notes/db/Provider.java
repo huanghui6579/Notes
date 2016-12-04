@@ -514,7 +514,7 @@ public final class Provider {
         /**
          * 访问服务器的token
          */
-        public static final String ACCESS_TOKEN = "access_token";
+        public static final String TOKEN = "token";
 
         /**
          * 用户头像

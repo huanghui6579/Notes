@@ -57,8 +57,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import cn.sharesdk.framework.ShareSDK;
-
 import static com.yunxinlink.notes.db.observer.Observer.NotifyType.SHOW_EXTRA;
 
 /**
@@ -228,9 +226,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     protected void initData() {
 
-        //初始化分享sdk
-        ShareSDK.initSDK(this);
-        
         //初始化配置文件
         initProperties();
 
@@ -517,7 +512,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     @Override
     protected void onDestroy() {
         //注销分享的sdk
-        ShareSDK.stopSDK(this);
+//        ShareSDK.stopSDK(this);
         //注销观察者
         unRegisterContentObserver();
         super.onDestroy();

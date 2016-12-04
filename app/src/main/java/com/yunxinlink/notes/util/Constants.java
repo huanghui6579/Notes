@@ -99,6 +99,11 @@ public class Constants {
     public static final String PREF_ACCOUNT_ID = "account_id";
 
     /**
+     * 当前用户的状态，
+     */
+    public static final String PREF_ACCOUNT_STATE = "account_state";
+
+    /**
      * 快速创建笔记的桌面小部件id
      */
     public static final String PREF_APPWIDGETID_SHORT_CREATE = "appwidgetid_short_create";
@@ -149,6 +154,7 @@ public class Constants {
     public static final int SYNC_UP_NOTE = 1;
     public static final int SYNC_DOWN_NOTE = 2;
     public static final int SYNC_NOTE = 3;
+    public static final int SYNC_USER = 4;
 
     
     public static final String ARG_CORE_OPT = "arg_core_opt";

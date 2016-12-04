@@ -4,26 +4,36 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.lock.ILockerActivityDelegate;
+import com.yunxinlink.notes.lock.LockInfo;
+import com.yunxinlink.notes.lock.LockType;
 import com.yunxinlink.notes.lockpattern.utils.AlpSettings;
 import com.yunxinlink.notes.lockpattern.utils.Encrypter;
 import com.yunxinlink.notes.lockpattern.utils.InvalidEncrypterException;
@@ -31,7 +41,9 @@ import com.yunxinlink.notes.lockpattern.utils.LoadingView;
 import com.yunxinlink.notes.lockpattern.utils.UI;
 import com.yunxinlink.notes.lockpattern.widget.LockDigitalView;
 import com.yunxinlink.notes.lockpattern.widget.LockPatternUtils;
+import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.ui.BaseActivity;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 
 import java.util.List;
@@ -47,8 +59,9 @@ import static android.text.format.DateUtils.SECOND_IN_MILLIS;
 import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Display.METADATA_MAX_RETRIES;
 import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Security.METADATA_AUTO_SAVE_PATTERN;
 import static com.yunxinlink.notes.lockpattern.utils.AlpSettings.Security.METADATA_ENCRYPTER_CLASS;
+import static com.yunxinlink.notes.ui.settings.SettingsSecurityActivity.REQ_CREATE_DIGITAL;
 
-public class LockDigitalActivity extends BaseActivity implements LockDigitalView.OnInputChangedListener {
+public class LockDigitalActivity extends BaseActivity implements LockDigitalView.OnInputChangedListener, View.OnClickListener {
     
     private static final String CLASSNAME = LockDigitalActivity.class.getSimpleName();
     
@@ -210,6 +223,15 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
     @Param(type = Param.Type.INPUT, dataTypes = { boolean.class })
     public static final String EXTRA_HAS_LOCK_CONTROLLER = CLASSNAME + ".HAS_LOCK_CONTROLLER";
 
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.alp_textview_forget:  //忘记密码
+                showValidatePwdDialog();
+                break;
+        }
+    }
+
     /**
      * Helper enum for button OK commands. (Because we use only one "OK" button for different commands).
      */
@@ -252,6 +274,8 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
     private TextView mTvInputInfo;
     private TextView mTvForget;
     private LockDigitalView mDigitalView;
+    
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected int getContentView() {
@@ -383,6 +407,8 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
         //设置密码位数
         mDigitalView.setMaxNumbers(MAX_NUMBERS);
         mDigitalView.setInputChangedListener(this);
+
+        mTvForget.setOnClickListener(this);
     }
 
     @Override
@@ -423,6 +449,89 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
         finishWithNegativeResult(RESULT_CANCELED);
 
         return true;
+    }
+
+    /**
+     * 显示验证密码的对话框，只有验证密码通过了才能重置密码
+     */
+    private void showValidatePwdDialog() {
+        
+        View view = LayoutInflater.from(mContext).inflate(R.layout.layout_dialog_reset_pwd, null);
+        final EditText etPassword = (EditText) view.findViewById(R.id.et_password);
+        AlertDialog.Builder builder = NoteUtil.buildDialog(mContext);
+        builder.setTitle(R.string.authority_forget_password_tip)
+                .setView(view)
+                .setPositiveButton(R.string.authority_reset_password, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        CharSequence text = etPassword.getText();
+                        if (TextUtils.isEmpty(text)) {
+                            SystemUtil.makeShortToast(R.string.tip_password_is_empty);
+                            return;
+                        }
+                        //检查网络是否可用
+                        boolean isNetOk = SystemUtil.isNetworkAvailable(mContext);
+                        if (!isNetOk) {
+                            SystemUtil.makeShortToast(R.string.tip_network_not_available);
+                            return;
+                        }
+                        //校验密码，需联网校验
+                        mProgressDialog = showLoadingDialog(R.string.authority_validating);
+                        doValidateUser(text.toString());
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK) {
+            LockType lockType = null;
+            boolean hasLock = false;
+            switch (requestCode) {
+                case REQ_CREATE_DIGITAL:    //创建了数字密码
+                    lockType = LockType.DIGITAL;
+                    hasLock = true;
+                    KLog.d(TAG, "lockType:" + lockType + ", hasLock" + hasLock);
+                    saveSecurityType(lockType, hasLock);
+                    SystemUtil.makeShortToast(R.string.authority_reset_password_success);
+                    break;
+            }
+        }
+//        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    /**
+     * 保存密码锁的类型
+     * @param lockType 密码锁的类型,{@link LockType#DIGITAL}和{@link LockType#PATTERN}
+     * @param hasLock 密码锁是否打开，true，打开                
+     */
+    public void saveSecurityType(LockType lockType, boolean hasLock) {
+        if (lockType == null) {
+            return;
+        }
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(this);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(getString(R.string.settings_key_security_type), lockType.getType());
+        editor.putBoolean(getString(R.string.settings_key_security_password), hasLock);
+        editor.apply();
+
+        LockInfo lockInfo = new LockInfo();
+        lockInfo.setLockType(lockType);
+        lockInfo.setHasLock(hasLock);
+
+        updateLockInfo(lockInfo);
+
+        KLog.d(TAG, "update security type:" + lockInfo);
+    }
+
+    /**
+     * 校验密码
+     * @param password
+     */
+    private void doValidateUser(String password) {
+        new ValidateTask().execute(password);
     }
 
     @Override
@@ -812,6 +921,49 @@ public class LockDigitalActivity extends BaseActivity implements LockDigitalView
     @Override
     public void onInputCleared() {
         resetDigital();
+    }
+
+    /**
+     * 校验密码的后台任务
+     */
+    class ValidateTask extends AsyncTask<String, Void, Integer> {
+
+        @Override
+        protected Integer doInBackground(String... params) {
+            return UserApi.validateUser(mContext, params[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Integer value) {
+            dismissDialog(mProgressDialog);
+            int resultCode = value == null ? 0 : value;
+            switch (resultCode) {
+               case ActionResult.RESULT_SUCCESS:   //成功
+                    SystemUtil.makeShortToast(R.string.authority_validate_success);
+                    Intent intent = LockDigitalActivity.IntentBuilder
+                            .newPatternCreator(mContext)
+                            .build();
+                    intent.putExtra(LockDigitalActivity.EXTRA_HAS_LOCK_CONTROLLER, false);
+                    startActivityForResult(intent, REQ_CREATE_DIGITAL);
+                    break;
+                case ActionResult.RESULT_DATA_NOT_EXISTS:   //用户不存在
+                    SystemUtil.makeShortToast(R.string.authority_account_not_exists);
+                    break;
+                case ActionResult.RESULT_PARAM_ERROR:   //参数错误，本地绑定的账号被清除了
+                    SystemUtil.makeShortToast(R.string.authority_bind_account_empty);
+                    break;
+                case ActionResult.RESULT_VALIDATE_FAILED:
+                case ActionResult.RESULT_NOT_EQUALS:   //密码错误
+                    SystemUtil.makeShortToast(R.string.account_password_not_right);
+                    break;
+                case ActionResult.RESULT_STATE_DISABLE:   //账号被禁用
+                    SystemUtil.makeShortToast(R.string.authority_login_state_disable);
+                    break;
+                default:
+                    SystemUtil.makeShortToast(R.string.authority_validate_failed);
+                    break;
+            }
+        }
     }
 
     /**

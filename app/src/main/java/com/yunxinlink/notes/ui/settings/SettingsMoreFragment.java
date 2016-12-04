@@ -1,13 +1,15 @@
 package com.yunxinlink.notes.ui.settings;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.preference.Preference;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatDelegate;
+import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceFragmentCompat;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
@@ -15,6 +17,7 @@ import com.yunxinlink.notes.receiver.SystemReceiver;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SettingsUtil;
+import com.yunxinlink.notes.util.SystemUtil;
 
 /**
  * 安全密码设置界面
@@ -41,9 +44,10 @@ public class SettingsMoreFragment extends BasePreferenceFragment implements Pref
      * @return A new instance of fragment SettingsSecurityFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static SettingsMoreFragment newInstance() {
+    public static SettingsMoreFragment newInstance(String rootKey) {
         SettingsMoreFragment fragment = new SettingsMoreFragment();
         Bundle args = new Bundle();
+        args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, rootKey);
         fragment.setArguments(args);
         return fragment;
     }
@@ -51,7 +55,10 @@ public class SettingsMoreFragment extends BasePreferenceFragment implements Pref
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+    }
 
+    @Override
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.pref_more);
         //设置监听
         bindPreferenceChangeListener(findPreference(getString(R.string.settings_key_more_shortcut)), this);
@@ -66,8 +73,23 @@ public class SettingsMoreFragment extends BasePreferenceFragment implements Pref
     }
 
     @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        if (!SystemUtil.hasSdkV23()) {
+            attachCompat(activity);
+        }
+    }
+
+    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        if (SystemUtil.hasSdkV23()) {
+            attachCompat(context);
+        }
+    }
+
+    @Override
+    protected void attachCompat(Context context) {
         if (context instanceof OnThemeFragmentInteractionListener) {
             mListener = (OnThemeFragmentInteractionListener) context;
         } else {

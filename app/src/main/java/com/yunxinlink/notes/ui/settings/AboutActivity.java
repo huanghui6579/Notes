@@ -80,6 +80,9 @@ public class AboutActivity extends BaseActivity implements View.OnClickListener 
             case R.id.tv_share: //推荐给好友
                 shareApp();
                 break;
+            case R.id.tv_website:   //进入到官网
+                NoteUtil.viewUrl(mContext, Constants.WEB_SITE_URL);
+                break;
         }
     }
 

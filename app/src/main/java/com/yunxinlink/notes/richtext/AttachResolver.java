@@ -1,11 +1,10 @@
 package com.yunxinlink.notes.richtext;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
-import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
@@ -23,6 +22,8 @@ import com.yunxinlink.notes.widget.FileSpan;
 
 import java.util.List;
 import java.util.Map;
+
+import static com.yunxinlink.notes.R.drawable.ic_broken_image;
 
 /**
  * 附件解析器
@@ -115,6 +116,7 @@ public class AttachResolver implements Resolver {
                 attachSpan.setSelStart(selStart);
                 attachSpan.setSelEnd(selEnd);
                 attachSpan.setNoteSid(attach.getNoteId());
+                attachSpan.setMimeType(attach.getMimeType());
                 ReplacementSpan replacementSpan = null;
                 int[] size = null;
                 switch (attach.getType()) {
@@ -131,7 +133,7 @@ public class AttachResolver implements Resolver {
                         replacementSpan = new FileSpan(context, attach, size[0]);
                         break;
                 }
-                KLog.d(TAG, "---ResolverAttachTask----addSpan-----replacementSpan----");
+                KLog.d(TAG, "---ResolverAttachTask----addSpan-----replacementSpan--attachSpan:" + attachSpan);
                 if (replacementSpan != null) {
                     richSpan.addSpan(text, attachSpan, replacementSpan, selStart, selEnd, null);
                 }
@@ -167,9 +169,8 @@ public class AttachResolver implements Resolver {
      * @return
      */
     private Drawable getFailedImage(Context context) {
-        Resources resources = context.getResources();
-        int color = ResourcesCompat.getColor(resources, R.color.text_time_color, context.getTheme());
-        Drawable drawable = ResourcesCompat.getDrawable(resources, R.drawable.ic_broken_image, context.getTheme());
+        int color = ContextCompat.getColor(context, R.color.text_time_color);
+        Drawable drawable = ContextCompat.getDrawable(context, ic_broken_image);
         drawable = SystemUtil.getTintDrawable(context, drawable, color);
         return drawable;
     }

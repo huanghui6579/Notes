@@ -40,6 +40,16 @@ public class ActionResult<T> {
 	 * 数据重复了
 	 */
 	public static final int RESULT_DATA_REPEAT = 206;
+
+	/**
+	 * 已过期
+	 */
+	public static final int RESULT_OUT_DATE = 207;
+
+	/**
+	 * 用户密码校验失败
+	 */
+	public static final int RESULT_VALIDATE_FAILED = 208;
 	
 	/**
 	 * 返回码

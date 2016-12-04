@@ -322,26 +322,31 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      */
     private void changeActionButtonVisible(boolean visible, boolean selected, UpdateAppearance span) {
         if (visible) {  //设置可见
+            if (mBottomActionLayout == null) {
+                initActionLayout();
+            }
+            if (mBottomActionLayout == null) {
+                return;
+            }
+            int resId = 0;
             if (span instanceof MessageBundleSpan) {//且是链接类型
-                if (mBottomActionLayout == null) {
-                    initActionLayout();
-                }
-                if (mBottomActionLayout == null) {
-                    return;
-                }
+                
                 MessageBundleSpan bundleSpan = (MessageBundleSpan) span;
-                int resId = bundleSpan.getActionIconRes();
-                if (resId != 0) {
-                    mBottomActionLayout.setImageResource(resId);
-                    mBottomActionLayout.setTag(span);
-                    SystemUtil.setViewVisibility(mBottomActionLayout, View.VISIBLE);
-                } else {
-                    SystemUtil.setViewVisibility(mBottomActionLayout, View.GONE);
-                }
+                resId = bundleSpan.getActionIconRes();
+                
             } else if (span instanceof AttachSpan) {  //附件
                 AttachSpan attachSpan = (AttachSpan) span;
-                attachSpan.onClick(mContext);
-                KLog.d(TAG, "change action button span:" + span);
+                resId = attachSpan.getActionIconRes();
+//                attachSpan.onClick(mContext);
+//                KLog.d(TAG, "change action button span:" + span);
+            }
+
+            if (resId != 0) {
+                mBottomActionLayout.setImageResource(resId);
+                mBottomActionLayout.setTag(span);
+                SystemUtil.setViewVisibility(mBottomActionLayout, View.VISIBLE);
+            } else {
+                SystemUtil.setViewVisibility(mBottomActionLayout, View.GONE);
             }
             
         } else if (mBottomActionLayout != null) {
@@ -1350,7 +1355,10 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     if (span instanceof MessageBundleSpan) {  //链接
                         MessageBundleSpan bundleSpan = (MessageBundleSpan) span;
                         bundleSpan.openUrl(mContext);
-                    }//可能还有其他条件
+                    } else if (span instanceof AttachSpan) {
+                        AttachSpan attachSpan = (AttachSpan) span;
+                        attachSpan.showAttach(mContext);
+                    }
                 }
                 break;
         }
@@ -1648,9 +1656,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
      * @return
      */
     private Attach file2Attach(File file, int attachType) {
-        String mimeType = FileUtil.getMimeType(file);
+        String mimeType = null;
+        if (attachType == Attach.PAINT) {   //画图
+            mimeType = FileUtil.MIME_TYPE_PNG;
+        } else {
+            mimeType = FileUtil.getMimeType(file);
+        }
         String filePath = file.getAbsolutePath();
-        if (attachType == 0) {
+        if (attachType == 0 && mimeType != null) {
             attachType = SystemUtil.guessFileType(filePath, mimeType);
         }
         Attach attach = new Attach();
@@ -2037,9 +2050,18 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             KLog.d(TAG, "---handleAddAttach---added---not--need--add---");
             return;
         }
-        doInbackground(new Runnable() {
+        updateAttach(attach);
+    }
+
+    /**
+     * 更新附件
+     * @param att
+     */
+    private void updateAttach(Attach att) {
+        doInbackground(new NoteTask(att) {
             @Override
             public void run() {
+                Attach attach = (Attach) params[0];
                 String filePath = attach.getLocalPath();
                 Attach tmpAttach = getAddedAttach(filePath);
 
@@ -2063,7 +2085,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                     tmpAttach.setSize(new File(filePath).length());
 
-                    
+
                     mAttachCache.put(tmpAttach.getSid(), tmpAttach);
                     mDetailNote.setLastAttach(tmpAttach);
 
@@ -2175,58 +2197,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         requestPermission(new PermissionsResultAction() {
             @Override
             public void onGranted() {
-                if (mAudioRecorder == null) {
-                    mAudioRecorder = new AudioRecorder(mHandler);
-                }
-                if (mAttachFile == null) {
-                    String sid = getNoteSid();
-                    try {
-                        mAttachFile = SystemUtil.getAttachFile(sid, Attach.VOICE);
-                    } catch (IOException e) {
-                        KLog.e(TAG, "getAttachFile error：" + e.getMessage());
-                        e.printStackTrace();
-                    }
-                    if (mAttachFile == null) {
-                        SystemUtil.makeShortToast(R.string.record_error);
-                        KLog.e(TAG, "getAttachFile error");
-                    }
-                }
-                mAudioRecorder.setFilePath(mAttachFile.getAbsolutePath());
-                mAudioRecorder.setRecordListener(new AudioRecorder.OnRecordListener() {
-                    @Override
-                    public void onBeforeRecord(String filePath) {
-                        KLog.d(TAG, "----onBeforeRecord--");
-                        showRecordView();
-                    }
-
-                    @Override
-                    public void onRecording(String filePath, long time) {
-                        updateRecordTime(time);
-                    }
-
-                    @Override
-                    public void onEndRecord(String filePath, long time) {
-                        if (filePath != null) {
-                            File file = new File(filePath);
-                            Attach attach = file2Attach(file, Attach.VOICE);
-                            attach.setDescription(String.valueOf(time));
-                            if (mNoteEditFragment != null) {
-                                mNoteEditFragment.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
-                            }
-                        } else {
-                            mAttachFile = null;
-                        }
-                        hideRecordView();
-                    }
-
-                    @Override
-                    public void onRecordError(String filePath, String errorMsg) {
-                        KLog.d(TAG, "----onRecordError--");
-                        hideRecordView();
-                        SystemUtil.makeShortToast(R.string.record_error);
-                    }
-                });
-                mAudioRecorder.startRecording();
+                startRecord();
             }
 
             @Override
@@ -2243,6 +2214,81 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         PermissionsManager.getInstance().notifyPermissionsChange(permissions, grantResults);
         KLog.d(TAG, "Activity-onRequestPermissionsResult() PermissionsManager.notifyPermissionsChange()");
+    }
+
+    /**
+     * 开始录音
+     */
+    private void startRecord() {
+        if (mAudioRecorder == null) {
+            mAudioRecorder = new AudioRecorder(mHandler);
+        }
+        if (mAttachFile == null) {
+            String sid = getNoteSid();
+            try {
+                mAttachFile = SystemUtil.getAttachFile(sid, Attach.VOICE);
+            } catch (IOException e) {
+                KLog.e(TAG, "getAttachFile error：" + e.getMessage());
+                e.printStackTrace();
+            }
+            if (mAttachFile == null) {
+                SystemUtil.makeShortToast(R.string.record_error);
+                KLog.e(TAG, "getAttachFile error");
+            }
+        }
+        mAudioRecorder.setFilePath(mAttachFile.getAbsolutePath());
+        mAudioRecorder.setRecordListener(new AudioRecorder.OnRecordListener() {
+            @Override
+            public void onBeforeRecord(String filePath) {
+                KLog.d(TAG, "----onBeforeRecord--");
+                showRecordView();
+            }
+
+            @Override
+            public void onRecording(String filePath, long time) {
+                updateRecordTime(time);
+            }
+
+            @Override
+            public void onEndRecord(String filePath, long time) {
+                if (filePath != null) {
+                    endRecord(filePath, time);
+                } else {
+                    mAttachFile = null;
+                }
+                hideRecordView();
+            }
+
+            @Override
+            public void onRecordError(String filePath, String errorMsg) {
+                KLog.d(TAG, "----onRecordError--");
+                hideRecordView();
+                SystemUtil.makeShortToast(R.string.record_error);
+            }
+        });
+        mAudioRecorder.startRecording();
+    }
+
+    /**
+     * 结束录音
+     * @param filePath
+     * @param time
+     */
+    private void endRecord(String filePath, long time) {
+        doInbackground(new NoteTask(filePath, time) {
+            @Override
+            public void run() {
+                String path = (String) params[0];
+                long recordTime = (long) params[1];
+                File file = new File(path);
+                Attach attach = file2Attach(file, Attach.VOICE);
+                attach.setDescription(String.valueOf(recordTime));
+                if (mNoteEditFragment != null) {
+                    mNoteEditFragment.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
+                }
+            }
+        });
+        
     }
 
     /**

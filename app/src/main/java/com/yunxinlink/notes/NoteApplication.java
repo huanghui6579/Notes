@@ -218,6 +218,10 @@ public class NoteApplication extends Application {
         }
 
         initKLog();
+
+        //初始化错误处理类
+        CrashHandler crashHandler = CrashHandler.getInstance();
+        crashHandler.init(getApplicationContext());
     }
     
     private void initKLog() {
@@ -301,6 +305,12 @@ public class NoteApplication extends Application {
     public User initLocalUser(Context context) {
         //获取本地用户的id
         User user = null;
+        boolean isOnLine = NoteUtil.isAccountOnline(context);
+        if (!isOnLine) {    //用户已注销
+            KLog.d(TAG, "init local user but user is offline");
+            setCurrentUser(null);
+            return null;
+        }
         int userId = NoteUtil.getAccountId(context);
         if (userId <= 0) {  //如果本地用户id不存在，则看看是否使用的第三方账号登录的
             KLog.d(TAG, "init local user local user id is <= 0");

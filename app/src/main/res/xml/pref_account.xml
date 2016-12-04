@@ -1,18 +1,18 @@
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <Preference 
+    <android.support.v7.preference.Preference 
         android:key="@string/settings_key_account_name"
         android:title="@string/settings_account_title"
         android:summary="@string/account_no_account"/>
     
-    <!--<Preference
-        android:key="@string/settings_key_account_last_sync_time"
-        android:title="@string/account_last_sync_time"
-        android:summary="@string/sync_type_none"/>-->
+    <android.support.v7.preference.Preference
+        android:key="@string/settings_key_account_email"
+        android:title="@string/account_email"
+        android:summary="@string/account_email_none"/>
     
-    <Preference
+    <android.support.v7.preference.Preference
         android:key="@string/settings_key_account_logout"
         android:title="@string/account_logout"
         android:summary="@string/account_logout_summary" />
 
-</PreferenceScreen>
+</android.support.v7.preference.PreferenceScreen>

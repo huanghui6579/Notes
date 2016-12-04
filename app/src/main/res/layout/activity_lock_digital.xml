@@ -76,7 +76,6 @@
             android:text="@string/alp_cmd_forgot_lock"
             style="@style/TextTipBtnStyle"/>
 
-
     </LinearLayout>
 
 </LinearLayout>

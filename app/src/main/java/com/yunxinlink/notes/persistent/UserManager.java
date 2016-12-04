@@ -102,7 +102,7 @@ public class UserManager extends Observable<Observer> {
         user.setOpenUserId(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.OPEN_USER_ID)));
         user.setAvatarHash(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.AVATAR_HASH)));
         user.setNickname(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.NICKNAME)));
-        user.setNickname(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.NICKNAME)));
+        user.setToken(cursor.getString(cursor.getColumnIndex(Provider.UserColumns.TOKEN)));
         return user;
     }
 
@@ -173,7 +173,55 @@ public class UserManager extends Observable<Observer> {
 
             values.put(Provider.UserColumns.CREATE_TIME, createTime);
         }
+
+        String token = user.getToken();
+        if (token != null) {
+            values.put(Provider.UserColumns.TOKEN, token);
+        }
         return values;
+    }
+
+    /**
+     * 根据条件查询本地用户信息
+     * @param param
+     * @return
+     */
+    public User getAccountInfo(User param) {
+        String selection = null;
+        String[] selectionArgs = null;
+        int userId = param.getId();
+        if (userId > 0) {
+            selection = Provider.UserColumns._ID + " = ?";
+            selectionArgs = new String[] {String.valueOf(userId)};
+        } else if (!TextUtils.isEmpty(param.getSid())) {
+            selection = Provider.UserColumns.SID + " = ?";
+            selectionArgs = new String[] {param.getSid()};
+        } else if (!TextUtils.isEmpty(param.getUsername())) {
+            selection = Provider.UserColumns.USERNAME + " = ?";
+            selectionArgs = new String[] {param.getUsername()};
+        } else if (!TextUtils.isEmpty(param.getOpenUserId())) {
+            selection = Provider.UserColumns.OPEN_USER_ID + " = ?";
+            selectionArgs = new String[] {param.getOpenUserId()};
+        } else if (!TextUtils.isEmpty(param.getEmail())) {
+            selection = Provider.UserColumns.EMAIL + " = ?";
+            selectionArgs = new String[] {param.getEmail()};
+        } else if (!TextUtils.isEmpty(param.getMobile())) {
+            selection = Provider.UserColumns.MOBILE + " = ?";
+            selectionArgs = new String[] {param.getMobile()};
+        }
+        if (selection == null) {
+            return null;
+        }
+        User user = null;
+        SQLiteDatabase db = mDBHelper.getReadableDatabase();
+        Cursor cursor = db.query(Provider.UserColumns.TABLE_NAME, null, selection, selectionArgs, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            user = cursor2User(cursor);
+        }
+        if (cursor != null) {
+            cursor.close();
+        }
+        return user;
     }
 
     /**
@@ -296,6 +344,16 @@ public class UserManager extends Observable<Observer> {
      * @return
      */
     private boolean update(User user, SQLiteDatabase db) {
+        return update(user, db, true);
+    }
+
+    /**
+     * 更新用户信息
+     * @param user
+     * @param refresh 是否刷新界面
+     * @return
+     */
+    private boolean update(User user, SQLiteDatabase db, boolean refresh) {
         if (user == null) {
             KLog.d(TAG, "update user failed user param is null");
             return false;
@@ -339,10 +397,12 @@ public class UserManager extends Observable<Observer> {
             user = getAccountInfoBySid(user.getSid(), false);
             KLog.d(TAG, "update user and reload user by sid:" + user);
         }
-        NoteApplication.getInstance().setCurrentUser(user);
-        if (success) {
-            //通知界面刷新
-            notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, user);
+        if (refresh) {
+            NoteApplication.getInstance().setCurrentUser(user);
+            if (success) {
+                //通知界面刷新
+                notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.UPDATE, user);
+            }
         }
         return success;
     }
@@ -353,24 +413,7 @@ public class UserManager extends Observable<Observer> {
      * @return
      */
     private boolean add(User user, SQLiteDatabase db) {
-        if (user == null) {
-            KLog.d(TAG, "add user failed user param is null");
-            return false;
-        }
-        if (db == null) {
-            db = mDBHelper.getWritableDatabase();
-        }
-        user.setCreateTime(System.currentTimeMillis());
-        ContentValues values = initValues(user, true);
-        long rowId = db.insert(Provider.UserColumns.TABLE_NAME, null, values);
-        boolean success = rowId > 0;
-        if (success) {
-            user.setId((int) rowId);
-            NoteApplication.getInstance().setCurrentUser(user);
-            //通知界面刷新
-            notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, user);
-        }
-        return success;
+        return add(user, db, true);
     }
 
     /**
@@ -383,16 +426,92 @@ public class UserManager extends Observable<Observer> {
     }
 
     /**
+     * 添加用户
+     * @param user
+     * @param db
+     * @param refresh
+     * @return
+     */
+    private boolean add(User user, SQLiteDatabase db, boolean refresh) {
+        if (user == null) {
+            KLog.d(TAG, "add user failed user param is null");
+            return false;
+        }
+        if (db == null) {
+            db = mDBHelper.getWritableDatabase();
+        }
+        user.setCreateTime(System.currentTimeMillis());
+        ContentValues values = initValues(user, true);
+        long rowId = 0;
+        try {
+            rowId = db.insert(Provider.UserColumns.TABLE_NAME, null, values);
+        } catch (Exception e) {
+            KLog.e(TAG, "add user error:" + e.getMessage());
+        }
+        boolean success = rowId > 0;
+        if (success) {
+            user.setId((int) rowId);
+            if (refresh) {
+                NoteApplication.getInstance().setCurrentUser(user);
+                //通知界面刷新
+                notifyObservers(Provider.UserColumns.NOTIFY_FLAG, Observer.NotifyType.ADD, user);
+            }
+        }
+        return success;
+    }
+
+    /**
+     * 添加用户
+     * @param user
+     * @param refresh
+     * @return
+     */
+    public boolean add(User user, boolean refresh) {
+        return add(user, null, refresh);
+    }
+
+    /**
      * 添加或更新数据，若记录没有，则添加,有，则更新
      * @param user
      * @return
      */
     public boolean insertOrUpdate(User user) {
+        return insertOrUpdate(user, true);
+    }
+    
+    /**
+     * 添加或更新数据，若记录没有，则添加,有，则更新
+     * @param user
+     * @param refresh 是否刷新界面，并且设置到缓存里
+     * @return
+     */
+    public boolean insertOrUpdate(User user, boolean refresh) {
         if (user == null || TextUtils.isEmpty(user.getSid())) {
             KLog.d(TAG, "insertOdUpdate user failed user param is null:" + user);
             return false;
         }
         SQLiteDatabase db = mDBHelper.getWritableDatabase();
+        long id = getUserId(user, db);
+        boolean success = false;
+        if (id > 0) {    //本地有该用户，则更新
+            user.setId((int) id);
+            success = update(user, db, refresh);
+        } else {    //添加
+            success = add(user, db, refresh);
+        }
+        return success;
+    }
+
+    /**
+     * 获取用户本地的id
+     * @param user
+     * @param db
+     * @return
+     */
+    private long getUserId(User user, SQLiteDatabase db) {
+        if (db == null) {
+            db = mDBHelper.getReadableDatabase();
+        }
         String openUserId = user.getOpenUserId();
         String selection = null;
         String[] args = null;
@@ -420,21 +539,15 @@ public class UserManager extends Observable<Observer> {
             args = new String[] {openUserId};
             KLog.d(TAG, "insert or update check user exists with open user id:" + openUserId);
         }
-        Cursor cursor = db.query(Provider.UserColumns.TABLE_NAME, new String[] {"count(*) as count"}, selection, args, null, null, null);
-        long count = 0;
+        Cursor cursor = db.query(Provider.UserColumns.TABLE_NAME, new String[] {Provider.UserColumns._ID}, selection, args, null, null, null);
+        long id = 0;
         if (cursor != null && cursor.moveToFirst()) {
-            count = cursor.getLong(0);
+            id = cursor.getLong(0);
         }
         if (cursor != null) {
             cursor.close();
         }
-        boolean success = false;
-        if (count > 0) {    //本地有该用户，则更新
-            success = update(user, db);
-        } else {    //添加
-            success = add(user, db);
-        }
-        return success;
+        return id;
     }
 
     /**

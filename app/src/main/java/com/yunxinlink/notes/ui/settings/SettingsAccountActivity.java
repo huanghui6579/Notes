@@ -6,6 +6,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceFragment;
+import android.support.v7.preference.PreferenceFragmentCompat;
+import android.support.v7.preference.PreferenceScreen;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
@@ -16,6 +18,7 @@ import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.ui.AuthorityActivity;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
+import com.yunxinlink.notes.util.SystemUtil;
 
 /**
  * 用户账号的设置界面
@@ -50,6 +53,19 @@ public class SettingsAccountActivity extends AppCompatPreferenceActivity impleme
         new LogoutTask().execute();
     }
 
+    @Override
+    public void onBindEmail(int resId) {
+        mHandler.post(new NoteTask(resId) {
+            @Override
+            public void run() {
+                int id = (int) params[0];
+                if (id != 0) {
+                    SystemUtil.makeShortToast(id);
+                }
+            }
+        });
+    }
+
     /**
      * 注销登录
      */
@@ -67,6 +83,12 @@ public class SettingsAccountActivity extends AppCompatPreferenceActivity impleme
                 finish();
             }
         }, 10);
+    }
+
+    @Override
+    public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
+        KLog.d(TAG, "onPreferenceStartScreen settings account activity");
+        return false;
     }
 
     /**

@@ -2,10 +2,12 @@ package com.yunxinlink.notes.ui.settings;
 
 
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceFragment;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.preference.PreferenceFragmentCompat;
+import android.support.v7.preference.PreferenceScreen;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
@@ -14,6 +16,7 @@ import com.yunxinlink.notes.db.observer.ContentObserver;
 import com.yunxinlink.notes.db.observer.Observable;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.NoteManager;
+import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.Constants;
 
 import java.lang.ref.WeakReference;
@@ -24,25 +27,12 @@ import java.lang.ref.WeakReference;
  * @update 2016/8/24 17:09
  * @version: 1.0.0
  */
-public class SettingsSyncActivity extends AppCompatPreferenceActivity implements SettingsSyncFragment.OnSettingsSyncFragmentInteractionListener {
+public class SettingsSyncActivity extends BaseActivity implements SettingsSyncFragment.OnSettingsSyncFragmentInteractionListener, PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
     
     //观察者
     private ContentObserver mContentObserver;
     
     private Handler mHandler = new MyHandler(this);
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        setContentView(R.layout.activity_settings_sync);
-
-        setupActionBar(R.id.toolbar);
-
-        setListDividerHeight();
-
-        registerObserver();
-    }
 
     /**
      * 注册观察者
@@ -69,6 +59,21 @@ public class SettingsSyncActivity extends AppCompatPreferenceActivity implements
         super.onDestroy();
     }
 
+    @Override
+    protected int getContentView() {
+        return R.layout.activity_settings_sync;
+    }
+
+    @Override
+    protected void initData() {
+        registerObserver();
+    }
+
+    @Override
+    protected void initView() {
+
+    }
+
     /**
      * This method stops fragment injection in malicious applications.
      * Make sure to deny any unknown fragments here.
@@ -88,8 +93,11 @@ public class SettingsSyncActivity extends AppCompatPreferenceActivity implements
      * @return
      */
     private SettingsSyncFragment getFragment() {
-        return (SettingsSyncFragment) getFragmentManager().findFragmentByTag("SettingsSyncFragment");
+        //TODO 获取fragment
+//        return (SettingsSyncFragment) getFragmentManager().findFragmentByTag("SettingsSyncFragment");
+        return null;
     }
+    
 
     /**
      * 刷新界面
@@ -109,6 +117,18 @@ public class SettingsSyncActivity extends AppCompatPreferenceActivity implements
         } else {
             KLog.d(TAG, "setting sync activity get refresh get fragment null or user is null or user not available");
         }
+    }
+
+    @Override
+    public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
+        KLog.d(TAG, "onPreferenceStartScreen settings sync activity");
+        SettingsSyncFragment fragment = SettingsSyncFragment.newInstance(pref.getKey());
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        transaction.replace(R.id.main_frame, fragment, pref.getKey());
+        transaction.addToBackStack(pref.getKey());
+        transaction.commit();
+        return true;
     }
 
     private static class MyHandler extends Handler {

@@ -27,4 +27,16 @@ public class SpanInfo {
         this.selEnd = selEnd;
         this.listener = listener;
     }
+
+    @Override
+    public String toString() {
+        return "SpanInfo{" +
+                "text=" + text +
+                ", clickSpan=" + clickSpan +
+                ", replaceSpan=" + replaceSpan +
+                ", selStart=" + selStart +
+                ", selEnd=" + selEnd +
+                ", listener=" + listener +
+                '}';
+    }
 }

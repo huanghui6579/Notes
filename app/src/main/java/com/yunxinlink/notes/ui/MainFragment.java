@@ -16,6 +16,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -266,7 +267,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
         if (mIsTrash) { //回收站的界面
             MenuItem clearAllItem = menu.add(0, R.id.action_clear_all, 200, R.string.action_clear_all);
             MenuItemCompat.setShowAsAction(clearAllItem, MenuItem.SHOW_AS_ACTION_ALWAYS);
-            clearAllItem.setIcon(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_clear_all, getContext().getTheme()));
+            clearAllItem.setIcon(ContextCompat.getDrawable(getContext(), R.drawable.ic_clear_all));
             menu.removeItem(R.id.action_search);
         } else {
             MenuItem searchItem = menu.findItem(R.id.action_search);
@@ -408,7 +409,6 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             
             Animation rotation = AnimationUtils.loadAnimation(getContext(), R.anim.rotate_refresh);
             rotation.setRepeatCount(Animation.INFINITE);
-
             view.startAnimation(rotation);
             
             mSyncMenu.setActionView(view);
@@ -2247,7 +2247,6 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                 attachType = attach.getType();
             }
 
-
             CharSequence title = note.getAttachShowTitle(mContext, attachType);
             /*if (note.isDetailNote() && TextUtils.isEmpty(title)) {
                 title = getResources().getString(R.string.no_title);
@@ -2312,8 +2311,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
             gridHolder.mTvTitle.setTextColor(itemColor.titleColor);
             gridHolder.mTvSummary.setTextColor(itemColor.contentColor);
             gridHolder.mTvTime.setTextColor(itemColor.timeColor);
-
-            gridHolder.mIvOverflow.setImageResource(R.drawable.abc_ic_menu_moreoverflow_mtrl_alpha);
+            gridHolder.mIvOverflow.setImageResource(R.drawable.ic_menu_moreoverflow_mtrl_alpha);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 gridHolder.mItemContainer.setBackground(null);
@@ -2400,9 +2398,7 @@ public class MainFragment extends BaseFragment implements View.OnClickListener {
                         boolean hasMoreFolder = FolderCache.getInstance().hasMoreFolder();
                         if (!mIsTrash && !hasMoreFolder) {   //删除“移动”菜单项
                             Menu menu = itemMenu.getMenu();
-                            if (menu != null) {
-                                menu.removeItem(R.id.action_move);
-                            }
+                            menu.removeItem(R.id.action_move);
                         }
                         itemMenu.show();
                         break;

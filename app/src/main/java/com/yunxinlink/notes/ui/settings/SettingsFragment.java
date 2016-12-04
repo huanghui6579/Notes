@@ -6,7 +6,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.Preference;
+import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceFragmentCompat;
 import android.text.TextUtils;
 
 import com.socks.library.KLog;
@@ -47,9 +48,10 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
      * @return A new instance of fragment SettingsFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static SettingsFragment newInstance() {
+    public static SettingsFragment newInstance(String rootKey) {
         SettingsFragment fragment = new SettingsFragment();
         Bundle args = new Bundle();
+        args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, rootKey);
         fragment.setArguments(args);
         return fragment;
     }
@@ -57,10 +59,11 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        //注册观察者
-        registerObserver();
         
+    }
+
+    @Override
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.pref_main);
 
         Preference accountPreference = findPreference(getString(R.string.settings_key_account_in));
@@ -73,19 +76,24 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
         } else {
             KLog.d(TAG, "settings main fragment user is null or account is empty:" + user);
         }
-        
-        
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        attachCompat(context);
+    }
+
+    @Override
+    protected void attachCompat(Context context) {
         if (context instanceof OnSettingsFragmentInteractionListener) {
             mListener = (OnSettingsFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnRegisterFragmentInteractionListener");
         }
+        //注册观察者
+        registerObserver();
     }
 
     /**
@@ -110,14 +118,9 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
-    }
-
-    @Override
-    public void onDestroy() {
         //注销观察者
         unregisterObserver();
-        super.onDestroy();
+        mListener = null;
     }
 
     @Override
@@ -155,10 +158,6 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
      * @param account
      */
     private void showAccount(String account) {
-        if (mListener == null) {
-            KLog.d(TAG, "settings fragment not attach to the activity");
-            return;
-        }
         if (TextUtils.isEmpty(account)) {   //没有账号
             account = getString(R.string.settings_account_summary);
         }
@@ -206,7 +205,7 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
         }
     }
 
-    static class MyHandler extends BaseHandler<SettingsFragment> {
+    private static class MyHandler extends BaseHandler<SettingsFragment> {
 
         public MyHandler(SettingsFragment target) {
             super(target);

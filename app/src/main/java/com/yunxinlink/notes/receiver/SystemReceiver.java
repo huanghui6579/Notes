@@ -90,17 +90,23 @@ public class SystemReceiver extends BroadcastReceiver {
                 VersionInfo versionInfo = checkVersion(app);
 
                 //是否可以自动下载软件更新包
-                User user = app.getCurrentUser();
-                final UserDto userDto = NoteUtil.buildLoginParams(context, user, null);
-                if (userDto != null) {
-                    boolean success = UserApi.login(context, userDto, null);
-                    if (success) {
-                        KLog.d(TAG, "app init completed user login success and will start sync down notes");
-                        startSyncDownNote(context);
+                boolean isOnLine = NoteUtil.isAccountOnline(context);
+                if (isOnLine) { //用户有登录过，需要后台登录
+                    User user = app.getCurrentUser();
+                    final UserDto userDto = NoteUtil.buildLoginParams(context, user, null);
+                    if (userDto != null) {
+                        boolean success = UserApi.login(context, userDto, null);
+                        if (success) {
+                            KLog.d(TAG, "app init completed user login success and will start sync down notes");
+                            startSyncDownNote(context);
+                        }
+                    } else {
+                        KLog.d(TAG, "doAuthorityVerify userDto is null");
                     }
                 } else {
-                    KLog.d(TAG, "doAuthorityVerify userDto is null");
+                    KLog.d(TAG, "doAuthorityVerify user is offline");
                 }
+                
                 if (versionInfo != null && versionInfo.checkContent()) {   //可以自动下载软件更新包
                     //下载软件版本
                     downloadAppInbackground(app, versionInfo);
@@ -116,7 +122,6 @@ public class SystemReceiver extends BroadcastReceiver {
      */
     private VersionInfo checkVersion(NoteApplication app) {
         boolean isWifi = SystemUtil.isWifiConnected(app);
-        isWifi = true;
         VersionInfo versionInfo = null;
         if (isWifi) {   //只有WiFi下才自动检查版本更新
             versionInfo = DeviceApi.checkVersion(app);

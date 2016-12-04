@@ -27,7 +27,7 @@ public interface IDeviceApi {
      * @return
      */
     @FormUrlEncoded
-    @POST("device/activate")
+    @POST("api/device/activate")
     Call<ActionResult<Void>> activeDeviceInfo(@FieldMap Map<String, String> params);
 
     /**
@@ -36,7 +36,7 @@ public interface IDeviceApi {
      * @return
      */
     @FormUrlEncoded
-    @POST("device/app/check")
+    @POST("app/check")
     Call<ActionResult<VersionInfo>> checkAppVersion(@FieldMap Map<String, String> params);
 
     /**
@@ -44,7 +44,7 @@ public interface IDeviceApi {
      * @param params 参数
      * @return
      */
-    @GET("device/app/download")
+    @GET("app/download")
     @Streaming
     Call<ResponseBody> downApp(@QueryMap Map<String, String> params);
 }
