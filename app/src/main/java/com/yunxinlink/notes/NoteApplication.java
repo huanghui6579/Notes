@@ -219,9 +219,11 @@ public class NoteApplication extends Application {
 
         initKLog();
 
-        //初始化错误处理类
-        CrashHandler crashHandler = CrashHandler.getInstance();
-        crashHandler.init(getApplicationContext());
+        if (!BuildConfig.DEBUG) {
+            //初始化错误处理类
+            CrashHandler crashHandler = CrashHandler.getInstance();
+            crashHandler.init(getApplicationContext());
+        }
     }
     
     private void initKLog() {

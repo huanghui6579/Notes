@@ -131,7 +131,7 @@ public class FolderManager extends Observable<Observer> {
         //加载的笔记本的类型，true：只加载回收站的笔记本，false，只加载非回收站的笔记本
         boolean isRecycle = false;
         if (args != null) {
-            isRecycle = args.getBoolean(Constants.ARG_ISRECYCLE, false);
+            isRecycle = args.getBoolean(Constants.ARG_IS_RECYCLE, false);
         }
 
         Cursor cursor = getAllFolderCursor(user, args);
@@ -739,5 +739,16 @@ public class FolderManager extends Observable<Observer> {
             map = FolderCache.getInstance().getFolderMap();
         }
         return map;
+    }
+
+    /**
+     * 获取笔记本的列表，有排序
+     * @param user
+     * @param args
+     * @return
+     */
+    public List<Folder> getSortFolders(User user, Bundle args) {
+        getFolders(user, args);
+        return FolderCache.getInstance().getSortFolders(); 
     }
 }

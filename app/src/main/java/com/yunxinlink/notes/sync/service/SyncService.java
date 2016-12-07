@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.os.AsyncTaskCompat;
 import android.text.TextUtils;
@@ -15,6 +16,7 @@ import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.api.model.NoteParam;
 import com.yunxinlink.notes.api.model.VersionInfo;
+import com.yunxinlink.notes.cache.FolderCache;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.model.ActionResult;
@@ -29,6 +31,7 @@ import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.sync.SyncCache;
 import com.yunxinlink.notes.sync.SyncData;
 import com.yunxinlink.notes.sync.SyncSettingState;
+import com.yunxinlink.notes.sync.Syncable;
 import com.yunxinlink.notes.sync.download.DownloadListener;
 import com.yunxinlink.notes.sync.download.DownloadTask;
 import com.yunxinlink.notes.sync.download.DownloadTaskQueue;
@@ -204,7 +207,7 @@ public class SyncService extends Service {
     private TaskParam syncUser(String syncSid) {
         final TaskParam resultParam = new TaskParam();
         SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
-        if (!checkSyncUpState(syncData)) {
+        if (!checkSyncUpState(syncData, true)) {
             return null;
         } else {
             User user = (User) syncData.getSyncable();
@@ -217,29 +220,99 @@ public class SyncService extends Service {
     /**
      * 上传笔记
      * @param syncSid 同步任务的编号
+     * @param checkSyncState 是否检查同步的状态               
      */
-    private TaskParam syncUpNotes(String syncSid) {
+    private TaskParam syncUpNotes(String syncSid, boolean checkSyncState) {
         final TaskParam resultParam = new TaskParam();
+        resultParam.optType = Constants.SYNC_UP_NOTE;
         SyncData syncData = SyncCache.getInstance().getSyncData(syncSid);
-        if (!checkSyncUpState(syncData)) {
+        if (checkSyncState && !checkSyncUpState(syncData, false)) {
             return null;
-        } else {
+        }
+
+        User user = getCurrentUser();
+        if (user == null || !user.isAvailable()) {
+            resultParam.code = ActionResult.RESULT_STATE_DISABLE;
+            KLog.d(TAG, "sync service sync up notes user is null or not available");
+            return resultParam;
+        }
+        
+        Syncable syncable = syncData.getSyncable();
+        if (syncable == null) { //向上同步所有的笔记
+            KLog.d("sync service sync up all notes");
+            //TODO 完善笔记的同步功能
+           
+            List<Folder> folderList = FolderManager.getInstance().getSortFolders(user, null);
+            if (SystemUtil.isEmpty(folderList)) {
+                folderList = new ArrayList<>();
+                folderList.add(new Folder());
+                KLog.d(TAG, "sync service sync up notes folder list is empty and create new list");
+            }
+            for (Folder folder : folderList) {
+                Folder paramFolder = null;
+                if (!TextUtils.isEmpty(folder.getSid())) {   //非默认的空笔记
+                    paramFolder = FolderCache.getInstance().getCacheFolder(folder.getSid());
+                }
+                if (paramFolder == null) {
+                    paramFolder = new Folder();
+                    KLog.d(TAG, "sync service sync up notes param folder is null and new one:" + paramFolder);
+                }
+                KLog.d(TAG, "sync service sync up notes folder is:" + paramFolder);
+                //查询该folder下的笔记
+                Bundle args = new Bundle();
+                args.putString(Constants.ARG_FOLDER_ID, paramFolder.getSid());
+                args.putBoolean(Constants.ARG_IS_RECYCLE, true);
+                args.putBoolean(Constants.ARG_IS_SYNC_UP, true);
+                List<DetailNoteInfo> detailNoteInfos = NoteManager.getInstance().getAllDetailNotes(user, args);
+                if (!SystemUtil.isEmpty(detailNoteInfos)) {  //没有要同步的笔记
+                    doSyncUpNotes(resultParam, folder, false, detailNoteInfos);
+                } else {
+                    resultParam.code = ActionResult.RESULT_SUCCESS;
+                    KLog.d(TAG, "sync service sync up notes list is empty");
+                }
+            }
+        } else {    //只同步指定的笔记
             NoteParam noteParam = (NoteParam) syncData.getSyncable();
             Folder folder = noteParam.getFolder();
             List<DetailNoteInfo> detailNoteInfos = noteParam.getDetailNoteInfos();
-            try {
-                resultParam.optType = Constants.SYNC_UP_NOTE;
+            doSyncUpNotes(resultParam, folder, noteParam.onlySyncState(), detailNoteInfos);
+        }
+        return resultParam;
+    }
+
+    /**
+     * 具体的执行同步笔记的操作
+     * @param resultParam
+     * @param folder
+     * @param onlySyncState 是否只同步笔记的状态
+     * @param detailNoteInfos
+     * @return
+     */
+    private TaskParam doSyncUpNotes(TaskParam resultParam, Folder folder, boolean onlySyncState, List<DetailNoteInfo> detailNoteInfos) {
+        if (detailNoteInfos == null) {
+            detailNoteInfos = new ArrayList<>();
+        }
+        try {
+            //空的笔记，则可以只同步笔记本
+            int noteSize = detailNoteInfos.size() == 0 ? 1 : detailNoteInfos.size();
+            //循环提交，每次提交10条数据
+            int pageSize = Constants.PAGE_SIZE_DEFAULT / 2;
+            int pageNumber = noteSize % pageSize == 0 ? noteSize / pageSize : noteSize / pageSize + 1;
+            for (int i = 0; i < pageNumber; i++) {
+                if (!checkUserState()) {
+                    KLog.d(TAG, "sync up note user is null or not available");
+                    break;
+                }
+                KLog.d(TAG, "sync up note page number:" + i);
                 //该方法是同步的，所以回调也是在同一个线程里
-                if (noteParam.onlySyncState()) {    //只同步笔记的状态
+                if (onlySyncState) {    //只同步笔记的状态
                     resultParam.code = NoteApi.updateNoteDeleteState(mContext, detailNoteInfos);
                 } else {    //同步笔记的内容
                     resultParam.code = NoteApi.syncUpNote(mContext, folder, detailNoteInfos);
                 }
-            } catch (Exception e) {
-                KLog.e(TAG, "sync service sync up note info error:" + e.getMessage());
             }
-            //移除该同步记录
-//            SyncCache.getInstance().remove(syncSid);
+        } catch (Exception e) {
+            KLog.e(TAG, "sync service sync up note info error:" + e.getMessage());
         }
         return resultParam;
     }
@@ -247,17 +320,34 @@ public class SyncService extends Service {
     /**
      * 检测向上同步的状态
      * @param syncData 同步数据
+     * @param checkData 是否需要校验是否有同步数据                
      * @return
      */
-    private synchronized boolean checkSyncUpState(SyncData syncData) {
-        if (syncData == null || syncData.isSyncing()
-                || !syncData.hasSyncData()) {
-            KLog.d(TAG, "sync service sync up user info but sync data is null or is syncing or not has sync data:" + syncData);
+    private synchronized boolean checkSyncUpState(SyncData syncData, boolean checkData) {
+        if (syncData == null) {
+            KLog.d(TAG, "sync service sync up check state sync data is null");
+            return false;
+        }
+        if (checkData && !syncData.hasSyncData()) {
+            KLog.d(TAG, "sync service sync up check state need check but syncable is null");
+            return false;
+        }
+        if (syncData.isSyncing()) {
+            KLog.d(TAG, "sync service sync up but sync data is null or is syncing or not has sync data:" + syncData);
             return false;
         } else {
             syncData.setState(SyncData.SYNC_ING);
             return true;
         }
+    }
+
+    /**
+     * 检查用户当前的状态是否可用
+     * @return
+     */
+    private boolean checkUserState() {
+        User user = getCurrentUser();
+        return user != null && user.isAvailable();
     }
 
     /**
@@ -330,11 +420,13 @@ public class SyncService extends Service {
             KLog.d(TAG, "sync note but down note task param is null");
             return null;
         }
-        param = syncUpNotes(syncSid);
+        //TODO 同步笔记有问题
+        param = syncUpNotes(syncSid, false);
         if (param == null) {
             KLog.d(TAG, "sync note but up note task param is null");
             return null;
         }
+        param.optType = taskParam.optType;
         return param;
     }
 
@@ -560,7 +652,7 @@ public class SyncService extends Service {
             int syncType = param.optType;
             switch (syncType) {
                 case Constants.SYNC_UP_NOTE:    //向上同步笔记信息，即上传笔记
-                    resultParam = syncUpNotes(syncSid);
+                    resultParam = syncUpNotes(syncSid, true);
                     break;
                 case Constants.SYNC_DOWN_NOTE:  //向下同步笔记，即下载笔记
                     resultParam = syncDownNote(syncSid, param);
@@ -600,6 +692,8 @@ public class SyncService extends Service {
                         break;
                 }
             } else {
+                syncUpResult(ActionResult.RESULT_FAILED);
+                onEndSync();
                 KLog.d(TAG, "sync service on post execute result param is null or is not available");
             }
         }

@@ -7,6 +7,6 @@
     android:minWidth="250dp"
     android:previewImage="@drawable/ic_note_list_appwidget_preview"
     android:resizeMode="horizontal|vertical"
-    android:updatePeriodMillis="86400000"
+    android:updatePeriodMillis="0"
     android:widgetCategory="home_screen"
     tools:targetApi="jelly_bean_mr1" />

@@ -1,13 +1,11 @@
 package com.yunxinlink.notes.ui.settings;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v14.preference.SwitchPreference;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
@@ -72,6 +70,8 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
         bindPreferenceChangeListener(findPreference(getString(R.string.settings_key_security_password)), this);
         //设置监听
         bindPreferenceChangeListener(findPreference(getString(R.string.settings_key_security_show_widget)), this);
+        
+        bindPreferenceChangeListener(findPreference(getString(R.string.settings_key_security_show_widget)), this);
 
         findPreference(getString(R.string.settings_key_security_modify_password)).setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
@@ -83,19 +83,9 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (!SystemUtil.hasSdkV23()) {
-            attachCompat(activity);
-        }
-    }
-
-    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (SystemUtil.hasSdkV23()) {
-            attachCompat(context);
-        }
+        attachCompat(context);
     }
 
     @Override
@@ -139,6 +129,8 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
                 }
                 return false;
             }
+        } else if (getString(R.string.settings_key_security_show_widget).equals(key)) { //在桌面小部件上是否显示密码
+            NoteUtil.reloadAppWidgetList(getContext());
         }
         return true;
     }
@@ -267,7 +259,7 @@ public class SettingsSecurityFragment extends BasePreferenceFragment implements 
      * @param isEnabled 密码锁是否打开
      */
     public void saveSecurityPreference(boolean isEnabled) {
-        SwitchPreference switchPreference = (SwitchPreference) findPreference(getString(R.string.settings_key_security_password));
+        android.support.v7.preference.SwitchPreferenceCompat switchPreference = (android.support.v7.preference.SwitchPreferenceCompat) findPreference(getString(R.string.settings_key_security_password));
         switchPreference.setChecked(isEnabled);
     }
 

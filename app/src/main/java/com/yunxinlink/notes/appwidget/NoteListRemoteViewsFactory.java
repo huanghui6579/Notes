@@ -22,6 +22,7 @@ import com.yunxinlink.notes.persistent.NoteManager;
 import com.yunxinlink.notes.ui.NoteEditActivity;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.ImageUtil;
+import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
 
@@ -75,8 +76,17 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
     @Override
     public void onDataSetChanged() {
         KLog.d(TAG, "onDataSetChanged");
-        NoteApplication app = (NoteApplication) mContext.getApplicationContext();
-        List<DetailNoteInfo> list = NoteManager.getInstance().getAllDetailNotes(app.getCurrentUser(), null);
+        boolean showNote = NoteUtil.showNoteWhenLock(mContext);
+        List<DetailNoteInfo> list = null;
+        if (showNote) {
+            NoteApplication app = (NoteApplication) mContext.getApplicationContext();
+            list = NoteManager.getInstance().getAllDetailNotes(app.getCurrentUser(), null);
+            int size = list == null ? 0 : list.size();
+            KLog.d(TAG, "note list remote view factory on data set change note list size:" + size);
+        } else {
+            KLog.d(TAG, "note list remote view don't show notes when locked");
+        }
+        KLog.d(TAG, "note list remote view show note:" + showNote);
         mNoteInfoList.clear();
 
         if (!SystemUtil.isEmpty(list)) {
@@ -98,7 +108,6 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
 
     @Override
     public RemoteViews getViewAt(int position) {
-        KLog.d(TAG, "getViewAt  position:" + position);
         if (position < 0 || position >= mNoteInfoList.size() ) {
             return null;
         }
@@ -231,7 +240,6 @@ public class NoteListRemoteViewsFactory implements RemoteViewsService.RemoteView
 
     @Override
     public long getItemId(int position) {
-        KLog.d(TAG, "getItemId position:" + position);
         return position;
     }
 

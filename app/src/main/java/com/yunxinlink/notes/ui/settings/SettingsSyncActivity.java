@@ -5,9 +5,6 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceFragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.preference.PreferenceFragmentCompat;
-import android.support.v7.preference.PreferenceScreen;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
@@ -27,7 +24,7 @@ import java.lang.ref.WeakReference;
  * @update 2016/8/24 17:09
  * @version: 1.0.0
  */
-public class SettingsSyncActivity extends BaseActivity implements SettingsSyncFragment.OnSettingsSyncFragmentInteractionListener, PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
+public class SettingsSyncActivity extends BaseActivity implements SettingsSyncFragment.OnSettingsSyncFragmentInteractionListener {
     
     //观察者
     private ContentObserver mContentObserver;
@@ -117,18 +114,6 @@ public class SettingsSyncActivity extends BaseActivity implements SettingsSyncFr
         } else {
             KLog.d(TAG, "setting sync activity get refresh get fragment null or user is null or user not available");
         }
-    }
-
-    @Override
-    public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
-        KLog.d(TAG, "onPreferenceStartScreen settings sync activity");
-        SettingsSyncFragment fragment = SettingsSyncFragment.newInstance(pref.getKey());
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-        transaction.replace(R.id.main_frame, fragment, pref.getKey());
-        transaction.addToBackStack(pref.getKey());
-        transaction.commit();
-        return true;
     }
 
     private static class MyHandler extends Handler {

@@ -3,11 +3,8 @@ package com.yunxinlink.notes.ui.settings;
 
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceFragment;
-import android.support.v7.preference.PreferenceFragmentCompat;
-import android.support.v7.preference.PreferenceScreen;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
@@ -16,6 +13,7 @@ import com.yunxinlink.notes.model.State;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.UserManager;
 import com.yunxinlink.notes.ui.AuthorityActivity;
+import com.yunxinlink.notes.ui.BaseActivity;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -26,17 +24,22 @@ import com.yunxinlink.notes.util.SystemUtil;
  * @update 2016/9/29 16:30
  * @version: 1.0.0
  */
-public class SettingsAccountActivity extends AppCompatPreferenceActivity implements SettingsAccountFragment.OnAccountFragmentInteractionListener {
+public class SettingsAccountActivity extends BaseActivity implements SettingsAccountFragment.OnAccountFragmentInteractionListener {
     private Handler mHandler = new Handler();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings_account);
+    protected int getContentView() {
+        return R.layout.activity_settings_account;
+    }
 
-        setupActionBar(R.id.toolbar);
+    @Override
+    protected void initData() {
 
-        setListDividerHeight();
+    }
+
+    @Override
+    protected void initView() {
+
     }
 
     /**
@@ -83,12 +86,6 @@ public class SettingsAccountActivity extends AppCompatPreferenceActivity impleme
                 finish();
             }
         }, 10);
-    }
-
-    @Override
-    public boolean onPreferenceStartScreen(PreferenceFragmentCompat caller, PreferenceScreen pref) {
-        KLog.d(TAG, "onPreferenceStartScreen settings account activity");
-        return false;
     }
 
     /**

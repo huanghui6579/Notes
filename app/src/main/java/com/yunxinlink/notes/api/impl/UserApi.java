@@ -112,8 +112,10 @@ public class UserApi extends BaseApi {
                 Context ctx = (Context) params[0];
                 UserDto userParam = (UserDto) params[1];
                 User user = userParam.getUser();
-                String md5Pwd = DigestUtil.md5Hex(user.getPassword());
-                user.setPassword(md5Pwd);
+                if (user != null && user.getPassword() != null) {
+                    String md5Pwd = DigestUtil.md5Hex(user.getPassword());
+                    user.setPassword(md5Pwd);
+                }
                 OnLoadCompletedListener<ActionResult<UserDto>> onListener = (OnLoadCompletedListener<ActionResult<UserDto>>) params[2];
                 login(ctx, userParam, onListener);
             }
@@ -377,6 +379,66 @@ public class UserApi extends BaseApi {
     }
 
     /**
+     * 修改用户密码，需要校验原始密码
+     * @param context
+     * @param array 参数,[0]:原始密码，[1]:新密码，[2]:确认新密码
+     * @return 返回服务器的结果码
+     */
+    public static int modifyPassword(Context context, String[] array) {
+        int resultCode = 0;
+        User user = getUser(context);
+        if (user == null || !user.isAvailable()) {   //用户为空或者不可用
+            resultCode = ActionResult.RESULT_STATE_DISABLE;
+            return resultCode;
+        }
+        if (array == null || array.length < 3) {    //参数错误
+            resultCode = ActionResult.RESULT_PARAM_ERROR;
+            return resultCode;
+        }
+        String sid = user.getSid();
+        Retrofit retrofit = buildRetrofit();
+        IUserApi repo = retrofit.create(IUserApi.class);
+        
+        String newPassword = DigestUtil.md5Hex(array[1]);
+        String confirmPassword = DigestUtil.md5Hex(array[2]);
+        Map<String, String> map = new HashMap<>();
+        //MD5加密处理
+        map.put("oldPassword", DigestUtil.md5Hex(array[0]));
+        map.put("newPassword", newPassword);
+        map.put("confirmPassword", confirmPassword);
+        Call<ActionResult<Void>> call = repo.modifyPassword(sid, map);
+        try {
+            Response<ActionResult<Void>> response = call.execute();
+            if (response == null || !response.isSuccessful()) { //http请求错误
+                resultCode = ActionResult.RESULT_ERROR;
+                KLog.d(TAG, "user api modify password response is null or not successful:" + resultCode);
+                return resultCode;
+            }
+            ActionResult<Void> actionResult = response.body();
+            if (actionResult == null || !actionResult.isSuccess()) {    //返回的数据错误
+                resultCode = actionResult == null ? ActionResult.RESULT_FAILED : actionResult.getResultCode();
+                KLog.d(TAG, "user api modify password action result is null or not successful:" + resultCode);
+                return resultCode;
+            }
+            
+            //成功
+            User param = (User) user.clone();
+            if (param == null) {
+                KLog.d(TAG, "user api modify password update local user password error clone user is null");
+                resultCode = ActionResult.RESULT_FAILED;
+                return resultCode;
+            }
+            param.setPassword(newPassword);
+            boolean success = UserManager.getInstance().update(param);
+            resultCode = success ? ActionResult.RESULT_SUCCESS : ActionResult.RESULT_FAILED;
+            KLog.d(TAG, "user api modify password result code:" + resultCode);
+        } catch (Exception e) {
+            KLog.e(TAG, "user api modify password error:" + e.getMessage());
+        }
+        return resultCode;
+    }
+
+    /**
      * 构建修改用户信息所需的参数
      * @param user
      * @param map
@@ -447,6 +509,9 @@ public class UserApi extends BaseApi {
         IUserApi repo = retrofit.create(IUserApi.class);
         Map<String, String> map = new HashMap<>();
         buildSyncUserBasicMap(user, map);
+        if (!TextUtils.isEmpty(user.getPassword())) {
+            map.put("user.password", user.getPassword());
+        }
         Call<ActionResult<Void>> call = repo.modifyBasic(sid, map);
         int resultCode = 0;
         try {
@@ -713,6 +778,11 @@ public class UserApi extends BaseApi {
     private static void updateLocalUser(Context context, final UserDto original, final UserDto result) {
         if (result != null && result.getUser() != null) {
 
+            if (context == null) {  //该界面可能已经销毁
+                KLog.d(TAG, "update local update local user context is null will use app context");
+                context = NoteApplication.getInstance();
+            }
+            
             KLog.d(TAG, "update local user state local user will update");
             User user = original.getUser();
             if (user == null) {
@@ -720,11 +790,6 @@ public class UserApi extends BaseApi {
             }
             user.setOpenUserId(original.getOpenUserId());
             mergeUserInfo(user, result.getUser());
-
-            if (context == null) {  //该界面可能已经销毁
-                KLog.d(TAG, "update local update local user context is null will use app context");
-                context = NoteApplication.getInstance();
-            }
 
             //保存账号类型
             int accountType = original.getType();
@@ -823,6 +888,10 @@ public class UserApi extends BaseApi {
         String nickname = src.getNickname();
         if (nickname != null) {
             target.setNickname(src.getNickname());
+        }
+        String token = src.getToken();
+        if (token != null) {
+            target.setToken(token); 
         }
     }
 

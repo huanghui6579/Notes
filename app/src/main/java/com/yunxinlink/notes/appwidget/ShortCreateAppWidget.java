@@ -3,6 +3,7 @@ package com.yunxinlink.notes.appwidget;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -87,7 +88,8 @@ public class ShortCreateAppWidget extends AppWidgetProvider {
         }
 
         // Instruct the widget manager to update the widget
-        appWidgetManager.updateAppWidget(appWidgetId, views);
+//        appWidgetManager.updateAppWidget(appWidgetId, views);
+        appWidgetManager.updateAppWidget(new ComponentName(context, ShortCreateAppWidget.class), views);
     }
 
     @Override

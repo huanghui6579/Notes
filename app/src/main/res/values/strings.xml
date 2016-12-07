@@ -73,6 +73,8 @@
     <string name="tip_email_is_not_right">邮箱格式不正确</string>
     <string name="tip_read_sdcard_permission_need">选择图片需要读取SD卡的权限，请允许该权限</string>
     <string name="tip_read_sdcard_permission_failed">选择图片失败，请检查是否有读取SD卡的权限</string>
+    <string name="tip_confirm_pwd_error">两次输入的新密码不相同</string>
+    <string name="tip_post_param_error">提交提示，请确认提交的信息是否正常</string>
 
     <string name="sync_setting_btn_text">立即开启</string>
 
@@ -304,6 +306,9 @@
     <string name="appwidget_text">@string/app_name</string>
     <string name="appwidget_note_list_label">云信笔记列表</string>
     <string name="appwidget_short_create_label">云信笔记工具</string>
+    <string name="appwidget_short_create_tip">选择5个按钮，添加到主屏。点击可修改选择，长按拖动可排序</string>
+    <string name="appwidget_lock_empty_tip">密码锁已开启，可设置在插件中是否显示笔记。</string>
+    <string name="appwidget_lock_empty_setting">修改设置</string>
     <string name="add_widget">添加小部件</string>
     <string name="widget_item_max_tip">不能添加更多了哦~</string>
 
@@ -351,6 +356,7 @@
     <string name="save_ing">保存中…</string>
     <string name="save_success">保存成功</string>
     <string name="save_failed">保存失败</string>
+    <string name="completed">完成</string>
 
     <string name="account_save_tip_title">保存修改？</string>
     <string name="account_save_tip_content">保存或放弃对个人资料的修改。</string>
@@ -371,6 +377,16 @@
     <string name="account_email_bind_success">绑定成功</string>
     <string name="account_password_not_right">密码错误</string>
     <string name="account_exist">该账号已存在</string>
+    <string name="account_modify_password">修改密码</string>
+    <string name="account_modify_password_desc">可修改登录密码</string>
+    <string name="account_modify_hint_pwd_old">输入原密码</string>
+    <string name="account_modify_hint_pwd_new">输入新密码</string>
+    <string name="account_modify_hint_pwd_new_confirm">输入确认新密码</string>
+    <string name="account_modify_btn_text">修改</string>
+    <string name="account_modify_tip_ing">修改中…</string>
+    <string name="account_modify_pwd_not_equals">两次输入的新密码不相同</string>
+    <string name="account_modify_success">修改成功</string>
+    <string name="account_modify_failed">修改失败，请确认输入的原始密码是否正确</string>
 
     <string name="version_install_title">新版本已下载完毕&#160;&#160;%1$s</string>
     <string name="version_new_info">更新内容:\n%1$s</string>

@@ -1,6 +1,5 @@
 package com.yunxinlink.notes.ui.settings;
 
-import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,7 +8,6 @@ import android.support.v7.preference.PreferenceFragmentCompat;
 
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.model.User;
-import com.yunxinlink.notes.util.SystemUtil;
 import com.yunxinlink.notes.util.TimeUtil;
 
 /**
@@ -68,8 +66,8 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
         if (preference == null) {
             return;
         }
-        long time = user == null ? 0 : user.getLastSyncTime();
-        if (user != null && user.isAvailable() && time > 0) {
+        Long time = user == null ? null : user.getLastSyncTime();
+        if (user != null && user.isAvailable() && time != null && time > 0) {
             preference.setSummary(getString(R.string.settings_sync_state_summary_time, TimeUtil.formatNoteTime(time)));
         } else {
             preference.setSummary(R.string.settings_sync_state_summary);
@@ -77,19 +75,9 @@ public class SettingsSyncFragment extends BasePreferenceFragment {
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (!SystemUtil.hasSdkV23()) {
-            attachCompat(activity);
-        }
-    }
-
-    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (SystemUtil.hasSdkV23()) {
-            attachCompat(context);
-        }
+        attachCompat(context);
     }
 
     @Override

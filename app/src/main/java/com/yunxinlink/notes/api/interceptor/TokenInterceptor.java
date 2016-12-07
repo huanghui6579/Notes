@@ -2,6 +2,8 @@ package com.yunxinlink.notes.api.interceptor;
 
 import android.text.TextUtils;
 
+import com.socks.library.KLog;
+
 import java.io.IOException;
 
 import okhttp3.Interceptor;
@@ -14,6 +16,8 @@ import okhttp3.Response;
  * @update 2016/12/4 11:23
  */
 public class TokenInterceptor implements Interceptor {
+    private static final String TAG = "TokenInterceptor";
+    
     private String token;
 
     public TokenInterceptor(String token) {
@@ -39,6 +43,7 @@ public class TokenInterceptor implements Interceptor {
         if (token == null || alreadyHasAuthorizationHeader(originalRequest)) {
             return chain.proceed(originalRequest);
         }
+        KLog.d(TAG, "token interceptor:" + token);
         Request authorised = originalRequest.newBuilder()
                 .header("Authorization", token)
                 .build();

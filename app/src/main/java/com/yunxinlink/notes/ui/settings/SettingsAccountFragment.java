@@ -1,6 +1,5 @@
 package com.yunxinlink.notes.ui.settings;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -9,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceFragmentCompat;
 import android.text.TextUtils;
 
 import com.yunxinlink.notes.R;
@@ -51,9 +51,10 @@ public class SettingsAccountFragment extends BasePreferenceFragment implements P
      * @return A new instance of fragment SettingsAccountFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static SettingsAccountFragment newInstance() {
+    public static SettingsAccountFragment newInstance(String rootKey) {
         SettingsAccountFragment fragment = new SettingsAccountFragment();
         Bundle args = new Bundle();
+        args.putString(PreferenceFragmentCompat.ARG_PREFERENCE_ROOT, rootKey);
         fragment.setArguments(args);
         return fragment;
     }
@@ -87,7 +88,9 @@ public class SettingsAccountFragment extends BasePreferenceFragment implements P
      * @param user
      */
     private void showAccountInfo(User user) {
+        boolean canModifyPwd = false;
         if (user != null) {
+            canModifyPwd = user.hasBindAccount();
             String nickname = user.getNickname();
             if (!TextUtils.isEmpty(nickname)) {
                 mAccountNamePreference.setTitle(nickname);
@@ -101,22 +104,25 @@ public class SettingsAccountFragment extends BasePreferenceFragment implements P
                 mAccountEmailPreference.setSummary(email);
             }
         }
-    }
-
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (!SystemUtil.hasSdkV23()) {
-            attachCompat(activity);
+        Preference preference = findPreference(getString(R.string.settings_key_account_modify_password));
+        if (preference != null) {
+            if (!canModifyPwd) {
+                if (preference.isVisible()) {
+                    preference.setVisible(false);
+                }
+            } else {    //可修改密码
+                if (!preference.isVisible()) {
+                    preference.setVisible(true);
+                }
+            }
         }
+        
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (SystemUtil.hasSdkV23()) {
-            attachCompat(context);
-        }
+        attachCompat(context);
     }
 
     @Override

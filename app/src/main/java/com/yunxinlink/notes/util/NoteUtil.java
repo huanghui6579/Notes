@@ -833,11 +833,27 @@ public class NoteUtil {
         int[] appWidgetIds = getListAppWidgetId(context);
         if (appWidgetIds != null && appWidgetIds.length > 0) {
             Intent intent = new Intent(NoteListAppWidget.ACTION_NOTIFY_CHANGE);
-            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds);
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds[0]);
             context.sendBroadcast(intent);
             KLog.d("notifyAppWidgetList invoke appwidget id:" + appWidgetIds[0] + ", size:" + appWidgetIds.length);
         } else {
             KLog.d("notifyAppWidgetList invoke failed appwidget id");
+        }
+    }
+
+    /**
+     * 重新刷新笔记列表的APP widget
+     * @param context
+     */
+    public static void reloadAppWidgetList(Context context) {
+        int[] appWidgetIds = getListAppWidgetId(context);
+        if (appWidgetIds != null && appWidgetIds.length > 0) {
+            Intent intent = new Intent(NoteListAppWidget.ACTION_RELOAD);
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds[0]);
+            context.sendBroadcast(intent);
+            KLog.d("reloadAppWidgetList invoke appwidget id:" + appWidgetIds[0] + ", size:" + appWidgetIds.length);
+        } else {
+            KLog.d("reloadAppWidgetList invoke failed appwidget id");
         }
     }
 
@@ -1292,6 +1308,22 @@ public class NoteUtil {
             context.startActivity(intent);
         } else {    //没有对应的程序处理
             SystemUtil.makeShortToast(R.string.tip_no_app_handle);
+        }
+    }
+
+    /**
+     * 当有密码锁时是否在小部件上显示笔记
+     * @param context
+     * @return
+     */
+    public static boolean showNoteWhenLock(Context context) {
+        SharedPreferences preferences = SystemUtil.getDefaultPreferences(context);
+        boolean showWidget = preferences.getBoolean(context.getString(R.string.settings_key_security_show_widget), false);
+        boolean hasLock = preferences.getBoolean(context.getString(R.string.settings_key_security_password), false);
+        if (!hasLock) { //没有密码锁时就显示
+            return true;
+        } else {
+            return showWidget;
         }
     }
     

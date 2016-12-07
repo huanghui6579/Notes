@@ -85,8 +85,8 @@ public class NoteManager extends Observable<Observer> {
         String folder = null;
         boolean isRecycle = false;
         if (args != null) {
-            folder = args.getString(Constants.ARG_ISFOLDER, null);
-            isRecycle = args.getBoolean(Constants.ARG_ISRECYCLE, false);
+            folder = args.getString(Constants.ARG_FOLDER_ID, null);
+            isRecycle = args.getBoolean(Constants.ARG_IS_RECYCLE, false);
         }
         int deleteState = isRecycle ? 1 : 0;
         //是否加载回收站里的笔记
@@ -147,10 +147,13 @@ public class NoteManager extends Observable<Observer> {
         String[] selectionArgs = null;
         String folder = null;
         boolean isRecycle = false;
+        boolean isSyncUp = false;
         int sort = 0;
         if (args != null) {
-            folder = args.getString(Constants.ARG_ISFOLDER, null);
-            isRecycle = args.getBoolean(Constants.ARG_ISRECYCLE, false);
+            //TODO 查询条件有问题
+            folder = args.getString(Constants.ARG_FOLDER_ID, null);
+            isRecycle = args.getBoolean(Constants.ARG_IS_RECYCLE, false);
+            isSyncUp = args.getBoolean(Constants.ARG_IS_SYNC_UP, false);
             sort = args.getInt(Constants.ARG_SORT, 0);
         }
         int deleteState = isRecycle ? 1 : 0;
@@ -167,13 +170,18 @@ public class NoteManager extends Observable<Observer> {
             } else {
                 selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
             }
-            
+            List<String> argList = new ArrayList<>();
+            argList.add(String.valueOf(userId));
             if (!TextUtils.isEmpty(folder)) {
-                selection += " AND " + Provider.NoteColumns.FOLDER_ID + " = ?";
-                selectionArgs = new String[] {String.valueOf(userId), folder};
-            } else {
-                selectionArgs = new String[] {String.valueOf(userId)};
+                selection += " AND " + Provider.NoteColumns.FOLDER_ID + " = ? ";
+                argList.add(folder);
             }
+            if (isSyncUp) {
+                selection += " AND (" + Provider.NoteColumns.SYNC_STATE + " = ? OR " + Provider.NoteColumns.SYNC_STATE + " IS NULL) ";
+                argList.add(String.valueOf(SyncState.SYNC_UP.ordinal()));
+            }
+            selectionArgs = new String[argList.size()];
+            selectionArgs = argList.toArray(selectionArgs);
         } else {    //当前用户没有登录
             selection = "(" + Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL) AND ";
             if (!TextUtils.isEmpty(folder)) {

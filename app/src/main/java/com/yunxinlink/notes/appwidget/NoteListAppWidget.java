@@ -3,9 +3,11 @@ package com.yunxinlink.notes.appwidget;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.view.View;
 import android.widget.RemoteViews;
 
 import com.socks.library.KLog;
@@ -13,6 +15,10 @@ import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
 import com.yunxinlink.notes.ui.MainActivity;
 import com.yunxinlink.notes.ui.NoteEditActivity;
+import com.yunxinlink.notes.ui.settings.SettingsSecurityActivity;
+import com.yunxinlink.notes.util.NoteUtil;
+
+import static com.yunxinlink.notes.R.id.lv_data;
 
 /**
  * Implementation of App Widget functionality.
@@ -21,11 +27,13 @@ import com.yunxinlink.notes.ui.NoteEditActivity;
 public class NoteListAppWidget extends AppWidgetProvider {
 
     public static final String ACTION_NOTIFY_CHANGE = "com.yunxinlink.notes.appwidget.action.APPWIDGET_NOTIFY_CHANGE";
+    public static final String ACTION_RELOAD = "com.yunxinlink.notes.appwidget.action.APPWIDGET_RELOAD";
     public static final String ACTION_ITEM_CLICK = "com.yunxinlink.notes.appwidget.action.APPWIDGET_ITEM_CLICK";
 
     private static final int REQ_MAIN = 1100;
     private static final int REQ_ADD = 1101;
     private static final int REQ_CLICK = 1102;
+    private static final int REQ_SETTING = 1103;
 
     private static final String TAG = "NoteListAppWidget";
 
@@ -53,16 +61,35 @@ public class NoteListAppWidget extends AppWidgetProvider {
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
 
-        views.setRemoteAdapter(R.id.lv_data, intent);
+        views.setEmptyView(lv_data, R.id.widget_empty_layout);
 
-        Intent clickIntent = new Intent(ACTION_ITEM_CLICK);
+        boolean showNote = NoteUtil.showNoteWhenLock(context);
+        if (showNote) { //还继续显示
+            views.setViewVisibility(R.id.btn_setting, View.GONE);
+            views.setTextViewText(R.id.tv_empty_tip, context.getString(R.string.tip_note_empty));
+        } else {    //不显示
+            views.setViewVisibility(R.id.btn_setting, View.VISIBLE);
+            views.setTextViewText(R.id.tv_empty_tip, context.getString(R.string.appwidget_lock_empty_tip));
+            
+            Intent settingIntent = new Intent(context, SettingsSecurityActivity.class);
+            mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            PendingIntent settingPendingIntent = PendingIntent.getActivity(context, appWidgetId + REQ_SETTING, settingIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+            views.setOnClickPendingIntent(R.id.btn_setting, settingPendingIntent);
+        }
+        
+        KLog.d(TAG, "updateAppWidget show note:" + showNote);
+        
+        views.setRemoteAdapter(lv_data, intent);
+
+        Intent clickIntent = new Intent(context, NoteListAppWidget.class);
+        clickIntent.setAction(ACTION_ITEM_CLICK);
         PendingIntent pendingIntentTemplate = PendingIntent.getBroadcast(context, appWidgetId + REQ_CLICK, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        views.setPendingIntentTemplate(R.id.lv_data, pendingIntentTemplate);
+        views.setPendingIntentTemplate(lv_data, pendingIntentTemplate);
 
         // Instruct the widget manager to update the widget
-        appWidgetManager.updateAppWidget(appWidgetId, views);
-//        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.lv_data);
-
+//        appWidgetManager.updateAppWidget(appWidgetId, views);
+        appWidgetManager.updateAppWidget(new ComponentName(context, NoteListAppWidget.class), views);
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.lv_data);
         KLog.d(TAG, "updateAppWidget appWidgetId:" + appWidgetId);
     }
 
@@ -75,7 +102,7 @@ public class NoteListAppWidget extends AppWidgetProvider {
         if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             KLog.d("note list widget notify data set changed appWidgetId:" + appWidgetId);
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.lv_data);
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, lv_data);
         }
     }
 
@@ -125,7 +152,12 @@ public class NoteListAppWidget extends AppWidgetProvider {
             notifyDataSetChanged(context, appWidgetId);
         } else if (ACTION_ITEM_CLICK.equals(action)) {
             showNote(context, intent);
-        } else {
+        } else if (ACTION_RELOAD.equals(action)) {  //重新刷新widget
+            KLog.d(TAG, "note list app widget reload ");
+            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+            onUpdate(context, appWidgetManager, new int[] {appWidgetId});
+        }
+        else {
             super.onReceive(context, intent);
         }
     }

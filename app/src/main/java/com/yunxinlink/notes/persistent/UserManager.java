@@ -170,6 +170,10 @@ public class UserManager extends Observable<Observer> {
         
         if (isAdd) {
             long createTime = user.getCreateTime();
+            
+            if (createTime == 0) {
+                createTime = System.currentTimeMillis();
+            }
 
             values.put(Provider.UserColumns.CREATE_TIME, createTime);
         }

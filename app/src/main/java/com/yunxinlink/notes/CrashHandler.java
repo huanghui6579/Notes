@@ -58,6 +58,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
+        e.printStackTrace();
         KLog.e("app crash thread name:" + t.getName() + ", error:" + e);
         // 自定义错误处理
         boolean res = handleException(t, e);

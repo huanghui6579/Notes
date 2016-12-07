@@ -214,7 +214,7 @@ public class SettingsFragment extends BasePreferenceFragment implements Preferen
         @Override
         public void handleMessage(Message msg) {
             SettingsFragment target = mTarget.get();
-            if (target != null) {
+            if (target != null && target.mListener != null) {
                 switch (msg.what) {
                     case Constants.MSG_SUCCESS:
                         target.showAccount((String) msg.obj);

@@ -161,10 +161,16 @@ public class Constants {
     public static final String ARG_CORE_OBJ = "arg_core_obj";
     public static final String ARG_CORE_LIST = "arg_core_list";
     public static final String ARG_SUB_OBJ = "arg_sub_obj";
-    
-    //是否包含回收站的内容
-    public static final String ARG_ISRECYCLE = "isRecycle";
-    public static final String ARG_ISFOLDER = "folderId";
+
+    /**
+     * 是否包含回收站的内容
+     */
+    public static final String ARG_IS_RECYCLE = "isRecycle";
+    public static final String ARG_FOLDER_ID = "folderId";
+    /**
+     * 是否只包含需要向上同步的笔记
+     */
+    public static final String ARG_IS_SYNC_UP = "isSyncUp";
     public static final String ARG_SORT = "sort";
 
     public static final String ATTACH_PREFIX = "attach";

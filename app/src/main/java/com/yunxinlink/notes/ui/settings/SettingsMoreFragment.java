@@ -1,6 +1,5 @@
 package com.yunxinlink.notes.ui.settings;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,7 +16,6 @@ import com.yunxinlink.notes.receiver.SystemReceiver;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SettingsUtil;
-import com.yunxinlink.notes.util.SystemUtil;
 
 /**
  * 安全密码设置界面
@@ -73,19 +71,9 @@ public class SettingsMoreFragment extends BasePreferenceFragment implements Pref
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (!SystemUtil.hasSdkV23()) {
-            attachCompat(activity);
-        }
-    }
-
-    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (SystemUtil.hasSdkV23()) {
-            attachCompat(context);
-        }
+        attachCompat(context);
     }
 
     @Override

@@ -17,6 +17,7 @@ import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.UserManager;
+import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
@@ -117,14 +118,17 @@ public class AccountBinder {
             public void run() {
                 String pPassword = ((User) params[0]).getPassword();
                 String pEmail = ((User) params[0]).getEmail();
+                //密码MD5 加密
+                String encodePwd = DigestUtil.md5Hex(pPassword);
                 User user = getUser(context);
                 int resultCode = 0;
                 User param = null;
                 boolean isLogin = false;
                 if (user == null) {   //创建用户，即注册用户
                     param = new User();
+                    
                     param.setEmail(pEmail);
-                    param.setPassword(pPassword);
+                    param.setPassword(encodePwd);
 
                     UserDto userDto = new UserDto();
                     userDto.setUser(param);
@@ -153,13 +157,13 @@ public class AccountBinder {
                         return;
                     }
                     isLogin = true;
-                    param.setEmail(pEmail);
-                    param.setPassword(pPassword);
                     //是否没有修改，即输入的邮箱和原始的一样
                     boolean notModify = pEmail.equals(param.getEmail());
+                    param.setEmail(pEmail);
+                    param.setPassword(encodePwd);
                     boolean pwdOk = true;
                     if (!TextUtils.isEmpty(user.getPassword())) {    //用户之前有登录密码，则校验本地的密码
-                        pwdOk = NoteUtil.checkPassword(user, pPassword);
+                        pwdOk = NoteUtil.checkPassword(user, encodePwd);
                     }
                     if (!pwdOk) {
                         resultCode = ActionResult.RESULT_NOT_EQUALS;

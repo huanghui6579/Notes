@@ -30,8 +30,10 @@ public class TokenAuthenticator implements Authenticator {
         //重新获取token
         String token = refreshToken();
         if (TextUtils.isEmpty(token)) {
-            throw new IOException("authenticate refresh token but is null");
+//            throw new IOException("authenticate refresh token but is null");
+            return null;
         }
+        KLog.d(TAG, "token authenticator:" + token);
         return response.request().newBuilder()
                 .addHeader("Authorization", token)
                 .build();
@@ -42,7 +44,7 @@ public class TokenAuthenticator implements Authenticator {
      * @return
      */
     private String refreshToken() {
-        KLog.e(TAG, "authenticator refresh token");
+        KLog.d(TAG, "authenticator refresh token");
         NoteApplication app = NoteApplication.getInstance();
         User user = app.getCurrentUser();
         if (user == null || !user.isAvailable()) {
@@ -58,7 +60,7 @@ public class TokenAuthenticator implements Authenticator {
         user = app.getCurrentUser();
         if (success && user != null && user.isAvailable()) {
             String token = user.getToken();
-            KLog.e(TAG, "authenticator refresh token success:" + token);
+            KLog.d(TAG, "authenticator refresh token success:" + token);
             return token;
         } else {
             KLog.d(TAG, "authenticator refresh token login failed");

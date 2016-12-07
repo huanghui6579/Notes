@@ -15,6 +15,7 @@
     <string name="settings_key_account_last_sync_time">account_last_sync_time</string>
     <string name="settings_key_account_logout">account_logout</string>
     <string name="settings_key_account_email">account_email</string>
+    <string name="settings_key_account_modify_password">account_modify_pwd</string>
 
     <bool name="default_settings_key_sync_note_auto">true</bool>
     <bool name="default_settings_key_sync_note_traffic">false</bool>

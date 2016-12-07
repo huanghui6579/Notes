@@ -226,6 +226,9 @@
             <intent-filter>
                 <action android:name="com.yunxinlink.notes.appwidget.action.APPWIDGET_ITEM_CLICK" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="com.yunxinlink.notes.appwidget.action.APPWIDGET_RELOAD" />
+            </intent-filter>
 
             <meta-data
                 android:name="android.appwidget.provider"
@@ -249,9 +252,10 @@
         <activity
             android:name=".ui.settings.FeedbackActivity"
             android:label="@string/label_feedback" />
-
-        <activity android:name=".ui.settings.AboutActivity"
-            android:label="@string/label_about"/>
+        <activity
+            android:name=".ui.settings.AboutActivity"
+            android:label="@string/label_about" />
+        <activity android:name=".ui.PasswordModifyActivity"></activity>
     </application>
 
 </manifest>

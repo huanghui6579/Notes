@@ -63,4 +63,7 @@
         android:dividerHeight="@dimen/list_divider_height"
         android:divider="@drawable/list_divider"
         android:listSelector="@drawable/widget_list_selector"/>
+    
+    <include layout="@layout/layout_appwidget_empty_lock"
+        android:visibility="gone"/>
 </LinearLayout>

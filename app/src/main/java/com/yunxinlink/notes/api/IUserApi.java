@@ -104,4 +104,13 @@ public interface IUserApi {
     @FormUrlEncoded
     @POST("api/user/validate")
     Call<ActionResult<UserDto>> validate(@FieldMap Map<String, String> params);
+
+    /**
+     * 修改用户密码，需要校验原始密码
+     * @param params
+     * @return
+     */
+    @FormUrlEncoded
+    @POST("api/user/{sid}/pwd/modify")
+    Call<ActionResult<Void>> modifyPassword(@Path("sid") String sid, @FieldMap Map<String, String> params);
 }
