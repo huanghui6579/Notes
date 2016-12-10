@@ -155,4 +155,13 @@ public interface INoteApi {
     @Multipart
     @POST("api/note/feedback/new")
     Call<ActionResult<Void>> makeFeedback(@PartMap Map<String, RequestBody> params);
+
+    /**
+     * 更新笔记本的排序
+     * @param userSid 当前用户
+     * @param folderList 要排序的笔记本
+     * @return 服务器返回的数据
+     */
+    @POST("api/note/{userSid}/folder/sort")
+    Call<ActionResult<Void>> sortFolders(@Path("userSid") String userSid, @Body List<FolderDto> folderList);
 }

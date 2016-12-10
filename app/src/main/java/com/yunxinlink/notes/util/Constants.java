@@ -163,9 +163,9 @@ public class Constants {
     public static final String ARG_SUB_OBJ = "arg_sub_obj";
 
     /**
-     * 是否包含回收站的内容
+     * 是否只是回收站的内容
      */
-    public static final String ARG_IS_RECYCLE = "isRecycle";
+    public static final String ARG_QUERY_TYPE = "queryType";
     public static final String ARG_FOLDER_ID = "folderId";
     /**
      * 是否只包含需要向上同步的笔记
@@ -184,5 +184,11 @@ public class Constants {
     //意见反馈的最大图片大小，2MB=1024 * 1024
     public static final long MAX_FEEDBACK_IMG_LENGTH = 1048576L;
     public static final int MAX_FEEDBACK_IMG_UNIT = 2;
+
+    /**
+     * 最大的能够上传的单个日志文件的大小，5M=1024 x 1024 x 5
+     */
+    public static final long MAX_LOG_FILE_SIZE = 5242880L;
+    public static final long MAX_LOG_FILE_SIZE_UNIT = 5;
     
 }

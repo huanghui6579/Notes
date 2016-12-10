@@ -21,6 +21,7 @@ import com.yunxinlink.notes.model.DetailList;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
 import com.yunxinlink.notes.model.NoteInfo;
+import com.yunxinlink.notes.model.QueryType;
 import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.Constants;
@@ -83,20 +84,21 @@ public class NoteManager extends Observable<Observer> {
         String selection = null;
         String[] selectionArgs = null;
         String folder = null;
-        boolean isRecycle = false;
+        int queryValue = -1;
         if (args != null) {
             folder = args.getString(Constants.ARG_FOLDER_ID, null);
-            isRecycle = args.getBoolean(Constants.ARG_IS_RECYCLE, false);
+            queryValue = args.getInt(Constants.ARG_QUERY_TYPE, -1);
         }
-        int deleteState = isRecycle ? 1 : 0;
+        QueryType queryType = QueryType.valueOf(queryValue);
         //是否加载回收站里的笔记
         int userId = 0;
         if (user != null) { //当前用户有登录
             userId = user.getId();
-            if (deleteState == 0) {
-                selection = Provider.NoteColumns.USER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
-            } else {
-                selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+            selection = Provider.NoteColumns.USER_ID + " = ?";
+            if (queryType == QueryType.NORMAL) {    //只查询没有删除的
+                selection += " AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_NONE.ordinal() + ")";
+            } else if (queryType == QueryType.TRASH) {  //只加载回收站的
+                selection += " AND " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_TRASH.ordinal();
             }
             
             if (!TextUtils.isEmpty(folder)) {
@@ -107,19 +109,19 @@ public class NoteManager extends Observable<Observer> {
             }
         } else {    //当前用户没有登录
             if (!TextUtils.isEmpty(folder)) {
-                if (deleteState == 0) {
-                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
-                } else {
-                    selection = Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+                selection = Provider.NoteColumns.FOLDER_ID + " = ?";
+                if (queryType == QueryType.NORMAL) {    //只查询没有删除的
+                    selection += " AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_NONE.ordinal() + ")";
+                } else if (queryType == QueryType.TRASH) {
+                    selection += " AND " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_TRASH.ordinal();
                 }
                 selectionArgs = new String[] {folder};
             } else {
-                if (deleteState == 0) {
-                    selection = Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = ?";
-                } else {
-                    selection = Provider.NoteColumns.DELETE_STATE + " = ?";
+                if (queryType == QueryType.NORMAL) {    //只查询没有删除的
+                    selection = Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_NONE.ordinal();
+                } else if (queryType == QueryType.TRASH) {
+                    selection = Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_TRASH.ordinal();
                 }
-                selectionArgs = new String[] {String.valueOf(deleteState)};
             }
         }
         List<NoteInfo> list = null;
@@ -146,17 +148,17 @@ public class NoteManager extends Observable<Observer> {
         String selection = null;
         String[] selectionArgs = null;
         String folder = null;
-        boolean isRecycle = false;
+        int queryValue = -1;
         boolean isSyncUp = false;
         int sort = 0;
         if (args != null) {
             //TODO 查询条件有问题
             folder = args.getString(Constants.ARG_FOLDER_ID, null);
-            isRecycle = args.getBoolean(Constants.ARG_IS_RECYCLE, false);
+            queryValue = args.getInt(Constants.ARG_QUERY_TYPE, -1);
             isSyncUp = args.getBoolean(Constants.ARG_IS_SYNC_UP, false);
             sort = args.getInt(Constants.ARG_SORT, 0);
         }
-        int deleteState = isRecycle ? 1 : 0;
+        QueryType queryType = QueryType.valueOf(queryValue);
         //是否加载回收站里的笔记
         int userId = 0;
         if (user != null) { //当前用户有登录
@@ -165,10 +167,11 @@ public class NoteManager extends Observable<Observer> {
                 return null;
             }
             userId = user.getId();
-            if (deleteState == 0) {
-                selection = Provider.NoteColumns.USER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
-            } else {
-                selection = Provider.NoteColumns.USER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+            selection = Provider.NoteColumns.USER_ID + " = ?";
+            if (queryType == QueryType.NORMAL) {    //只查询没有删除的
+                selection += " AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_NONE.ordinal() + ")";
+            } else if (queryType == QueryType.TRASH) {
+                selection += " AND " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_TRASH.ordinal();
             }
             List<String> argList = new ArrayList<>();
             argList.add(String.valueOf(userId));
@@ -185,19 +188,19 @@ public class NoteManager extends Observable<Observer> {
         } else {    //当前用户没有登录
             selection = "(" + Provider.NoteColumns.USER_ID + " = 0 OR " + Provider.NoteColumns.USER_ID + " IS NULL) AND ";
             if (!TextUtils.isEmpty(folder)) {
-                if (deleteState == 0) {
-                    selection += Provider.NoteColumns.FOLDER_ID + " = ? AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState + ")";
-                } else {
-                    selection += Provider.NoteColumns.FOLDER_ID + " = ? AND " + Provider.NoteColumns.DELETE_STATE + " = " + deleteState;
+                selection += Provider.NoteColumns.FOLDER_ID + " = ?";
+                if (queryType == QueryType.NORMAL) {    //只查询没有删除的
+                    selection += " AND (" + Provider.NoteColumns.DELETE_STATE + " is null or " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_NONE.ordinal() + ")";
+                } else if (queryType == QueryType.TRASH) {
+                    selection += " AND " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_TRASH.ordinal();
                 }
                 selectionArgs = new String[] {folder};
             } else {
-                if (deleteState == 0) {
-                    selection += "(" + Provider.NoteColumns.DELETE_STATE + " IS NULL OR " + Provider.NoteColumns.DELETE_STATE + " = ?)";
-                } else {
-                    selection += Provider.NoteColumns.DELETE_STATE + " = ?";
+                if (queryType == QueryType.NORMAL) {    //只查询没有删除的
+                    selection += "(" + Provider.NoteColumns.DELETE_STATE + " IS NULL OR " + Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_NONE.ordinal() + ")";
+                } else if (queryType == QueryType.TRASH) {
+                    selection += Provider.NoteColumns.DELETE_STATE + " = " + DeleteState.DELETE_TRASH.ordinal();
                 }
-                selectionArgs = new String[] {String.valueOf(deleteState)};
             }
         }
         String orderBy = getNoteSort(sort);
@@ -1100,7 +1103,7 @@ public class NoteManager extends Observable<Observer> {
         if (!SystemUtil.isEmpty(removeList)) {  //有需要本地删除的笔记
             KLog.d(TAG, "update detail notes some note delete from local size:" + removeList.size());
             removeNotes(removeList);
-            removeList.removeAll(removeList);
+            successList.removeAll(removeList);
         }
         boolean success = row > 0;
         int size = successList.size();

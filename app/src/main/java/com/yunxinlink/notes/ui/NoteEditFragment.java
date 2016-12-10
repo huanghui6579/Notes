@@ -863,7 +863,6 @@ public class NoteEditFragment extends Fragment implements TextWatcher, View.OnCl
                 MessageBundleSpan span = null;
                 boolean hasSpan = false;
                 if (spans != null && spans.length > 0) {    //该光标所在位置有链接
-                    //TODO 添加界面的显示
                     hasSpan = true;
                     span = spans[0];
                 }

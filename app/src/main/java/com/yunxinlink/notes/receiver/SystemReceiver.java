@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.text.TextUtils;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.NoteApplication;
@@ -12,6 +13,7 @@ import com.yunxinlink.notes.api.impl.DeviceApi;
 import com.yunxinlink.notes.api.impl.UserApi;
 import com.yunxinlink.notes.api.model.UserDto;
 import com.yunxinlink.notes.api.model.VersionInfo;
+import com.yunxinlink.notes.model.DeviceInfo;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.service.CoreService;
 import com.yunxinlink.notes.sync.download.DownloadTask;
@@ -20,6 +22,10 @@ import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.NoteTask;
 import com.yunxinlink.notes.util.NoteUtil;
 import com.yunxinlink.notes.util.SystemUtil;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.util.regex.Matcher;
 
 import static com.yunxinlink.notes.util.NoteUtil.startSyncDownNote;
 
@@ -58,6 +64,7 @@ public class SystemReceiver extends BroadcastReceiver {
                     break;
                 case ACTION_AUTHORITY_VERIFY:   //app启动后的广播
                     doAuthorityVerify(context);
+                    bugReport();    //上报日志文件
                     break;
             }
         }
@@ -113,6 +120,70 @@ public class SystemReceiver extends BroadcastReceiver {
                 }
             }
         });
+    }
+
+    /**
+     * 上传日志信息，主要是上传日志文件
+     */
+    private void bugReport() {
+        SystemUtil.doInbackground(new NoteTask() {
+            @Override
+            public void run() {
+                NoteApplication app = NoteApplication.getInstance();
+                try {
+                    KLog.d(TAG, "report bug invoke begin");
+                    DeviceInfo deviceInfo = SystemUtil.getDeviceInfo(app);
+                    String dir = SystemUtil.getLogPath();
+                    if (TextUtils.isEmpty(dir)) {   //文件夹名称为空
+                        KLog.d(TAG, "report bug log dir is empty");
+                        return;
+                    }
+                    File filePath = new File(dir);
+                    if (filePath.canWrite() && filePath.isDirectory() && filePath.exists()) {
+                        //文件夹可用，扫描文件夹里的文件
+                        File[] files = scanLogFiles(filePath);
+                        if (files != null && files.length > 0) {
+                            for (File file : files) {
+                                DeviceApi.reportBug(deviceInfo, file);
+                            }
+                        } else {
+                            KLog.d(TAG, "report bug log dir has no log");
+                        }
+                    }
+                    KLog.d(TAG, "report bug invoke end");
+                } catch (Exception e) {
+                    KLog.e(TAG, "report bug error:" + e);
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    /**
+     * 扫描过滤日志文件
+     * @param dir
+     * @return
+     */
+    private File[] scanLogFiles(File dir) {
+        //文件夹可用，扫描文件夹里的文件
+        File[] files = dir.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                if (pathname.exists() && pathname.canRead()) {
+                    long fileLength = pathname.length();
+                    String filename = pathname.getName();
+                    Matcher matcher = NoteUtil.logFilePattern.matcher(filename);
+                    boolean find = matcher.find();
+                    if (find && fileLength <= Constants.MAX_LOG_FILE_SIZE) {  //文件找到且文件的最大只有5M
+                        return true;
+                    } else {
+                        KLog.d(TAG, "scan log file can not match or file is too large:" + pathname + ", length:" + fileLength);
+                    }
+                }
+                return false;
+            }
+        });
+        return files;
     }
 
     /**

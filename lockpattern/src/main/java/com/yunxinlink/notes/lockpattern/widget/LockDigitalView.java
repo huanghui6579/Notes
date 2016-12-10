@@ -1,7 +1,9 @@
 package com.yunxinlink.notes.lockpattern.widget;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.text.TextUtils;
@@ -50,6 +52,10 @@ public class LockDigitalView extends RelativeLayout {
 
     //4位密码数字
     private List<Integer> mDigitals = new ArrayList<>(mMaxNumbers);
+    
+    private GridView mGridView;
+    
+    private float mScan = 0L;
 
     /**
      * 密码输入状态的监听器
@@ -79,7 +85,7 @@ public class LockDigitalView extends RelativeLayout {
 //        inputParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
 //        addView(inputLayout);
 
-        GridView gridView = initGridView(context);
+        mGridView = initGridView(context);
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
 //        params.addRule(RelativeLayout.BELOW, viewId);
@@ -88,9 +94,9 @@ public class LockDigitalView extends RelativeLayout {
 
         params.addRule(RelativeLayout.CENTER_IN_PARENT);
 
-        gridView.setLayoutParams(params);
+        mGridView.setLayoutParams(params);
 
-        addView(gridView);
+        addView(mGridView);
 
         return null;
     }
@@ -127,6 +133,19 @@ public class LockDigitalView extends RelativeLayout {
         gridView.setAdapter(adapter);
 
         return gridView;
+    }
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+
+        mScan = (float) (Math.sqrt(oldw * oldw + oldh * oldh) / Math.sqrt(w * w + h * h));
+        if (mGridView != null) {
+            int verticalSpacing = mGridView.getVerticalSpacing();
+            int newVerticalSpacing = (int) (verticalSpacing / mScan);
+            mGridView.setVerticalSpacing(newVerticalSpacing);
+            //TODO 刷新界面
+        }
     }
 
     /**
@@ -402,7 +421,6 @@ public class LockDigitalView extends RelativeLayout {
                     holder.textView.setVisibility(View.VISIBLE);
                     holder.textView.setText(name);
                 }
-                KLog.d("name:" + name + ", position:" + position);
             }
             convertView.setFocusable(true);
             convertView.setClickable(true);

@@ -934,7 +934,17 @@ public class DetailListFragment extends Fragment implements TextView.OnEditorAct
         }
 
         @Override
-        public void onItemCompleted() {
+        public void setMoveStartPosition(int position) {
+
+        }
+
+        @Override
+        public void setMoveEndPosition(int position) {
+
+        }
+
+        @Override
+        public void onItemCompleted(int position) {
             
         }
 

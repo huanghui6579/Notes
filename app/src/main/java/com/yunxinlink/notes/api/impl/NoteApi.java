@@ -1015,6 +1015,50 @@ public class NoteApi extends BaseApi {
     }
 
     /**
+     * 更新笔记本的排序，该方法异步执行
+     * @param context
+     * @param folderList
+     */
+    public static void updateFoldderSortAsync(Context context, List<Folder> folderList) {
+        User user = getUser(context);
+        if (user == null || !user.isAvailable()) {  //用户不可用
+            KLog.d(TAG, "note api sync up folder sort but user is null or not available");
+            return;
+        }
+        if (SystemUtil.isEmpty(folderList)) {
+            KLog.d(TAG, "note api sync up folder sort but folder list is empty");
+            return;
+        }
+        List<FolderDto> folderDtoList = new ArrayList<>();
+        for (Folder folder : folderList) {
+            folderDtoList.add(folder.convert2Dto());
+        }
+        Retrofit retrofit = buildRetrofit();
+        INoteApi repo = retrofit.create(INoteApi.class);
+        Call<ActionResult<Void>> call = repo.sortFolders(user.getSid(), folderDtoList);
+        call.enqueue(new Callback<ActionResult<Void>>() {
+            @Override
+            public void onResponse(Call<ActionResult<Void>> call, Response<ActionResult<Void>> response) {
+                if (response == null || !response.isSuccessful()) { //http 请求失败
+                    KLog.d(TAG, "note api sync up folder sort response is null or not successful");
+                    return;
+                }
+                ActionResult<Void> actionResult = response.body();
+                if (actionResult == null || !actionResult.isSuccess()) {    //返回的数据异常
+                    KLog.d(TAG, "note api sync up folder sort action result is null or not successful:" + actionResult);
+                    return;
+                }
+                KLog.d(TAG, "note api sync up folder sort successful:" + actionResult);
+            }
+
+            @Override
+            public void onFailure(Call<ActionResult<Void>> call, Throwable t) {
+                KLog.e(TAG, "note api sync up folder sort on failed:" + t);
+            }
+        });
+    }
+
+    /**
      * 更新笔记的删除状态
      * @param user 当前的用户
      * @param detailNoteInfos 笔记列表

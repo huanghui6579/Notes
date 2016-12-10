@@ -23,6 +23,7 @@ import com.yunxinlink.notes.model.ActionResult;
 import com.yunxinlink.notes.model.Attach;
 import com.yunxinlink.notes.model.DetailNoteInfo;
 import com.yunxinlink.notes.model.Folder;
+import com.yunxinlink.notes.model.QueryType;
 import com.yunxinlink.notes.model.TaskParam;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.persistent.FolderManager;
@@ -261,7 +262,7 @@ public class SyncService extends Service {
                 //查询该folder下的笔记
                 Bundle args = new Bundle();
                 args.putString(Constants.ARG_FOLDER_ID, paramFolder.getSid());
-                args.putBoolean(Constants.ARG_IS_RECYCLE, true);
+                args.putInt(Constants.ARG_QUERY_TYPE, QueryType.ALL.ordinal());
                 args.putBoolean(Constants.ARG_IS_SYNC_UP, true);
                 List<DetailNoteInfo> detailNoteInfos = NoteManager.getInstance().getAllDetailNotes(user, args);
                 if (!SystemUtil.isEmpty(detailNoteInfos)) {  //没有要同步的笔记
@@ -574,7 +575,6 @@ public class SyncService extends Service {
                     VersionInfo versionInfo = tmp.clone();
                     app.setVersionInfo(null);
                     boolean isWifi = SystemUtil.isWifiConnected(app);
-                    isWifi = true;
                     if (isWifi) {
                         KLog.d(TAG, "sync service has new version and wifi connected and will download new app");
                         

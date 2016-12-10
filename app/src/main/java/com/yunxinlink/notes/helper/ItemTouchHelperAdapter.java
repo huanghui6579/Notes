@@ -58,6 +58,19 @@ public interface ItemTouchHelperAdapter {
 
     /**
      * 停止拖动
+     * @param position 结束的位置
      */
-    void onItemCompleted();
+    void onItemCompleted(int position);
+
+    /**
+     * 设置开始移动的位置
+     * @param position 开始移动的位置
+     */
+    void setMoveStartPosition(int position);
+
+    /**
+     * 设置结束移动的位置
+     * @param position 结束移动的位置
+     */
+    void setMoveEndPosition(int position);
 }

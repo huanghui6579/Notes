@@ -83,6 +83,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import static com.yunxinlink.notes.util.Constants.MAX_LOG_FILE_SIZE;
 import static com.yunxinlink.notes.util.SystemUtil.setViewVisibility;
 
 /**
@@ -111,6 +112,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
     private static final int MSG_READ_CONTACT_SUCCESS = 4;
     private static final int MSG_READ_CONTACT_FAILED = 5;
     private static final int MSG_CHANGE_ACTION_BUTTON_STATE = 6;
+    private static final int MSG_TIP_ERROR = 7;
     
     public static final int REQ_PICK_IMAGE = 10;
     public static final int REQ_TAKE_PIC = 11;
@@ -1618,7 +1620,7 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
             public void run() {
                 String filePath = SystemUtil.getFilePathFromContentUri(uri.toString(), mContext);
                 KLog.d(TAG, "addImage----" + filePath);
-                
+                File renameFile = new File(filePath);
                 if (compressImg) {
                     //压缩并保存文件
                     String savePath = filePath + ".tmp";
@@ -1626,7 +1628,6 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
 
                     if (success) {
                         File file = new File(savePath);
-                        File renameFile = new File(filePath);
                         if (renameFile.exists()) {
                             renameFile.delete();
                         }
@@ -1635,12 +1636,15 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         //添加到相册
                         SystemUtil.galleryAddPic(mContext, file);
                     }
+                } else {    //不压缩的，要计算图片的大小，超过5M则提示图片太大
+                    if (!checkFileSize(renameFile)) { //文件太大
+                        return;
+                    }
                 }
                 
                 Attach attach = getAddedAttach(filePath);
                 if (attach == null) {
-                    File file = new File(filePath);
-                    attach = file2Attach(file, attachType);
+                    attach = file2Attach(renameFile, attachType);
                 }
                 if (mNoteEditFragment != null) {
                     mNoteEditFragment.addAttach(attach, new SimpleAttachAddCompleteListenerImpl(true));
@@ -1715,6 +1719,9 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                         continue;
                     }
                     File file = new File(filePath);
+                    if (!checkFileSize(file)) { //文件太大
+                        return;
+                    }
                     Attach attach = getAddedAttach(filePath);
                     if (attach == null) {
                         attach = file2Attach(file, 0);
@@ -1729,6 +1736,24 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                 }
             }
         });
+    }
+
+    /**
+     * 校验文件的大小，true：文件大小合适，false：文件太大
+     * @param file
+     * @return
+     */
+    private boolean checkFileSize(File file) {
+        if (file.canRead() && file.length() > MAX_LOG_FILE_SIZE) {    //文件最大的尺寸：5M
+            KLog.d(TAG, "add attach but file is too large");
+            Message msg = mHandler.obtainMessage();
+            msg.what = MSG_TIP_ERROR;
+            msg.obj = getString(R.string.tip_file_too_large, Constants.MAX_LOG_FILE_SIZE_UNIT);
+            mHandler.sendMessage(msg);
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**
@@ -2660,6 +2685,14 @@ public class NoteEditActivity extends BaseActivity implements View.OnClickListen
                     boolean selected = msg.arg2 == 1;
                     UpdateAppearance span = (UpdateAppearance) msg.obj;
                     activity.changeActionButtonVisible(visible, selected, span);
+                    break;
+                case MSG_TIP_ERROR: //提示语
+                    int resId = msg.arg1;
+                    if (resId != 0) {
+                        SystemUtil.makeShortToast(resId);
+                    } else if (msg.obj != null && msg.obj instanceof String) {
+                        SystemUtil.makeShortToast((String) msg.obj);
+                    }
                     break;
             }
             super.handleMessage(msg);

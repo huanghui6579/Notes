@@ -6,63 +6,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="@dimen/activity_vertical_margin">
     
-    <RelativeLayout
-        android:id="@+id/top_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/account_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <com.yunxinlink.notes.widget.ClearableEditText
-                android:id="@+id/et_account"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textEmailAddress"
-                android:maxLines="1"
-                android:hint="@string/authority_account_tip"/>
-        </android.support.design.widget.TextInputLayout>
-
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/password_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/account_layout"
-            android:layout_marginTop="@dimen/activity_vertical_margin"
-            app:passwordToggleEnabled="true">
-            <android.support.design.widget.TextInputEditText
-                android:id="@+id/et_password"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:maxLines="1"
-                android:hint="@string/authority_password_tip"/>
-        </android.support.design.widget.TextInputLayout>
-
-        <Button
-            android:id="@+id/btn_login"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/authority_login_text"
-            style="@style/CommonBtnStyle"
-            android:layout_below="@id/password_layout"
-            android:layout_marginTop="@dimen/authority_btn_margin_top"
-            android:textSize="@dimen/content_text_size_large"
-            android:enabled="false"/>
-
-        <TextView
-            android:id="@+id/tv_password_tip"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/CommonTextBtnStyle"
-            android:text="@string/authority_forget_password_tip"
-            android:layout_below="@id/btn_login"
-            android:layout_marginTop="@dimen/authority_btn_margin_top"
-            android:layout_marginBottom="@dimen/activity_vertical_margin"
-            android:textSize="16sp" />
-        
-    </RelativeLayout>
-
     <LinearLayout
         android:id="@+id/bottom_container"
         android:layout_width="match_parent"
@@ -123,4 +66,69 @@
         </LinearLayout>
     </LinearLayout>
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:layout_above="@id/bottom_container"
+        android:scrollbars="none">
+
+        <RelativeLayout
+            android:id="@+id/top_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.yunxinlink.notes.widget.ClearableEditText
+                    android:id="@+id/et_account"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress"
+                    android:maxLines="1"
+                    android:hint="@string/authority_account_tip"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/password_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/account_layout"
+                android:layout_marginTop="@dimen/activity_vertical_margin"
+                app:passwordToggleEnabled="true">
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/et_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:hint="@string/authority_password_tip"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <Button
+                android:id="@+id/btn_login"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/authority_login_text"
+                style="@style/CommonBtnStyle"
+                android:layout_below="@id/password_layout"
+                android:layout_marginTop="@dimen/authority_btn_margin_top"
+                android:textSize="@dimen/content_text_size_large"
+                android:enabled="false"/>
+
+            <TextView
+                android:id="@+id/tv_password_tip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/CommonTextBtnStyle"
+                android:text="@string/authority_forget_password_tip"
+                android:layout_below="@id/btn_login"
+                android:layout_marginTop="@dimen/authority_btn_margin_top"
+                android:layout_marginBottom="@dimen/activity_vertical_margin"
+                android:textSize="16sp" />
+
+        </RelativeLayout>
+    </ScrollView>
+    
 </RelativeLayout>

@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -50,34 +52,7 @@ public class DeviceApi extends BaseApi {
         IDeviceApi repo = retrofit.create(IDeviceApi.class);
         
         Map<String, String> params = new HashMap<>();
-        String imei = deviceInfo.getImei();
-        if (imei != null) {
-            params.put("imei", imei);
-        }
-        params.put("os", deviceInfo.getOs());
-        String osVersion = deviceInfo.getOsVersion();
-        if (osVersion != null) {
-            params.put("osVersion", osVersion);
-        }
-        String phoneModel = deviceInfo.getPhoneModel();
-        if (phoneModel != null) {
-            params.put("phoneModel", phoneModel);
-        }
-        String brand = deviceInfo.getBrand();
-        if (brand != null) {
-            params.put("brand", brand);
-        }
-
-        int versionCode = deviceInfo.getAppVersionCode();
-        if (versionCode > 0) {
-            params.put("appVersionCode", String.valueOf(versionCode));
-        }
-        
-        String versionName = deviceInfo.getAppVersionName();
-        
-        if (versionName != null) {
-            params.put("appVersionName", versionName);
-        }
+        setupParam(deviceInfo, params);
         
         Call<ActionResult<Void>> call = repo.activeDeviceInfo(params);
         call.enqueue(new Callback<ActionResult<Void>>() {
@@ -111,6 +86,87 @@ public class DeviceApi extends BaseApi {
                 KLog.d(TAG, "active device info error:" + t);
             }
         });
+    }
+
+    /**
+     * 设置上传的参数
+     * @param params
+     * @return
+     */
+    private static Map<String, String> setupParam(DeviceInfo deviceInfo, Map<String, String> params) {
+        if (params == null) {
+            params = new HashMap<>();
+        }
+        String imei = deviceInfo.getImei();
+        if (imei != null) {
+            params.put("imei", imei);
+        }
+        params.put("os", deviceInfo.getOs());
+        String osVersion = deviceInfo.getOsVersion();
+        if (osVersion != null) {
+            params.put("osVersion", osVersion);
+        }
+        String phoneModel = deviceInfo.getPhoneModel();
+        if (phoneModel != null) {
+            params.put("phoneModel", phoneModel);
+        }
+        String brand = deviceInfo.getBrand();
+        if (brand != null) {
+            params.put("brand", brand);
+        }
+
+        int versionCode = deviceInfo.getAppVersionCode();
+        if (versionCode > 0) {
+            params.put("appVersionCode", String.valueOf(versionCode));
+        }
+
+        String versionName = deviceInfo.getAppVersionName();
+
+        if (versionName != null) {
+            params.put("appVersionName", versionName);
+        }
+        return params;
+    }
+
+    /**
+     * 设置带有附件的参数
+     * @param deviceInfo
+     * @param params
+     * @return
+     */
+    private static Map<String, RequestBody> setupPartParam(DeviceInfo deviceInfo, Map<String, RequestBody> params) {
+        if (params == null) {
+            params = new HashMap<>();
+        }
+        String imei = deviceInfo.getImei();
+        if (imei != null) {
+            params.put("imei", RequestBody.create(null, imei));
+        }
+        params.put("os", RequestBody.create(null, deviceInfo.getOs()));
+        String osVersion = deviceInfo.getOsVersion();
+        if (osVersion != null) {
+            params.put("osVersion", RequestBody.create(null, osVersion));
+        }
+        String phoneModel = deviceInfo.getPhoneModel();
+        if (phoneModel != null) {
+            params.put("phoneModel", RequestBody.create(null, phoneModel));
+        }
+        String brand = deviceInfo.getBrand();
+        if (brand != null) {
+            params.put("brand", RequestBody.create(null, brand));
+        }
+
+        int versionCode = deviceInfo.getAppVersionCode();
+        if (versionCode > 0) {
+            params.put("appVersionCode", RequestBody.create(null, String.valueOf(versionCode)));
+        }
+
+        String versionName = deviceInfo.getAppVersionName();
+
+        if (versionName != null) {
+            params.put("appVersionName", RequestBody.create(null, versionName));
+        }
+        return params;
     }
 
     /**
@@ -272,6 +328,62 @@ public class DeviceApi extends BaseApi {
             }
         }
         return call;
+    }
+
+
+    /**
+     * 上传日志信息
+     * @param deviceInfo 设备信息
+     * @param logFile 日志文件
+     * @return
+     */
+    public static int reportBug(DeviceInfo deviceInfo, File logFile) {
+        Retrofit retrofit = buildRetrofit();
+        IDeviceApi repo = retrofit.create(IDeviceApi.class);
+        Map<String, RequestBody> map = new HashMap<>();
+        setupPartParam(deviceInfo, map);
+        //添加文件
+        if (logFile != null && logFile.exists()) {
+            String filename = logFile.getName();
+            String mime = FileUtil.getWebMime(logFile);
+            if (mime == null) {
+                mime = "text/plain";
+            }
+            RequestBody img = RequestBody.create(MediaType.parse(mime), logFile);
+            //avatarFile: 与服务器端的参数名相同
+            map.put("logFile\"; filename=\"" + filename + "", img);
+        } else {
+            KLog.d(TAG, "device api report bug log file is null or not exists:" + logFile);
+        }
+        int code = 0;
+        Call<ActionResult<Void>> call = repo.reportBug(map);
+        try {
+            Response<ActionResult<Void>> response = call.execute();
+            if (response == null || !response.isSuccessful()) { //http请求失败
+                code = ActionResult.RESULT_FAILED;
+                KLog.d(TAG, "device api report bug response is null or not successful");
+                return code;
+            }
+            ActionResult<Void> actionResult = response.body();
+            if (actionResult == null || !actionResult.isSuccess()) {
+                code = actionResult == null ? ActionResult.RESULT_FAILED : actionResult.getResultCode();
+                KLog.d(TAG, "device api report bug action result is null or not successful result:" + actionResult);
+                return code;
+            }
+            code = ActionResult.RESULT_SUCCESS;
+            KLog.d(TAG, "device api report bug result success:" + actionResult);
+            //删除该文件，以防下次继续上报
+            KLog.d(TAG, "device api report bug result success and will delete file:" + logFile);
+            if (logFile != null && logFile.canWrite()) {
+                logFile.delete();
+            } else {
+                KLog.d(TAG, "device api report bug delete file failed file is null or can not write:" + logFile);
+            }
+        } catch (Exception e) {
+            code = ActionResult.RESULT_ERROR;
+            KLog.e(TAG, "device api report bug error:" + e);
+        }
+        return code;
     }
 
     /**

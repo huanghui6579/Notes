@@ -1670,13 +1670,18 @@ public class SystemUtil {
      * @return
      */
     public static String getDeviceId(Context context) {
-        TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        String deviceId = tm.getDeviceId();
-        if (deviceId == null) {
-            return "";
-        } else {
-            return deviceId;
+        try {
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            String deviceId = tm.getDeviceId();
+            if (deviceId == null) {
+                return "";
+            } else {
+                return deviceId;
+            }
+        } catch (Exception e) {
+           KLog.e(TAG, "get device id error:" + e);
         }
+        return "";
     }
 
     /**

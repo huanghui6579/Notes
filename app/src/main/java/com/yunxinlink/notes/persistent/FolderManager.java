@@ -18,6 +18,7 @@ import com.yunxinlink.notes.db.observer.Observer;
 import com.yunxinlink.notes.listener.OnLoadCallback;
 import com.yunxinlink.notes.model.DeleteState;
 import com.yunxinlink.notes.model.Folder;
+import com.yunxinlink.notes.model.QueryType;
 import com.yunxinlink.notes.model.SyncState;
 import com.yunxinlink.notes.model.User;
 import com.yunxinlink.notes.util.Constants;
@@ -129,11 +130,11 @@ public class FolderManager extends Observable<Observer> {
     public List<Folder> getAllFolders(User user, Bundle args) {
         List<Folder> list = null;
         //加载的笔记本的类型，true：只加载回收站的笔记本，false，只加载非回收站的笔记本
-        boolean isRecycle = false;
+        int queryValue = -1;
         if (args != null) {
-            isRecycle = args.getBoolean(Constants.ARG_IS_RECYCLE, false);
+            queryValue = args.getInt(Constants.ARG_QUERY_TYPE, -1);
         }
-
+        QueryType queryType = QueryType.valueOf(queryValue);
         Cursor cursor = getAllFolderCursor(user, args);
         if (cursor != null) {
             list = new ArrayList<>();
@@ -141,7 +142,7 @@ public class FolderManager extends Observable<Observer> {
             while (cursor.moveToNext()) {
                 Folder folder = cursor2Folder(cursor);
                 map.put(folder.getSid(), folder);
-                if (isRecycle) {//只加载回收站的笔记本
+                if (QueryType.TRASH == queryType) {//只加载回收站的笔记本
                     if (folder.isTrashed()) {
                         list.add(folder);
                     }

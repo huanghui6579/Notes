@@ -7,6 +7,7 @@ import android.text.TextUtils;
 
 import com.yunxinlink.notes.NoteApplication;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.api.model.FolderDto;
 import com.yunxinlink.notes.util.Constants;
 import com.yunxinlink.notes.util.DigestUtil;
 import com.yunxinlink.notes.util.TimeUtil;
@@ -368,6 +369,24 @@ public class Folder implements Parcelable, Cloneable, Comparator<Folder> {
     @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
+    }
+
+    /**
+     * 转换成web api所需的实体
+     * @return
+     */
+    public FolderDto convert2Dto() {
+        FolderDto folderDto = new FolderDto();
+        folderDto.setName(name);
+        folderDto.setLock(isLock);
+        folderDto.setCreateTime(createTime);
+        folderDto.setModifyTime(modifyTime);
+        folderDto.setDeleteState(deleteState == null ? 0 : deleteState.ordinal());
+        folderDto.setCount(count);
+        folderDto.setHash(hash);
+        folderDto.setSid(sid);
+        folderDto.setSort(sort);
+        return folderDto;
     }
 
     @Override

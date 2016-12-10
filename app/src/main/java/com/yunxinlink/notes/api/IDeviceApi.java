@@ -5,12 +5,15 @@ import com.yunxinlink.notes.model.ActionResult;
 
 import java.util.Map;
 
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.PartMap;
 import retrofit2.http.QueryMap;
 import retrofit2.http.Streaming;
 
@@ -47,4 +50,13 @@ public interface IDeviceApi {
     @GET("app/download")
     @Streaming
     Call<ResponseBody> downApp(@QueryMap Map<String, String> params);
+
+    /**
+     * 上报异常的日志文件
+     * @param params
+     * @return
+     */
+    @Multipart
+    @POST("api/device/bug/report")
+    Call<ActionResult<Void>> reportBug(@PartMap Map<String, RequestBody> params);
 }

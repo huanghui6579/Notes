@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import com.socks.library.KLog;
 import com.yunxinlink.notes.R;
+import com.yunxinlink.notes.api.impl.NoteApi;
 import com.yunxinlink.notes.db.Provider;
 import com.yunxinlink.notes.db.observer.ContentObserver;
 import com.yunxinlink.notes.db.observer.Observable;
@@ -480,6 +481,10 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         private OnItemClickListener mOnItemClickListener;
 
         private final OnStartDragListener mDragStartListener;
+        //开始的位置
+        private int mStartPosition = -1;
+        //结束的位置
+        private int mEndPosition = -1;
         
         public FolderAdapter(Context context, List<Folder> list, OnStartDragListener dragStartListener) {
             this.mContext = context;
@@ -538,11 +543,13 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
                     if (isUnPreFolder) {
                         mFolderManager.updateShowState(mContext, !isShowFolderAll());
                         //更新后
+                        Drawable stateDrawable = null;
                         if (isShowFolderAll()) {    //显示“所有文件夹项”
-                            ((ImageView)v).setImageResource(R.drawable.ic_visibility);
+                            stateDrawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_visibility, getTheme());
                         } else {
-                            ((ImageView)v).setImageResource(R.drawable.ic_visibility_off);
+                            stateDrawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_visibility_off, getTheme());
                         }
+                        ((ImageView)v).setImageDrawable(stateDrawable);
                     }
                 }
             });
@@ -641,8 +648,45 @@ public class FolderListActivity extends BaseActivity implements OnStartDragListe
         }
 
         @Override
-        public void onItemCompleted() {
-            
+        public void onItemCompleted(int position) {
+            //同步笔记本的排序
+            syncUpFolderSort();
+        }
+
+        @Override
+        public void setMoveStartPosition(int position) {
+            this.mStartPosition = position;
+        }
+
+        @Override
+        public void setMoveEndPosition(int position) {
+            this.mEndPosition = position;;
+        }
+
+        /**
+         * 上传笔记本的排序
+         */
+        private void syncUpFolderSort() {
+            //同步笔记本的排序
+            if (mStartPosition != -1 && mEndPosition != -1 && mStartPosition != mEndPosition) { //有效排序
+                try {
+                    int fromPosition = 0;
+                    int toPosition = 0;
+                    if (mStartPosition > mEndPosition) {
+                        fromPosition = mEndPosition;
+                        toPosition = mStartPosition + 1;
+                    } else {
+                        fromPosition = mStartPosition;
+                        toPosition = mEndPosition + 1;
+                    }
+                    int size = mList.size();
+                    toPosition = toPosition > size ? size : toPosition;
+                    List<Folder> folderList = mList.subList(fromPosition, toPosition);
+                    NoteApi.updateFoldderSortAsync(mContext, folderList);
+                } catch (Exception e) {
+                    KLog.e(TAG, "sync up folder list sort error:" + e);
+                }
+            }
         }
     }
     

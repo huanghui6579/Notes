@@ -65,7 +65,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import cn.sharesdk.framework.Platform;
 import cn.sharesdk.framework.PlatformDb;
@@ -1326,8 +1328,23 @@ public class NoteUtil {
             return showWidget;
         }
     }
+
+    /**
+     * 生成日志的文件名
+     * @return
+     */
+    public static String getLogFileName() {
+        Random random = new Random();
+        return "Log_" + Long.toString(System.currentTimeMillis() + random.nextInt(10000)).substring(4) + Constants.LOG_SUBFFIX;
+    }
+
+    /**
+     * 日志文件名的正则表达式,文件名如：Log_1445424.log
+     */
+    public static final Pattern logFilePattern = Pattern.compile("^Log_[\\w]+.log$");
     
     public interface Filter {
         void filter(View view);
     }
+
 }
